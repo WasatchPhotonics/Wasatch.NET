@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.10
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WasatchNET", "WasatchNET\WasatchNET.csproj", "{6C29D82F-9444-4CA0-A061-213F1A56DE8D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinFormDemo", "WinFormDemo\WinFormDemo.csproj", "{68907C2C-2EFE-4250-9A48-35C8A1A0C70C}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup", "Setup\Setup.vdproj", "{55AF5B4F-5F9B-488A-A9C0-487AAC7D4737}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6C29D82F-9444-4CA0-A061-213F1A56DE8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C29D82F-9444-4CA0-A061-213F1A56DE8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C29D82F-9444-4CA0-A061-213F1A56DE8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C29D82F-9444-4CA0-A061-213F1A56DE8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68907C2C-2EFE-4250-9A48-35C8A1A0C70C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68907C2C-2EFE-4250-9A48-35C8A1A0C70C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68907C2C-2EFE-4250-9A48-35C8A1A0C70C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68907C2C-2EFE-4250-9A48-35C8A1A0C70C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55AF5B4F-5F9B-488A-A9C0-487AAC7D4737}.Debug|Any CPU.ActiveCfg = Debug
+		{55AF5B4F-5F9B-488A-A9C0-487AAC7D4737}.Debug|Any CPU.Build.0 = Debug
+		{55AF5B4F-5F9B-488A-A9C0-487AAC7D4737}.Release|Any CPU.ActiveCfg = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FC174C69-79F2-4EE5-B4F8-F41DD7528EEB}
+	EndGlobalSection
+EndGlobal
