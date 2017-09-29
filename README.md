@@ -17,6 +17,13 @@ URL: https://sourceforge.net/projects/libusbdotnet/files/LibUsbDotNet/
 The pre-compiled DLL provided in our lib/ directory was built from v2.2.8 using
 Visual Studio 2017 Community against the .NET 4.0 Client Profile.
 
+## Wasatch Enlighten
+
+Wasatch.NET does not come with the INF or other setup files required to 
+associate Wasatch Photonic's VID/PID tuples with libusb-win32.  The simplest
+solution for now is to install Enlighten, which automatically configures the 
+low-level USB driver bindings.
+
 # Build Configuration
 
 Our standard DLL is built against .NET 4.0 Client Profile, with debugging 
