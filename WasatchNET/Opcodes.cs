@@ -8,7 +8,7 @@
 
         // bRequest commands
         public const byte ACQUIRE_CCD                              = 0xad; // impl
-        public const byte GET_ACTUAL_FRAMES                        = 0xe4;
+        public const byte GET_ACTUAL_FRAMES                        = 0xe4; // impl
         public const byte GET_ACTUAL_INTEGRATION_TIME              = 0xdf;
         public const byte GET_CCD_GAIN                             = 0xc5;
         public const byte GET_CCD_OFFSET                           = 0xc4;

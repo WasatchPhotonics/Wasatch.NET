@@ -36,6 +36,8 @@ namespace WasatchNET
 
         Logger logger = Logger.getInstance();
 
+        #region properties
+
         ////////////////////////////////////////////////////////////////////////
         // Public properties
         ////////////////////////////////////////////////////////////////////////
@@ -161,11 +163,13 @@ namespace WasatchNET
             set { lock(acquisitionLock) dark_ = value; }
         }
         private double[] dark_;
+        #endregion
 
         ////////////////////////////////////////////////////////////////////////
         // Lifecycle
         ////////////////////////////////////////////////////////////////////////
 
+        #region lifecycle
         public Spectrometer(UsbRegistry usbReg)
         {
             usbRegistry = usbReg;
@@ -234,6 +238,7 @@ namespace WasatchNET
                 usbDevice = null;
             }
         }
+        #endregion
 
         ////////////////////////////////////////////////////////////////////////
         // Feature Identification API
@@ -528,13 +533,13 @@ namespace WasatchNET
         public bool getOptAreaScan()          { return toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); } 
         public bool getOptActIntTime()        { return toBool(getCmd2(Opcodes.OPT_ACT_INT_TIME, 1)); } 
         public bool getOptHorizontalBinning() { return toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); }
-
         #endregion
 
         ////////////////////////////////////////////////////////////////////////
         // Utilities
         ////////////////////////////////////////////////////////////////////////
 
+        #region utilities
         byte[] getCmd(byte bRequest, int len)
         {
             byte[] buf = new byte[len];
@@ -604,10 +609,13 @@ namespace WasatchNET
         {
             return buf != null && buf[0] != 0;
         }
+        #endregion
 
         ////////////////////////////////////////////////////////////////////////
         // Spectrometer Comms
         ////////////////////////////////////////////////////////////////////////
+
+        #region spec_comms
 
         /// <summary>
         /// set the acquisition time in milliseconds
@@ -693,11 +701,14 @@ namespace WasatchNET
         public void setLaserMod(bool flag) { sendCmd(Opcodes.SET_LASER_MOD, flag ? 1 : 0); } 
         public void setCCDTriggerSource(ushort source) { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, source); } 
         public uint getLineLength() { return toUshort(getCmd2(Opcodes.GET_LINE_LENGTH, 2)); }
+        public ushort getActualFrames() { return toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES, 2)); }
+        #endregion  
 
         ////////////////////////////////////////////////////////////////////////
         // getSpectrum
         ////////////////////////////////////////////////////////////////////////
 
+        #region getspectrum
         // includes scan averaging, boxcar and dark subtraction
         public double[] getSpectrum()
         {
@@ -870,5 +881,6 @@ namespace WasatchNET
             logger.error("blockUntilDataReady timed-out after {0}ms", timeoutMS);
             return false;
         }
+        #endregion
     }
 }

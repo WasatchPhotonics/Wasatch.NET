@@ -20,9 +20,11 @@ namespace WinFormDemo
             public BackgroundWorker worker = new BackgroundWorker();
             public Series series = new Series();
             public bool running;
+            public double[] raw;
             public double[] spectrum;
             public double[] reference;
             public ProcessingMode processingMode = ProcessingMode.SCOPE;
+            public DateTime lastUpdate;
             Logger logger = Logger.getInstance();
 
             public SpectrometerState(Spectrometer s)
@@ -34,8 +36,11 @@ namespace WinFormDemo
                 worker.WorkerSupportsCancellation = true;
             }
 
-            public void processSpectrum(double[] raw)
+            public void processSpectrum(double[] latest)
             {
+                raw = latest;
+                lastUpdate = DateTime.Now;
+
                 // note: we are using the dark-corrected versions of these functions
                 if (processingMode == ProcessingMode.TRANSMISSION && reference != null && spectrometer.dark != null)
                     spectrum = Util.cleanNan(Util.computeTransmission(reference, raw));
@@ -122,7 +127,8 @@ namespace WinFormDemo
 
             updateStartButton(spectrometerStates[currentSpectrometer].running);
 
-            checkBoxTakeDark.Enabled = state.spectrum != null;
+            checkBoxTakeDark.Enabled = 
+                buttonSave.Enabled = state.spectrum != null;
             checkBoxTakeReference.Enabled = state.spectrum != null && currentSpectrometer.dark != null;
 
             if (state.processingMode == ProcessingMode.SCOPE)
@@ -178,7 +184,8 @@ namespace WinFormDemo
                     // current spectrometer (now) has spectra, so allow darks and traces
                     if (spectrometer == currentSpectrometer)
                         checkBoxTakeDark.Enabled =
-                            buttonAddTrace.Enabled = true;
+                            buttonAddTrace.Enabled = 
+                            buttonSave.Enabled = true;
                 }
             }
         }
@@ -190,10 +197,14 @@ namespace WinFormDemo
         #region settings
         void updateSettings()
         {
+            if (currentSpectrometer == null)
+                return;
+
             // methods 
             updateSetting("firmwareRev", currentSpectrometer.getFirmwareRev());
             updateSetting("fpgaRev", currentSpectrometer.getFPGARev());
             updateSetting("integrationTimeMS", currentSpectrometer.getIntegrationTimeMS());
+            updateSetting("frame", currentSpectrometer.getActualFrames());
 
             // properties
             updateSetting("model", currentSpectrometer.model);
@@ -580,6 +591,79 @@ namespace WinFormDemo
             }
             traces.Clear();
             buttonClearTraces.Enabled = false;
+        }
+
+        private void buttonSave_Click(object sender, EventArgs e)
+        {
+            saveFileDialog1.FileName = String.Format("{0}-{1}", currentSpectrometer.serialNumber, DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+            DialogResult result = saveFileDialog1.ShowDialog();
+            if (result != DialogResult.OK)
+                return;
+
+            // More complex implementations could save all spectra from all spectrometers;
+            // or include snapped traces; or export directly to multi-tab Excel spreadsheets.
+
+            lock (spectrometers)
+            {
+                SpectrometerState state = spectrometerStates[currentSpectrometer];
+                if (state.spectrum == null)
+                    return;
+
+                // assemble the columns we're going to save
+                List<Tuple<string, double[]>> cols = new List<Tuple<string, double[]>>();
+
+                cols.Add(new Tuple<string, double[]>("wavelength", currentSpectrometer.wavelengths));
+                if (graphWavenumbers)
+                    cols.Add(new Tuple<string, double[]>("wavenumber", currentSpectrometer.wavenumbers));
+
+                string label = "spectrum";
+                if (state.processingMode == ProcessingMode.TRANSMISSION)
+                    label = "trans/refl";
+                else if (state.processingMode == ProcessingMode.ABSORBANCE)
+                    label = "abs";
+                cols.Add(new Tuple<string, double[]>(label, state.spectrum));
+
+                if (state.raw != state.spectrum)
+                    cols.Add(new Tuple<string, double[]>("raw", state.raw));
+
+                if (state.reference != null)
+                    cols.Add(new Tuple<string, double[]>("reference", state.reference));
+
+                if (currentSpectrometer.dark != null)
+                    cols.Add(new Tuple<string, double[]>("dark", currentSpectrometer.dark));
+
+                using (System.IO.StreamWriter outfile = new System.IO.StreamWriter(saveFileDialog1.FileName))
+                {
+                    // metadata
+                    outfile.WriteLine("model,{0}", currentSpectrometer.model);
+                    outfile.WriteLine("serialNumber,{0}", currentSpectrometer.serialNumber);
+                    outfile.WriteLine("timestamp,{0}", state.lastUpdate);
+                    outfile.WriteLine("integration time (ms),{0}", currentSpectrometer.integrationTimeMS);
+                    outfile.WriteLine("scan averaging,{0}", currentSpectrometer.scanAveraging);
+                    outfile.WriteLine("boxcar,{0}", currentSpectrometer.boxcarHalfWidth);
+                    outfile.WriteLine();
+
+                    // header row
+                    outfile.Write("pixel");
+                    for (int i = 0; i < cols.Count; i++)
+                        outfile.Write(",{0}", cols[i].Item1);
+                    outfile.WriteLine();
+
+                    // data
+                    for (uint pixel = 0; pixel < currentSpectrometer.pixels; pixel++)
+                    {
+                        outfile.Write(String.Format("{0}", pixel));
+                        foreach (Tuple<string, double[]> col in cols)
+                            outfile.Write(String.Format(",{0}", col.Item2[pixel]));
+                        outfile.WriteLine();
+                    }                        
+                }
+            }
+        }
+
+        private void treeViewSettings_DoubleClick(object sender, EventArgs e)
+        {
+            updateSettings();
         }
 
         ////////////////////////////////////////////////////////////////////////
