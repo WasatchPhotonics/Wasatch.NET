@@ -200,13 +200,22 @@ namespace WinFormDemo
             if (currentSpectrometer == null)
                 return;
 
+            ////////////////////////////////////////////////////////////////////
             // methods 
+            ////////////////////////////////////////////////////////////////////
+
             updateSetting("firmwareRev", currentSpectrometer.getFirmwareRev());
             updateSetting("fpgaRev", currentSpectrometer.getFPGARev());
             updateSetting("integrationTimeMS", currentSpectrometer.getIntegrationTimeMS());
             updateSetting("frame", currentSpectrometer.getActualFrames());
+            if (currentSpectrometer.fpgaHasActualIntegTime)
+                updateSetting("actualIntegrationTimeMS", currentSpectrometer.getActualIntegrationTime());
 
+            ////////////////////////////////////////////////////////////////////
             // properties
+            ////////////////////////////////////////////////////////////////////
+
+            updateSetting("pixels", currentSpectrometer.pixels);
             updateSetting("model", currentSpectrometer.model);
             updateSetting("serialNumber", currentSpectrometer.serialNumber);
             updateSetting("baudRate", currentSpectrometer.baudRate);
@@ -215,7 +224,6 @@ namespace WinFormDemo
             updateSetting("hasLaser", currentSpectrometer.hasLaser);
             updateSetting("excitationNM", currentSpectrometer.excitationNM);
             updateSetting("slitSizeUM", currentSpectrometer.slitSizeUM);
-            updateSetting("pixels", currentSpectrometer.pixels);
 
             for (int i = 0; i < currentSpectrometer.wavecalCoeffs.Length; i++)
                 updateSetting("wavecalCoeff" + i, currentSpectrometer.wavecalCoeffs[i]);
@@ -257,6 +265,16 @@ namespace WinFormDemo
             updateSetting("fpgaHasAreaScan", currentSpectrometer.fpgaHasAreaScan);
             updateSetting("fpgaHasActualIntegTime", currentSpectrometer.fpgaHasActualIntegTime);
             updateSetting("fpgaHasHorizBinning", currentSpectrometer.fpgaHasHorizBinning);
+
+            updateSetting("ccdGain", currentSpectrometer.getCCDGain());
+            updateSetting("ccdOffset", currentSpectrometer.getCCDOffset());
+            updateSetting("ccdSensingThreshold", currentSpectrometer.getCCDSensingThreshold());
+            updateSetting("ccdThresholdSensingMode", currentSpectrometer.getCCDThresholdSensingMode());
+            updateSetting("ccdTempEnable", currentSpectrometer.getCCDTempEnabled());
+            updateSetting("ccdTempSetpoint", currentSpectrometer.getCCDTempSetpoint());
+            updateSetting("dac", currentSpectrometer.getDAC());
+            updateSetting("ccdTriggerSource", currentSpectrometer.getCCDTriggerSource());
+            updateSetting("externalTriggerOutput", currentSpectrometer.getExternalTriggerOutput());
         }
 
         void stubTreeView()
@@ -313,20 +331,25 @@ namespace WinFormDemo
                 stubSetting(String.Format("ROIVertRegion{0}Start", i), String.Format("Detector/ROI/Vert/Region{0}/Start", i));
                 stubSetting(String.Format("ROIVertRegion{0}End",   i), String.Format("Detector/ROI/Vert/Region{0}/End", i));
             }
-            stubSetting("ccdTECEnable",             "Detector/TEC/Enabled");
+            stubSetting("ccdTempEnable",            "Detector/TEC/Enabled");
             stubSetting("ccdTempSetpoint",          "Detector/TEC/Setpoint");
             stubSetting("ccdTemp",                  "Detector/TEC/Temperature");
             stubSetting("thermistorResistanceAt298K", "Detector/TEC/Thermistor/Resistance at 298K");
             stubSetting("thermistorBeta",           "Detector/TEC/Thermistor/Beta value");
             stubSetting("ccdOffset",                "Detector/CCD/Offset");
             stubSetting("ccdGain",                  "Detector/CCD/Gain");
+            stubSetting("ccdSensingThreshold",      "Detector/CCD/Sensing Threshold");
+            stubSetting("ccdThresholdSensingMode",  "Detector/CCD/Threshold Sensing Mode");
             stubSetting("horizBinning",             "Detector/Horizontal Binning");
-            stubSetting("threshSensingMode",        "Detector/Sensitivity/Threshold Sensing Mode");
-            stubSetting("sensingThresh",            "Detector/Sensitivity/Sensing Threshold");
+
+            stubSetting("ccdTriggerDelay",          "Triggering/Delay (us)");
+            stubSetting("ccdTriggerSource",         "Triggering/Source");
+            stubSetting("externalTriggerOutput",    "Triggering/External Output");
 
             for (int i = 0; i < 15; i++)
                 stubSetting("badPixels" + i, "Detector/Bad Pixels/Index " + i);
 
+            stubSetting("dac",                      "Laser/DAC");
             stubSetting("laserEnabled",             "Laser/Enabled");
             stubSetting("excitationNM",             "Laser/Excitation (nm)");
             stubSetting("laserTemp",                "Laser/TEC/Temperature");
@@ -342,10 +365,6 @@ namespace WinFormDemo
             stubSetting("interlock",                "Laser/Interlock");
             for (int i = 0; i < 3; i++)
                 stubSetting("adcCoeff" + i, "Laser/TEC/ADC/Coeff" + i);
-
-            stubSetting("triggerDelay",             "Triggering/Delay (us)");
-            stubSetting("triggerSource",            "Triggering/Source");
-            stubSetting("externalTriggerOutput",    "Triggering/External Output");
 
             stubSetting("calibrationDate",          "Manufacture/Date");
             stubSetting("calibrationBy",            "Manufacture/Technician");

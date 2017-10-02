@@ -17,6 +17,8 @@ namespace WasatchNET
         public enum FPGA_DATA_HEADER { NONE, OCEAN_OPTICS, WASATCH };
         public enum FPGA_LASER_TYPE { NONE, INTERNAL, EXTERNAL };
         public enum FPGA_LASER_CONTROL { MODULATION, TRANSITION_POINTS, RAMPING };
+        public enum CCD_TRIGGER_SOURCE { USB, EXTERNAL, ERROR };
+        public enum EXTERNAL_TRIGGER_OUTPUT {  LASER_MODULATION, INTEGRATION_ACTIVE_PULSE, ERROR };
 
         public class AcquisitionStatus
         {
@@ -539,8 +541,7 @@ namespace WasatchNET
         // Utilities
         ////////////////////////////////////////////////////////////////////////
 
-        #region utilities
-        byte[] getCmd(byte bRequest, int len)
+        byte[] getCmd(byte bRequest, int len, ushort wIndex = 0)
         {
             byte[] buf = new byte[len];
 
@@ -548,18 +549,18 @@ namespace WasatchNET
                 Opcodes.DEVICE_TO_HOST,     // bRequestType
                 bRequest,                   // bRequest,
                 0,                          // wValue,
-                0,                          // wIndex
+                wIndex,                     // wIndex
                 len);                       // wLength
 
             if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < len)
             {
-                logger.error("getCmd: failed to get 0x{0:x2} via DEVICE_TO_HOST ({1} bytes read)", bRequest, bytesRead);
+                logger.error("getCmd: failed to get 0x{0:x2} (index 0x{1:x4}) via DEVICE_TO_HOST ({2} bytes read)", bRequest, wIndex, bytesRead);
                 return null;
             }
             return buf;
         }
 
-        byte[] getCmd2(int wValue, int len)
+        byte[] getCmd2(ushort wValue, int len)
         {
             byte[] buf = new byte[len];
 
@@ -572,13 +573,13 @@ namespace WasatchNET
 
             if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < len)
             {
-                logger.error("getCmd2: failed to get SECOND_TIER_COMMAND 0x{0:x2} via DEVICE_TO_HOST ({1} bytes read)", wValue, bytesRead);
+                logger.error("getCmd2: failed to get SECOND_TIER_COMMAND 0x{0:x4} via DEVICE_TO_HOST ({1} bytes read)", wValue, bytesRead);
                 return null;
             }
             return buf;
         }
 
-        bool sendCmd(byte bRequest, int wValue = 0, int wIndex = 0)
+        bool sendCmd(byte bRequest, ushort wValue = 0, ushort wIndex = 0)
         {
             UsbSetupPacket setupPacket = new UsbSetupPacket(
                 Opcodes.HOST_TO_DEVICE,     // bRequestType
@@ -589,20 +590,53 @@ namespace WasatchNET
 
             if (!usbDevice.ControlTransfer(ref setupPacket, null, 0, out int bytesWritten))
             {
-                logger.error("sendCmd: failed to send 0x{0:x2} (0x{1:x2}, 0x{2:x2})", bRequest, wValue, wIndex);
+                logger.error("sendCmd: failed to send 0x{0:x2} (0x{1:x4}, 0x{2:x4})", bRequest, wValue, wIndex);
                 return false;
             }
             return true;
         }
 
+        #region unpackers
         ushort toUshort(byte[] buf)
         {
-            return (ushort)((buf == null) ? 0 : (buf[0] + (buf[1] << 8)));
+            if (buf == null)
+                return 0;
+
+            if (buf.Length == 1)
+                return buf[0];
+            else
+                return BitConverter.ToUInt16(buf, 0);
+        }
+
+        short toShort(byte[] buf)
+        {
+            if (buf == null)
+                return -1;
+
+            if (buf.Length == 1)
+                return buf[0];
+            else
+                return BitConverter.ToInt16(buf, 0);
+        }
+
+        uint toUint(byte[] buf)
+        {
+            if (buf == null)
+                return 0;
+
+            byte[] tmp = new byte[4];   // round up
+            Array.Copy(buf, tmp, buf.Length);
+            return BitConverter.ToUInt32(buf, 0);
         }
 
         int toInt(byte[] buf)
         {
-            return buf == null ? -1 : buf[0];
+            if (buf == null)
+                return -1;
+
+            byte[] tmp = new byte[4]; // round up
+            Array.Copy(buf, tmp, buf.Length);
+            return BitConverter.ToInt32(buf, 0);
         }
 
         bool toBool(byte[] buf)
@@ -635,17 +669,17 @@ namespace WasatchNET
                 ms = maxIntegrationTimeMS;
             }
 
-            uint LSW = ms % 65536;
-            uint MSW = ms / 65536;
+            ushort LSW = (ushort) (ms % 65536);
+            ushort MSW = (ushort) (ms / 65536);
 
             // cache for performance 
-            if (sendCmd(Opcodes.SET_INTEGRATION_TIME, (int) LSW, (int) MSW))
+            if (sendCmd(Opcodes.SET_INTEGRATION_TIME, LSW, MSW))
                 integrationTimeMS_ = ms;
         }
 
         public void linkLaserModToIntegrationTime(bool flag)
         {
-            sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, flag ? 1 : 0);
+            sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0));
         }
 
         /// <summary>
@@ -693,15 +727,49 @@ namespace WasatchNET
             return s;
         }
 
-        // simple get/set
+        public CCD_TRIGGER_SOURCE getCCDTriggerSource()
+        {
+            byte[] buf = getCmd(Opcodes.GET_CCD_TRIGGER_SOURCE, 1);
+            if (buf == null)
+                return CCD_TRIGGER_SOURCE.ERROR;
+            else if (buf[0] == 0)
+                return CCD_TRIGGER_SOURCE.USB;
+            else
+                return CCD_TRIGGER_SOURCE.EXTERNAL;
+        }
+
+        public EXTERNAL_TRIGGER_OUTPUT getExternalTriggerOutput()
+        {
+            byte[] buf = getCmd(Opcodes.GET_EXTERNAL_TRIGGER_OUTPUT, 1);
+            if (buf == null)
+                return EXTERNAL_TRIGGER_OUTPUT.ERROR;
+            else if (buf[0] == 0)
+                return EXTERNAL_TRIGGER_OUTPUT.LASER_MODULATION;
+            else
+                return EXTERNAL_TRIGGER_OUTPUT.INTEGRATION_ACTIVE_PULSE;
+        }
+
+        // simple gettors
         public ushort getLaserTemperatureRaw() { return toUshort(getCmd(Opcodes.GET_LASER_TEMP, 2)); } 
-        public void setDetectorTECEnable(bool flag) { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE, flag ? 1 : 0); } 
         public ushort getDetectorTemperatureRaw() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2)); } 
-        public void setLaserEnable(bool flag) { sendCmd(Opcodes.SET_LASER, flag ? 1 : 0); } 
-        public void setLaserMod(bool flag) { sendCmd(Opcodes.SET_LASER_MOD, flag ? 1 : 0); } 
-        public void setCCDTriggerSource(ushort source) { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, source); } 
-        public uint getLineLength() { return toUshort(getCmd2(Opcodes.GET_LINE_LENGTH, 2)); }
         public ushort getActualFrames() { return toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES, 2)); }
+        public uint   getLineLength() { return toUshort(getCmd2(Opcodes.GET_LINE_LENGTH, 2)); }
+        public short  getCCDGain() { return toShort(getCmd(Opcodes.GET_CCD_GAIN, 2)); }
+        public short  getCCDOffset() { return toShort(getCmd(Opcodes.GET_CCD_OFFSET, 2)); }
+        public ushort getCCDSensingThreshold() { return toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD, 2)); }
+        public bool   getCCDThresholdSensingMode() { return toBool(getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
+        public bool   getCCDTempEnabled() { return toBool(getCmd(Opcodes.GET_CCD_TEMP_ENABLE, 1)); }
+        public ushort getCCDTempSetpoint() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, 0)); }
+        public ushort getDAC() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, 1)); }
+        
+        // TODO: something's buggy with this one?
+        public uint   getActualIntegrationTime() { return toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 3)); }
+
+        // simple settors
+        public void setDetectorTECEnable(bool flag) { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE, (ushort)(flag ? 1 : 0)); } 
+        public void setLaserEnable(bool flag) { sendCmd(Opcodes.SET_LASER, (ushort) (flag ? 1 : 0)); } 
+        public void setLaserMod(bool flag) { sendCmd(Opcodes.SET_LASER_MOD, (ushort) (flag ? 1 : 0)); } 
+        public void setCCDTriggerSource(ushort source) { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, source); } 
         #endregion  
 
         ////////////////////////////////////////////////////////////////////////
