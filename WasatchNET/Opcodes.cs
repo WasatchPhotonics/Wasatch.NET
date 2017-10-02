@@ -73,15 +73,15 @@
         // wValue for SECOND_TIER_COMMAND
         public const byte GET_MODEL_CONFIG                         = 0x01; // impl
         public const byte SET_MODEL_CONFIG                         = 0x02;
-        public const byte GET_LINE_LENGTH                          = 0x03;
+        public const byte GET_LINE_LENGTH                          = 0x03; // impl
         public const byte READ_COMPILATION_OPTIONS                 = 0x04; // impl
-        public const byte OPT_INT_TIME_RES                         = 0x05;
-        public const byte OPT_DATA_HDR_TAB                         = 0x06;
-        public const byte OPT_CF_SELECT                            = 0x07;
-        public const byte OPT_LASER                                = 0x08;
-        public const byte OPT_LASER_CONTROL                        = 0x09;
-        public const byte OPT_AREA_SCAN                            = 0x0a;
-        public const byte OPT_ACT_INT_TIME                         = 0x0b;
-        public const byte OPT_HORIZONTAL_BINNING                   = 0x0c;
+        public const byte OPT_INT_TIME_RES                         = 0x05; // impl
+        public const byte OPT_DATA_HDR_TAB                         = 0x06; // impl
+        public const byte OPT_CF_SELECT                            = 0x07; // impl
+        public const byte OPT_LASER                                = 0x08; // impl
+        public const byte OPT_LASER_CONTROL                        = 0x09; // impl
+        public const byte OPT_AREA_SCAN                            = 0x0a; // impl
+        public const byte OPT_ACT_INT_TIME                         = 0x0b; // impl
+        public const byte OPT_HORIZONTAL_BINNING                   = 0x0c; // ipml
     }
 }

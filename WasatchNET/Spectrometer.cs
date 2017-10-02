@@ -100,7 +100,8 @@ namespace WasatchNET
         // public short laserTemperatureMin { get; private set; }
 
         // GET_MODEL_CONFIG (page 4)
-        public string userText { get; private set; } // TODO: writeable
+        public byte[] userData { get; private set; } 
+        public string userText { get { return parseString(userData); } }
 
         // GET_MODEL_CONFIG (page 5)
         public short[] badPixels { get; private set; }
@@ -355,7 +356,8 @@ namespace WasatchNET
                 // laserTemperatureMax  = parseInt16(pages[3], 12); // dupe
                 // laserTemperatureMin  = parseInt16(pages[3], 14); // dupe
 
-                userText = parseString(pages[4], 0, 63); // note: right-trimmed
+                userData = new byte[63];
+                Array.Copy(pages[4], userData, userData.Length);
 
                 for (int i = 0; i < 15; i++)
                     badPixels[i] = parseInt16(pages[5], i * 2);
@@ -417,8 +419,10 @@ namespace WasatchNET
         #endregion
         
         #region parsers
-        String parseString(byte[] buf, int index, int len)
+        String parseString(byte[] buf, int index = 0, int len = 0) 
         {
+            if (len == 0)
+                len = buf.Length;
             String s = "";
             for (int i = 0; i < len; i++)
             {
@@ -461,6 +465,7 @@ namespace WasatchNET
         }
         #endregion
 
+        #region FPGAOptions
         /// <summary>
         /// Read FPGA compiler options; for values, see ENG-0034.
         /// </summary>
@@ -482,14 +487,22 @@ namespace WasatchNET
             // bit   13: 0010 0000 0000 0000 fpgaHasActualIntegTime
             // bit   14: 0100 0000 0000 0000 fpgaHasHorizBinning
 
-            fpgaIntegrationTimeResolution = (FPGA_INTEG_TIME_RES) (word & 0x07);
-            fpgaDataHeader = (FPGA_DATA_HEADER) ((word & 0x0038) >> 3);
-            fpgaHasCFSelect = (word & 0x0040) != 0;
-            fpgaLaserType = (FPGA_LASER_TYPE)((word & 0x0180) >> 7);
-            fpgaLaserControl = (FPGA_LASER_CONTROL)((word & 0x0e00) >> 9);
-            fpgaHasAreaScan = (word & 0x1000) != 0;
-            fpgaHasActualIntegTime = (word & 0x2000) != 0;
-            fpgaHasHorizBinning = (word & 0x4000) != 0;
+            // Question: how would the ENUMs handle misconfigured spectrometers?
+            try
+            {
+                fpgaIntegrationTimeResolution = (FPGA_INTEG_TIME_RES) (word & 0x07);
+                fpgaDataHeader = (FPGA_DATA_HEADER) ((word & 0x0038) >> 3);
+                fpgaHasCFSelect = (word & 0x0040) != 0;
+                fpgaLaserType = (FPGA_LASER_TYPE)((word & 0x0180) >> 7);
+                fpgaLaserControl = (FPGA_LASER_CONTROL)((word & 0x0e00) >> 9);
+                fpgaHasAreaScan = (word & 0x1000) != 0;
+                fpgaHasActualIntegTime = (word & 0x2000) != 0;
+                fpgaHasHorizBinning = (word & 0x4000) != 0;
+            }
+            catch (Exception ex)
+            {
+                logger.error("failed to parse FPGA compilation options: {0}", ex.Message);
+            }
 
             if (logger.debugEnabled())
             {
@@ -503,6 +516,20 @@ namespace WasatchNET
                 logger.debug("  fpgaHasHorizBinning           = {0}", fpgaHasHorizBinning);
             }
         }
+
+        // Apparently we have one-shot USB calls for the above as well.
+        // For variety, and to handle misconfigured spectrometers, return
+        // these as ints rather than enums.
+        public int  getOptIntTimeRes()        { return toInt (getCmd2(Opcodes.OPT_INT_TIME_RES, 1)); }
+        public int  getOptDataHdrTab()        { return toInt (getCmd2(Opcodes.OPT_DATA_HDR_TAB, 1)); }
+        public bool getOptCFSelect()          { return toBool(getCmd2(Opcodes.OPT_CF_SELECT, 1)); } 
+        public int  getOptLaserType()         { return toInt (getCmd2(Opcodes.OPT_LASER, 1)); }
+        public int  getOptLaserControl()      { return toInt (getCmd2(Opcodes.OPT_LASER_CONTROL, 1)); } 
+        public bool getOptAreaScan()          { return toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); } 
+        public bool getOptActIntTime()        { return toBool(getCmd2(Opcodes.OPT_ACT_INT_TIME, 1)); } 
+        public bool getOptHorizontalBinning() { return toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); }
+
+        #endregion
 
         ////////////////////////////////////////////////////////////////////////
         // Utilities
@@ -563,10 +590,27 @@ namespace WasatchNET
             return true;
         }
 
+        ushort toUshort(byte[] buf)
+        {
+            return (ushort)((buf == null) ? 0 : (buf[0] + (buf[1] << 8)));
+        }
+
+        int toInt(byte[] buf)
+        {
+            return buf == null ? -1 : buf[0];
+        }
+
+        bool toBool(byte[] buf)
+        {
+            return buf != null && buf[0] != 0;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Spectrometer Comms
         ////////////////////////////////////////////////////////////////////////
 
+        /// <summary>
+        /// set the acquisition time in milliseconds
         /// </summary>
         /// <param name="ms">integration time in milliseconds</param>        
         /// <remarks>Does not currently support microsecond resolution</remarks>
@@ -641,43 +685,14 @@ namespace WasatchNET
             return s;
         }
 
-        public ushort getLaserTemperatureRaw()
-        {
-            byte[] buf = getCmd(Opcodes.GET_LASER_TEMP, 2);
-            if (buf == null)
-                return 0;
-
-            return (ushort) (buf[0] + (buf[1] << 8));
-        }
-
-        public void setDetectorTECEnable(bool flag)
-        {
-            sendCmd(Opcodes.SET_CCD_TEMP_ENABLE, flag ? 1 : 0);
-        }
-
-        public ushort getDetectorTemperatureRaw()
-        {
-            byte[] buf = getCmd(Opcodes.GET_CCD_TEMP, 2);
-            if (buf == null)
-                return 0;
-
-            return (ushort) (buf[0] + (buf[1] << 8));
-        }
-
-        public void setLaserEnable(bool flag)
-        {
-            sendCmd(Opcodes.SET_LASER, flag ? 1 : 0);
-        }
-
-        public void setLaserMod(bool flag)
-        {
-            sendCmd(Opcodes.SET_LASER_MOD, flag ? 1 : 0);
-        }
-
-        public void setCCDTriggerSource(ushort source)
-        {
-            sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, source);
-        }
+        // simple get/set
+        public ushort getLaserTemperatureRaw() { return toUshort(getCmd(Opcodes.GET_LASER_TEMP, 2)); } 
+        public void setDetectorTECEnable(bool flag) { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE, flag ? 1 : 0); } 
+        public ushort getDetectorTemperatureRaw() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2)); } 
+        public void setLaserEnable(bool flag) { sendCmd(Opcodes.SET_LASER, flag ? 1 : 0); } 
+        public void setLaserMod(bool flag) { sendCmd(Opcodes.SET_LASER_MOD, flag ? 1 : 0); } 
+        public void setCCDTriggerSource(ushort source) { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, source); } 
+        public uint getLineLength() { return toUshort(getCmd2(Opcodes.GET_LINE_LENGTH, 2)); }
 
         ////////////////////////////////////////////////////////////////////////
         // getSpectrum
