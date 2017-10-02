@@ -1,0 +1,7 @@
+.vs/
+Setup/Debug/
+WasatchNET/bin/
+WasatchNET/obj/
+WinFormDemo/bin/
+WinFormDemo/obj/
+lib/WasatchNET.dll

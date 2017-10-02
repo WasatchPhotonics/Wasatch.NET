@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using WasatchNET;
@@ -57,7 +53,6 @@ namespace WinFormDemo
         Dictionary<string, Tuple<TreeNode, string>> treeNodes = new Dictionary<string, Tuple<TreeNode, string>>();
         Dictionary<Spectrometer, SpectrometerState> spectrometerStates = new Dictionary<Spectrometer, SpectrometerState>();
         List<Series> traces = new List<Series>();
-        Mutex mut = new Mutex();
         bool graphWavenumbers;
         bool shutdownPending;
        
@@ -157,34 +152,35 @@ namespace WinFormDemo
 
         void updateGraph()
         {
-            mut.WaitOne();
-            foreach (Spectrometer spectrometer in spectrometers)
+            lock (spectrometers)
             {
-                SpectrometerState state = spectrometerStates[spectrometer];
-
-                if (state.spectrum == null)
-                    continue;
-
-                Series series = state.series;
-                series.Points.Clear();
-
-                if (graphWavenumbers && spectrometer.wavenumbers != null)
+                foreach (Spectrometer spectrometer in spectrometers)
                 {
-                    for (uint i = 0; i < spectrometer.pixels; i++)
-                        series.Points.AddXY(spectrometer.wavenumbers[i], state.spectrum[i]);
-                }
-                else
-                {
-                    for (uint i = 0; i < spectrometer.pixels; i++)
-                        series.Points.AddXY(spectrometer.wavelengths[i], state.spectrum[i]);
-                }
+                    SpectrometerState state = spectrometerStates[spectrometer];
 
-                // current spectrometer (now) has spectra, so allow darks and traces
-                if (spectrometer == currentSpectrometer)
-                    checkBoxTakeDark.Enabled = 
-                        buttonAddTrace.Enabled = true;
+                    if (state.spectrum == null)
+                        continue;
+
+                    Series series = state.series;
+                    series.Points.Clear();
+
+                    if (graphWavenumbers && spectrometer.wavenumbers != null)
+                    {
+                        for (uint i = 0; i < spectrometer.pixels; i++)
+                            series.Points.AddXY(spectrometer.wavenumbers[i], state.spectrum[i]);
+                    }
+                    else
+                    {
+                        for (uint i = 0; i < spectrometer.pixels; i++)
+                            series.Points.AddXY(spectrometer.wavelengths[i], state.spectrum[i]);
+                    }
+
+                    // current spectrometer (now) has spectra, so allow darks and traces
+                    if (spectrometer == currentSpectrometer)
+                        checkBoxTakeDark.Enabled =
+                            buttonAddTrace.Enabled = true;
+                }
             }
-            mut.ReleaseMutex();
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -443,7 +439,7 @@ namespace WinFormDemo
 
         private void comboBoxXAxis_SelectedIndexChanged(object sender, EventArgs e)
         {
-            graphWavenumbers = comboBoxXAxis.SelectedItem.ToString().ToUpper() == "WAVENUMBERS";
+            graphWavenumbers = "WAVENUMBER" == comboBoxXAxis.SelectedItem.ToString().ToUpper();
             chart1.ChartAreas[0].AxisX.Title = graphWavenumbers ? "Wavenumber (cm⁻¹)" : "Wavelength (nm)";
             updateGraph();
         }
@@ -481,65 +477,67 @@ namespace WinFormDemo
         private void checkBoxTakeDark_CheckedChanged(object sender, EventArgs e)
         {
             SpectrometerState state = spectrometerStates[currentSpectrometer];
-            mut.WaitOne();
-            if (checkBoxTakeDark.Checked)
+            lock (spectrometers)
             {
-                if (state.spectrum != null)
+                if (checkBoxTakeDark.Checked)
                 {
-                    currentSpectrometer.dark = state.spectrum;
-                    state.spectrum = new double[currentSpectrometer.pixels];
+                    if (state.spectrum != null)
+                    {
+                        currentSpectrometer.dark = state.spectrum;
+                        state.spectrum = new double[currentSpectrometer.pixels];
 
-                    checkBoxTakeReference.Enabled = true;
+                        checkBoxTakeReference.Enabled = true;
+                    }
+                }
+                else
+                {
+                    currentSpectrometer.dark = null;
+
+                    // if we have no dark, then we can have no reference
+                    state.reference = null;
+                    checkBoxTakeReference.Checked =
+                        checkBoxTakeReference.Enabled = false;
+
+                    // if we have no dark, we can do no processing
+                    radioButtonModeScope.Checked = true;
                 }
             }
-            else
-            {
-                currentSpectrometer.dark = null;
-
-                // if we have no dark, then we can have no reference
-                state.reference = null;
-                checkBoxTakeReference.Checked =
-                    checkBoxTakeReference.Enabled = false;
-
-                // if we have no dark, we can do no processing
-                radioButtonModeScope.Checked = true;
-            }
-            mut.ReleaseMutex();
         }
 
         private void checkBoxTakeReference_CheckedChanged(object sender, EventArgs e)
         {
             SpectrometerState state = spectrometerStates[currentSpectrometer];
-            mut.WaitOne();
-            bool success = false;
-            if (checkBoxTakeReference.Checked)
+            lock (spectrometers)
             {
-                if (state.spectrum != null)
+                bool success = false;
+                if (checkBoxTakeReference.Checked)
                 {
-                    // business logic should ensure this, but just in case
-                    if (currentSpectrometer.dark != null)
+                    if (state.spectrum != null)
                     {
-                        state.reference = new double[state.spectrum.Length];
-                        Array.Copy(state.spectrum, state.reference, state.spectrum.Length);
-                        success = true;
+                        // business logic should ensure this, but just in case
+                        if (currentSpectrometer.dark != null)
+                        {
+                            state.reference = new double[state.spectrum.Length];
+                            Array.Copy(state.spectrum, state.reference, state.spectrum.Length);
+                            success = true;
 
-                        radioButtonModeTransmission.Enabled = true;
-                        radioButtonModeAbsorbance.Enabled = true;
-                    }
-                    else
-                    {
-                        logger.error("Can't take reference without dark");
+                            radioButtonModeTransmission.Enabled = true;
+                            radioButtonModeAbsorbance.Enabled = true;
+                        }
+                        else
+                        {
+                            logger.error("Can't take reference without dark");
+                        }
                     }
                 }
-            }
 
-            if (!success)
-            {
-                state.reference = null;
-                radioButtonModeTransmission.Enabled = false;
-                radioButtonModeAbsorbance.Enabled = false;
+                if (!success)
+                {
+                    state.reference = null;
+                    radioButtonModeTransmission.Enabled = false;
+                    radioButtonModeAbsorbance.Enabled = false;
+                }
             }
-            mut.ReleaseMutex();
         }
 
         private void radioButtonModeScope_CheckedChanged(object sender, EventArgs e)
@@ -622,9 +620,8 @@ namespace WinFormDemo
                 double[] raw = spectrometer.getSpectrum();
 
                 // process for graphing
-                mut.WaitOne();
-                state.processSpectrum(raw);
-                mut.ReleaseMutex();
+                lock(spectrometers)
+                    state.processSpectrum(raw);
 
                 // report progress
                 // worker.ReportProgress(scanCount, spectrometer);

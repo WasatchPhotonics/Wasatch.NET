@@ -34,6 +34,14 @@ well.
 Users are welcome to rebuild the library in other configurations; please let us 
 know if you encounter any issues which we may help resolve.
 
+# Installation
+
+Wasatch.NET is distributed in a Microsoft Installer (.msi) file, which installs
+both WasatchNET.dll and accompanying WinFormDemo under 
+\Program Files (x86)\Wasatch Photonics.  The DLL, along with the dependency
+LibUsbDotNet.dll, are both in WinFormDemo\lib, giving you both the library and
+a means to verify its successful operation in a vendor-supplied test harness.
+
 # Documentation
 
 The wrapper is designed to closely mimic the USB API defined in the following 

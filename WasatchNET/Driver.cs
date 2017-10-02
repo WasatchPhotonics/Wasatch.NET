@@ -1,14 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using LibUsbDotNet;
-using LibUsbDotNet.Descriptors;
 using LibUsbDotNet.Info;
 using LibUsbDotNet.Main;
-using LibUsbDotNet.LudnMonoLibUsb;
 
 namespace WasatchNET
 {
@@ -17,7 +12,8 @@ namespace WasatchNET
         static readonly Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
 
-        Logger logger = Logger.getInstance();
+        public Logger logger = Logger.getInstance();
+        public string version { get; }
 
         ////////////////////////////////////////////////////////////////////////
         // static methods
@@ -104,6 +100,7 @@ namespace WasatchNET
 
         private Driver()
         {
+            version = String.Format("Wasatch.NET v{0}", Assembly.GetExecutingAssembly().GetName().Version.ToString());
         }
 
         ~Driver()

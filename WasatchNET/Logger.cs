@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
 using System.Windows.Forms;
-using System.Diagnostics;
-using System.Threading;
 using System.Globalization;
 
 namespace WasatchNET
@@ -19,7 +16,7 @@ namespace WasatchNET
 
         TextBox textBox = null;
         List<string> bufferedMessages;
-        static Mutex mut = new Mutex();
+        StreamWriter outfile;
 
         static public Logger getInstance()
         {
@@ -37,6 +34,11 @@ namespace WasatchNET
             textBox = tb;
         }
 
+        public void setPathname(string path)
+        {
+            outfile = new StreamWriter(path);
+        }
+
         string getTimestamp()
         {
             return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff: ", CultureInfo.InvariantCulture);
@@ -46,9 +48,8 @@ namespace WasatchNET
 
         public void error(string fmt, params Object[] obj)
         {
-            mut.WaitOne();
-            lastError = String.Format(String.Format(fmt, obj));
-            mut.ReleaseMutex();
+            lock (instance)
+                lastError = String.Format(String.Format(fmt, obj));
 
             if (level <= LogLevel.ERROR)
                 log(LogLevel.ERROR, fmt, obj);
@@ -69,24 +70,31 @@ namespace WasatchNET
         void log(LogLevel lvl, string fmt, params Object[] obj)
         {
             string msg = String.Format("{0} {1}: {2}", getTimestamp(), lvl, String.Format(fmt, obj));
-            mut.WaitOne();
-            if (bufferedMessages != null)
-                bufferedMessages.Add(msg);
-            Console.WriteLine(msg);
-            mut.ReleaseMutex();
+
+            lock (instance)
+            {
+                Console.WriteLine(msg);
+
+                if (outfile != null)
+                    outfile.WriteLine(msg);
+
+                if (bufferedMessages != null)
+                    bufferedMessages.Add(msg);
+            }
         }
 
         // display any queued messages to the associated TextBox, if there is one; clear the queue
         public void flush()
         {
-            mut.WaitOne();
-            if (textBox != null && bufferedMessages.Count != 0)
+            lock (instance)
             {
-                String joined = String.Join(Environment.NewLine, bufferedMessages) + Environment.NewLine;
-                bufferedMessages.Clear();
-                textBox.BeginInvoke(new MethodInvoker(delegate { textBox.AppendText(joined); }));
+                if (textBox != null && bufferedMessages.Count != 0)
+                {
+                    String joined = String.Join(Environment.NewLine, bufferedMessages) + Environment.NewLine;
+                    bufferedMessages.Clear();
+                    textBox.BeginInvoke(new MethodInvoker(delegate { textBox.AppendText(joined); }));
+                }
             }
-            mut.ReleaseMutex();
         }
 
         // write (not append) log to textfile

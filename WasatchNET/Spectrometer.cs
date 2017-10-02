@@ -1,15 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
 using LibUsbDotNet;
-using LibUsbDotNet.Descriptors;
-using LibUsbDotNet.Info;
 using LibUsbDotNet.Main;
-using LibUsbDotNet.LudnMonoLibUsb;
 
 namespace WasatchNET
 {
@@ -25,6 +18,13 @@ namespace WasatchNET
         public enum FPGA_LASER_TYPE { NONE, INTERNAL, EXTERNAL };
         public enum FPGA_LASER_CONTROL { MODULATION, TRANSITION_POINTS, RAMPING };
 
+        public class AcquisitionStatus
+        {
+            public ushort checksum;
+            public ushort frame;
+            public uint integTimeMS;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
@@ -36,8 +36,6 @@ namespace WasatchNET
 
         Logger logger = Logger.getInstance();
 
-        public uint integrationTimeMS = 0;
-
         ////////////////////////////////////////////////////////////////////////
         // Public properties
         ////////////////////////////////////////////////////////////////////////
@@ -45,11 +43,6 @@ namespace WasatchNET
         public uint pixels { get; private set; }
         public double[] wavelengths { get; private set; }
         public double[] wavenumbers { get; private set; }
-
-        // post-processing processing
-        public uint scanAveraging { get; set; }
-        public uint boxcarHalfWidth { get; set; }
-        public double[] dark { get; set; }
 
         // Feature Identification API
         public string descriptorSerialNum;
@@ -113,92 +106,60 @@ namespace WasatchNET
         public short[] badPixels { get; private set; }
 
         ////////////////////////////////////////////////////////////////////////
-        // Firmware Constants
+        // complex properties
         ////////////////////////////////////////////////////////////////////////
 
-        #region constants
-        // communication direction
-        const byte HOST_TO_DEVICE = 0x40;
-        const byte DEVICE_TO_HOST = 0xc0;
+        // Each of these has to have an explicit private version, because 
+        // synchronization requires an explicit setter and C# doesn't create 
+        // implicit private attibutes if you have an explicit accessor.
 
-        // bRequest commands
-        const byte ACQUIRE_CCD                              = 0xad; // impl
-        const byte GET_ACTUAL_FRAMES                        = 0xe4;
-        const byte GET_ACTUAL_INTEGRATION_TIME              = 0xdf;
-        const byte GET_CCD_GAIN                             = 0xc5;
-        const byte GET_CCD_OFFSET                           = 0xc4;
-        const byte GET_CCD_SENSING_THRESHOLD                = 0xd1;
-        const byte GET_CCD_TEMP                             = 0xd7; // impl
-        const byte GET_CCD_TEMP_ENABLE                      = 0xda;
-        const byte GET_CCD_TEMP_SETPOINT                    = 0xd9; // alias of GET_DAC
-        const byte GET_CCD_THRESHOLD_SENSING_MODE           = 0xcf;
-        const byte GET_CCD_TRIGGER_SOURCE                   = 0xd3;
-        const byte GET_CODE_REVISION                        = 0xc0; // impl
-        const byte GET_DAC                                  = 0xd9; // alias of GET_CCD_TEMP_SETPOINT
-        const byte GET_EXTERNAL_TRIGGER_OUTPUT              = 0xe1;
-        const byte GET_FPGA_REV                             = 0xb4; // impl
-        const byte GET_HORIZ_BINNING                        = 0xbc;
-        const byte GET_INTEGRATION_TIME                     = 0xbf; // impl
-        const byte GET_INTERLOCK                            = 0xef;
-        const byte GET_LASER                                = 0xe2;
-        const byte GET_LASER_MOD                            = 0xe3;
-        const byte GET_LASER_MOD_PULSE_WIDTH                = 0xdc;
-        const byte GET_LASER_RAMPING_MODE                   = 0xea;
-        const byte GET_LASER_TEMP                           = 0xd5; // impl
-        const byte GET_LASER_TEMP_SETPOINT                  = 0xe8;
-        const byte GET_LINK_LASER_MOD_TO_INTEGRATION_TIME   = 0xde;
-        const byte GET_MOD_DURATION                         = 0xc3;
-        const byte GET_MOD_PERIOD                           = 0xcb;
-        const byte GET_MOD_PULSE_DELAY                      = 0xca;
-        const byte GET_SELECTED_LASER                       = 0xee;
-        const byte GET_TRIGGER_DELAY                        = 0xab;
-        const byte LINK_LASER_MOD_TO_INTEGRATION_TIME       = 0xdd;
-        const byte POLL_DATA                                = 0xd4; // impl
-        const byte SECOND_TIER_COMMAND                      = 0xff; // impl
-        const byte SELECT_HORIZ_BINNING                     = 0xb8;
-        const byte SELECT_LASER                             = 0xed;
-        const byte SET_CCD_GAIN                             = 0xb7;
-        const byte SET_CCD_OFFSET                           = 0xb6;
-        const byte SET_CCD_SENSING_THRESHOLD                = 0xd0;
-        const byte SET_CCD_TEMP_ENABLE                      = 0xd6; // impl
-        const byte SET_CCD_TEMP_SETPOINT                    = 0xd8; // alias of SET_DAC
-        const byte SET_CCD_THRESHOLD_SENSING_MODE           = 0xce;
-        const byte SET_CCD_TRIGGER_SOURCE                   = 0xd2; // impl
-        const byte SET_DAC                                  = 0xd8; // alias of SET_CCD_TEMP_SETPOINT
-        const byte SET_EXTERNAL_TRIGGER_OUTPUT              = 0xe0;
-        const byte SET_INTEGRATION_TIME                     = 0xb2; // impl
-        const byte SET_LASER                                = 0xbe; // impl
-        const byte SET_LASER_MOD                            = 0xbd; // impl
-        const byte SET_LASER_MOD_DUR                        = 0xb9;
-        const byte SET_LASER_MOD_PULSE_WIDTH                = 0xdb;
-        const byte SET_LASER_RAMPING_MODE                   = 0xe9;
-        const byte SET_LASER_TEMP_SETPOINT                  = 0xe7;
-        const byte SET_MOD_PERIOD                           = 0xc7;
-        const byte SET_MOD_PULSE_DELAY                      = 0xc6;
-        const byte SET_TRIGGER_DELAY                        = 0xaa;
-        const byte VR_ENABLE_CCD_TEMP_CONTROL               = 0xd6;
-        const byte VR_GET_CCD_TEMP_CONTROL                  = 0xda;
-        const byte VR_GET_CONTINUOUS_CCD                    = 0xcc;
-        const byte VR_GET_LASER_TEMP                        = 0xd5;
-        const byte VR_GET_NUM_FRAMES                        = 0xcd;
-        const byte VR_READ_CCD_TEMPERATURE                  = 0xd7;
-        const byte VR_SET_CONTINUOUS_CCD                    = 0xc8;
-        const byte VR_SET_NUM_FRAMES                        = 0xc9;
+        // none of these attributes should be allowed to change mid-acquisition
+        object acquisitionLock = new object();
 
-        // wValue for SECOND_TIER_COMMAND
-        const byte GET_MODEL_CONFIG                         = 0x01; // impl
-        const byte SET_MODEL_CONFIG                         = 0x02;
-        const byte GET_LINE_LENGTH                          = 0x03;
-        const byte READ_COMPILATION_OPTIONS                 = 0x04; // impl
-        const byte OPT_INT_TIME_RES                         = 0x05;
-        const byte OPT_DATA_HDR_TAB                         = 0x06;
-        const byte OPT_CF_SELECT                            = 0x07;
-        const byte OPT_LASER                                = 0x08;
-        const byte OPT_LASER_CONTROL                        = 0x09;
-        const byte OPT_AREA_SCAN                            = 0x0a;
-        const byte OPT_ACT_INT_TIME                         = 0x0b;
-        const byte OPT_HORIZONTAL_BINNING                   = 0x0c;
-        #endregion
+        /// <summary>
+        /// Current integration time in milliseconds. Reading this property
+        /// returns a CACHED value for performance reasons; use getIntegrationTimeMS
+        /// to read from spectrometer.
+        /// </summary>
+        public uint integrationTimeMS
+        {
+            get { return integrationTimeMS_; }
+            set { lock (acquisitionLock) setIntegrationTimeMS(value); }
+        }
+        private uint integrationTimeMS_;
+
+        /// <summary>
+        /// How many acquisitions to average together (zero for no averaging)
+        /// </summary>
+        public uint scanAveraging
+        {
+            get { return scanAveraging_; }
+            set { lock(acquisitionLock) scanAveraging_ = value; }
+        }
+        private uint scanAveraging_;
+
+        /// <summary>
+        /// Perform post-acquisition high-frequency smoothing by averaging
+        /// together "n" pixels to either side of each acquired pixel; zero
+        /// to disable (default).
+        /// </summary>
+        public uint boxcarHalfWidth
+        {
+            get { return boxcarHalfWidth_;  }
+            set { lock (acquisitionLock) boxcarHalfWidth_ = value; }
+        }
+        private uint boxcarHalfWidth_;
+
+        /// <summary>
+        /// Perform automatic dark subtraction by setting this property to
+        /// an acquired dark spectrum; leave "null" to disable.
+        /// </summary>
+        public double[] dark
+        {
+            get { return dark_; }
+            set { lock(acquisitionLock) dark_ = value; }
+        }
+        private double[] dark_;
 
         ////////////////////////////////////////////////////////////////////////
         // Lifecycle
@@ -324,9 +285,9 @@ namespace WasatchNET
                 byte[] buf = new byte[64];
 
                 UsbSetupPacket setupPacket = new UsbSetupPacket(
-                    DEVICE_TO_HOST,             // bRequestType
-                    SECOND_TIER_COMMAND,        // bRequest,
-                    GET_MODEL_CONFIG,           // wValue,
+                    Opcodes.DEVICE_TO_HOST,     // bRequestType
+                    Opcodes.SECOND_TIER_COMMAND,// bRequest,
+                    Opcodes.GET_MODEL_CONFIG,   // wValue,
                     page,                       // wIndex
                     buf.Length);                // wLength
 
@@ -453,8 +414,8 @@ namespace WasatchNET
             for (int i = 0; i < badPixels.Length; i++)
                 logger.debug("badPixels[{0}]      = {1}", i, badPixels[i]);
         }
-#endregion
-
+        #endregion
+        
         #region parsers
         String parseString(byte[] buf, int index, int len)
         {
@@ -505,7 +466,7 @@ namespace WasatchNET
         /// </summary>
         void readCompilationOptions()
         {
-            byte[] buf = getCmd2(READ_COMPILATION_OPTIONS, 2);
+            byte[] buf = getCmd2(Opcodes.READ_COMPILATION_OPTIONS, 2);
             if (buf == null)
                 return;
 
@@ -552,7 +513,7 @@ namespace WasatchNET
             byte[] buf = new byte[len];
 
             UsbSetupPacket setupPacket = new UsbSetupPacket(
-                DEVICE_TO_HOST,             // bRequestType
+                Opcodes.DEVICE_TO_HOST,     // bRequestType
                 bRequest,                   // bRequest,
                 0,                          // wValue,
                 0,                          // wIndex
@@ -571,8 +532,8 @@ namespace WasatchNET
             byte[] buf = new byte[len];
 
             UsbSetupPacket setupPacket = new UsbSetupPacket(
-                DEVICE_TO_HOST,             // bRequestType
-                SECOND_TIER_COMMAND,        // bRequest,
+                Opcodes.DEVICE_TO_HOST,     // bRequestType
+                Opcodes.SECOND_TIER_COMMAND,// bRequest,
                 wValue,                     // wValue,
                 0,                          // wIndex
                 len);                       // wLength
@@ -588,7 +549,7 @@ namespace WasatchNET
         bool sendCmd(byte bRequest, int wValue = 0, int wIndex = 0)
         {
             UsbSetupPacket setupPacket = new UsbSetupPacket(
-                HOST_TO_DEVICE,             // bRequestType
+                Opcodes.HOST_TO_DEVICE,     // bRequestType
                 bRequest,                   // bRequest,
                 wValue,                     // wValue,
                 wIndex,                     // wIndex
@@ -625,34 +586,36 @@ namespace WasatchNET
             uint LSW = ms % 65536;
             uint MSW = ms / 65536;
 
-            // cache for convenience
-            if (sendCmd(SET_INTEGRATION_TIME, (int) LSW, (int) MSW))
-                integrationTimeMS = ms;
+            // cache for performance 
+            if (sendCmd(Opcodes.SET_INTEGRATION_TIME, (int) LSW, (int) MSW))
+                integrationTimeMS_ = ms;
         }
 
         public void linkLaserModToIntegrationTime(bool flag)
         {
-            sendCmd(LINK_LASER_MOD_TO_INTEGRATION_TIME, flag ? 1 : 0);
+            sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, flag ? 1 : 0);
         }
 
-        public int getIntegrationTimeMS()
+        /// <summary>
+        /// Actually reads integration time from the spectrometer.
+        /// </summary>
+        /// <returns>integration time in milliseconds</returns>
+        public uint getIntegrationTimeMS()
         {
-            byte[] buf = getCmd(GET_INTEGRATION_TIME, 6);
+            byte[] buf = getCmd(Opcodes.GET_INTEGRATION_TIME, 6);
             if (buf == null)
-                return -1;
+                return 0;
 
             int ms =  buf[0]
                    + (buf[1] << 8)
                    + (buf[2] << 16);
 
-            integrationTimeMS = (uint)ms;
-
-            return ms;
+            return integrationTimeMS_ = (uint)ms;
         }
 
         public string getFPGARev()
         {
-            byte[] buf = getCmd(GET_FPGA_REV, 7);
+            byte[] buf = getCmd(Opcodes.GET_FPGA_REV, 7);
 
             string s = "";
             for (uint i = 0; i < 7; i++)
@@ -663,7 +626,7 @@ namespace WasatchNET
 
         public string getFirmwareRev()
         {
-            byte[] buf = getCmd(GET_CODE_REVISION, 4);
+            byte[] buf = getCmd(Opcodes.GET_CODE_REVISION, 4);
             if (buf == null)
                 return "ERROR";
 
@@ -680,7 +643,7 @@ namespace WasatchNET
 
         public ushort getLaserTemperatureRaw()
         {
-            byte[] buf = getCmd(GET_LASER_TEMP, 2);
+            byte[] buf = getCmd(Opcodes.GET_LASER_TEMP, 2);
             if (buf == null)
                 return 0;
 
@@ -689,12 +652,12 @@ namespace WasatchNET
 
         public void setDetectorTECEnable(bool flag)
         {
-            sendCmd(SET_CCD_TEMP_ENABLE, flag ? 1 : 0);
+            sendCmd(Opcodes.SET_CCD_TEMP_ENABLE, flag ? 1 : 0);
         }
 
         public ushort getDetectorTemperatureRaw()
         {
-            byte[] buf = getCmd(GET_CCD_TEMP, 2);
+            byte[] buf = getCmd(Opcodes.GET_CCD_TEMP, 2);
             if (buf == null)
                 return 0;
 
@@ -703,17 +666,17 @@ namespace WasatchNET
 
         public void setLaserEnable(bool flag)
         {
-            sendCmd(SET_LASER, flag ? 1 : 0);
+            sendCmd(Opcodes.SET_LASER, flag ? 1 : 0);
         }
 
         public void setLaserMod(bool flag)
         {
-            sendCmd(SET_LASER_MOD, flag ? 1 : 0);
+            sendCmd(Opcodes.SET_LASER_MOD, flag ? 1 : 0);
         }
 
         public void setCCDTriggerSource(ushort source)
         {
-            sendCmd(SET_CCD_TRIGGER_SOURCE, source);
+            sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, source);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -723,79 +686,64 @@ namespace WasatchNET
         // includes scan averaging, boxcar and dark subtraction
         public double[] getSpectrum()
         {
-            double[] sum = getSpectrumRaw();
-            if (sum == null)
-                return null;
-
-            if (scanAveraging > 0)
+            lock (acquisitionLock)
             {
-                for (uint i = 1; i < scanAveraging; i++)
+                double[] sum = getSpectrumRaw();
+                if (sum == null)
+                    return null;
+
+                if (scanAveraging_ > 0)
                 {
-                    double[] tmp = getSpectrumRaw();
-                    if (tmp == null)
-                        return null;
+                    for (uint i = 1; i < scanAveraging_; i++)
+                    {
+                        double[] tmp = getSpectrumRaw();
+                        if (tmp == null)
+                            return null;
+
+                        for (int px = 0; px < pixels; px++)
+                            sum[px] += tmp[px];
+                    }
 
                     for (int px = 0; px < pixels; px++)
-                        sum[px] += tmp[px];
+                        sum[px] /= scanAveraging_;
                 }
 
-                for (int px = 0; px < pixels; px++)
-                    sum[px] /= scanAveraging;
+                if (dark != null && dark.Length == sum.Length)
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] -= dark_[px];
+
+                if (boxcarHalfWidth_ > 0)
+                    return Util.applyBoxcar(boxcarHalfWidth_, sum);
+                else
+                    return sum;
             }
-
-            // TODO: we have a race condition here, if a caller sets dark to null in the middle of this loop
-            double[] tmpDark = dark;
-            if (tmpDark != null && tmpDark.Length == sum.Length)
-                for (int px = 0; px < pixels; px++)
-                    sum[px] -= tmpDark[px];
-
-            if (boxcarHalfWidth > 0)
-                return Util.applyBoxcar(boxcarHalfWidth, sum);
-            else
-                return sum;
         }
 
         // just the bytes, ma'am
         double[] getSpectrumRaw()
         {
-            // TODO: refactor into smaller methods
-
-            ////////////////////////////////////////////////////////////////////
             // STEP ONE: request a spectrum
-            ////////////////////////////////////////////////////////////////////
-
-            DateTime timeRequest = DateTime.Now;
-            UsbSetupPacket setupPacket = new UsbSetupPacket(
-                HOST_TO_DEVICE,             // bRequestType
-                ACQUIRE_CCD,                // bRequest,
-                0,                          // wValue,
-                0,                          // wIndex
-                0);                         // wLength
-
-            int bytesWritten = 0;
-            if (!usbDevice.ControlTransfer(ref setupPacket, null, 0, out bytesWritten))
-            {
-                logger.error("failed to send ACQUIRE_CCD");
+            if (!sendCmd(Opcodes.ACQUIRE_CCD))
                 return null;
-            }
 
-            ////////////////////////////////////////////////////////////////////
             // STEP TWO: wait for acquisition to complete
-            ////////////////////////////////////////////////////////////////////
+
+            // rather than banging at the control endpoint, sleep for most of it
+            if (integrationTimeMS_ > 5)
+                Thread.Sleep((int)(integrationTimeMS_ - 5));
 
             if (!blockUntilDataReady())
                 return null;
-            DateTime timeComplete = DateTime.Now;
 
-            ////////////////////////////////////////////////////////////////////
             // STEP THREE: read spectrum
-            ////////////////////////////////////////////////////////////////////
-
+            //
             // NOTE: API recommends reading this in four 512-byte chunks. I got
             //       occasional timeout errors on the last chunk when following
             //       that procedure. Checking Enlighten source code, it seemed
             //       to perform the read in a single 2048-byte block. That seems
             //       to work well here too.
+
+            // note: hardcoded to 16-bit
             byte[] response = new byte[pixels * 2]; 
 
             double[] spec = new double[pixels];
@@ -840,74 +788,55 @@ namespace WasatchNET
                 }
             }
 
-            ////////////////////////////////////////////////////////////////////
             // STEP FOUR: read status
-            ////////////////////////////////////////////////////////////////////
-
-            // spectrum status is currently unimplemented in firmware
-            if (false)
-            {
-                byte[] status = new byte[8];
-                try
-                {
-                    bytesRead = 0;
-                    ErrorCode err = statusReader.Read(status, timeoutMS, out bytesRead);
-
-                    if (bytesRead >= 7 && err == ErrorCode.Ok)
-                    {
-                        ushort checksum = (ushort)(status[0] + (status[1] << 8));
-                        ushort frame = (ushort)(status[2] + (status[3] << 8));
-                        uint integTimeMS = (uint)(status[4] + (status[5] << 8) + (status[6] << 16));
-
-                        logger.debug("getSpectrum: status = 0x{0:x2}{1:x2} {2:x2}{3:x2} {4:x2}{5:x2}{6:x2} (checksum {8}, frame {9}, integTimeMS {10})",
-                            status[0], status[1], status[2], status[3], status[4], status[5], status[6], status[7],
-                            checksum, frame, integTimeMS);
-
-                        if (sum != checksum)
-                            logger.error("getSpectrum: sum {0} != checksum {1}", sum, checksum);
-                    }
-                    else
-                    {
-                        logger.error("getSpectrum: only read {0} bytes of status (ErrorCode {1})", bytesRead, err);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.error("getSpectrum: caught exception when reading status: {0}", ex.Message);
-                }
-            }
-
-            if (false && logger.debugEnabled())
-            {
-                TimeSpan withReadout = DateTime.Now - timeRequest;
-                TimeSpan actualIntegration = timeComplete - timeRequest;
-                logger.debug("getSpectrum: read {0} pixels in {1:f2}ms ({2:f2}ms integration)", 
-                    pixels, withReadout.TotalMilliseconds, actualIntegration.TotalMilliseconds);
-            }
+            // AcquisitionStatus status = getAcquisitionStatus();
+            // if (status != null)
+            //     if (sum != status.checksum)
+            //         logger.error("getSpectrum: sum {0} != checksum {1}", sum, status.checksum);
 
             return spec;
         }
 
+        // spectrum status is currently unimplemented in firmware
+        public AcquisitionStatus getAcquisitionStatus()
+        {
+            const int timeoutMS = 2;
+            byte[] buf = new byte[8];
+            try
+            {
+                int bytesRead = 0;
+                ErrorCode err = statusReader.Read(buf, timeoutMS, out bytesRead);
+                if (bytesRead >= 7 && err == ErrorCode.Ok)
+                {
+                    AcquisitionStatus status = new AcquisitionStatus();
+                    status.checksum = (ushort)(buf[0] + (buf[1] << 8));
+                    status.frame = (ushort)(buf[2] + (buf[3] << 8));
+                    status.integTimeMS = (uint)(buf[4] + (buf[5] << 8) + (buf[6] << 16));
+                    return status;
+                }
+                else
+                    logger.error("Could not read acquisition status; error = {0}", err);
+            }
+            catch (Exception ex)
+            {
+                logger.error("Could not read acquisition status: exception = {0}", ex.Message);
+            }
+            return null;
+        }
+
         public bool blockUntilDataReady()
         {
-            // Empirically found adequate in developer testing
-            const int SLEEP_UNDERRUN = 5;
-
-            // rather than banging at the control endpoint, sleep for most of it
-            if (integrationTimeMS > SLEEP_UNDERRUN)
-                Thread.Sleep((int)(integrationTimeMS - SLEEP_UNDERRUN));
-
             // construct a poll packet for re-use
             byte[] pollResponse = new byte[4];
             UsbSetupPacket pollPacket = new UsbSetupPacket(
-                DEVICE_TO_HOST,             // bRequestType
-                POLL_DATA,                  // bRequest,
+                Opcodes.DEVICE_TO_HOST,     // bRequestType
+                Opcodes.POLL_DATA,          // bRequest,
                 0,                          // wValue,
                 0,                          // wIndex
                 0);                         // wLength
 
             // give it an extra 100ms buffer before we give up
-            uint timeoutMS = integrationTimeMS + 100;
+            uint timeoutMS = integrationTimeMS_ + 100;
             DateTime expiration = DateTime.Now.AddMilliseconds(timeoutMS);
 
             while (DateTime.Now < expiration)
