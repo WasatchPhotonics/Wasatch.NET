@@ -3,7 +3,51 @@
 Wasatch.NET is an application-level wrapper over Wasatch Photonics' USB 
 API. It is provided so that application developers don't need to worry about
 opcodes and [de]marshalling octets of raw data; they can simply call high-level
-methods like setIntegrationTimeMS() and getSpectrum().
+properties and methods like integrationTimeMS and getSpectrum().
+
+Wasatch.NET is expected to work from all .NET-compatible languages, including:
+
+- C#
+- F#
+- Xamarin
+- Visual Basic.NET
+- Visual Basic for Applications (Excel)
+- LabVIEW (tested with 2017)
+- Embarcadero Delphi
+
+If there are others you would like to see listed, please let us know and we'll 
+test them!
+
+# Quick Start
+
+API docs: http://www.wasatchphotonics.com/api/Wasatch.NET/
+
+\code{.cs}
+
+    WasatchNET.Driver driver = WasatchNET.Driver.getInstance();
+    if (driver.openAllSpectrometers() > 0)
+    {
+        WasatchNET.Spectrometer spectrometer = driver.getSpectrometer(0);
+        spectrometer.integrationTimeMS = 100;
+        double[] spectrum = spectrometer.getSpectrum();
+    }
+
+\endcode
+
+Key classes:
+
+- WasatchNET.Driver 
+- WasatchNET.Spectrometer
+- WasatchNET.Util (post-acquisition spectral processing)
+
+The driver is designed to closely mimic the USB API defined in the following 
+documents:
+
+- http://wasatchdevices.com/wp-content/uploads/2017/02/OEM-WP-Raman-USB-Interface-Spec-Rev1\_4.pdf
+- http://wasatchdevices.com/wp-content/uploads/2016/08/OEM-API-Specification.pdf
+
+Therefore, most questions about parameters, modes and options can likely be
+resolved by review of the underlying spectrometer USB interface.
 
 # Dependencies
 
@@ -38,20 +82,9 @@ know if you encounter any issues which we may help resolve.
 
 Wasatch.NET is distributed in a Microsoft Installer (.msi) file, which installs
 both WasatchNET.dll and accompanying WinFormDemo under 
-\Program Files (x86)\Wasatch Photonics.  The DLL, along with the dependency
-LibUsbDotNet.dll, are both in WinFormDemo\lib, giving you both the library and
+\\Program Files (x86)\\Wasatch Photonics.  The DLL, along with the dependency
+LibUsbDotNet.dll, are both in WinFormDemo\\lib, giving you both the library and
 a means to verify its successful operation in a vendor-supplied test harness.
-
-# Documentation
-
-The wrapper is designed to closely mimic the USB API defined in the following 
-documents:
-
-- http://wasatchdevices.com/wp-content/uploads/2017/02/OEM-WP-Raman-USB-Interface-Spec-Rev1\_4.pdf
-- http://wasatchdevices.com/wp-content/uploads/2016/08/OEM-API-Specification.pdf
-
-Therefore, most questions about parameters, modes and options can likely be
-resolved by review of the underlying spectrometer USB interface.
 
 # Support
 
@@ -87,7 +120,6 @@ That said, some known areas for improvement can be found in our Backlog
 
 # Backlog
 
-- [ ] implement "Save" in demo
 - [ ] cover all API functions
 - [ ] Doxygen rendered API documentation
 
@@ -96,8 +128,11 @@ That said, some known areas for improvement can be found in our Backlog
 - [x] expand GET\_MODEL\_CONFIG to include new pages from OEM API
 - [x] populate more config fields in WinFormDemo
 - [x] post to GitHub
+- [x] implement "Save" in demo
 
 # Version History
 
-- 2017-09-29 ver 1.0.0.0   initial GitHub release
-- 2017-09-25 ver 0.0.1.0   initial creation
+- 2017-10-02 initial Doxygen
+- 2017-09-29 initial GitHub release
+- 2017-09-25 initial creation
+

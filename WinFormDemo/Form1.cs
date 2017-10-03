@@ -200,103 +200,89 @@ namespace WinFormDemo
             if (currentSpectrometer == null)
                 return;
 
-            ////////////////////////////////////////////////////////////////////
-            // methods 
-            ////////////////////////////////////////////////////////////////////
-
-            updateSetting("firmwareRev", currentSpectrometer.getFirmwareRev());
-            updateSetting("fpgaRev", currentSpectrometer.getFPGARev());
-            updateSetting("integrationTimeMS", currentSpectrometer.getIntegrationTimeMS());
-            updateSetting("frame", currentSpectrometer.getActualFrames());
-            if (currentSpectrometer.fpgaHasActualIntegTime)
-                updateSetting("actualIntegrationTimeMS", currentSpectrometer.getActualIntegrationTime());
-
-            ////////////////////////////////////////////////////////////////////
-            // properties
-            ////////////////////////////////////////////////////////////////////
-
-            updateSetting("pixels", currentSpectrometer.pixels);
-            updateSetting("model", currentSpectrometer.model);
-            updateSetting("serialNumber", currentSpectrometer.serialNumber);
+            updateSetting("ROIHorizEnd", currentSpectrometer.ROIHorizEnd);
+            updateSetting("ROIHorizStart", currentSpectrometer.ROIHorizStart);
+            updateSetting("activePixelsHoriz", currentSpectrometer.activePixelsHoriz);
+            updateSetting("activePixelsVert", currentSpectrometer.activePixelsVert);
+            updateSetting("actualHoriz", currentSpectrometer.actualHoriz);
             updateSetting("baudRate", currentSpectrometer.baudRate);
-            updateSetting("hasCooling", currentSpectrometer.hasCooling);
-            updateSetting("hasBattery", currentSpectrometer.hasBattery);
-            updateSetting("hasLaser", currentSpectrometer.hasLaser);
+            updateSetting("calibrationBy", currentSpectrometer.calibrationBy);
+            updateSetting("calibrationDate", currentSpectrometer.calibrationDate);
+            updateSetting("ccdGain", currentSpectrometer.getCCDGain());
+            updateSetting("ccdOffset", currentSpectrometer.getCCDOffset());
+            updateSetting("ccdSensingThreshold", currentSpectrometer.getCCDSensingThreshold());
+            updateSetting("ccdTempEnable", currentSpectrometer.getCCDTempEnabled());
+            updateSetting("ccdTempSetpoint", currentSpectrometer.getCCDTempSetpoint());
+            updateSetting("ccdThresholdSensingMode", currentSpectrometer.getCCDThresholdSensingMode());
+            updateSetting("ccdTriggerSource", currentSpectrometer.getCCDTriggerSource());
+            updateSetting("dac", currentSpectrometer.getDAC());
+            updateSetting("detectorName", currentSpectrometer.detectorName);
+            updateSetting("detectorTempMax", currentSpectrometer.detectorTempMax);
+            updateSetting("detectorTempMin", currentSpectrometer.detectorTempMin);
             updateSetting("excitationNM", currentSpectrometer.excitationNM);
+            updateSetting("externalTriggerOutput", currentSpectrometer.getExternalTriggerOutput());
+            updateSetting("firmwareRev", currentSpectrometer.getFirmwareRev());
+            updateSetting("fpgaDataHeader", currentSpectrometer.fpgaDataHeader);
+            updateSetting("fpgaHasActualIntegTime", currentSpectrometer.fpgaHasActualIntegTime);
+            updateSetting("fpgaHasAreaScan", currentSpectrometer.fpgaHasAreaScan);
+            updateSetting("fpgaHasCFSelect", currentSpectrometer.fpgaHasCFSelect);
+            updateSetting("fpgaHasHorizBinning", currentSpectrometer.fpgaHasHorizBinning);
+            updateSetting("fpgaIntegrationTimeResolution", currentSpectrometer.fpgaIntegrationTimeResolution);
+            updateSetting("fpgaLaserControl", currentSpectrometer.fpgaLaserControl);
+            updateSetting("fpgaLaserType", currentSpectrometer.fpgaLaserType);
+            updateSetting("fpgaRev", currentSpectrometer.getFPGARev());
+            updateSetting("frame", currentSpectrometer.getActualFrames());
+            updateSetting("hasBattery", currentSpectrometer.hasBattery);
+            updateSetting("hasCooling", currentSpectrometer.hasCooling);
+            updateSetting("hasLaser", currentSpectrometer.hasLaser);
+            updateSetting("horizBinning", currentSpectrometer.getHorizBinning());
+            updateSetting("integrationTimeMS", currentSpectrometer.getIntegrationTimeMS());
+            updateSetting("maxIntegrationTimeMS", currentSpectrometer.maxIntegrationTimeMS);
+            updateSetting("minIntegrationTimeMS", currentSpectrometer.minIntegrationTimeMS);
+            updateSetting("model", currentSpectrometer.model);
+            updateSetting("pixels", currentSpectrometer.pixels);
+            updateSetting("serialNumber", currentSpectrometer.serialNumber);
             updateSetting("slitSizeUM", currentSpectrometer.slitSizeUM);
+            updateSetting("thermistorBeta", currentSpectrometer.thermistorResistanceAt298K);
+            updateSetting("thermistorResistanceAt298K", currentSpectrometer.thermistorResistanceAt298K);
+            updateSetting("userText", currentSpectrometer.userText);
 
+            // arrays
             for (int i = 0; i < currentSpectrometer.wavecalCoeffs.Length; i++)
                 updateSetting("wavecalCoeff" + i, currentSpectrometer.wavecalCoeffs[i]);
             for (int i = 0; i < currentSpectrometer.detectorTempCoeffs.Length; i++)
                 updateSetting("detectorTempCoeff" + i, currentSpectrometer.detectorTempCoeffs[i]);
-            updateSetting("detectorTempMin", currentSpectrometer.detectorTempMin);
-            updateSetting("detectorTempMax", currentSpectrometer.detectorTempMax);
             for (int i = 0; i < currentSpectrometer.adcCoeffs.Length; i++)
                 updateSetting("adcCoeff" + i, currentSpectrometer.adcCoeffs[i]);
-            updateSetting("thermistorResistanceAt298K", currentSpectrometer.thermistorResistanceAt298K);
-            updateSetting("thermistorBeta", currentSpectrometer.thermistorResistanceAt298K);
-            updateSetting("calibrationDate", currentSpectrometer.calibrationDate);
-            updateSetting("calibrationBy", currentSpectrometer.calibrationBy);
-
-            updateSetting("detectorName", currentSpectrometer.detectorName);
-            updateSetting("activePixelsHoriz", currentSpectrometer.activePixelsHoriz);
-            updateSetting("activePixelsVert", currentSpectrometer.activePixelsVert);
-            updateSetting("minIntegrationTimeMS", currentSpectrometer.minIntegrationTimeMS);
-            updateSetting("maxIntegrationTimeMS", currentSpectrometer.maxIntegrationTimeMS);
-            updateSetting("actualHoriz", currentSpectrometer.actualHoriz);
-            updateSetting("ROIHorizStart", currentSpectrometer.ROIHorizStart);
-            updateSetting("ROIHorizEnd", currentSpectrometer.ROIHorizEnd);
             for (int i = 0; i < currentSpectrometer.ROIVertRegionStart.Length; i++)
                 updateSetting(String.Format("ROIVertRegion{0}Start", i + 1), currentSpectrometer.ROIVertRegionStart[i]);
             for (int i = 0; i < currentSpectrometer.ROIVertRegionEnd.Length; i++)
                 updateSetting(String.Format("ROIVertRegion{0}End", i + 1), currentSpectrometer.ROIVertRegionEnd[i]);
-
-            updateSetting("userText", currentSpectrometer.userText);
-
             for (int i = 0; i < currentSpectrometer.badPixels.Length; i++)
                 updateSetting("badPixels" + i, currentSpectrometer.badPixels[i] == -1 ? "" 
                                              : currentSpectrometer.badPixels[i].ToString());
 
-            updateSetting("fpgaIntegrationTimeResolution", currentSpectrometer.fpgaIntegrationTimeResolution);
-            updateSetting("fpgaDataHeader", currentSpectrometer.fpgaDataHeader);
-            updateSetting("fpgaHasCFSelect", currentSpectrometer.fpgaHasCFSelect);
-            updateSetting("fpgaLaserType", currentSpectrometer.fpgaLaserType);
-            updateSetting("fpgaLaserControl", currentSpectrometer.fpgaLaserControl);
-            updateSetting("fpgaHasAreaScan", currentSpectrometer.fpgaHasAreaScan);
-            updateSetting("fpgaHasActualIntegTime", currentSpectrometer.fpgaHasActualIntegTime);
-            updateSetting("fpgaHasHorizBinning", currentSpectrometer.fpgaHasHorizBinning);
-
-            updateSetting("ccdGain", currentSpectrometer.getCCDGain());
-            updateSetting("ccdOffset", currentSpectrometer.getCCDOffset());
-            updateSetting("ccdSensingThreshold", currentSpectrometer.getCCDSensingThreshold());
-            updateSetting("ccdThresholdSensingMode", currentSpectrometer.getCCDThresholdSensingMode());
-            updateSetting("ccdTempEnable", currentSpectrometer.getCCDTempEnabled());
-            updateSetting("ccdTempSetpoint", currentSpectrometer.getCCDTempSetpoint());
-            updateSetting("dac", currentSpectrometer.getDAC());
-            updateSetting("ccdTriggerSource", currentSpectrometer.getCCDTriggerSource());
-            updateSetting("externalTriggerOutput", currentSpectrometer.getExternalTriggerOutput());
+            // conditionals
+            if (currentSpectrometer.fpgaHasActualIntegTime)
+                updateSetting("actualIntegrationTimeMS", currentSpectrometer.getActualIntegrationTime());
         }
 
         void stubTreeView()
         {
+            // grouped by category
             stubSetting("model",                    "Identity/Model");
             stubSetting("serialNumber",             "Identity/Serial Number");
 
             stubSetting("firmwareRev",              "Version/Firmware Rev");
             stubSetting("fpgaRev",                  "Version/FPGA Rev");
 
-            stubSetting("baudRate",                 "Comms/Baud Rate");
-
             stubSetting("slitSizeUM",               "Optics/Slit Size (µm)");
 
-            stubSetting("fpgaIntegrationTimeResolution", "FPGA/Integ Time Resolution (enum)");
-            stubSetting("fpgaDataHeader",           "FPGA/Data Header");
-            stubSetting("fpgaHasCFSelect",          "FPGA/Has CF Select");
-            stubSetting("fpgaLaserType",            "FPGA/Laser Type");
-            stubSetting("fpgaLaserControl",         "FPGA/Laser Control");
-            stubSetting("fpgaHasAreaScan",          "FPGA/Has Area Scan");
-            stubSetting("fpgaHasActualIntegTime",   "FPGA/Has Actual Integration Time");
-            stubSetting("fpgaHasHorizBinning",      "FPGA/Has Horiz Binning");
+            stubSetting("baudRate",                 "Comms/Baud Rate");
+
+            stubSetting("hasCooling",               "Features/Has Cooling");
+            stubSetting("hasLaser",                 "Features/Has Laser");
+            stubSetting("hasBattery",               "Features/Has Battery");
 
             stubSetting("integrationTimeMS",        "Acquisition/Integration Time (ms)");
             stubSetting("actualIntegrationTimeMS",  "Acquisition/Integration/Actual (ms)");
@@ -315,22 +301,10 @@ namespace WinFormDemo
             stubSetting("detectorTempCoeff2",       "Detector/Temperature Calibration/Coeff2");
             stubSetting("detectorTempMin",          "Detector/Temperature Limits/Min");
             stubSetting("detectorTempMax",          "Detector/Temperature Limits/Max");
-
-            stubSetting("hasCooling",               "Features/Has Cooling");
-            stubSetting("hasLaser",                 "Features/Has Laser");
-            stubSetting("hasBattery",               "Features/Has Battery");
-
             stubSetting("pixels",                   "Detector/Pixels/Spectrum Length");
             stubSetting("activePixelsHoriz",        "Detector/Pixels/Active/Horizontal");
             stubSetting("activePixelsVert",         "Detector/Pixels/Active/Vertical");
             stubSetting("actualHoriz",              "Detector/Pixels/Actual/Horizontal");
-            stubSetting("ROIHorizStart",            "Detector/ROI/Horiz/Start)");
-            stubSetting("ROIHorizEnd",              "Detector/ROI/Horiz/End");
-            for (int i = 1; i < 4; i++)
-            {
-                stubSetting(String.Format("ROIVertRegion{0}Start", i), String.Format("Detector/ROI/Vert/Region{0}/Start", i));
-                stubSetting(String.Format("ROIVertRegion{0}End",   i), String.Format("Detector/ROI/Vert/Region{0}/End", i));
-            }
             stubSetting("ccdTempEnable",            "Detector/TEC/Enabled");
             stubSetting("ccdTempSetpoint",          "Detector/TEC/Setpoint");
             stubSetting("ccdTemp",                  "Detector/TEC/Temperature");
@@ -341,11 +315,13 @@ namespace WinFormDemo
             stubSetting("ccdSensingThreshold",      "Detector/CCD/Sensing Threshold");
             stubSetting("ccdThresholdSensingMode",  "Detector/CCD/Threshold Sensing Mode");
             stubSetting("horizBinning",             "Detector/Horizontal Binning");
-
-            stubSetting("ccdTriggerDelay",          "Triggering/Delay (us)");
-            stubSetting("ccdTriggerSource",         "Triggering/Source");
-            stubSetting("externalTriggerOutput",    "Triggering/External Output");
-
+            stubSetting("ROIHorizStart",            "Detector/ROI/Horiz/Start)");
+            stubSetting("ROIHorizEnd",              "Detector/ROI/Horiz/End");
+            for (int i = 1; i < 4; i++)
+            {
+                stubSetting(String.Format("ROIVertRegion{0}Start", i), String.Format("Detector/ROI/Vert/Region{0}/Start", i));
+                stubSetting(String.Format("ROIVertRegion{0}End",   i), String.Format("Detector/ROI/Vert/Region{0}/End", i));
+            }
             for (int i = 0; i < 15; i++)
                 stubSetting("badPixels" + i, "Detector/Bad Pixels/Index " + i);
 
@@ -365,6 +341,19 @@ namespace WinFormDemo
             stubSetting("interlock",                "Laser/Interlock");
             for (int i = 0; i < 3; i++)
                 stubSetting("adcCoeff" + i, "Laser/TEC/ADC/Coeff" + i);
+
+            stubSetting("ccdTriggerDelay",          "Triggering/Delay (us)");
+            stubSetting("ccdTriggerSource",         "Triggering/Source");
+            stubSetting("externalTriggerOutput",    "Triggering/External Output");
+
+            stubSetting("fpgaIntegrationTimeResolution", "FPGA/Integ Time Resolution (enum)");
+            stubSetting("fpgaDataHeader",           "FPGA/Data Header");
+            stubSetting("fpgaHasCFSelect",          "FPGA/Has CF Select");
+            stubSetting("fpgaLaserType",            "FPGA/Laser Type");
+            stubSetting("fpgaLaserControl",         "FPGA/Laser Control");
+            stubSetting("fpgaHasAreaScan",          "FPGA/Has Area Scan");
+            stubSetting("fpgaHasActualIntegTime",   "FPGA/Has Actual Integration Time");
+            stubSetting("fpgaHasHorizBinning",      "FPGA/Has Horiz Binning");
 
             stubSetting("calibrationDate",          "Manufacture/Date");
             stubSetting("calibrationBy",            "Manufacture/Technician");

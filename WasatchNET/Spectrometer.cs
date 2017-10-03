@@ -6,19 +6,20 @@ using LibUsbDotNet.Main;
 
 namespace WasatchNET
 {
+    public enum FPGA_INTEG_TIME_RES { ONE_MS, TEN_MS, SWITCHABLE, ERROR };
+    public enum FPGA_DATA_HEADER { NONE, OCEAN_OPTICS, WASATCH, ERROR };
+    public enum FPGA_LASER_TYPE { NONE, INTERNAL, EXTERNAL, ERROR };
+    public enum FPGA_LASER_CONTROL { MODULATION, TRANSITION_POINTS, RAMPING, ERROR };
+    public enum CCD_TRIGGER_SOURCE { USB, EXTERNAL, ERROR };
+    public enum EXTERNAL_TRIGGER_OUTPUT {  LASER_MODULATION, INTEGRATION_ACTIVE_PULSE, ERROR };
+    public enum HORIZ_BINNING { NONE, TWO_PIXEL, FOUR_PIXEL, ERROR };
+
     // For WP spectrometer API, see "WP Raman USB Interface Specification r1.4"
     public class Spectrometer
     {
         ////////////////////////////////////////////////////////////////////////
         // Inner types
         ////////////////////////////////////////////////////////////////////////
-
-        public enum FPGA_INTEG_TIME_RES { ONE_MS, TEN_MS, SWITCHABLE };
-        public enum FPGA_DATA_HEADER { NONE, OCEAN_OPTICS, WASATCH };
-        public enum FPGA_LASER_TYPE { NONE, INTERNAL, EXTERNAL };
-        public enum FPGA_LASER_CONTROL { MODULATION, TRANSITION_POINTS, RAMPING };
-        public enum CCD_TRIGGER_SOURCE { USB, EXTERNAL, ERROR };
-        public enum EXTERNAL_TRIGGER_OUTPUT {  LASER_MODULATION, INTEGRATION_ACTIVE_PULSE, ERROR };
 
         public class AcquisitionStatus
         {
@@ -730,23 +731,44 @@ namespace WasatchNET
         public CCD_TRIGGER_SOURCE getCCDTriggerSource()
         {
             byte[] buf = getCmd(Opcodes.GET_CCD_TRIGGER_SOURCE, 1);
-            if (buf == null)
-                return CCD_TRIGGER_SOURCE.ERROR;
-            else if (buf[0] == 0)
-                return CCD_TRIGGER_SOURCE.USB;
-            else
-                return CCD_TRIGGER_SOURCE.EXTERNAL;
+            if (buf != null)
+            {
+                switch(buf[0])
+                {
+                    case 0: return CCD_TRIGGER_SOURCE.USB;
+                    case 1: return CCD_TRIGGER_SOURCE.EXTERNAL;
+                }
+            }
+            return CCD_TRIGGER_SOURCE.ERROR;
         }
 
         public EXTERNAL_TRIGGER_OUTPUT getExternalTriggerOutput()
         {
             byte[] buf = getCmd(Opcodes.GET_EXTERNAL_TRIGGER_OUTPUT, 1);
-            if (buf == null)
-                return EXTERNAL_TRIGGER_OUTPUT.ERROR;
-            else if (buf[0] == 0)
-                return EXTERNAL_TRIGGER_OUTPUT.LASER_MODULATION;
-            else
-                return EXTERNAL_TRIGGER_OUTPUT.INTEGRATION_ACTIVE_PULSE;
+            if (buf != null)
+            {
+                switch(buf[0])
+                {
+                    case 0: return EXTERNAL_TRIGGER_OUTPUT.LASER_MODULATION;
+                    case 1: return EXTERNAL_TRIGGER_OUTPUT.INTEGRATION_ACTIVE_PULSE;
+                }
+            }
+            return EXTERNAL_TRIGGER_OUTPUT.ERROR;
+        }
+
+        public HORIZ_BINNING getHorizBinning()
+        {
+            byte[] buf = getCmd(Opcodes.GET_EXTERNAL_TRIGGER_OUTPUT, 1);
+            if (buf != null)
+            {
+                switch (buf[0])
+                {
+                    case 0: return HORIZ_BINNING.NONE;
+                    case 1: return HORIZ_BINNING.TWO_PIXEL;
+                    case 2: return HORIZ_BINNING.FOUR_PIXEL;
+                }
+            }
+            return HORIZ_BINNING.ERROR;
         }
 
         // simple gettors

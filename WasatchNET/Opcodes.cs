@@ -22,7 +22,7 @@
         public const byte GET_CODE_REVISION                        = 0xc0; // impl
         public const byte GET_EXTERNAL_TRIGGER_OUTPUT              = 0xe1; // impl
         public const byte GET_FPGA_REV                             = 0xb4; // impl
-        public const byte GET_HORIZ_BINNING                        = 0xbc;
+        public const byte GET_HORIZ_BINNING                        = 0xbc; // impl
         public const byte GET_INTEGRATION_TIME                     = 0xbf; // impl
         public const byte GET_INTERLOCK                            = 0xef;
         public const byte GET_LASER                                = 0xe2;

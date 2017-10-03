@@ -60,7 +60,7 @@ namespace WasatchNET
         /// spectra have already been dark-corrected.
         /// </summary>
         /// <param name="darkCorrectedReference">dark-corrected reference spectrum</param>
-        /// <param name="darkCorrectedSpectrum">dark-corrected sample spectrum</param>
+        /// <param name="darkCorrectedSample">dark-corrected sample spectrum</param>
         /// <returns>transmission or reflectance spectrum</returns>
         public static double[] computeTransmission(double[] darkCorrectedReference, double[] darkCorrectedSample)
         {
@@ -100,14 +100,12 @@ namespace WasatchNET
         /// <summary>
         /// Same as computeAbsorbance(dark, reference, sample), but assumes that both reference and sample have been previously dark-corrected.
         /// </summary>
-        /// <param name="darkCorrectedReference"></param>
-        /// <param name="darkCorrectedSpectrum"></param>
-        /// <param name="reference">dark-corrected reference spectrum of the light source shining through the reference medium (e.g. cuvette filled with air or water)</param>
-        /// <param name="sample">dark-corrected sample spectrum light source shining through the sample</param>
+        /// <param name="darkCorrectedReference">dark-corrected reference spectrum of the light source shining through the reference medium (e.g. cuvette filled with air or water)</param>
+        /// <param name="darkCorrectedSample">dark-corrected sample spectrum light source shining through the sample</param>
         /// <returns>absorbance spectrum in AU</returns>
-        public static double[] computeAbsorbance(double[] darkCorrectedReference, double[] darkCorrectedSpectrum)
+        public static double[] computeAbsorbance(double[] darkCorrectedReference, double[] darkCorrectedSample)
         {
-            if (darkCorrectedReference == null || darkCorrectedSpectrum == null || darkCorrectedReference.Length != darkCorrectedSpectrum.Length)
+            if (darkCorrectedReference == null || darkCorrectedSample == null || darkCorrectedReference.Length != darkCorrectedSample.Length)
             {
                 logger.error("computeAbsorbance: invalid argument");
                 return null;
@@ -115,7 +113,7 @@ namespace WasatchNET
 
             double[] a = new double[darkCorrectedReference.Length];
             for (int i = 0; i < a.Length; i++)
-                a[i] = 0 - Math.Log10(darkCorrectedSpectrum[i] / darkCorrectedReference[i]);
+                a[i] = 0 - Math.Log10(darkCorrectedSample[i] / darkCorrectedReference[i]);
             return a;
         }
 
