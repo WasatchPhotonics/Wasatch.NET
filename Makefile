@@ -5,6 +5,7 @@ help:
 
 doc:
 	@echo "Rendering Doxygen..."
+	@mkdir -p doc/doxygen
 	@doxygen 1>doxygen.out 2>doxygen.err
 
 clean:
@@ -15,6 +16,7 @@ clean:
             Setup/Release \
             Setup/Debug \
             lib/WasatchNET.dll \
-            doc/doxygen/* \
-            doxygen.* \
+            doc/doxygen \
+            doxygen.out \
+            doxygen.err \
             .vs

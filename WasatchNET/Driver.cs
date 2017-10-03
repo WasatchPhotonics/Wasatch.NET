@@ -7,6 +7,14 @@ using LibUsbDotNet.Main;
 
 namespace WasatchNET
 {
+    /// <summary>
+    /// Singleton providing access to individual Spectrometer instances,
+    /// while providing high-level support infrastructure like a master
+    /// version string, reusable logger etc.
+    ///
+    /// In defiance of Microsoft convention, there are no Hungarian 
+    /// prefixes, and camelCase is used throughout. Sorry.
+    /// </summary>
     public sealed class Driver
     {
         static readonly Driver instance = new Driver();
@@ -19,6 +27,11 @@ namespace WasatchNET
         // static methods
         ////////////////////////////////////////////////////////////////////////
 
+        /// <summary>
+        /// Get a handle to the Driver Singleton. Idempotent (can be called 
+        /// repeatedly with no side-effects).
+        /// </summary>
+        /// <returns>reference to the Driver Singleton</returns>
         public static Driver getInstance()
         {
             return instance;
@@ -28,8 +41,18 @@ namespace WasatchNET
         // public methods
         ////////////////////////////////////////////////////////////////////////
 
+        /// <summary>
+        /// Iterate over all discoverable Wasatch Photonics USB spectrometers,
+        /// and return the number found. Individual spectrometers can then be
+        /// accessed via the getSpectrometer(index) call.
+        /// </summary>
+        /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
         public int openAllSpectrometers()
         {
+            SortedDictionary<string, List<Spectrometer>> sorted = new SortedDictionary<string, List<Spectrometer>>();
+
+            UsbDevice.UsbErrorEvent += OnUsbError;
+
             UsbRegDeviceList deviceRegistries = UsbDevice.AllDevices;
             foreach (UsbRegistry usbRegistry in deviceRegistries)
             {
@@ -50,8 +73,14 @@ namespace WasatchNET
                     Spectrometer spectrometer = new Spectrometer(usbRegistry);
                     if (spectrometer.open())
                     {
-                        spectrometers.Add(spectrometer);
-                        logger.debug("openAllSpectrometers: index {0}: {1}", spectrometers.Count - 1, desc);
+                        // sort them by model, serial (allow duplicates for unconfigured)
+                        // TODO: is there any way to deterministically sort between units
+                        //       without a configured unique serial number?
+                        string key = String.Format("{0}-{1}", spectrometer.model, spectrometer.serialNumber);
+                        if (!sorted.ContainsKey(key))
+                            sorted.Add(key, new List<Spectrometer>());
+                        sorted[key].Add(spectrometer);
+                        logger.debug("openAllSpectrometers: found key {0} ({1})", key, desc);
                     }
                     else
                     {
@@ -64,16 +93,36 @@ namespace WasatchNET
                 }
             }
 
-            // TODO: sort spectrometers for deterministic behavior
+            // add to final list in sorted order
+            foreach (KeyValuePair<string, List<Spectrometer>> pair in sorted)
+            {
+                foreach (Spectrometer s in pair.Value)
+                {
+                    spectrometers.Add(s);
+                    logger.debug("openAllSpectrometers: index {0}: {1} {2}", spectrometers.Count - 1, s.model, s.serialNumber);
+                }
+            }
 
             return spectrometers.Count;
         }
 
+        /// <summary>
+        /// How many Wasatch USB spectrometers were found.
+        /// </summary>
+        /// <returns></returns>
         public int getNumberOfSpectrometers()
         {
             return spectrometers.Count;
         }
 
+        /// <summary>
+        /// Obtains a reference to the specified spectrometer, performing any 
+        /// prelimary "open" / instantiation steps required to leave the spectrometer
+        /// fully ready for use.
+        /// </summary>
+        /// <param name="index">zero-indexed (should be less than the value returned by openAllSpectrometers() / getNumberOfSpectrometers())</param>
+        /// <remarks>Spectrometers are deterministically ordered by (model, serialNumber) for repeatability.</remarks>
+        /// <returns>a reference to the requested Spectrometer object, or null on error</returns>
         public Spectrometer getSpectrometer(int index)
         {
             if (index < spectrometers.Count)
@@ -81,16 +130,22 @@ namespace WasatchNET
             return null;
         }
 
+        /// <summary>
+        /// Automatically called as part of application shutdown (can be called manually).
+        /// </summary>
         public void closeAllSpectrometers()
         {
-            if (spectrometers.Count > 0)
+            lock(this)
             {
-                foreach (Spectrometer spectrometer in spectrometers)
+                if (spectrometers.Count > 0)
                 {
-                    spectrometer.close();
+                    foreach (Spectrometer spectrometer in spectrometers)
+                    {
+                        spectrometer.close();
+                    }
+                    spectrometers.Clear();
+                    UsbDevice.Exit();
                 }
-                spectrometers.Clear();
-                UsbDevice.Exit();
             }
         }
 
@@ -186,9 +241,9 @@ namespace WasatchNET
             }
         }
 
-        private void OnUsbError(object sender, UsbError usbError)
+        void OnUsbError(object sender, UsbError usbError)
         {
-            logger.error(usbError.ToString());
+            logger.debug("WasatchNET.Driver: UsbError: {0}", usbError.ToString());
         }
     }
 }

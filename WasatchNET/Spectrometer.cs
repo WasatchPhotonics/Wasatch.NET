@@ -6,17 +6,51 @@ using LibUsbDotNet.Main;
 
 namespace WasatchNET
 {
-    public enum FPGA_INTEG_TIME_RES { ONE_MS, TEN_MS, SWITCHABLE, ERROR };
-    public enum FPGA_DATA_HEADER { NONE, OCEAN_OPTICS, WASATCH, ERROR };
-    public enum FPGA_LASER_TYPE { NONE, INTERNAL, EXTERNAL, ERROR };
-    public enum FPGA_LASER_CONTROL { MODULATION, TRANSITION_POINTS, RAMPING, ERROR };
-    public enum CCD_TRIGGER_SOURCE { USB, EXTERNAL, ERROR };
-    public enum EXTERNAL_TRIGGER_OUTPUT {  LASER_MODULATION, INTEGRATION_ACTIVE_PULSE, ERROR };
-    public enum HORIZ_BINNING { NONE, TWO_PIXEL, FOUR_PIXEL, ERROR };
-
-    // For WP spectrometer API, see "WP Raman USB Interface Specification r1.4"
+    /// <summary>
+    /// Encapsulates a logical Wasatch Photonics spectrometer for communication. 
+    /// </summary>
+    ///
+    /// <remarks>
+    /// For WP spectrometer API, see "WP Raman USB Interface Specification r1.4"
+    ///
+    /// NOT rigorously tested for thread-safety. It MAY be thread-safe, 
+    /// it WILL be thread-safe, but currently it is not GUARANTEED thread-safe.
+    /// The only synchronization at present are some locks around getSpectrum()
+    /// and clearly-related properties like integrationTimeMS, dark, 
+    /// scansToAverage, boxcarHalfWidth etc. 
+    ///
+    /// Currently the only supported bus is USB (using LibUsbDotNet). There are
+    /// relatively few accesses to the raw USB objects in this implementation, 
+    /// so it should be relatively easy to refactor to support Bluetooth, 
+    /// Ethernet etc when I get test units.
+    ///
+    /// Most features are provided as methods, with only a few acquisition-related
+    /// features provided as properties. I don't have a strong reason for this,
+    /// and may change things. Basically, I wanted to distinguish between 
+    /// properties that I knew would be accessed frequently from application code
+    /// (e.g. pixels, wavelengths, integrationTime) and should therefore be cached in
+    /// the driver, versus settings that should always be communicated 
+    /// explicitly with the spectrometer (e.g. laser enable status). Also, it 
+    /// seemed efficient to unpack GetModelConfig and FPGACompilationOptions 
+    /// into cached properties rather than making each into duplicate API calls.
+    ///
+    /// Nevertheless...it seems more ".NET"-ish to expose most get/set pairs as
+    /// properties.  This clay remains soft.
+    ///
+    /// KNOWN ISSUES:
+    /// - Locking doesn't seem sufficient to synchronize parallel calls from
+    ///   Settings.updateAll() and BackgroundWorkerAcquisition in WinFormDemo.
+    ///   Not sure what I'm missing.
+    /// </remarks>
     public class Spectrometer
     {
+        ////////////////////////////////////////////////////////////////////////
+        // Constants
+        ////////////////////////////////////////////////////////////////////////
+
+        public const byte HOST_TO_DEVICE = 0x40;
+        public const byte DEVICE_TO_HOST = 0xc0;
+
         ////////////////////////////////////////////////////////////////////////
         // Inner types
         ////////////////////////////////////////////////////////////////////////
@@ -37,7 +71,11 @@ namespace WasatchNET
         UsbEndpointReader spectralReader;
         UsbEndpointReader statusReader;
 
+        Dictionary<Opcodes, byte> cmd = OpcodeUtil.getDictionary();
         Logger logger = Logger.getInstance();
+
+        object acquisitionLock = new object();
+        object commsLock = new object();
 
         #region properties
 
@@ -118,9 +156,6 @@ namespace WasatchNET
         // Each of these has to have an explicit private version, because 
         // synchronization requires an explicit setter and C# doesn't create 
         // implicit private attibutes if you have an explicit accessor.
-
-        // none of these attributes should be allowed to change mid-acquisition
-        object acquisitionLock = new object();
 
         /// <summary>
         /// Current integration time in milliseconds. Reading this property
@@ -294,16 +329,19 @@ namespace WasatchNET
                 byte[] buf = new byte[64];
 
                 UsbSetupPacket setupPacket = new UsbSetupPacket(
-                    Opcodes.DEVICE_TO_HOST,     // bRequestType
-                    Opcodes.SECOND_TIER_COMMAND,// bRequest,
-                    Opcodes.GET_MODEL_CONFIG,   // wValue,
-                    page,                       // wIndex
-                    buf.Length);                // wLength
+                    DEVICE_TO_HOST,                     // bRequestType
+                    cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest,
+                    cmd[Opcodes.GET_MODEL_CONFIG],      // wValue,
+                    page,                               // wIndex
+                    buf.Length);                        // wLength
 
-                if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead))
+                lock (commsLock)
                 {
-                    logger.error("failed GET_MODEL_CONFIG (page {0}, {1} bytes read)", page, bytesRead);
-                    return false;
+                    if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead))
+                    {
+                        logger.error("failed GET_MODEL_CONFIG (page {0}, {1} bytes read)", page, bytesRead);
+                        return false;
+                    }
                 }
                 pages.Add(buf);
                 format.Add(buf[63]); // page format is always last byte
@@ -542,62 +580,116 @@ namespace WasatchNET
         // Utilities
         ////////////////////////////////////////////////////////////////////////
 
-        byte[] getCmd(byte bRequest, int len, ushort wIndex = 0)
+        /// <summary>
+        /// Execute a request-response control transaction using the given opcode.
+        /// </summary>
+        /// <param name="opcode">the opcode of the desired request</param>
+        /// <param name="len">the number of needed return bytes</param>
+        /// <param name="wIndex">an optional numeric argument used by some opcodes</param>
+        /// <param name="fullLen">the actual number of expected return bytes (not all needed)</param>
+        /// <returns>the array of returned bytes (null on error)</returns>
+        byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
+        {
+            int bytesToRead = fullLen == 0 ? len : fullLen;
+            byte[] buf = new byte[bytesToRead];
+
+            UsbSetupPacket setupPacket = new UsbSetupPacket(
+                DEVICE_TO_HOST, // bRequestType
+                cmd[opcode],    // bRequest,
+                0,              // wValue,
+                wIndex,         // wIndex
+                bytesToRead);   // wLength
+
+            // Question: if the device returns 6 bytes on Endpoint 0, but I only
+            // need the first so pass byte[1], are the other 5 bytes discarded or
+            // queued for the next ControlTransfer?
+            lock (commsLock)
+            {
+                if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < bytesToRead)
+                {
+                    logger.error("getCmd: failed to get {0} (0x{1:x2}) with index 0x{2:x4} via DEVICE_TO_HOST ({3} bytes read)",
+                        opcode.ToString(), cmd[opcode], wIndex, bytesRead);
+                    return null;
+                }
+            }
+
+            if (fullLen == 0)
+                return buf;
+
+            // extract just the bytes we really needed
+            byte[] tmp = new byte[len];
+            Array.Copy(buf, tmp, len);
+            return tmp;
+        }
+
+        /// <summary>
+        /// Execute a request-response transfer with a "second-tier" request.
+        /// </summary>
+        /// <param name="opcode">the wValue to send along with the "second-tier" command</param>
+        /// <param name="len">how many bytes of response are expected</param>
+        /// <returns>array of returned bytes (null on error)</returns>
+        byte[] getCmd2(Opcodes opcode, int len)
         {
             byte[] buf = new byte[len];
 
             UsbSetupPacket setupPacket = new UsbSetupPacket(
-                Opcodes.DEVICE_TO_HOST,     // bRequestType
-                bRequest,                   // bRequest,
-                0,                          // wValue,
-                wIndex,                     // wIndex
-                len);                       // wLength
+                DEVICE_TO_HOST,                     // bRequestType
+                cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest,
+                cmd[opcode],                        // wValue,
+                0,                                  // wIndex
+                len);                               // wLength
 
-            if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < len)
+            lock (commsLock)
             {
-                logger.error("getCmd: failed to get 0x{0:x2} (index 0x{1:x4}) via DEVICE_TO_HOST ({2} bytes read)", bRequest, wIndex, bytesRead);
-                return null;
+                if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < len)
+                {
+                    logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} bytes read)",
+                        opcode.ToString(), cmd[opcode], bytesRead);
+                    return null;
+                }
             }
             return buf;
         }
 
-        byte[] getCmd2(ushort wValue, int len)
-        {
-            byte[] buf = new byte[len];
-
-            UsbSetupPacket setupPacket = new UsbSetupPacket(
-                Opcodes.DEVICE_TO_HOST,     // bRequestType
-                Opcodes.SECOND_TIER_COMMAND,// bRequest,
-                wValue,                     // wValue,
-                0,                          // wIndex
-                len);                       // wLength
-
-            if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < len)
-            {
-                logger.error("getCmd2: failed to get SECOND_TIER_COMMAND 0x{0:x4} via DEVICE_TO_HOST ({1} bytes read)", wValue, bytesRead);
-                return null;
-            }
-            return buf;
-        }
-
-        bool sendCmd(byte bRequest, ushort wValue = 0, ushort wIndex = 0)
+        /// <summary>
+        /// send a single control transfer command, with no response expected
+        /// </summary>
+        /// <param name="opcode">the desired command</param>
+        /// <param name="wValue">an optional secondary argument used by some commands</param>
+        /// <param name="wIndex">an optional tertiary argument used by some commands</param>
+        /// <returns>true on success, false on error</returns>
+        bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0)
         {
             UsbSetupPacket setupPacket = new UsbSetupPacket(
-                Opcodes.HOST_TO_DEVICE,     // bRequestType
-                bRequest,                   // bRequest,
-                wValue,                     // wValue,
-                wIndex,                     // wIndex
-                0);                         // wLength
+                HOST_TO_DEVICE, // bRequestType
+                cmd[opcode],    // bRequest,
+                wValue,         // wValue,
+                wIndex,         // wIndex
+                0);             // wLength
 
-            if (!usbDevice.ControlTransfer(ref setupPacket, null, 0, out int bytesWritten))
+            lock (commsLock)
             {
-                logger.error("sendCmd: failed to send 0x{0:x2} (0x{1:x4}, 0x{2:x4})", bRequest, wValue, wIndex);
-                return false;
+                if (!usbDevice.ControlTransfer(ref setupPacket, null, 0, out int bytesWritten))
+                {
+                    logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4})",
+                        opcode.ToString(), cmd[opcode], wValue, wIndex);
+                    return false;
+                }
             }
             return true;
         }
 
         #region unpackers
+        bool toBool(byte[] buf)
+        {
+            return buf != null && buf[0] != 0;
+        }
+
+        byte toByte(byte[] buf)
+        {
+            return (byte) ((buf == null) ? 0 : buf[0]);
+        }
+
         ushort toUshort(byte[] buf)
         {
             if (buf == null)
@@ -627,7 +719,7 @@ namespace WasatchNET
 
             byte[] tmp = new byte[4];   // round up
             Array.Copy(buf, tmp, buf.Length);
-            return BitConverter.ToUInt32(buf, 0);
+            return BitConverter.ToUInt32(tmp, 0);
         }
 
         int toInt(byte[] buf)
@@ -637,12 +729,17 @@ namespace WasatchNET
 
             byte[] tmp = new byte[4]; // round up
             Array.Copy(buf, tmp, buf.Length);
-            return BitConverter.ToInt32(buf, 0);
+            return BitConverter.ToInt32(tmp, 0);
         }
 
-        bool toBool(byte[] buf)
+        UInt64 toUint64(byte[] buf)
         {
-            return buf != null && buf[0] != 0;
+            if (buf == null)
+                return 0;
+
+            byte[] tmp = new byte[8];   // round up
+            Array.Copy(buf, tmp, buf.Length);
+            return BitConverter.ToUInt64(tmp, 0);
         }
         #endregion
 
@@ -689,7 +786,7 @@ namespace WasatchNET
         /// <returns>integration time in milliseconds</returns>
         public uint getIntegrationTimeMS()
         {
-            byte[] buf = getCmd(Opcodes.GET_INTEGRATION_TIME, 6);
+            byte[] buf = getCmd(Opcodes.GET_INTEGRATION_TIME, 3, fullLen: 6);
             if (buf == null)
                 return 0;
 
@@ -772,26 +869,51 @@ namespace WasatchNET
         }
 
         // simple gettors
-        public ushort getLaserTemperatureRaw() { return toUshort(getCmd(Opcodes.GET_LASER_TEMP, 2)); } 
-        public ushort getDetectorTemperatureRaw() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2)); } 
         public ushort getActualFrames() { return toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES, 2)); }
-        public uint   getLineLength() { return toUshort(getCmd2(Opcodes.GET_LINE_LENGTH, 2)); }
+        public ushort getDetectorTemperatureRaw() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2)); } 
         public short  getCCDGain() { return toShort(getCmd(Opcodes.GET_CCD_GAIN, 2)); }
         public short  getCCDOffset() { return toShort(getCmd(Opcodes.GET_CCD_OFFSET, 2)); }
         public ushort getCCDSensingThreshold() { return toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD, 2)); }
-        public bool   getCCDThresholdSensingMode() { return toBool(getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
+        public bool   getCCDThresholdSensingEnabled() { return toBool(getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
         public bool   getCCDTempEnabled() { return toBool(getCmd(Opcodes.GET_CCD_TEMP_ENABLE, 1)); }
-        public ushort getCCDTempSetpoint() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, 0)); }
+        public uint   getCCDTriggerDelay() { return toUint(getCmd(Opcodes.GET_TRIGGER_DELAY, 3, fullLen: 6)); }
         public ushort getDAC() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, 1)); }
+        public bool   getInterlockEnabled() { return toBool(getCmd(Opcodes.GET_INTERLOCK, 1)); }
+        public bool   getLaserEnabled() { return toBool(getCmd(Opcodes.GET_LASER, 1)); }
+        public bool   getLaserModulationLinkedToIntegrationTime() { return toBool(getCmd(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME, 1)); }
+        public bool   getLaserModulationEnabled() { return toBool(getCmd(Opcodes.GET_LASER_MOD, 1)); }
+        public UInt64 getLaserModulationDuration() { return toUint64(getCmd(Opcodes.GET_MOD_DURATION, 5)); }
+        public UInt64 getLaserModulationPeriod() { return toUint64(getCmd(Opcodes.GET_MOD_PERIOD, 5)); }
+        public UInt64 getLaserModulationPulseDelay() { return toUint64(getCmd(Opcodes.GET_MOD_PULSE_DELAY, 5)); }
+        public UInt64 getLaserModulationPulseWidth() { return toUint64(getCmd(Opcodes.GET_LASER_MOD_PULSE_WIDTH, 5)); }
+        public ushort getLaserTemperatureRaw() { return toUshort(getCmd(Opcodes.GET_LASER_TEMP, 2)); } 
+        public uint   getLineLength() { return toUshort(getCmd2(Opcodes.GET_LINE_LENGTH, 2)); }
         
-        // TODO: something's buggy with this one?
-        public uint   getActualIntegrationTime() { return toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 3)); }
+        // TODO: something's buggy with these
+        public uint   getActualIntegrationTime() { return toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 3, fullLen: 6)); }
+        public ushort getCCDTempSetpoint() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, wIndex: 0)); }
+        public bool   getLaserRampingEnabled() { return toBool(getCmd(Opcodes.GET_LASER_RAMPING_MODE, 1)); }
+        public byte   getSelectedLaser() { return toByte(getCmd(Opcodes.GET_SELECTED_LASER, 1)); }
+        public byte   getLaserTemperatureSetpoint() { return toByte(getCmd(Opcodes.GET_LASER_TEMP_SETPOINT, 1, fullLen: 6)); } // MZ: unit? 
+
+        // 2017-10-03 13:47:48.645:  ERROR: getCmd: failed to get GET_TRIGGER_DELAY (0xab) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+        // 2017-10-03 13:47:50.665:  ERROR: getCmd: failed to get GET_EXTERNAL_TRIGGER_OUTPUT (0xe1) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+        // 2017-10-03 13:47:51.668:  ERROR: getCmd: failed to get GET_CODE_REVISION (0xc0) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+
+        // 2017-10-03 13:47:48.645:  ERROR: getCmd: failed to get GET_TRIGGER_DELAY (0xab) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+        // 2017-10-03 13:47:49.651:  ERROR: getCmd: failed to get GET_CCD_TEMP_SETPOINT (0xd9) with index 0x0001 via DEVICE_TO_HOST (0 bytes read)
+        // 2017-10-03 13:47:50.665:  ERROR: getCmd: failed to get GET_EXTERNAL_TRIGGER_OUTPUT (0xe1) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+        // 2017-10-03 13:47:51.668:  ERROR: getCmd: failed to get GET_CODE_REVISION (0xc0) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+        // 2017-10-03 13:47:52.788:  ERROR: getCmd: failed to get GET_LASER_RAMPING_MODE (0xea) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+        // 2017-10-03 13:47:53.791:  ERROR: getCmd: failed to get GET_SELECTED_LASER (0xee) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+        // 2017-10-03 13:47:54.794:  ERROR: getCmd: failed to get GET_LASER_TEMP_SETPOINT (0xe8) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+        // 2017-10-03 13:47:55.854:  ERROR: getCmd: failed to get GET_ACTUAL_INTEGRATION_TIME (0xdf) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
 
         // simple settors
+        public void setCCDTriggerSource(ushort source) { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, source); } 
         public void setDetectorTECEnable(bool flag) { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE, (ushort)(flag ? 1 : 0)); } 
         public void setLaserEnable(bool flag) { sendCmd(Opcodes.SET_LASER, (ushort) (flag ? 1 : 0)); } 
         public void setLaserMod(bool flag) { sendCmd(Opcodes.SET_LASER_MOD, (ushort) (flag ? 1 : 0)); } 
-        public void setCCDTriggerSource(ushort source) { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, source); } 
         #endregion  
 
         ////////////////////////////////////////////////////////////////////////
@@ -945,11 +1067,11 @@ namespace WasatchNET
             // construct a poll packet for re-use
             byte[] pollResponse = new byte[4];
             UsbSetupPacket pollPacket = new UsbSetupPacket(
-                Opcodes.DEVICE_TO_HOST,     // bRequestType
-                Opcodes.POLL_DATA,          // bRequest,
-                0,                          // wValue,
-                0,                          // wIndex
-                0);                         // wLength
+                DEVICE_TO_HOST,         // bRequestType
+                cmd[Opcodes.POLL_DATA], // bRequest,
+                0,                      // wValue,
+                0,                      // wIndex
+                0);                     // wLength
 
             // give it an extra 100ms buffer before we give up
             uint timeoutMS = integrationTimeMS_ + 100;
@@ -959,10 +1081,13 @@ namespace WasatchNET
             {
                 // poll the spectrometer to see if spectral data is waiting to be read
                 int bytesWritten = 0;
-                if (!usbDevice.ControlTransfer(ref pollPacket, pollResponse, pollResponse.Length, out bytesWritten) || bytesWritten == 0)
+                lock (commsLock)
                 {
-                    logger.error("failed to send POLL_DATA");
-                    return false;
+                    if (!usbDevice.ControlTransfer(ref pollPacket, pollResponse, pollResponse.Length, out bytesWritten) || bytesWritten == 0)
+                    {
+                        logger.error("failed to send POLL_DATA");
+                        return false;
+                    }
                 }
 
                 if (pollResponse[0] != 0)

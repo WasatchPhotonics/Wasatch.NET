@@ -12,6 +12,10 @@ namespace WinFormDemo
 {
     public partial class Form1 : Form
     {
+        ////////////////////////////////////////////////////////////////////////
+        // Inner types
+        ////////////////////////////////////////////////////////////////////////
+
         enum ProcessingMode { SCOPE, ABSORBANCE, TRANSMISSION };
 
         class SpectrometerState
@@ -51,16 +55,27 @@ namespace WinFormDemo
             }
         }
 
+        ////////////////////////////////////////////////////////////////////////
+        // Attributes
+        ////////////////////////////////////////////////////////////////////////
+
         Logger logger = Logger.getInstance();
         Driver driver = Driver.getInstance();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
         Spectrometer currentSpectrometer;
-        Dictionary<string, Tuple<TreeNode, string>> treeNodes = new Dictionary<string, Tuple<TreeNode, string>>();
+
         Dictionary<Spectrometer, SpectrometerState> spectrometerStates = new Dictionary<Spectrometer, SpectrometerState>();
         List<Series> traces = new List<Series>();
         bool graphWavenumbers;
         bool shutdownPending;
+        bool updateSettings;
+
+        Settings settings;
        
+        ////////////////////////////////////////////////////////////////////////
+        // Methods
+        ////////////////////////////////////////////////////////////////////////
+
         public Form1()
         {
             InitializeComponent();
@@ -76,7 +91,7 @@ namespace WinFormDemo
             // select the first X-Axis option
             comboBoxXAxis.SelectedIndex = 0;
 
-            stubTreeView();
+            settings = new Settings(treeViewSettings);
 
             // kick this off to flush log messages from the GUI thread
             backgroundWorkerGUIUpdate.RunWorkerAsync();
@@ -123,7 +138,9 @@ namespace WinFormDemo
 
             SpectrometerState state = spectrometerStates[currentSpectrometer];
 
-            updateSettings();
+            // not sure which of these we should do
+            // settings.update(currentSpectrometer);
+            treeViewSettings_DoubleClick(null, null);
 
             updateStartButton(spectrometerStates[currentSpectrometer].running);
 
@@ -189,224 +206,6 @@ namespace WinFormDemo
                 }
             }
         }
-
-        ////////////////////////////////////////////////////////////////////////
-        // Settings Tree View
-        ////////////////////////////////////////////////////////////////////////
-
-        #region settings
-        void updateSettings()
-        {
-            if (currentSpectrometer == null)
-                return;
-
-            updateSetting("ROIHorizEnd", currentSpectrometer.ROIHorizEnd);
-            updateSetting("ROIHorizStart", currentSpectrometer.ROIHorizStart);
-            updateSetting("activePixelsHoriz", currentSpectrometer.activePixelsHoriz);
-            updateSetting("activePixelsVert", currentSpectrometer.activePixelsVert);
-            updateSetting("actualHoriz", currentSpectrometer.actualHoriz);
-            updateSetting("baudRate", currentSpectrometer.baudRate);
-            updateSetting("calibrationBy", currentSpectrometer.calibrationBy);
-            updateSetting("calibrationDate", currentSpectrometer.calibrationDate);
-            updateSetting("ccdGain", currentSpectrometer.getCCDGain());
-            updateSetting("ccdOffset", currentSpectrometer.getCCDOffset());
-            updateSetting("ccdSensingThreshold", currentSpectrometer.getCCDSensingThreshold());
-            updateSetting("ccdTempEnable", currentSpectrometer.getCCDTempEnabled());
-            updateSetting("ccdTempSetpoint", currentSpectrometer.getCCDTempSetpoint());
-            updateSetting("ccdThresholdSensingMode", currentSpectrometer.getCCDThresholdSensingMode());
-            updateSetting("ccdTriggerSource", currentSpectrometer.getCCDTriggerSource());
-            updateSetting("dac", currentSpectrometer.getDAC());
-            updateSetting("detectorName", currentSpectrometer.detectorName);
-            updateSetting("detectorTempMax", currentSpectrometer.detectorTempMax);
-            updateSetting("detectorTempMin", currentSpectrometer.detectorTempMin);
-            updateSetting("excitationNM", currentSpectrometer.excitationNM);
-            updateSetting("externalTriggerOutput", currentSpectrometer.getExternalTriggerOutput());
-            updateSetting("firmwareRev", currentSpectrometer.getFirmwareRev());
-            updateSetting("fpgaDataHeader", currentSpectrometer.fpgaDataHeader);
-            updateSetting("fpgaHasActualIntegTime", currentSpectrometer.fpgaHasActualIntegTime);
-            updateSetting("fpgaHasAreaScan", currentSpectrometer.fpgaHasAreaScan);
-            updateSetting("fpgaHasCFSelect", currentSpectrometer.fpgaHasCFSelect);
-            updateSetting("fpgaHasHorizBinning", currentSpectrometer.fpgaHasHorizBinning);
-            updateSetting("fpgaIntegrationTimeResolution", currentSpectrometer.fpgaIntegrationTimeResolution);
-            updateSetting("fpgaLaserControl", currentSpectrometer.fpgaLaserControl);
-            updateSetting("fpgaLaserType", currentSpectrometer.fpgaLaserType);
-            updateSetting("fpgaRev", currentSpectrometer.getFPGARev());
-            updateSetting("frame", currentSpectrometer.getActualFrames());
-            updateSetting("hasBattery", currentSpectrometer.hasBattery);
-            updateSetting("hasCooling", currentSpectrometer.hasCooling);
-            updateSetting("hasLaser", currentSpectrometer.hasLaser);
-            updateSetting("horizBinning", currentSpectrometer.getHorizBinning());
-            updateSetting("integrationTimeMS", currentSpectrometer.getIntegrationTimeMS());
-            updateSetting("maxIntegrationTimeMS", currentSpectrometer.maxIntegrationTimeMS);
-            updateSetting("minIntegrationTimeMS", currentSpectrometer.minIntegrationTimeMS);
-            updateSetting("model", currentSpectrometer.model);
-            updateSetting("pixels", currentSpectrometer.pixels);
-            updateSetting("serialNumber", currentSpectrometer.serialNumber);
-            updateSetting("slitSizeUM", currentSpectrometer.slitSizeUM);
-            updateSetting("thermistorBeta", currentSpectrometer.thermistorResistanceAt298K);
-            updateSetting("thermistorResistanceAt298K", currentSpectrometer.thermistorResistanceAt298K);
-            updateSetting("userText", currentSpectrometer.userText);
-
-            // arrays
-            for (int i = 0; i < currentSpectrometer.wavecalCoeffs.Length; i++)
-                updateSetting("wavecalCoeff" + i, currentSpectrometer.wavecalCoeffs[i]);
-            for (int i = 0; i < currentSpectrometer.detectorTempCoeffs.Length; i++)
-                updateSetting("detectorTempCoeff" + i, currentSpectrometer.detectorTempCoeffs[i]);
-            for (int i = 0; i < currentSpectrometer.adcCoeffs.Length; i++)
-                updateSetting("adcCoeff" + i, currentSpectrometer.adcCoeffs[i]);
-            for (int i = 0; i < currentSpectrometer.ROIVertRegionStart.Length; i++)
-                updateSetting(String.Format("ROIVertRegion{0}Start", i + 1), currentSpectrometer.ROIVertRegionStart[i]);
-            for (int i = 0; i < currentSpectrometer.ROIVertRegionEnd.Length; i++)
-                updateSetting(String.Format("ROIVertRegion{0}End", i + 1), currentSpectrometer.ROIVertRegionEnd[i]);
-            for (int i = 0; i < currentSpectrometer.badPixels.Length; i++)
-                updateSetting("badPixels" + i, currentSpectrometer.badPixels[i] == -1 ? "" 
-                                             : currentSpectrometer.badPixels[i].ToString());
-
-            // conditionals
-            if (currentSpectrometer.fpgaHasActualIntegTime)
-                updateSetting("actualIntegrationTimeMS", currentSpectrometer.getActualIntegrationTime());
-        }
-
-        void stubTreeView()
-        {
-            // grouped by category
-            stubSetting("model",                    "Identity/Model");
-            stubSetting("serialNumber",             "Identity/Serial Number");
-
-            stubSetting("firmwareRev",              "Version/Firmware Rev");
-            stubSetting("fpgaRev",                  "Version/FPGA Rev");
-
-            stubSetting("slitSizeUM",               "Optics/Slit Size (µm)");
-
-            stubSetting("baudRate",                 "Comms/Baud Rate");
-
-            stubSetting("hasCooling",               "Features/Has Cooling");
-            stubSetting("hasLaser",                 "Features/Has Laser");
-            stubSetting("hasBattery",               "Features/Has Battery");
-
-            stubSetting("integrationTimeMS",        "Acquisition/Integration Time (ms)");
-            stubSetting("actualIntegrationTimeMS",  "Acquisition/Integration/Actual (ms)");
-            stubSetting("minIntegrationTimeMS",     "Acquisition/Integration/Min (ms)");
-            stubSetting("maxIntegrationTimeMS",     "Acquisition/Integration/Max (ms)");
-            stubSetting("frame",                    "Acquisition/Frame");
-
-            stubSetting("wavecalCoeff0",            "Wavecal/Coeff0");
-            stubSetting("wavecalCoeff1",            "Wavecal/Coeff1");
-            stubSetting("wavecalCoeff2",            "Wavecal/Coeff2");
-            stubSetting("wavecalCoeff3",            "Wavecal/Coeff3");
-
-            stubSetting("detectorName",             "Detector/Name");
-            stubSetting("detectorTempCoeff0",       "Detector/Temperature Calibration/Coeff0");
-            stubSetting("detectorTempCoeff1",       "Detector/Temperature Calibration/Coeff1");
-            stubSetting("detectorTempCoeff2",       "Detector/Temperature Calibration/Coeff2");
-            stubSetting("detectorTempMin",          "Detector/Temperature Limits/Min");
-            stubSetting("detectorTempMax",          "Detector/Temperature Limits/Max");
-            stubSetting("pixels",                   "Detector/Pixels/Spectrum Length");
-            stubSetting("activePixelsHoriz",        "Detector/Pixels/Active/Horizontal");
-            stubSetting("activePixelsVert",         "Detector/Pixels/Active/Vertical");
-            stubSetting("actualHoriz",              "Detector/Pixels/Actual/Horizontal");
-            stubSetting("ccdTempEnable",            "Detector/TEC/Enabled");
-            stubSetting("ccdTempSetpoint",          "Detector/TEC/Setpoint");
-            stubSetting("ccdTemp",                  "Detector/TEC/Temperature");
-            stubSetting("thermistorResistanceAt298K", "Detector/TEC/Thermistor/Resistance at 298K");
-            stubSetting("thermistorBeta",           "Detector/TEC/Thermistor/Beta value");
-            stubSetting("ccdOffset",                "Detector/CCD/Offset");
-            stubSetting("ccdGain",                  "Detector/CCD/Gain");
-            stubSetting("ccdSensingThreshold",      "Detector/CCD/Sensing Threshold");
-            stubSetting("ccdThresholdSensingMode",  "Detector/CCD/Threshold Sensing Mode");
-            stubSetting("horizBinning",             "Detector/Horizontal Binning");
-            stubSetting("ROIHorizStart",            "Detector/ROI/Horiz/Start)");
-            stubSetting("ROIHorizEnd",              "Detector/ROI/Horiz/End");
-            for (int i = 1; i < 4; i++)
-            {
-                stubSetting(String.Format("ROIVertRegion{0}Start", i), String.Format("Detector/ROI/Vert/Region{0}/Start", i));
-                stubSetting(String.Format("ROIVertRegion{0}End",   i), String.Format("Detector/ROI/Vert/Region{0}/End", i));
-            }
-            for (int i = 0; i < 15; i++)
-                stubSetting("badPixels" + i, "Detector/Bad Pixels/Index " + i);
-
-            stubSetting("dac",                      "Laser/DAC");
-            stubSetting("laserEnabled",             "Laser/Enabled");
-            stubSetting("excitationNM",             "Laser/Excitation (nm)");
-            stubSetting("laserTemp",                "Laser/TEC/Temperature");
-            stubSetting("laserTempSetpoint",        "Laser/TEC/Setpoint");
-            stubSetting("laserMod",                 "Laser/Modulation/Value");
-            stubSetting("laserModDur",              "Laser/Modulation/Duration");
-            stubSetting("modPeriod",                "Laser/Modulation/Period");
-            stubSetting("modPulseDelay",            "Laser/Modulation/Pulse Delay");
-            stubSetting("laserModPulseWidth",       "Laser/Modulation/Pulse Width");
-            stubSetting("linkLaserModToIntegrationTime", "Laser/Linked to Integration");
-            stubSetting("laserRampingMode",         "Laser/Ramping Mode");
-            stubSetting("selectedLaser",            "Laser/Selected");
-            stubSetting("interlock",                "Laser/Interlock");
-            for (int i = 0; i < 3; i++)
-                stubSetting("adcCoeff" + i, "Laser/TEC/ADC/Coeff" + i);
-
-            stubSetting("ccdTriggerDelay",          "Triggering/Delay (us)");
-            stubSetting("ccdTriggerSource",         "Triggering/Source");
-            stubSetting("externalTriggerOutput",    "Triggering/External Output");
-
-            stubSetting("fpgaIntegrationTimeResolution", "FPGA/Integ Time Resolution (enum)");
-            stubSetting("fpgaDataHeader",           "FPGA/Data Header");
-            stubSetting("fpgaHasCFSelect",          "FPGA/Has CF Select");
-            stubSetting("fpgaLaserType",            "FPGA/Laser Type");
-            stubSetting("fpgaLaserControl",         "FPGA/Laser Control");
-            stubSetting("fpgaHasAreaScan",          "FPGA/Has Area Scan");
-            stubSetting("fpgaHasActualIntegTime",   "FPGA/Has Actual Integration Time");
-            stubSetting("fpgaHasHorizBinning",      "FPGA/Has Horiz Binning");
-
-            stubSetting("calibrationDate",          "Manufacture/Date");
-            stubSetting("calibrationBy",            "Manufacture/Technician");
-
-            stubSetting("userText",                 "User Data/Text");
-        }
-
-        void stubSetting(string key, string path)
-        {
-            string[] names = path.Split('/');
-
-            // create or traverse intervening nodes
-            TreeNodeCollection children = treeViewSettings.Nodes;
-            for (int i = 0; i < names.Length - 1; i++)
-            {
-                string name = names[i];
-                if (children.ContainsKey(name))
-                {
-                    children = children[name].Nodes;
-                }
-                else
-                {
-                    children = children.Add(name, name).Nodes;
-                }
-            }
-
-            // now create the leaf node
-            string prefix = names[names.Length - 1];
-            if (!children.ContainsKey(key))
-            {
-                // do we even need to track TreeNode in the dict, since it has a unique key?
-                TreeNode node = children.Add(key, prefix);
-                treeNodes.Add(key, new Tuple<TreeNode, string>(node, prefix));
-            }
-            else
-            {
-                logger.error("stubSetting: path exists: {0}", path);
-            }
-        }
-
-        void updateSetting(string key, object value)
-        {
-            if (!treeNodes.ContainsKey(key))
-            {
-                logger.error("updateSetting: unknown key {0}", key);
-                return;
-            }
-
-            TreeNode node = treeNodes[key].Item1;
-            string prefix = treeNodes[key].Item2;
-            node.Text = prefix + ": " + value.ToString();
-        }
-        #endregion
 
         ////////////////////////////////////////////////////////////////////////
         // GUI Callbacks
@@ -671,7 +470,8 @@ namespace WinFormDemo
 
         private void treeViewSettings_DoubleClick(object sender, EventArgs e)
         {
-            updateSettings();
+            if (!backgroundWorkerSettings.IsBusy)
+                backgroundWorkerSettings.RunWorkerAsync();
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -691,6 +491,15 @@ namespace WinFormDemo
 
                 Thread.Sleep(100);
             }
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // BackgroundWorker: Settings Update
+        ////////////////////////////////////////////////////////////////////////
+
+        private void backgroundWorkerSettings_DoWork(object sender, DoWorkEventArgs e)
+        {
+            settings.updateAll(currentSpectrometer);
         }
 
         ////////////////////////////////////////////////////////////////////////
