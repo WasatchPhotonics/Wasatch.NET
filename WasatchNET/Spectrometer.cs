@@ -278,10 +278,6 @@ namespace WasatchNET
         }
         #endregion
 
-        ////////////////////////////////////////////////////////////////////////
-        // Feature Identification API
-        ////////////////////////////////////////////////////////////////////////
-
         void performFeatureIdentification()
         {
             if (usbRegistry.Pid == 0x1000)
@@ -315,6 +311,179 @@ namespace WasatchNET
         }
 
         ////////////////////////////////////////////////////////////////////////
+        // Utilities
+        ////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// Execute a request-response control transaction using the given opcode.
+        /// </summary>
+        /// <param name="opcode">the opcode of the desired request</param>
+        /// <param name="len">the number of needed return bytes</param>
+        /// <param name="wIndex">an optional numeric argument used by some opcodes</param>
+        /// <param name="fullLen">the actual number of expected return bytes (not all needed)</param>
+        /// <returns>the array of returned bytes (null on error)</returns>
+        byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
+        {
+            int bytesToRead = fullLen == 0 ? len : fullLen;
+            byte[] buf = new byte[bytesToRead];
+
+            // Question: if the device returns 6 bytes on Endpoint 0, but I only
+            // need the first so pass byte[1], are the other 5 bytes discarded or
+            // queued?
+            lock (commsLock)
+            {
+                logger.debug("starting {0}", opcode.ToString());
+                UsbSetupPacket setupPacket = new UsbSetupPacket(
+                    DEVICE_TO_HOST, // bRequestType
+                    cmd[opcode],    // bRequest
+                    0,              // wValue
+                    wIndex,         // wIndex
+                    bytesToRead);   // wLength
+
+                if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < bytesToRead)
+                {
+                    logger.error("getCmd: failed to get {0} (0x{1:x2}) with index 0x{2:x4} via DEVICE_TO_HOST ({3} bytes read)",
+                        opcode.ToString(), cmd[opcode], wIndex, bytesRead);
+                    return null;
+                }
+                logger.debug("finished {0}", opcode.ToString());
+            }
+
+            if (fullLen == 0)
+                return buf;
+
+            // extract just the bytes we really needed
+            byte[] tmp = new byte[len];
+            Array.Copy(buf, tmp, len);
+            return tmp;
+        }
+
+        /// <summary>
+        /// Execute a request-response transfer with a "second-tier" request.
+        /// </summary>
+        /// <param name="opcode">the wValue to send along with the "second-tier" command</param>
+        /// <param name="len">how many bytes of response are expected</param>
+        /// <returns>array of returned bytes (null on error)</returns>
+        byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0)
+        {
+            byte[] buf = new byte[len];
+
+            lock (commsLock)
+            {
+                logger.debug("starting {0}", opcode.ToString());
+                UsbSetupPacket setupPacket = new UsbSetupPacket(
+                    DEVICE_TO_HOST,                     // bRequestType
+                    cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest
+                    cmd[opcode],                        // wValue
+                    wIndex,                             // wIndex
+                    len);                               // wLength
+
+                if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < len)
+                {
+                    logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} bytes read)",
+                        opcode.ToString(), cmd[opcode], bytesRead);
+                    return null;
+                }
+                logger.debug("finished {0}", opcode.ToString());
+            }
+            return buf;
+        }
+
+        /// <summary>
+        /// send a single control transfer command, with no response expected
+        /// </summary>
+        /// <param name="opcode">the desired command</param>
+        /// <param name="wValue">an optional secondary argument used by some commands</param>
+        /// <param name="wIndex">an optional tertiary argument used by some commands</param>
+        /// <returns>true on success, false on error</returns>
+        bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0)
+        {
+            lock (commsLock)
+            {
+                logger.debug("starting {0}", opcode.ToString());
+                UsbSetupPacket setupPacket = new UsbSetupPacket(
+                    HOST_TO_DEVICE, // bRequestType
+                    cmd[opcode],    // bRequest
+                    wValue,         // wValue
+                    wIndex,         // wIndex
+                    0);             // wLength
+
+                if (!usbDevice.ControlTransfer(ref setupPacket, null, 0, out int bytesWritten))
+                {
+                    logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4})",
+                        opcode.ToString(), cmd[opcode], wValue, wIndex);
+                    return false;
+                }
+                logger.debug("finished {0}", opcode.ToString());
+            }
+            return true;
+        }
+
+        #region unpackers
+        bool toBool(byte[] buf)
+        {
+            return buf != null && buf[0] != 0;
+        }
+
+        byte toByte(byte[] buf)
+        {
+            return (byte) ((buf == null) ? 0 : buf[0]);
+        }
+
+        ushort toUshort(byte[] buf)
+        {
+            if (buf == null)
+                return 0;
+
+            if (buf.Length == 1)
+                return buf[0];
+            else
+                return BitConverter.ToUInt16(buf, 0);
+        }
+
+        short toShort(byte[] buf)
+        {
+            if (buf == null)
+                return -1;
+
+            if (buf.Length == 1)
+                return buf[0];
+            else
+                return BitConverter.ToInt16(buf, 0);
+        }
+
+        uint toUint(byte[] buf)
+        {
+            if (buf == null)
+                return 0;
+
+            byte[] tmp = new byte[4];   // round up
+            Array.Copy(buf, tmp, buf.Length);
+            return BitConverter.ToUInt32(tmp, 0);
+        }
+
+        int toInt(byte[] buf)
+        {
+            if (buf == null)
+                return -1;
+
+            byte[] tmp = new byte[4]; // round up
+            Array.Copy(buf, tmp, buf.Length);
+            return BitConverter.ToInt32(tmp, 0);
+        }
+
+        UInt64 toUint64(byte[] buf)
+        {
+            if (buf == null)
+                return 0;
+
+            byte[] tmp = new byte[8];   // round up
+            Array.Copy(buf, tmp, buf.Length);
+            return BitConverter.ToUInt64(tmp, 0);
+        }
+        #endregion
+
+        ////////////////////////////////////////////////////////////////////////
         // GET_MODEL_CONFIG
         ////////////////////////////////////////////////////////////////////////
 
@@ -324,25 +493,12 @@ namespace WasatchNET
             List<byte[]> pages = new List<byte[]>();
             List<byte> format = new List<byte>();
 
-            for (int page = 0; page < 6; page++)
+            for (ushort page = 0; page < 6; page++)
             {
-                byte[] buf = new byte[64];
+                byte[] buf = getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page);
+                if (buf == null)
+                    return false;
 
-                UsbSetupPacket setupPacket = new UsbSetupPacket(
-                    DEVICE_TO_HOST,                     // bRequestType
-                    cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest,
-                    cmd[Opcodes.GET_MODEL_CONFIG],      // wValue,
-                    page,                               // wIndex
-                    buf.Length);                        // wLength
-
-                lock (commsLock)
-                {
-                    if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead))
-                    {
-                        logger.error("failed GET_MODEL_CONFIG (page {0}, {1} bytes read)", page, bytesRead);
-                        return false;
-                    }
-                }
                 pages.Add(buf);
                 format.Add(buf[63]); // page format is always last byte
             }
@@ -576,178 +732,11 @@ namespace WasatchNET
         public bool getOptHorizontalBinning() { return toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); }
         #endregion
 
-        ////////////////////////////////////////////////////////////////////////
-        // Utilities
-        ////////////////////////////////////////////////////////////////////////
-
-        /// <summary>
-        /// Execute a request-response control transaction using the given opcode.
-        /// </summary>
-        /// <param name="opcode">the opcode of the desired request</param>
-        /// <param name="len">the number of needed return bytes</param>
-        /// <param name="wIndex">an optional numeric argument used by some opcodes</param>
-        /// <param name="fullLen">the actual number of expected return bytes (not all needed)</param>
-        /// <returns>the array of returned bytes (null on error)</returns>
-        byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
-        {
-            int bytesToRead = fullLen == 0 ? len : fullLen;
-            byte[] buf = new byte[bytesToRead];
-
-            UsbSetupPacket setupPacket = new UsbSetupPacket(
-                DEVICE_TO_HOST, // bRequestType
-                cmd[opcode],    // bRequest,
-                0,              // wValue,
-                wIndex,         // wIndex
-                bytesToRead);   // wLength
-
-            // Question: if the device returns 6 bytes on Endpoint 0, but I only
-            // need the first so pass byte[1], are the other 5 bytes discarded or
-            // queued for the next ControlTransfer?
-            lock (commsLock)
-            {
-                if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < bytesToRead)
-                {
-                    logger.error("getCmd: failed to get {0} (0x{1:x2}) with index 0x{2:x4} via DEVICE_TO_HOST ({3} bytes read)",
-                        opcode.ToString(), cmd[opcode], wIndex, bytesRead);
-                    return null;
-                }
-            }
-
-            if (fullLen == 0)
-                return buf;
-
-            // extract just the bytes we really needed
-            byte[] tmp = new byte[len];
-            Array.Copy(buf, tmp, len);
-            return tmp;
-        }
-
-        /// <summary>
-        /// Execute a request-response transfer with a "second-tier" request.
-        /// </summary>
-        /// <param name="opcode">the wValue to send along with the "second-tier" command</param>
-        /// <param name="len">how many bytes of response are expected</param>
-        /// <returns>array of returned bytes (null on error)</returns>
-        byte[] getCmd2(Opcodes opcode, int len)
-        {
-            byte[] buf = new byte[len];
-
-            UsbSetupPacket setupPacket = new UsbSetupPacket(
-                DEVICE_TO_HOST,                     // bRequestType
-                cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest,
-                cmd[opcode],                        // wValue,
-                0,                                  // wIndex
-                len);                               // wLength
-
-            lock (commsLock)
-            {
-                if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < len)
-                {
-                    logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} bytes read)",
-                        opcode.ToString(), cmd[opcode], bytesRead);
-                    return null;
-                }
-            }
-            return buf;
-        }
-
-        /// <summary>
-        /// send a single control transfer command, with no response expected
-        /// </summary>
-        /// <param name="opcode">the desired command</param>
-        /// <param name="wValue">an optional secondary argument used by some commands</param>
-        /// <param name="wIndex">an optional tertiary argument used by some commands</param>
-        /// <returns>true on success, false on error</returns>
-        bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0)
-        {
-            UsbSetupPacket setupPacket = new UsbSetupPacket(
-                HOST_TO_DEVICE, // bRequestType
-                cmd[opcode],    // bRequest,
-                wValue,         // wValue,
-                wIndex,         // wIndex
-                0);             // wLength
-
-            lock (commsLock)
-            {
-                if (!usbDevice.ControlTransfer(ref setupPacket, null, 0, out int bytesWritten))
-                {
-                    logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4})",
-                        opcode.ToString(), cmd[opcode], wValue, wIndex);
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        #region unpackers
-        bool toBool(byte[] buf)
-        {
-            return buf != null && buf[0] != 0;
-        }
-
-        byte toByte(byte[] buf)
-        {
-            return (byte) ((buf == null) ? 0 : buf[0]);
-        }
-
-        ushort toUshort(byte[] buf)
-        {
-            if (buf == null)
-                return 0;
-
-            if (buf.Length == 1)
-                return buf[0];
-            else
-                return BitConverter.ToUInt16(buf, 0);
-        }
-
-        short toShort(byte[] buf)
-        {
-            if (buf == null)
-                return -1;
-
-            if (buf.Length == 1)
-                return buf[0];
-            else
-                return BitConverter.ToInt16(buf, 0);
-        }
-
-        uint toUint(byte[] buf)
-        {
-            if (buf == null)
-                return 0;
-
-            byte[] tmp = new byte[4];   // round up
-            Array.Copy(buf, tmp, buf.Length);
-            return BitConverter.ToUInt32(tmp, 0);
-        }
-
-        int toInt(byte[] buf)
-        {
-            if (buf == null)
-                return -1;
-
-            byte[] tmp = new byte[4]; // round up
-            Array.Copy(buf, tmp, buf.Length);
-            return BitConverter.ToInt32(tmp, 0);
-        }
-
-        UInt64 toUint64(byte[] buf)
-        {
-            if (buf == null)
-                return 0;
-
-            byte[] tmp = new byte[8];   // round up
-            Array.Copy(buf, tmp, buf.Length);
-            return BitConverter.ToUInt64(tmp, 0);
-        }
-        #endregion
-
-        ////////////////////////////////////////////////////////////////////////
-        // Spectrometer Comms
-        ////////////////////////////////////////////////////////////////////////
-
         #region spec_comms
+
+        ////////////////////////////////////////////////////////////////////////
+        // Complex settors
+        ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// set the acquisition time in milliseconds
@@ -775,10 +764,38 @@ namespace WasatchNET
                 integrationTimeMS_ = ms;
         }
 
-        public void linkLaserModToIntegrationTime(bool flag)
+        /// <summary>
+        /// Set the CCD's gain level to the closest setting LESS-THAN OR EQUAL-TO
+        /// the specified value.
+        /// </summary>
+        /// <remarks>I need to check with Jason regarding how he envisioned this to be implemented.</remarks>
+        /// <param name="gain">upper-bound of intended gain</param>
+        public void setCCDGain(float gain)
         {
-            sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0));
+            ushort val = 0x0000;
+                 if (gain >= 128)       val = 0x8000;
+            else if (gain >=  64)       val = 0x4000;
+            else if (gain >=  32)       val = 0x2000;
+            else if (gain >=  16)       val = 0x1000;
+            else if (gain >=   8)       val = 0x0800;
+            else if (gain >=   4)       val = 0x0400;
+            else if (gain >=   2)       val = 0x0200;
+            else if (gain >=   1)       val = 0x0100;
+            else if (gain >=   1 /   2) val = 0x0080;
+            else if (gain >=   1 /   4) val = 0x0040;
+            else if (gain >=   1 /   8) val = 0x0020;
+            else if (gain >=   1 /  16) val = 0x0010;
+            else if (gain >=   1 /  32) val = 0x0008;
+            else if (gain >=   1 /  64) val = 0x0004;
+            else if (gain >=   1 / 128) val = 0x0002;
+            else if (gain >=   1 / 256) val = 0x0001;
+
+            sendCmd(Opcodes.SET_CCD_GAIN, val);
         }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Complex Getters
+        ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Actually reads integration time from the spectrometer.
@@ -868,52 +885,52 @@ namespace WasatchNET
             return HORIZ_BINNING.ERROR;
         }
 
-        // simple gettors
-        public ushort getActualFrames() { return toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES, 2)); }
-        public ushort getDetectorTemperatureRaw() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2)); } 
-        public short  getCCDGain() { return toShort(getCmd(Opcodes.GET_CCD_GAIN, 2)); }
-        public short  getCCDOffset() { return toShort(getCmd(Opcodes.GET_CCD_OFFSET, 2)); }
-        public ushort getCCDSensingThreshold() { return toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD, 2)); }
-        public bool   getCCDThresholdSensingEnabled() { return toBool(getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
-        public bool   getCCDTempEnabled() { return toBool(getCmd(Opcodes.GET_CCD_TEMP_ENABLE, 1)); }
-        public uint   getCCDTriggerDelay() { return toUint(getCmd(Opcodes.GET_TRIGGER_DELAY, 3, fullLen: 6)); }
-        public ushort getDAC() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, 1)); }
-        public bool   getInterlockEnabled() { return toBool(getCmd(Opcodes.GET_INTERLOCK, 1)); }
-        public bool   getLaserEnabled() { return toBool(getCmd(Opcodes.GET_LASER, 1)); }
+        ////////////////////////////////////////////////////////////////////////
+        // Trivial Getters
+        ////////////////////////////////////////////////////////////////////////
+
+        public ushort getActualFrames()                 { return toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
+        public ushort getDetectorTemperatureRaw()       { return toUshort(getCmd(Opcodes.GET_CCD_TEMP,                   2)); } 
+        public short  getCCDGain()                      { return toShort (getCmd(Opcodes.GET_CCD_GAIN,                   2)); }
+        public short  getCCDOffset()                    { return toShort (getCmd(Opcodes.GET_CCD_OFFSET,                 2)); }
+        public ushort getCCDSensingThreshold()          { return toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD,      2)); }
+        public bool   getCCDThresholdSensingEnabled()   { return toBool  (getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
+        public bool   getCCDTempEnabled()               { return toBool  (getCmd(Opcodes.GET_CCD_TEMP_ENABLE,            1)); }
+        public uint   getCCDTriggerDelay()              { return toUint  (getCmd(Opcodes.GET_TRIGGER_DELAY,              3, fullLen: 6)); }
+        public ushort getDAC()                          { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT,          2, 1)); }
+        public bool   getInterlockEnabled()             { return toBool  (getCmd(Opcodes.GET_INTERLOCK,                  1)); }
+        public bool   getLaserEnabled()                 { return toBool  (getCmd(Opcodes.GET_LASER,                      1)); }
+        public bool   getLaserModulationEnabled()       { return toBool  (getCmd(Opcodes.GET_LASER_MOD,                  1)); }
+        public UInt64 getLaserModulationDuration()      { return toUint64(getCmd(Opcodes.GET_MOD_DURATION,               5)); }
+        public UInt64 getLaserModulationPeriod()        { return toUint64(getCmd(Opcodes.GET_MOD_PERIOD,                 5)); }
+        public UInt64 getLaserModulationPulseDelay()    { return toUint64(getCmd(Opcodes.GET_MOD_PULSE_DELAY,            5)); }
+        public UInt64 getLaserModulationPulseWidth()    { return toUint64(getCmd(Opcodes.GET_LASER_MOD_PULSE_WIDTH,      5)); }
+        public bool   getLaserRampingEnabled()          { return toBool  (getCmd(Opcodes.GET_LASER_RAMPING_MODE,         1)); }
+        public ushort getLaserTemperatureRaw()          { return toUshort(getCmd(Opcodes.GET_LASER_TEMP,                 2)); } 
+        public byte   getLaserTemperatureSetpoint()     { return toByte  (getCmd(Opcodes.GET_LASER_TEMP_SETPOINT,        1, fullLen: 6)); } // MZ: unit? 
+        public uint   getLineLength()                   { return toUshort(getCmd2(Opcodes.GET_LINE_LENGTH,               2)); }
+        public byte   getSelectedLaser()                { return toByte  (getCmd(Opcodes.GET_SELECTED_LASER,             1)); }
         public bool   getLaserModulationLinkedToIntegrationTime() { return toBool(getCmd(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME, 1)); }
-        public bool   getLaserModulationEnabled() { return toBool(getCmd(Opcodes.GET_LASER_MOD, 1)); }
-        public UInt64 getLaserModulationDuration() { return toUint64(getCmd(Opcodes.GET_MOD_DURATION, 5)); }
-        public UInt64 getLaserModulationPeriod() { return toUint64(getCmd(Opcodes.GET_MOD_PERIOD, 5)); }
-        public UInt64 getLaserModulationPulseDelay() { return toUint64(getCmd(Opcodes.GET_MOD_PULSE_DELAY, 5)); }
-        public UInt64 getLaserModulationPulseWidth() { return toUint64(getCmd(Opcodes.GET_LASER_MOD_PULSE_WIDTH, 5)); }
-        public ushort getLaserTemperatureRaw() { return toUshort(getCmd(Opcodes.GET_LASER_TEMP, 2)); } 
-        public uint   getLineLength() { return toUshort(getCmd2(Opcodes.GET_LINE_LENGTH, 2)); }
         
         // TODO: something's buggy with these
-        public uint   getActualIntegrationTime() { return toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 3, fullLen: 6)); }
-        public ushort getCCDTempSetpoint() { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, wIndex: 0)); }
-        public bool   getLaserRampingEnabled() { return toBool(getCmd(Opcodes.GET_LASER_RAMPING_MODE, 1)); }
-        public byte   getSelectedLaser() { return toByte(getCmd(Opcodes.GET_SELECTED_LASER, 1)); }
-        public byte   getLaserTemperatureSetpoint() { return toByte(getCmd(Opcodes.GET_LASER_TEMP_SETPOINT, 1, fullLen: 6)); } // MZ: unit? 
+        public uint   getActualIntegrationTime()        { return toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 3, fullLen: 6)); }
+        public ushort getCCDTempSetpoint()              { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, wIndex: 0)); }
 
-        // 2017-10-03 13:47:48.645:  ERROR: getCmd: failed to get GET_TRIGGER_DELAY (0xab) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
-        // 2017-10-03 13:47:50.665:  ERROR: getCmd: failed to get GET_EXTERNAL_TRIGGER_OUTPUT (0xe1) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
-        // 2017-10-03 13:47:51.668:  ERROR: getCmd: failed to get GET_CODE_REVISION (0xc0) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+        ////////////////////////////////////////////////////////////////////////
+        // Trivial setters
+        ////////////////////////////////////////////////////////////////////////
 
-        // 2017-10-03 13:47:48.645:  ERROR: getCmd: failed to get GET_TRIGGER_DELAY (0xab) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
-        // 2017-10-03 13:47:49.651:  ERROR: getCmd: failed to get GET_CCD_TEMP_SETPOINT (0xd9) with index 0x0001 via DEVICE_TO_HOST (0 bytes read)
-        // 2017-10-03 13:47:50.665:  ERROR: getCmd: failed to get GET_EXTERNAL_TRIGGER_OUTPUT (0xe1) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
-        // 2017-10-03 13:47:51.668:  ERROR: getCmd: failed to get GET_CODE_REVISION (0xc0) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
-        // 2017-10-03 13:47:52.788:  ERROR: getCmd: failed to get GET_LASER_RAMPING_MODE (0xea) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
-        // 2017-10-03 13:47:53.791:  ERROR: getCmd: failed to get GET_SELECTED_LASER (0xee) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
-        // 2017-10-03 13:47:54.794:  ERROR: getCmd: failed to get GET_LASER_TEMP_SETPOINT (0xe8) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
-        // 2017-10-03 13:47:55.854:  ERROR: getCmd: failed to get GET_ACTUAL_INTEGRATION_TIME (0xdf) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+        public void setCCDTriggerSource     (ushort source)     { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE,         source); } 
+        public void setDetectorTECEnable    (bool flag)         { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE,            (ushort) (flag ? 1 : 0)); } 
+        public void setLaserEnable          (bool flag)         { sendCmd(Opcodes.SET_LASER,                      (ushort) (flag ? 1 : 0)); } 
+        public void setLaserModulationEnable(bool flag)         { sendCmd(Opcodes.SET_LASER_MOD,                  (ushort) (flag ? 1 : 0)); } 
+        public void setHorizontalBinning    (HORIZ_BINNING mode){ sendCmd(Opcodes.SELECT_HORIZ_BINNING,           (ushort) mode); }
+        public void setSelectedLaser        (byte id)           { sendCmd(Opcodes.SELECT_LASER,                   id); }
+        public void setCCDOffset            (ushort value)      { sendCmd(Opcodes.SET_CCD_OFFSET,                 value); }
+        public void setCCDSensingThreshold  (ushort value)      { sendCmd(Opcodes.SET_CCD_SENSING_THRESHOLD,      value); }
+        public void setCCDThresholdSensingEnable(bool flag)     { sendCmd(Opcodes.SET_CCD_THRESHOLD_SENSING_MODE, (ushort)(flag ? 1 : 0)); }
+        public void linkLaserModToIntegrationTime(bool flag)    { sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0)); } 
 
-        // simple settors
-        public void setCCDTriggerSource(ushort source) { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, source); } 
-        public void setDetectorTECEnable(bool flag) { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE, (ushort)(flag ? 1 : 0)); } 
-        public void setLaserEnable(bool flag) { sendCmd(Opcodes.SET_LASER, (ushort) (flag ? 1 : 0)); } 
-        public void setLaserMod(bool flag) { sendCmd(Opcodes.SET_LASER_MOD, (ushort) (flag ? 1 : 0)); } 
         #endregion  
 
         ////////////////////////////////////////////////////////////////////////
@@ -1064,15 +1081,6 @@ namespace WasatchNET
 
         public bool blockUntilDataReady()
         {
-            // construct a poll packet for re-use
-            byte[] pollResponse = new byte[4];
-            UsbSetupPacket pollPacket = new UsbSetupPacket(
-                DEVICE_TO_HOST,         // bRequestType
-                cmd[Opcodes.POLL_DATA], // bRequest,
-                0,                      // wValue,
-                0,                      // wIndex
-                0);                     // wLength
-
             // give it an extra 100ms buffer before we give up
             uint timeoutMS = integrationTimeMS_ + 100;
             DateTime expiration = DateTime.Now.AddMilliseconds(timeoutMS);
@@ -1080,17 +1088,11 @@ namespace WasatchNET
             while (DateTime.Now < expiration)
             {
                 // poll the spectrometer to see if spectral data is waiting to be read
-                int bytesWritten = 0;
-                lock (commsLock)
-                {
-                    if (!usbDevice.ControlTransfer(ref pollPacket, pollResponse, pollResponse.Length, out bytesWritten) || bytesWritten == 0)
-                    {
-                        logger.error("failed to send POLL_DATA");
-                        return false;
-                    }
-                }
+                byte[] buf = getCmd(Opcodes.POLL_DATA, 4);
+                if (buf == null)
+                    return false;
 
-                if (pollResponse[0] != 0)
+                if (buf[0] != 0)
                     return true;
             }
             logger.error("blockUntilDataReady timed-out after {0}ms", timeoutMS);

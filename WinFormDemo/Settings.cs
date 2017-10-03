@@ -16,8 +16,9 @@ namespace WinFormDemo
     /// It would be nice to use an enumeration instead of strings as the key 
     /// field, to reduce bugs introduced by typos and the like. It was for
     /// that reason that the enumeration WasatchNET.Opcodes was created.
+    ///
     /// However, a significant number of settings aren't associated with a
-    /// unique Opcode, but rather come from parsed ModelConfigOptions, 
+    /// unique Opcode, but rather come from parsed ModelConfig, 
     /// FPGACompilationOptions etc. Maybe we'll make those into their own
     /// classes someday and we can add a little rigor here, but for now you
     /// get strings :-/
@@ -202,6 +203,18 @@ namespace WinFormDemo
         /// <param name="spec">Spectrometer from which to load the settings</param>
         public void updateAll(Spectrometer spec)
         {
+            // TODO: still figuring out what's wrong with these...
+            //
+            // 2017-10-03 16:49:57.789:  ERROR: getCmd: failed to get GET_TRIGGER_DELAY (0xab) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+            // 2017-10-03 16:49:58.790:  ERROR: getCmd: failed to get GET_CCD_TEMP_SETPOINT (0xd9) with index 0x0001 via DEVICE_TO_HOST (0 bytes read)
+            // 2017-10-03 16:49:59.794:  ERROR: getCmd: failed to get GET_EXTERNAL_TRIGGER_OUTPUT (0xe1) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+            // 2017-10-03 16:50:00.798:  ERROR: getCmd: failed to get GET_ACTUAL_FRAMES (0xe4) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
+            //
+            // update("ccdTriggerDelay", spec.getCCDTriggerDelay());
+            // update("externalTriggerOutput", spec.getExternalTriggerOutput());
+            // update("frame", spec.getActualFrames());
+            // update("ccdTempSetpoint", spec.getCCDTempSetpoint());
+
             updateFast(spec);
 
             update("ccdGain", spec.getCCDGain());
@@ -209,19 +222,19 @@ namespace WinFormDemo
             update("ccdSensingThreshold", spec.getCCDSensingThreshold());
             update("ccdThresholdSensingEnabled", spec.getCCDThresholdSensingEnabled());
             update("ccdTriggerSource", spec.getCCDTriggerSource());
-            update("ccdTriggerDelay", spec.getCCDTriggerDelay());
             update("dac", spec.getDAC());
-            update("externalTriggerOutput", spec.getExternalTriggerOutput());
-            update("frame", spec.getActualFrames());
             update("firmwareRev", spec.getFirmwareRev());
             update("fpgaRev", spec.getFPGARev());
             update("integrationTimeMS", spec.getIntegrationTimeMS());
 
             if (spec.hasCooling)
-            {
                 update("ccdTempEnable", spec.getCCDTempEnabled());
-                update("ccdTempSetpoint", spec.getCCDTempSetpoint());
-            }
+
+            if (spec.fpgaHasActualIntegTime)
+                update("actualIntegrationTimeMS", spec.getActualIntegrationTime());
+
+            if (spec.fpgaHasHorizBinning)
+                update("horizBinning", spec.getHorizBinning());
 
             if (spec.hasLaser)
             {
@@ -237,13 +250,6 @@ namespace WinFormDemo
                 update("laserSelection", spec.getSelectedLaser());
                 update("laserTemperatureSetpoint", spec.getLaserTemperatureSetpoint());
             }
-
-            if (spec.fpgaHasActualIntegTime)
-                update("actualIntegrationTimeMS", spec.getActualIntegrationTime());
-
-            if (spec.fpgaHasHorizBinning)
-                update("horizBinning", spec.getHorizBinning());
-
         }
 
         void update(string key, object value)
@@ -258,7 +264,7 @@ namespace WinFormDemo
             string prefix = treeNodes[key].Item2;
 
             // dispatch so this can occur on non-GUI thread
-            tv.BeginInvoke(new MethodInvoker(delegate { node.Text = prefix + ": " + value.ToString(); }));
+            tv.BeginInvoke(new MethodInvoker(delegate { node.Text = String.Format("{0}: {1}", prefix, value); }));
         }
 
         void stub(string key, string label)
@@ -285,7 +291,7 @@ namespace WinFormDemo
             if (!children.ContainsKey(prefix))
             {
                 // do we even need to track TreeNode in the dict, since it has a unique key?
-                TreeNode node = children.Add(key, String.Format("{0}: dbl-click to update", prefix));
+                TreeNode node = children.Add(key, prefix);
                 treeNodes.Add(key, new Tuple<TreeNode, string>(node, prefix));
             }
             else

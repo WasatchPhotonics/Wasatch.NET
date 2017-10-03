@@ -68,7 +68,6 @@ namespace WinFormDemo
         List<Series> traces = new List<Series>();
         bool graphWavenumbers;
         bool shutdownPending;
-        bool updateSettings;
 
         Settings settings;
        
@@ -121,7 +120,7 @@ namespace WinFormDemo
 
             // one or more of these seriously increases laser power
             s.linkLaserModToIntegrationTime(false);
-            s.setLaserMod(false);
+            s.setLaserModulationEnable(false);
             s.setIntegrationTimeMS(100);
             s.setCCDTriggerSource(0);
             s.setLaserEnable(false);
