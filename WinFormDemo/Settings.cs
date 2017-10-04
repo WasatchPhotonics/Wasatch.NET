@@ -155,14 +155,14 @@ namespace WinFormDemo
             update("detectorTempMax", spec.detectorTempMax);
             update("detectorTempMin", spec.detectorTempMin);
             update("excitationNM", spec.excitationNM);
-            update("fpgaDataHeader", spec.fpgaDataHeader);
-            update("fpgaHasActualIntegTime", spec.fpgaHasActualIntegTime);
-            update("fpgaHasAreaScan", spec.fpgaHasAreaScan);
-            update("fpgaHasCFSelect", spec.fpgaHasCFSelect);
-            update("fpgaHasHorizBinning", spec.fpgaHasHorizBinning);
-            update("fpgaIntegrationTimeResolution", spec.fpgaIntegrationTimeResolution);
-            update("fpgaLaserControl", spec.fpgaLaserControl);
-            update("fpgaLaserType", spec.fpgaLaserType);
+            update("fpgaDataHeader", spec.fpgaOptions.dataHeader);
+            update("fpgaHasActualIntegTime", spec.fpgaOptions.hasActualIntegTime);
+            update("fpgaHasAreaScan", spec.fpgaOptions.hasAreaScan);
+            update("fpgaHasCFSelect", spec.fpgaOptions.hasCFSelect);
+            update("fpgaHasHorizBinning", spec.fpgaOptions.hasHorizBinning);
+            update("fpgaIntegrationTimeResolution", spec.fpgaOptions.integrationTimeResolution);
+            update("fpgaLaserControl", spec.fpgaOptions.laserControl);
+            update("fpgaLaserType", spec.fpgaOptions.laserType);
             update("hasBattery", spec.hasBattery);
             update("hasCooling", spec.hasCooling);
             update("hasLaser", spec.hasLaser);
@@ -230,10 +230,10 @@ namespace WinFormDemo
             if (spec.hasCooling)
                 update("ccdTempEnable", spec.getCCDTempEnabled());
 
-            if (spec.fpgaHasActualIntegTime)
+            if (spec.fpgaOptions.hasActualIntegTime)
                 update("actualIntegrationTimeMS", spec.getActualIntegrationTime());
 
-            if (spec.fpgaHasHorizBinning)
+            if (spec.fpgaOptions.hasHorizBinning)
                 update("horizBinning", spec.getHorizBinning());
 
             if (spec.hasLaser)

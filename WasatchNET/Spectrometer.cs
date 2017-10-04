@@ -94,15 +94,8 @@ namespace WasatchNET
         public string firmwarePartNum;
         public string firmwareDesc;
 
-        // FPGA compilation options
-        public FPGA_INTEG_TIME_RES fpgaIntegrationTimeResolution { get; private set; }
-        public FPGA_DATA_HEADER fpgaDataHeader { get; private set; }
-        public bool fpgaHasCFSelect { get; private set; }
-        public FPGA_LASER_TYPE fpgaLaserType { get; private set; }
-        public FPGA_LASER_CONTROL fpgaLaserControl { get; private set; }
-        public bool fpgaHasAreaScan { get; private set; }
-        public bool fpgaHasActualIntegTime { get; private set; }
-        public bool fpgaHasHorizBinning { get; private set; }
+        // FPGA Compilation Options
+        public FPGAOptions fpgaOptions;
 
         // GET_MODEL_CONFIG (page 0)
         public string model { get; private set; }
@@ -244,7 +237,7 @@ namespace WasatchNET
             }
 
             // see how the FPGA was compiled
-            readCompilationOptions();
+            fpgaOptions = new FPGAOptions(this);
 
             // MustardTree uses 2048-pixel version of the S11510, and all InGaAs are 512
             pixels = (uint) activePixelsHoriz;
@@ -324,7 +317,7 @@ namespace WasatchNET
         /// <param name="wIndex">an optional numeric argument used by some opcodes</param>
         /// <param name="fullLen">the actual number of expected return bytes (not all needed)</param>
         /// <returns>the array of returned bytes (null on error)</returns>
-        byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
+        internal byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
         {
             int bytesToRead = fullLen == 0 ? len : fullLen;
             byte[] buf = new byte[bytesToRead];
@@ -364,7 +357,7 @@ namespace WasatchNET
         /// <param name="opcode">the wValue to send along with the "second-tier" command</param>
         /// <param name="len">how many bytes of response are expected</param>
         /// <returns>array of returned bytes (null on error)</returns>
-        byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0)
+        internal byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0)
         {
             byte[] buf = new byte[len];
 
@@ -555,70 +548,6 @@ namespace WasatchNET
         }
         #endregion
         
-        #region FPGAOptions
-        /// <summary>
-        /// Read FPGA compiler options; for values, see ENG-0034.
-        /// </summary>
-        void readCompilationOptions()
-        {
-            byte[] buf = getCmd2(Opcodes.READ_COMPILATION_OPTIONS, 2);
-            if (buf == null)
-                return;
-
-            ushort word = (ushort) (buf[0] | (buf[1] << 8));
-            logger.debug("FPGA compiler options: 0x{0:x4}", word);
-
-            // bits 0-2: 0000 0000 0000 0111 fpgaIntegrationTimeResolution
-            // bit  3-5: 0000 0000 0011 1000 fpgaDataHeader
-            // bit    6: 0000 0000 0100 0000 fpgaHasCFSelect
-            // bit  7-8: 0000 0001 1000 0000 fpgaLaserType
-            // bit 9-11: 0000 1110 0000 0000 fpgaLaserControl
-            // bit   12: 0001 0000 0000 0000 fpgaHasAreaScan
-            // bit   13: 0010 0000 0000 0000 fpgaHasActualIntegTime
-            // bit   14: 0100 0000 0000 0000 fpgaHasHorizBinning
-
-            // Question: how would the ENUMs handle misconfigured spectrometers?
-            try
-            {
-                fpgaIntegrationTimeResolution = (FPGA_INTEG_TIME_RES) (word & 0x07);
-                fpgaDataHeader = (FPGA_DATA_HEADER) ((word & 0x0038) >> 3);
-                fpgaHasCFSelect = (word & 0x0040) != 0;
-                fpgaLaserType = (FPGA_LASER_TYPE)((word & 0x0180) >> 7);
-                fpgaLaserControl = (FPGA_LASER_CONTROL)((word & 0x0e00) >> 9);
-                fpgaHasAreaScan = (word & 0x1000) != 0;
-                fpgaHasActualIntegTime = (word & 0x2000) != 0;
-                fpgaHasHorizBinning = (word & 0x4000) != 0;
-            }
-            catch (Exception ex)
-            {
-                logger.error("failed to parse FPGA compilation options: {0}", ex.Message);
-            }
-
-            if (logger.debugEnabled())
-            {
-                logger.debug("  fpgaIntegrationTimeResolution = {0}", fpgaIntegrationTimeResolution);
-                logger.debug("  fpgaDataHeader                = {0}", fpgaDataHeader);
-                logger.debug("  fpgaHasCFSelect               = {0}", fpgaHasCFSelect);
-                logger.debug("  fpgaLaserType                 = {0}", fpgaLaserType);
-                logger.debug("  fpgaLaserControl              = {0}", fpgaLaserControl);
-                logger.debug("  fpgaHasAreaScan               = {0}", fpgaHasAreaScan);
-                logger.debug("  fpgaHasActualIntegTime        = {0}", fpgaHasActualIntegTime);
-                logger.debug("  fpgaHasHorizBinning           = {0}", fpgaHasHorizBinning);
-            }
-        }
-
-        // Apparently we have one-shot USB calls for the above as well.
-        // For variety, and to handle misconfigured spectrometers, return
-        // these as ints rather than enums.
-        public int  getOptIntTimeRes()        { return Unpack.toInt (getCmd2(Opcodes.OPT_INT_TIME_RES, 1)); }
-        public int  getOptDataHdrTab()        { return Unpack.toInt (getCmd2(Opcodes.OPT_DATA_HDR_TAB, 1)); }
-        public bool getOptCFSelect()          { return Unpack.toBool(getCmd2(Opcodes.OPT_CF_SELECT, 1)); } 
-        public int  getOptLaserType()         { return Unpack.toInt (getCmd2(Opcodes.OPT_LASER, 1)); }
-        public int  getOptLaserControl()      { return Unpack.toInt (getCmd2(Opcodes.OPT_LASER_CONTROL, 1)); } 
-        public bool getOptAreaScan()          { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); } 
-        public bool getOptActIntTime()        { return Unpack.toBool(getCmd2(Opcodes.OPT_ACT_INT_TIME, 1)); } 
-        public bool getOptHorizontalBinning() { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); }
-        #endregion
 
         #region spec_comms
 
@@ -888,6 +817,18 @@ namespace WasatchNET
         public uint   getLineLength()                   { return Unpack.toUshort(getCmd2(Opcodes.GET_LINE_LENGTH,               2)); }
         public byte   getSelectedLaser()                { return Unpack.toByte  (getCmd(Opcodes.GET_SELECTED_LASER,             1)); }
         public bool   getLaserModulationLinkedToIntegrationTime() { return Unpack.toBool(getCmd(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME, 1)); }
+
+        // These USB calls duplicate FPGAOptions (for non-FPGA spectrometers?)
+        // For variety, and to handle misconfigured spectrometers, return
+        // these as ints rather than enums.
+        public int  getOptIntTimeRes()        { return Unpack.toInt (getCmd2(Opcodes.OPT_INT_TIME_RES, 1)); }
+        public int  getOptDataHdrTab()        { return Unpack.toInt (getCmd2(Opcodes.OPT_DATA_HDR_TAB, 1)); }
+        public bool getOptCFSelect()          { return Unpack.toBool(getCmd2(Opcodes.OPT_CF_SELECT, 1)); } 
+        public int  getOptLaserType()         { return Unpack.toInt (getCmd2(Opcodes.OPT_LASER, 1)); }
+        public int  getOptLaserControl()      { return Unpack.toInt (getCmd2(Opcodes.OPT_LASER_CONTROL, 1)); } 
+        public bool getOptAreaScan()          { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); } 
+        public bool getOptActIntTime()        { return Unpack.toBool(getCmd2(Opcodes.OPT_ACT_INT_TIME, 1)); } 
+        public bool getOptHorizontalBinning() { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); }
         
         // TODO: something's buggy with these
         public uint   getActualIntegrationTime()        { return Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 3, fullLen: 6)); }

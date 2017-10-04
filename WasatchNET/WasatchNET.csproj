@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FPGAOptions.cs" />
     <Compile Include="ParseData.cs" />
     <Compile Include="Unpack.cs" />
     <Compile Include="FunkyFloat.cs" />
