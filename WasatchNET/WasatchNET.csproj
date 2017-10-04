@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FeatureIdentification.cs" />
     <Compile Include="FPGAOptions.cs" />
     <Compile Include="ParseData.cs" />
     <Compile Include="Unpack.cs" />

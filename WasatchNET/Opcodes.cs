@@ -6,21 +6,25 @@ namespace WasatchNET
     // Enumerations
     ////////////////////////////////////////////////////////////////////////////
 
-    // funny that C# lets you define enums in a namespace, but not constants :-/
+    // move to FPGAOptions?
     public enum FPGA_INTEG_TIME_RES { ONE_MS, TEN_MS, SWITCHABLE, ERROR };
     public enum FPGA_DATA_HEADER { NONE, OCEAN_OPTICS, WASATCH, ERROR };
     public enum FPGA_LASER_TYPE { NONE, INTERNAL, EXTERNAL, ERROR };
     public enum FPGA_LASER_CONTROL { MODULATION, TRANSITION_POINTS, RAMPING, ERROR };
+
     public enum CCD_TRIGGER_SOURCE { USB, EXTERNAL, ERROR };
     public enum EXTERNAL_TRIGGER_OUTPUT {  LASER_MODULATION, INTEGRATION_ACTIVE_PULSE, ERROR };
     public enum HORIZ_BINNING { NONE, TWO_PIXEL, FOUR_PIXEL, ERROR };
 
     /// <summary>
     /// Convenience enum for mapping USB API commands to stringifiable English 
-    /// labels. At this time, I am keeping these aligned with the USB API 
-    /// documentation for easy cross-referencing with manuals (e.g. GET_LASER
-    /// instead of GET_LASER_ENABLED).
+    /// labels. 
     /// </summary>
+    /// <remarks>
+    /// At this time, I am keeping these aligned with the USB API documentation 
+    /// (mostly) for easy cross-referencing with manuals (e.g. GET_LASER instead 
+    /// of GET_LASER_ENABLED).
+    /// </remarks>
     public enum Opcodes
     {
         ACQUIRE_CCD,

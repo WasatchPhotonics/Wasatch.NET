@@ -12,11 +12,11 @@ namespace WasatchNET
 
         public enum LogLevel { DEBUG, INFO, ERROR, NEVER };
         public LogLevel level = LogLevel.INFO;
-        public string lastError { get; private set; }
 
         TextBox textBox = null;
-        List<string> bufferedMessages;
         StreamWriter outfile;
+
+        Queue<string> recentErrors = new Queue<string>();
 
         static public Logger getInstance()
         {
@@ -27,13 +27,20 @@ namespace WasatchNET
         {
         }
 
-        // assign or change textbox after construction
+        /// <summary>
+        /// If you're developing in WinForms, pass a TextBook into the Logger 
+        /// for instant visualization!
+        /// </summary>
+        /// <param name="tb">the TextBox control where you would like log messages to appear</param>
         public void setTextBox(TextBox tb)
         {
-            bufferedMessages = new List<string>();
             textBox = tb;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="path"></param>
         public void setPathname(string path)
         {
             outfile = new StreamWriter(path);
@@ -46,10 +53,46 @@ namespace WasatchNET
 
         public bool debugEnabled() { return level <= LogLevel.DEBUG; }
 
+        public string getLastError()
+        {
+            lock (instance)
+            {
+                if (recentErrors.Count > 0)
+                    return recentErrors.Dequeue();
+                else
+                    return null;
+            }
+        }
+
+        public List<string> getErrors()
+        {
+            lock (instance)
+            {
+                if (recentErrors.Count > 0)
+                {
+                    List<string> retval = new List<string>();
+                    while (recentErrors.Count > 0)
+                        retval.Add(recentErrors.Dequeue());
+                    return retval;
+                }
+                return null;
+            }
+        }
+
+        public bool hasError()
+        {
+            lock (instance)
+                return recentErrors.Count > 0;
+        }
+
         public void error(string fmt, params Object[] obj)
         {
             lock (instance)
-                lastError = String.Format(String.Format(fmt, obj));
+            {
+                recentErrors.Enqueue(String.Format(String.Format(fmt, obj)));
+                while (recentErrors.Count > 100)
+                    recentErrors.Dequeue();
+            }
 
             if (level <= LogLevel.ERROR)
                 log(LogLevel.ERROR, fmt, obj);
@@ -78,22 +121,8 @@ namespace WasatchNET
                 if (outfile != null)
                     outfile.WriteLine(msg);
 
-                if (bufferedMessages != null)
-                    bufferedMessages.Add(msg);
-            }
-        }
-
-        // display any queued messages to the associated TextBox, if there is one; clear the queue
-        public void flush()
-        {
-            lock (instance)
-            {
-                if (textBox != null && bufferedMessages.Count != 0)
-                {
-                    String joined = String.Join(Environment.NewLine, bufferedMessages) + Environment.NewLine;
-                    bufferedMessages.Clear();
-                    textBox.BeginInvoke(new MethodInvoker(delegate { textBox.AppendText(joined); }));
-                }
+                if (textBox != null)
+                    textBox.BeginInvoke(new MethodInvoker(delegate { textBox.AppendText(msg); }));
             }
         }
 

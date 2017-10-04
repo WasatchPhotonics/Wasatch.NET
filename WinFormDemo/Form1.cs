@@ -111,7 +111,6 @@ namespace WinFormDemo
 
             // TODO: move into SpectrometerState ctor
             state.worker.DoWork += backgroundWorker_DoWork;
-            state.worker.ProgressChanged += backgroundWorker_ProgressChanged;
             state.worker.RunWorkerCompleted += backgroundWorker_RunWorkerCompleted;
 
             spectrometerStates.Add(s, state);
@@ -477,6 +476,12 @@ namespace WinFormDemo
         // BackgroundWorker: GUI Updates
         ////////////////////////////////////////////////////////////////////////
 
+        /// <summary>
+        /// Update the graph at 10Hz regardless of integration time(s) 
+        /// (prevents CPU overruns).
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void backgroundWorkerGUIUpdate_DoWork(object sender, DoWorkEventArgs e)
         {
             BackgroundWorker worker = sender as BackgroundWorker;
@@ -486,7 +491,6 @@ namespace WinFormDemo
                     break;
 
                 chart1.BeginInvoke(new MethodInvoker(delegate { updateGraph(); }));
-                logger.flush();
 
                 Thread.Sleep(100);
             }
@@ -496,6 +500,15 @@ namespace WinFormDemo
         // BackgroundWorker: Settings Update
         ////////////////////////////////////////////////////////////////////////
 
+        /// <summary>
+        /// Update TreeView settings in a background thread.
+        /// </summary>
+        /// <remarks>
+        /// Because...
+        /// 1. there are a lot of them
+        /// 2. if USB errors occur, timeouts can cause this to take awhile
+        /// 3. it forces us to test some nice concurrency corner-cases
+        /// </remarks>
         private void backgroundWorkerSettings_DoWork(object sender, DoWorkEventArgs e)
         {
             settings.updateAll(currentSpectrometer);
@@ -505,13 +518,19 @@ namespace WinFormDemo
         // Background Worker: Acquisition Threads
         ////////////////////////////////////////////////////////////////////////
 
+        /// <summary>
+        /// Perform all acquisitions in background threads so the GUI stays responsive.
+        /// </summary>
+        /// <remarks>
+        /// Note that this method is used by potentially several different 
+        /// BackgroundWorkers in parallel (one per attached spectrometer).
+        /// </remarks>
         private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             Spectrometer spectrometer = (Spectrometer) e.Argument;
             SpectrometerState state = spectrometerStates[spectrometer];
 
             string prefix = String.Format("Worker.{0}.{1}", spectrometer.model, spectrometer.serialNumber);
-            logger.debug("{0}: starting", prefix);
             state.running = true;
 
             BackgroundWorker worker = sender as BackgroundWorker;
@@ -523,9 +542,6 @@ namespace WinFormDemo
                 lock(spectrometers)
                     state.processSpectrum(raw);
 
-                // report progress
-                // worker.ReportProgress(scanCount, spectrometer);
-
                 // end thread if we've been asked to cancel
                 if (worker.CancellationPending)
                     break;
@@ -533,14 +549,9 @@ namespace WinFormDemo
                 // for debugging only
                 Thread.Sleep(10);
             }
-            logger.debug("{0}: stopped", prefix);
-            state.running = false;
-            e.Result = spectrometer;
-        }
 
-        private void backgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            // Spectrometer spectrometer = (Spectrometer) e.UserState;
+            state.running = false;
+            e.Result = spectrometer; // pass spectrometer handle to _Completed callback
         }
 
         private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)

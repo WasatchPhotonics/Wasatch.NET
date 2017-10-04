@@ -126,6 +126,7 @@ That said, some known areas for improvement can be found in our Backlog
 - [ ] support writing EEPROM
 - [ ] Doxygen rendered API documentation
 - [ ] perform a sweep for boardType incompatibilities in API calls
+- [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
 
 ## Complete
 

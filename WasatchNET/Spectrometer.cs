@@ -55,8 +55,6 @@ namespace WasatchNET
         // Inner types
         ////////////////////////////////////////////////////////////////////////
 
-        public enum BOARD_TYPES {  RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, STROKER_ARM, ERROR };
-
         public class AcquisitionStatus
         {
             public ushort checksum;
@@ -90,9 +88,7 @@ namespace WasatchNET
         public double[] wavenumbers { get; private set; }
 
         // Feature Identification API
-        public BOARD_TYPES boardType { get; private set; }
-        public string firmwarePartNum;
-        public string firmwareDesc;
+        FeatureIdentification featureIdentification;
 
         // FPGA Compilation Options
         public FPGAOptions fpgaOptions;
@@ -226,7 +222,7 @@ namespace WasatchNET
             }
 
             // derive some values from PID
-            performFeatureIdentification();
+            featureIdentification = new FeatureIdentification(usbRegistry.Pid);
 
             // load EEPROM configuration
             if (!getModelConfig())
@@ -249,7 +245,7 @@ namespace WasatchNET
             spectralReader = usbDevice.OpenEndpointReader(ReadEndpointID.Ep02);
             statusReader = usbDevice.OpenEndpointReader(ReadEndpointID.Ep06);
 
-            // MZ: do we need something like this?
+            // by default, integration time is zero in HW
             setIntegrationTimeMS(minIntegrationTimeMS);
 
             return true;
@@ -272,38 +268,6 @@ namespace WasatchNET
             }
         }
         #endregion
-
-        void performFeatureIdentification()
-        {
-            if (usbRegistry.Pid == 0x1000)
-            {
-                boardType = BOARD_TYPES.RAMAN_FX2;
-                firmwarePartNum = "170003";
-                firmwareDesc = "Stroker USB Board FX2 Code";
-            }
-            else if (usbRegistry.Pid == 0x2000)
-            {
-                boardType = BOARD_TYPES.INGAAS_FX2;
-                firmwarePartNum = "170037";
-                firmwareDesc = "Hamamatsu InGaAs USB Board FX2 Code";
-            }
-            else if (usbRegistry.Pid == 0x3000)
-            {
-                boardType = BOARD_TYPES.DRAGSTER_FX3;
-                firmwarePartNum = "170001";
-                firmwareDesc = "Dragster USB Board FX3 Code";
-            }
-            else if (usbRegistry.Pid == 0x4000)
-            {
-                boardType = BOARD_TYPES.STROKER_ARM;
-                firmwarePartNum = "170019";
-                firmwareDesc = "Stroker ARM USB Board";
-            }
-            else
-            {
-                logger.error("Unrecognized PID {0:x4}", usbRegistry.Pid);
-            }
-        }
 
         ////////////////////////////////////////////////////////////////////////
         // Utilities
@@ -688,9 +652,9 @@ namespace WasatchNET
         /// </remarks>
         public void setTriggerDelay(uint value)
         {
-            if (boardType == BOARD_TYPES.RAMAN_FX2)
+            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
             {
-                logger.error("setTriggerDelay not supported on {0}", boardType);
+                logger.error("setTriggerDelay not supported on {0}", featureIdentification.boardType);
                 return;
             }
 
