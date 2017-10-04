@@ -4,6 +4,8 @@ WasatchNET/bin/
 WasatchNET/obj/
 WinFormDemo/bin/
 WinFormDemo/obj/
+UnitTests/bin/
+UnitTests/obj/
 lib/WasatchNET.dll
 packages/
 doxygen.out

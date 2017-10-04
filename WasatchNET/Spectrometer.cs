@@ -55,6 +55,8 @@ namespace WasatchNET
         // Inner types
         ////////////////////////////////////////////////////////////////////////
 
+        public enum BOARD_TYPES {  RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, STROKER_ARM, ERROR };
+
         public class AcquisitionStatus
         {
             public ushort checksum;
@@ -88,7 +90,7 @@ namespace WasatchNET
         public double[] wavenumbers { get; private set; }
 
         // Feature Identification API
-        public string descriptorSerialNum;
+        public BOARD_TYPES boardType { get; private set; }
         public string firmwarePartNum;
         public string firmwareDesc;
 
@@ -144,7 +146,7 @@ namespace WasatchNET
 
         // GET_MODEL_CONFIG (page 4)
         public byte[] userData { get; private set; } 
-        public string userText { get { return parseString(userData); } }
+        public string userText { get { return ParseData.toString(userData); } }
 
         // GET_MODEL_CONFIG (page 5)
         public short[] badPixels { get; private set; }
@@ -282,25 +284,25 @@ namespace WasatchNET
         {
             if (usbRegistry.Pid == 0x1000)
             {
-                descriptorSerialNum = "Raman FX2";
+                boardType = BOARD_TYPES.RAMAN_FX2;
                 firmwarePartNum = "170003";
                 firmwareDesc = "Stroker USB Board FX2 Code";
             }
             else if (usbRegistry.Pid == 0x2000)
             {
-                descriptorSerialNum = "InGaAs FX2";
+                boardType = BOARD_TYPES.INGAAS_FX2;
                 firmwarePartNum = "170037";
                 firmwareDesc = "Hamamatsu InGaAs USB Board FX2 Code";
             }
             else if (usbRegistry.Pid == 0x3000)
             {
-                descriptorSerialNum = "Dragster FX3";
+                boardType = BOARD_TYPES.DRAGSTER_FX3;
                 firmwarePartNum = "170001";
                 firmwareDesc = "Dragster USB Board FX3 Code";
             }
             else if (usbRegistry.Pid == 0x4000)
             {
-                descriptorSerialNum = "Stroker ARM";
+                boardType = BOARD_TYPES.STROKER_ARM;
                 firmwarePartNum = "170019";
                 firmwareDesc = "Stroker ARM USB Board";
             }
@@ -327,26 +329,24 @@ namespace WasatchNET
             int bytesToRead = fullLen == 0 ? len : fullLen;
             byte[] buf = new byte[bytesToRead];
 
+            UsbSetupPacket setupPacket = new UsbSetupPacket(
+                DEVICE_TO_HOST, // bRequestType
+                cmd[opcode],    // bRequest
+                0,              // wValue
+                wIndex,         // wIndex
+                bytesToRead);   // wLength
+
             // Question: if the device returns 6 bytes on Endpoint 0, but I only
             // need the first so pass byte[1], are the other 5 bytes discarded or
             // queued?
             lock (commsLock)
             {
-                logger.debug("starting {0}", opcode.ToString());
-                UsbSetupPacket setupPacket = new UsbSetupPacket(
-                    DEVICE_TO_HOST, // bRequestType
-                    cmd[opcode],    // bRequest
-                    0,              // wValue
-                    wIndex,         // wIndex
-                    bytesToRead);   // wLength
-
                 if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < bytesToRead)
                 {
                     logger.error("getCmd: failed to get {0} (0x{1:x2}) with index 0x{2:x4} via DEVICE_TO_HOST ({3} bytes read)",
                         opcode.ToString(), cmd[opcode], wIndex, bytesRead);
                     return null;
                 }
-                logger.debug("finished {0}", opcode.ToString());
             }
 
             if (fullLen == 0)
@@ -368,23 +368,21 @@ namespace WasatchNET
         {
             byte[] buf = new byte[len];
 
+            UsbSetupPacket setupPacket = new UsbSetupPacket(
+                DEVICE_TO_HOST,                     // bRequestType
+                cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest
+                cmd[opcode],                        // wValue
+                wIndex,                             // wIndex
+                len);                               // wLength
+
             lock (commsLock)
             {
-                logger.debug("starting {0}", opcode.ToString());
-                UsbSetupPacket setupPacket = new UsbSetupPacket(
-                    DEVICE_TO_HOST,                     // bRequestType
-                    cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest
-                    cmd[opcode],                        // wValue
-                    wIndex,                             // wIndex
-                    len);                               // wLength
-
                 if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < len)
                 {
                     logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} bytes read)",
                         opcode.ToString(), cmd[opcode], bytesRead);
                     return null;
                 }
-                logger.debug("finished {0}", opcode.ToString());
             }
             return buf;
         }
@@ -399,20 +397,17 @@ namespace WasatchNET
         /// <returns>true on success, false on error</returns>
         bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
+            ushort wLength = (ushort)((buf == null) ? 0 : buf.Length);
+
+            UsbSetupPacket setupPacket = new UsbSetupPacket(
+                HOST_TO_DEVICE, // bRequestType
+                cmd[opcode],    // bRequest
+                wValue,         // wValue
+                wIndex,         // wIndex
+                wLength);       // wLength
+
             lock (commsLock)
             {
-                ushort wLength = 0;
-                if (buf != null)
-                {
-                    wLength = (ushort)buf.Length;
-                }
-                UsbSetupPacket setupPacket = new UsbSetupPacket(
-                    HOST_TO_DEVICE, // bRequestType
-                    cmd[opcode],    // bRequest
-                    wValue,         // wValue
-                    wIndex,         // wIndex
-                    wLength);       // wLength
-
                 if (!usbDevice.ControlTransfer(ref setupPacket, buf, wLength, out int bytesWritten))
                 {
                     logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4})",
@@ -422,70 +417,6 @@ namespace WasatchNET
             }
             return true;
         }
-
-        #region unpackers
-        bool toBool(byte[] buf)
-        {
-            return buf != null && buf[0] != 0;
-        }
-
-        byte toByte(byte[] buf)
-        {
-            return (byte) ((buf == null) ? 0 : buf[0]);
-        }
-
-        ushort toUshort(byte[] buf)
-        {
-            if (buf == null)
-                return 0;
-
-            if (buf.Length == 1)
-                return buf[0];
-            else
-                return BitConverter.ToUInt16(buf, 0);
-        }
-
-        short toShort(byte[] buf)
-        {
-            if (buf == null)
-                return -1;
-
-            if (buf.Length == 1)
-                return buf[0];
-            else
-                return BitConverter.ToInt16(buf, 0);
-        }
-
-        uint toUint(byte[] buf)
-        {
-            if (buf == null)
-                return 0;
-
-            byte[] tmp = new byte[4];   // round up
-            Array.Copy(buf, tmp, buf.Length);
-            return BitConverter.ToUInt32(tmp, 0);
-        }
-
-        int toInt(byte[] buf)
-        {
-            if (buf == null)
-                return -1;
-
-            byte[] tmp = new byte[4]; // round up
-            Array.Copy(buf, tmp, buf.Length);
-            return BitConverter.ToInt32(tmp, 0);
-        }
-
-        UInt64 toUint64(byte[] buf)
-        {
-            if (buf == null)
-                return 0;
-
-            byte[] tmp = new byte[8];   // round up
-            Array.Copy(buf, tmp, buf.Length);
-            return BitConverter.ToUInt64(tmp, 0);
-        }
-        #endregion
 
         ////////////////////////////////////////////////////////////////////////
         // GET_MODEL_CONFIG
@@ -509,64 +440,64 @@ namespace WasatchNET
 
             try 
             {
-                model                   = parseString(pages[0],  0, 16);
-                serialNumber            = parseString(pages[0], 16, 16);
-                baudRate                = parseInt32 (pages[0], 32); 
-                hasCooling              = parseBool  (pages[0], 36);
-                hasBattery              = parseBool  (pages[0], 37);
-                hasLaser                = parseBool  (pages[0], 38);
-                excitationNM            = parseInt16 (pages[0], 39);
-                slitSizeUM              = parseInt16 (pages[0], 41);
+                model                   = ParseData.toString(pages[0],  0, 16);
+                serialNumber            = ParseData.toString(pages[0], 16, 16);
+                baudRate                = ParseData.toInt32 (pages[0], 32); 
+                hasCooling              = ParseData.toBool  (pages[0], 36);
+                hasBattery              = ParseData.toBool  (pages[0], 37);
+                hasLaser                = ParseData.toBool  (pages[0], 38);
+                excitationNM            = ParseData.toInt16 (pages[0], 39);
+                slitSizeUM              = ParseData.toInt16 (pages[0], 41);
 
-                wavecalCoeffs[0]        = parseFloat (pages[1],  0);
-                wavecalCoeffs[1]        = parseFloat (pages[1],  4);
-                wavecalCoeffs[2]        = parseFloat (pages[1],  8);
-                wavecalCoeffs[3]        = parseFloat (pages[1], 12);
-                detectorTempCoeffs[0]   = parseFloat (pages[1], 16);
-                detectorTempCoeffs[1]   = parseFloat (pages[1], 20);
-                detectorTempCoeffs[2]   = parseFloat (pages[1], 24);
-                detectorTempMax         = parseInt16 (pages[1], 28);
-                detectorTempMin         = parseInt16 (pages[1], 30);
-                adcCoeffs[0]            = parseFloat(pages[1], 32);
-                adcCoeffs[1]            = parseFloat(pages[1], 36);
-                adcCoeffs[2]            = parseFloat(pages[1], 40);
-                thermistorResistanceAt298K = parseInt16(pages[1], 44);
-                thermistorBeta          = parseInt16(pages[1], 46);
-                calibrationDate         = parseString(pages[1], 48, 12);
-                calibrationBy           = parseString(pages[1], 60, 3);
+                wavecalCoeffs[0]        = ParseData.toFloat (pages[1],  0);
+                wavecalCoeffs[1]        = ParseData.toFloat (pages[1],  4);
+                wavecalCoeffs[2]        = ParseData.toFloat (pages[1],  8);
+                wavecalCoeffs[3]        = ParseData.toFloat (pages[1], 12);
+                detectorTempCoeffs[0]   = ParseData.toFloat (pages[1], 16);
+                detectorTempCoeffs[1]   = ParseData.toFloat (pages[1], 20);
+                detectorTempCoeffs[2]   = ParseData.toFloat (pages[1], 24);
+                detectorTempMax         = ParseData.toInt16 (pages[1], 28);
+                detectorTempMin         = ParseData.toInt16 (pages[1], 30);
+                adcCoeffs[0]            = ParseData.toFloat(pages[1], 32);
+                adcCoeffs[1]            = ParseData.toFloat(pages[1], 36);
+                adcCoeffs[2]            = ParseData.toFloat(pages[1], 40);
+                thermistorResistanceAt298K = ParseData.toInt16(pages[1], 44);
+                thermistorBeta          = ParseData.toInt16(pages[1], 46);
+                calibrationDate         = ParseData.toString(pages[1], 48, 12);
+                calibrationBy           = ParseData.toString(pages[1], 60, 3);
 
-                detectorName            = parseString(pages[2], 0, 16);
-                activePixelsHoriz       = parseInt16(pages[2], 16); // note: byte 18 apparently unused
-                activePixelsVert        = parseInt16(pages[2], 19);
-                minIntegrationTimeMS    = parseUInt16(pages[2], 21);
-                maxIntegrationTimeMS    = parseUInt16(pages[2], 23);
-                actualHoriz             = parseInt16(pages[2], 25);
-                ROIHorizStart           = parseInt16(pages[2], 27);
-                ROIHorizEnd             = parseInt16(pages[2], 29);
-                ROIVertRegionStart[0]   = parseInt16(pages[2], 31);
-                ROIVertRegionEnd[0]     = parseInt16(pages[2], 33);
-                ROIVertRegionStart[1]   = parseInt16(pages[2], 35);
-                ROIVertRegionEnd[1]     = parseInt16(pages[2], 37);
-                ROIVertRegionStart[2]   = parseInt16(pages[2], 39);
-                ROIVertRegionEnd[2]     = parseInt16(pages[2], 41);
-                // linearityCoeff[0]    = parseFloat(pages[2], 43);
-                // linearityCoeff[1]    = parseFloat(pages[2], 47);
-                // linearityCoeff[2]    = parseFloat(pages[2], 51);
-                // linearityCoeff[3]    = parseFloat(pages[2], 55);
-                // linearityCoeff[4]    = parseFloat(pages[2], 59);
+                detectorName            = ParseData.toString(pages[2], 0, 16);
+                activePixelsHoriz       = ParseData.toInt16(pages[2], 16); // note: byte 18 apparently unused
+                activePixelsVert        = ParseData.toInt16(pages[2], 19);
+                minIntegrationTimeMS    = ParseData.toUInt16(pages[2], 21);
+                maxIntegrationTimeMS    = ParseData.toUInt16(pages[2], 23);
+                actualHoriz             = ParseData.toInt16(pages[2], 25);
+                ROIHorizStart           = ParseData.toInt16(pages[2], 27);
+                ROIHorizEnd             = ParseData.toInt16(pages[2], 29);
+                ROIVertRegionStart[0]   = ParseData.toInt16(pages[2], 31);
+                ROIVertRegionEnd[0]     = ParseData.toInt16(pages[2], 33);
+                ROIVertRegionStart[1]   = ParseData.toInt16(pages[2], 35);
+                ROIVertRegionEnd[1]     = ParseData.toInt16(pages[2], 37);
+                ROIVertRegionStart[2]   = ParseData.toInt16(pages[2], 39);
+                ROIVertRegionEnd[2]     = ParseData.toInt16(pages[2], 41);
+                // linearityCoeff[0]    = ParseData.toFloat(pages[2], 43);
+                // linearityCoeff[1]    = ParseData.toFloat(pages[2], 47);
+                // linearityCoeff[2]    = ParseData.toFloat(pages[2], 51);
+                // linearityCoeff[3]    = ParseData.toFloat(pages[2], 55);
+                // linearityCoeff[4]    = ParseData.toFloat(pages[2], 59);
 
-                // deviceLifetimeOperationMinutes = parseInt32(pages[3], 0);
-                // laserLifetimeOperationMinutes = parseInt32(pages[3], 4);
-                // laserTemperatureMax  = parseInt16(pages[3], 8);
-                // laserTemperatureMin  = parseInt16(pages[3], 10);
-                // laserTemperatureMax  = parseInt16(pages[3], 12); // dupe
-                // laserTemperatureMin  = parseInt16(pages[3], 14); // dupe
+                // deviceLifetimeOperationMinutes = ParseData.toInt32(pages[3], 0);
+                // laserLifetimeOperationMinutes = ParseData.toInt32(pages[3], 4);
+                // laserTemperatureMax  = ParseData.toInt16(pages[3], 8);
+                // laserTemperatureMin  = ParseData.toInt16(pages[3], 10);
+                // laserTemperatureMax  = ParseData.toInt16(pages[3], 12); // dupe
+                // laserTemperatureMin  = ParseData.toInt16(pages[3], 14); // dupe
 
                 userData = new byte[63];
                 Array.Copy(pages[4], userData, userData.Length);
 
                 for (int i = 0; i < 15; i++)
-                    badPixels[i] = parseInt16(pages[5], i * 2);
+                    badPixels[i] = ParseData.toInt16(pages[5], i * 2);
             }
             catch (Exception ex)
             {
@@ -624,53 +555,6 @@ namespace WasatchNET
         }
         #endregion
         
-        #region parsers
-        String parseString(byte[] buf, int index = 0, int len = 0) 
-        {
-            if (len == 0)
-                len = buf.Length;
-            String s = "";
-            for (int i = 0; i < len; i++)
-            {
-                int pos = index + i;
-                if (buf[pos] == 0)
-                    break;
-                s += (char)buf[pos];
-            }
-            return s.TrimEnd();
-        }
-
-        bool parseBool(byte[] buf, int index)
-        {
-            return buf[index] != 0;
-        }
-
-        float parseFloat(byte[] buf, int index)
-        {
-            return System.BitConverter.ToSingle(buf, index);
-        }
-
-        short parseInt16(byte[] buf, int index)
-        {
-            return System.BitConverter.ToInt16(buf, index);
-        }
-
-        ushort parseUInt16(byte[] buf, int index)
-        {
-            return System.BitConverter.ToUInt16(buf, index);
-        }
-
-        int parseInt32(byte[] buf, int index)
-        {
-            return System.BitConverter.ToInt32(buf, index);
-        }
-
-        uint parseUInt32(byte[] buf, int index)
-        {
-            return System.BitConverter.ToUInt32(buf, index);
-        }
-        #endregion
-
         #region FPGAOptions
         /// <summary>
         /// Read FPGA compiler options; for values, see ENG-0034.
@@ -726,14 +610,14 @@ namespace WasatchNET
         // Apparently we have one-shot USB calls for the above as well.
         // For variety, and to handle misconfigured spectrometers, return
         // these as ints rather than enums.
-        public int  getOptIntTimeRes()        { return toInt (getCmd2(Opcodes.OPT_INT_TIME_RES, 1)); }
-        public int  getOptDataHdrTab()        { return toInt (getCmd2(Opcodes.OPT_DATA_HDR_TAB, 1)); }
-        public bool getOptCFSelect()          { return toBool(getCmd2(Opcodes.OPT_CF_SELECT, 1)); } 
-        public int  getOptLaserType()         { return toInt (getCmd2(Opcodes.OPT_LASER, 1)); }
-        public int  getOptLaserControl()      { return toInt (getCmd2(Opcodes.OPT_LASER_CONTROL, 1)); } 
-        public bool getOptAreaScan()          { return toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); } 
-        public bool getOptActIntTime()        { return toBool(getCmd2(Opcodes.OPT_ACT_INT_TIME, 1)); } 
-        public bool getOptHorizontalBinning() { return toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); }
+        public int  getOptIntTimeRes()        { return Unpack.toInt (getCmd2(Opcodes.OPT_INT_TIME_RES, 1)); }
+        public int  getOptDataHdrTab()        { return Unpack.toInt (getCmd2(Opcodes.OPT_DATA_HDR_TAB, 1)); }
+        public bool getOptCFSelect()          { return Unpack.toBool(getCmd2(Opcodes.OPT_CF_SELECT, 1)); } 
+        public int  getOptLaserType()         { return Unpack.toInt (getCmd2(Opcodes.OPT_LASER, 1)); }
+        public int  getOptLaserControl()      { return Unpack.toInt (getCmd2(Opcodes.OPT_LASER_CONTROL, 1)); } 
+        public bool getOptAreaScan()          { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); } 
+        public bool getOptActIntTime()        { return Unpack.toBool(getCmd2(Opcodes.OPT_ACT_INT_TIME, 1)); } 
+        public bool getOptHorizontalBinning() { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); }
         #endregion
 
         #region spec_comms
@@ -816,6 +700,44 @@ namespace WasatchNET
             }
         }
 
+        /// <summary>
+        /// Sets the laser modulation period to the given 40-bit value.
+        /// </summary>
+        /// <param name="value">40-bit period</param>
+        /// <see cref="setLaserModulationDuration(ulong)"/>
+        public void setLaserModulationPeriod(UInt64 value)
+        {
+            try
+            {
+                UInt40 val = new UInt40(value);
+                sendCmd(Opcodes.SET_MOD_PERIOD, val.LSW, val.MidW, val.buf);
+            }
+            catch(Exception ex)
+            {
+                logger.error("WasatchNET.setLaserModulationPeriod: {0}", ex.Message);
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Sets the laser modulation pulse delay to the given 40-bit value.
+        /// </summary>
+        /// <param name="value">40-bit period</param>
+        /// <see cref="setLaserModulationDuration(ulong)"/>
+        public void setLaserModulationPulseDelay(UInt64 value)
+        {
+            try
+            {
+                UInt40 val = new UInt40(value);
+                sendCmd(Opcodes.SET_MOD_PULSE_DELAY, val.LSW, val.MidW, val.buf);
+            }
+            catch(Exception ex)
+            {
+                logger.error("WasatchNET.setLaserModulationPulseDelay: {0}", ex.Message);
+                return;
+            }
+        }
+
         public void setLaserTemperatureSetpoint(byte value)
         {
             const byte MAX = 127;
@@ -825,6 +747,27 @@ namespace WasatchNET
                 return;
             }
             sendCmd(Opcodes.SET_LASER_TEMP_SETPOINT, value);
+        }
+
+        /// <summary>
+        /// Set the trigger delay on supported models.
+        /// </summary>
+        /// <param name="value">24-bit value (0.5us)</param>
+        /// <remarks>
+        /// The value is in 0.5 microseconds, and supports a 24-bit unsigned value,
+        /// so the total range is 2^23 microseconds (about 8.3 sec).
+        /// </remarks>
+        public void setTriggerDelay(uint value)
+        {
+            if (boardType == BOARD_TYPES.RAMAN_FX2)
+            {
+                logger.error("setTriggerDelay not supported on {0}", boardType);
+                return;
+            }
+
+            ushort lsw = (ushort)(value & 0xffff);
+            byte msb = (byte)(value >> 16);
+            sendCmd(Opcodes.SET_TRIGGER_DELAY, lsw, msb);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -923,32 +866,32 @@ namespace WasatchNET
         // Trivial Getters
         ////////////////////////////////////////////////////////////////////////
 
-        public ushort getActualFrames()                 { return toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
-        public ushort getCCDTemperature()               { return toUshort(getCmd(Opcodes.GET_CCD_TEMP,                   2)); } 
-        public float  getCCDGain()                      { return FunkyFloat.toFloat(toUshort(getCmd(Opcodes.GET_CCD_GAIN,2)));}
-        public short  getCCDOffset()                    { return toShort (getCmd(Opcodes.GET_CCD_OFFSET,                 2)); }
-        public ushort getCCDSensingThreshold()          { return toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD,      2)); }
-        public bool   getCCDThresholdSensingEnabled()   { return toBool  (getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
-        public bool   getCCDTempEnabled()               { return toBool  (getCmd(Opcodes.GET_CCD_TEMP_ENABLE,            1)); }
-        public uint   getCCDTriggerDelay()              { return toUint  (getCmd(Opcodes.GET_TRIGGER_DELAY,              3, fullLen: 6)); }
-        public ushort getDAC()                          { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT,          2, 1)); }
-        public bool   getInterlockEnabled()             { return toBool  (getCmd(Opcodes.GET_INTERLOCK,                  1)); }
-        public bool   getLaserEnabled()                 { return toBool  (getCmd(Opcodes.GET_LASER,                      1)); }
-        public bool   getLaserModulationEnabled()       { return toBool  (getCmd(Opcodes.GET_LASER_MOD,                  1)); }
-        public UInt64 getLaserModulationDuration()      { return toUint64(getCmd(Opcodes.GET_MOD_DURATION,               5)); }
-        public UInt64 getLaserModulationPeriod()        { return toUint64(getCmd(Opcodes.GET_MOD_PERIOD,                 5)); }
-        public UInt64 getLaserModulationPulseDelay()    { return toUint64(getCmd(Opcodes.GET_MOD_PULSE_DELAY,            5)); }
-        public UInt64 getLaserModulationPulseWidth()    { return toUint64(getCmd(Opcodes.GET_LASER_MOD_PULSE_WIDTH,      5)); }
-        public bool   getLaserRampingEnabled()          { return toBool  (getCmd(Opcodes.GET_LASER_RAMPING_MODE,         1)); }
-        public ushort getLaserTemperatureRaw()          { return toUshort(getCmd(Opcodes.GET_LASER_TEMP,                 2)); } 
-        public byte   getLaserTemperatureSetpoint()     { return toByte  (getCmd(Opcodes.GET_LASER_TEMP_SETPOINT,        1, fullLen: 6)); } // MZ: unit? 
-        public uint   getLineLength()                   { return toUshort(getCmd2(Opcodes.GET_LINE_LENGTH,               2)); }
-        public byte   getSelectedLaser()                { return toByte  (getCmd(Opcodes.GET_SELECTED_LASER,             1)); }
-        public bool   getLaserModulationLinkedToIntegrationTime() { return toBool(getCmd(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME, 1)); }
+        public ushort getActualFrames()                 { return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
+        public ushort getCCDTemperature()               { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP,                   2)); } 
+        public float  getCCDGain()                      { return FunkyFloat.toFloat(Unpack.toUshort(getCmd(Opcodes.GET_CCD_GAIN,2)));}
+        public short  getCCDOffset()                    { return Unpack.toShort (getCmd(Opcodes.GET_CCD_OFFSET,                 2)); }
+        public ushort getCCDSensingThreshold()          { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD,      2)); }
+        public bool   getCCDThresholdSensingEnabled()   { return Unpack.toBool  (getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
+        public bool   getCCDTempEnabled()               { return Unpack.toBool  (getCmd(Opcodes.GET_CCD_TEMP_ENABLE,            1)); }
+        public uint   getCCDTriggerDelay()              { return Unpack.toUint  (getCmd(Opcodes.GET_TRIGGER_DELAY,              3, fullLen: 6)); }
+        public ushort getDAC()                          { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT,          2, 1)); }
+        public bool   getInterlockEnabled()             { return Unpack.toBool  (getCmd(Opcodes.GET_INTERLOCK,                  1)); }
+        public bool   getLaserEnabled()                 { return Unpack.toBool  (getCmd(Opcodes.GET_LASER,                      1)); }
+        public bool   getLaserModulationEnabled()       { return Unpack.toBool  (getCmd(Opcodes.GET_LASER_MOD,                  1)); }
+        public UInt64 getLaserModulationDuration()      { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_DURATION,               5)); }
+        public UInt64 getLaserModulationPeriod()        { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PERIOD,                 5)); }
+        public UInt64 getLaserModulationPulseDelay()    { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PULSE_DELAY,            5)); }
+        public UInt64 getLaserModulationPulseWidth()    { return Unpack.toUint64(getCmd(Opcodes.GET_LASER_MOD_PULSE_WIDTH,      5)); }
+        public bool   getLaserRampingEnabled()          { return Unpack.toBool  (getCmd(Opcodes.GET_LASER_RAMPING_MODE,         1)); }
+        public ushort getLaserTemperatureRaw()          { return Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMP,                 2)); } 
+        public byte   getLaserTemperatureSetpoint()     { return Unpack.toByte  (getCmd(Opcodes.GET_LASER_TEMP_SETPOINT,        1, fullLen: 6)); } // MZ: unit? 
+        public uint   getLineLength()                   { return Unpack.toUshort(getCmd2(Opcodes.GET_LINE_LENGTH,               2)); }
+        public byte   getSelectedLaser()                { return Unpack.toByte  (getCmd(Opcodes.GET_SELECTED_LASER,             1)); }
+        public bool   getLaserModulationLinkedToIntegrationTime() { return Unpack.toBool(getCmd(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME, 1)); }
         
         // TODO: something's buggy with these
-        public uint   getActualIntegrationTime()        { return toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 3, fullLen: 6)); }
-        public ushort getCCDTempSetpoint()              { return toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, wIndex: 0)); }
+        public uint   getActualIntegrationTime()        { return Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 3, fullLen: 6)); }
+        public ushort getCCDTempSetpoint()              { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, wIndex: 0)); }
 
         ////////////////////////////////////////////////////////////////////////
         // Trivial setters

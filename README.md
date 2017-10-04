@@ -8,12 +8,13 @@ properties and methods like integrationTimeMS and getSpectrum().
 Wasatch.NET is expected to work from all .NET-compatible languages, including:
 
 - C#
-- F#
+- LabVIEW (tested with 2017)
+- MATLAB/Simulink
+- Embarcadero Delphi
 - Xamarin
 - Visual Basic.NET
-- Visual Basic for Applications (Excel)
-- LabVIEW (tested with 2017)
-- Embarcadero Delphi
+- VBA (Excel)
+- F#
 
 If there are others you would like to see listed, please let us know and we'll 
 test them!
@@ -63,10 +64,11 @@ Visual Studio 2017 Community against the .NET 4.0 Client Profile.
 
 ## Wasatch Enlighten
 
-Wasatch.NET does not come with the INF or other setup files required to 
+Wasatch.NET *does not* come with the INF or other setup files required to 
 associate Wasatch Photonic's VID/PID tuples with libusb-win32.  The simplest
 solution for now is to install Enlighten, which automatically configures the 
-low-level USB driver bindings.
+low-level USB driver bindings so that your spectrometer will be properly
+enumerated by LibUsbDotNet and therefore visible in Wasatch.NET.
 
 # Build Configuration
 
@@ -95,15 +97,15 @@ For questions about the driver or API, please contact:
 # Wrapper Completeness
 
 The Wasatch.Driver series of wrappers over our USB API are provided as
-reference implementations to demonstrate how to command and control our 
+*reference implementations* to demonstrate how to command and control our 
 spectrometers over USB from a variety of platforms and languages. As working
-examples and "convenience wrappers," they are not guaranteed to include
+examples and "convenience wrappers," they are *not* guaranteed to include
 convenience functions for every call and option within the hardware API,
-nor are they necessarily the most efficient or optimal implementation in any
+*nor* are they necessarily the most efficient or optimal implementation in any
 given language.
 
 The formal and complete interface to our spectrometers is provided in our USB
-API documentation, and standard USB drivers to access that direct interface 
+API documentation. Standard USB drivers to access that direct interface 
 are plentiful on all standard operating systems: libusb, WinUSB etc. No 
 additional wrappers or libraries are required to make full use of our 
 spectrometers from the platform of your choice.
@@ -121,7 +123,9 @@ That said, some known areas for improvement can be found in our Backlog
 # Backlog
 
 - [ ] cover all API functions
+- [ ] support writing EEPROM
 - [ ] Doxygen rendered API documentation
+- [ ] perform a sweep for boardType incompatibilities in API calls
 
 ## Complete
 
@@ -135,4 +139,3 @@ That said, some known areas for improvement can be found in our Backlog
 - 2017-10-02 initial Doxygen
 - 2017-09-29 initial GitHub release
 - 2017-09-25 initial creation
-

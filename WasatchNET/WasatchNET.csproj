@@ -44,6 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ParseData.cs" />
+    <Compile Include="Unpack.cs" />
     <Compile Include="FunkyFloat.cs" />
     <Compile Include="Opcodes.cs" />
     <Compile Include="Driver.cs" />

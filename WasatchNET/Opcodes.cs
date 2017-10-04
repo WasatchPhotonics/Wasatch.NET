@@ -169,9 +169,9 @@ namespace WasatchNET
             cmd[Opcodes.SET_LASER_MOD_PULSE_WIDTH              ] = 0xdb; // impl
             cmd[Opcodes.SET_LASER_RAMPING_MODE                 ] = 0xe9; // impl
             cmd[Opcodes.SET_LASER_TEMP_SETPOINT                ] = 0xe7; // impl
-            cmd[Opcodes.SET_MOD_PERIOD                         ] = 0xc7;
-            cmd[Opcodes.SET_MOD_PULSE_DELAY                    ] = 0xc6;
-            cmd[Opcodes.SET_TRIGGER_DELAY                      ] = 0xaa;
+            cmd[Opcodes.SET_MOD_PERIOD                         ] = 0xc7; // impl
+            cmd[Opcodes.SET_MOD_PULSE_DELAY                    ] = 0xc6; // impl
+            cmd[Opcodes.SET_TRIGGER_DELAY                      ] = 0xaa; //
             cmd[Opcodes.VR_ENABLE_CCD_TEMP_CONTROL             ] = 0xd6;
             cmd[Opcodes.VR_GET_CCD_TEMP_CONTROL                ] = 0xda;
             cmd[Opcodes.VR_GET_CONTINUOUS_CCD                  ] = 0xcc;
