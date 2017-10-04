@@ -145,16 +145,16 @@ namespace WinFormDemo
         /// <param name="spec">The spectrometer whose settings to render on the TreeView</param>
         void updateFast(Spectrometer spec)
         {
-            update("activePixelsHoriz", spec.activePixelsHoriz);
-            update("activePixelsVert", spec.activePixelsVert);
-            update("actualHoriz", spec.actualHoriz);
-            update("baudRate", spec.baudRate);
-            update("calibrationBy", spec.calibrationBy);
-            update("calibrationDate", spec.calibrationDate);
-            update("detectorName", spec.detectorName);
-            update("detectorTempMax", spec.detectorTempMax);
-            update("detectorTempMin", spec.detectorTempMin);
-            update("excitationNM", spec.excitationNM);
+            update("activePixelsHoriz", spec.modelConfig.activePixelsHoriz);
+            update("activePixelsVert", spec.modelConfig.activePixelsVert);
+            update("actualHoriz", spec.modelConfig.actualHoriz);
+            update("baudRate", spec.modelConfig.baudRate);
+            update("calibrationBy", spec.modelConfig.calibrationBy);
+            update("calibrationDate", spec.modelConfig.calibrationDate);
+            update("detectorName", spec.modelConfig.detectorName);
+            update("detectorTempMax", spec.modelConfig.detectorTempMax);
+            update("detectorTempMin", spec.modelConfig.detectorTempMin);
+            update("excitationNM", spec.modelConfig.excitationNM);
             update("fpgaDataHeader", spec.fpgaOptions.dataHeader);
             update("fpgaHasActualIntegTime", spec.fpgaOptions.hasActualIntegTime);
             update("fpgaHasAreaScan", spec.fpgaOptions.hasAreaScan);
@@ -163,34 +163,34 @@ namespace WinFormDemo
             update("fpgaIntegrationTimeResolution", spec.fpgaOptions.integrationTimeResolution);
             update("fpgaLaserControl", spec.fpgaOptions.laserControl);
             update("fpgaLaserType", spec.fpgaOptions.laserType);
-            update("hasBattery", spec.hasBattery);
-            update("hasCooling", spec.hasCooling);
-            update("hasLaser", spec.hasLaser);
-            update("maxIntegrationTimeMS", spec.maxIntegrationTimeMS);
-            update("minIntegrationTimeMS", spec.minIntegrationTimeMS);
+            update("hasBattery", spec.modelConfig.hasBattery);
+            update("hasCooling", spec.modelConfig.hasCooling);
+            update("hasLaser", spec.modelConfig.hasLaser);
+            update("maxIntegrationTimeMS", spec.modelConfig.maxIntegrationTimeMS);
+            update("minIntegrationTimeMS", spec.modelConfig.minIntegrationTimeMS);
             update("model", spec.model);
             update("pixels", spec.pixels);
-            update("ROIHorizEnd", spec.ROIHorizEnd);
-            update("ROIHorizStart", spec.ROIHorizStart);
+            update("ROIHorizEnd", spec.modelConfig.ROIHorizEnd);
+            update("ROIHorizStart", spec.modelConfig.ROIHorizStart);
             update("serialNumber", spec.serialNumber);
-            update("slitSizeUM", spec.slitSizeUM);
-            update("thermistorBeta", spec.thermistorResistanceAt298K);
-            update("thermistorResistanceAt298K", spec.thermistorResistanceAt298K);
-            update("userText", spec.userText);
+            update("slitSizeUM", spec.modelConfig.slitSizeUM);
+            update("thermistorBeta", spec.modelConfig.thermistorResistanceAt298K);
+            update("thermistorResistanceAt298K", spec.modelConfig.thermistorResistanceAt298K);
+            update("userText", spec.modelConfig.userText);
 
             // arrays
-            for (int i = 0; i < spec.wavecalCoeffs.Length; i++)
-                update("wavecalCoeff" + i, spec.wavecalCoeffs[i]);
-            for (int i = 0; i < spec.detectorTempCoeffs.Length; i++)
-                update("detectorTempCoeff" + i, spec.detectorTempCoeffs[i]);
-            for (int i = 0; i < spec.adcCoeffs.Length; i++)
-                update("adcCoeff" + i, spec.adcCoeffs[i]);
-            for (int i = 0; i < spec.ROIVertRegionStart.Length; i++)
-                update(String.Format("ROIVertRegion{0}Start", i + 1), spec.ROIVertRegionStart[i]);
-            for (int i = 0; i < spec.ROIVertRegionEnd.Length; i++)
-                update(String.Format("ROIVertRegion{0}End", i + 1), spec.ROIVertRegionEnd[i]);
-            for (int i = 0; i < spec.badPixels.Length; i++)
-                update("badPixels" + i, spec.badPixels[i] == -1 ? "" : spec.badPixels[i].ToString());
+            for (int i = 0; i < spec.modelConfig.wavecalCoeffs.Length; i++)
+                update("wavecalCoeff" + i, spec.modelConfig.wavecalCoeffs[i]);
+            for (int i = 0; i < spec.modelConfig.detectorTempCoeffs.Length; i++)
+                update("detectorTempCoeff" + i, spec.modelConfig.detectorTempCoeffs[i]);
+            for (int i = 0; i < spec.modelConfig.adcCoeffs.Length; i++)
+                update("adcCoeff" + i, spec.modelConfig.adcCoeffs[i]);
+            for (int i = 0; i < spec.modelConfig.ROIVertRegionStart.Length; i++)
+                update(String.Format("ROIVertRegion{0}Start", i + 1), spec.modelConfig.ROIVertRegionStart[i]);
+            for (int i = 0; i < spec.modelConfig.ROIVertRegionEnd.Length; i++)
+                update(String.Format("ROIVertRegion{0}End", i + 1), spec.modelConfig.ROIVertRegionEnd[i]);
+            for (int i = 0; i < spec.modelConfig.badPixels.Length; i++)
+                update("badPixels" + i, spec.modelConfig.badPixels[i] == -1 ? "" : spec.modelConfig.badPixels[i].ToString());
         }
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace WinFormDemo
             update("fpgaRev", spec.getFPGARev());
             update("integrationTimeMS", spec.getIntegrationTimeMS());
 
-            if (spec.hasCooling)
+            if (spec.modelConfig.hasCooling)
                 update("ccdTempEnable", spec.getCCDTempEnabled());
 
             if (spec.fpgaOptions.hasActualIntegTime)
@@ -236,7 +236,7 @@ namespace WinFormDemo
             if (spec.fpgaOptions.hasHorizBinning)
                 update("horizBinning", spec.getHorizBinning());
 
-            if (spec.hasLaser)
+            if (spec.modelConfig.hasLaser)
             {
                 update("interlock", spec.getInterlockEnabled());
                 update("laserEnabled", spec.getLaserEnabled());

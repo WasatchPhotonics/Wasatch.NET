@@ -7,8 +7,7 @@ namespace WasatchNET
 {
     /// <summary>
     /// A class to extract fields of various primitive types embedded at 
-    /// arbitrary indexes within a byte array. Used to demarshall 
-    /// GET_MODEL_CONFIG pages.
+    /// arbitrary indexes within a byte array. Used by ModelConfig.
     /// </summary>
     /// <remarks>
     /// Differs from Unpack in that these functions all take an offset,
