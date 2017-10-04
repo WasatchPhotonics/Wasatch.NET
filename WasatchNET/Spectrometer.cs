@@ -390,31 +390,35 @@ namespace WasatchNET
         }
 
         /// <summary>
-        /// send a single control transfer command, with no response expected
+        /// send a single control transfer command (response not checked)
         /// </summary>
         /// <param name="opcode">the desired command</param>
         /// <param name="wValue">an optional secondary argument used by some commands</param>
         /// <param name="wIndex">an optional tertiary argument used by some commands</param>
+        /// <param name="buf">an data buffer used by some commands</param>
         /// <returns>true on success, false on error</returns>
-        bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0)
+        bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
             lock (commsLock)
             {
-                logger.debug("starting {0}", opcode.ToString());
+                ushort wLength = 0;
+                if (buf != null)
+                {
+                    wLength = (ushort)buf.Length;
+                }
                 UsbSetupPacket setupPacket = new UsbSetupPacket(
                     HOST_TO_DEVICE, // bRequestType
                     cmd[opcode],    // bRequest
                     wValue,         // wValue
                     wIndex,         // wIndex
-                    0);             // wLength
+                    wLength);       // wLength
 
-                if (!usbDevice.ControlTransfer(ref setupPacket, null, 0, out int bytesWritten))
+                if (!usbDevice.ControlTransfer(ref setupPacket, buf, wLength, out int bytesWritten))
                 {
-                    logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4})",
-                        opcode.ToString(), cmd[opcode], wValue, wIndex);
+                    logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4})",
+                        opcode.ToString(), cmd[opcode], wValue, wIndex, wLength);
                     return false;
                 }
-                logger.debug("finished {0}", opcode.ToString());
             }
             return true;
         }
@@ -764,33 +768,63 @@ namespace WasatchNET
                 integrationTimeMS_ = ms;
         }
 
-        /// <summary>
-        /// Set the CCD's gain level to the closest setting LESS-THAN OR EQUAL-TO
-        /// the specified value.
-        /// </summary>
-        /// <remarks>I need to check with Jason regarding how he envisioned this to be implemented.</remarks>
-        /// <param name="gain">upper-bound of intended gain</param>
-        public void setCCDGain(float gain)
+        public void setExternalTriggerOutput(EXTERNAL_TRIGGER_OUTPUT value)
         {
-            ushort val = 0x0000;
-                 if (gain >= 128)       val = 0x8000;
-            else if (gain >=  64)       val = 0x4000;
-            else if (gain >=  32)       val = 0x2000;
-            else if (gain >=  16)       val = 0x1000;
-            else if (gain >=   8)       val = 0x0800;
-            else if (gain >=   4)       val = 0x0400;
-            else if (gain >=   2)       val = 0x0200;
-            else if (gain >=   1)       val = 0x0100;
-            else if (gain >=   1 /   2) val = 0x0080;
-            else if (gain >=   1 /   4) val = 0x0040;
-            else if (gain >=   1 /   8) val = 0x0020;
-            else if (gain >=   1 /  16) val = 0x0010;
-            else if (gain >=   1 /  32) val = 0x0008;
-            else if (gain >=   1 /  64) val = 0x0004;
-            else if (gain >=   1 / 128) val = 0x0002;
-            else if (gain >=   1 / 256) val = 0x0001;
+            if (value != EXTERNAL_TRIGGER_OUTPUT.ERROR)
+                sendCmd(Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT, (ushort) value);
+        }
 
-            sendCmd(Opcodes.SET_CCD_GAIN, val);
+        /// <summary>
+        /// Sets the laser modulation duration to the given 40-bit value.
+        /// </summary>
+        /// <remarks>
+        /// The LSB represents 1 microsecond (us).  Therefore, the precision is
+        /// approximately 1/256 us (4ns).  It's a 40-bit value, so the range
+        /// is 2^32 us (about 70min).
+        /// </remarks>
+        /// <param name="value">40-bit duration</param>
+        public void setLaserModulationDuration(UInt64 value)
+        {
+            try
+            {
+                UInt40 val = new UInt40(value);
+                sendCmd(Opcodes.SET_LASER_MOD_DUR, val.LSW, val.MidW, val.buf);
+            }
+            catch(Exception ex)
+            {
+                logger.error("WasatchNET.setLaserModulationDuration: {0}", ex.Message);
+                return;
+            }
+        }
+
+        /// <summary>
+        /// Sets the laser modulation duration to the given 40-bit value.
+        /// </summary>
+        /// <param name="value">40-bit duration</param>
+        /// <see cref="setLaserModulationDuration(ulong)"/>
+        public void setLaserModulationPulseWidth(UInt64 value)
+        {
+            try
+            {
+                UInt40 val = new UInt40(value);
+                sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, val.LSW, val.MidW, val.buf);
+            }
+            catch(Exception ex)
+            {
+                logger.error("WasatchNET.setLaserModulationPulseWidth: {0}", ex.Message);
+                return;
+            }
+        }
+
+        public void setLaserTemperatureSetpoint(byte value)
+        {
+            const byte MAX = 127;
+            if (value > MAX)
+            {
+                logger.error("WasatchNET.setLaserTemperatureSetpoint: value {0} exceeded max {1}", value, MAX);
+                return;
+            }
+            sendCmd(Opcodes.SET_LASER_TEMP_SETPOINT, value);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -890,8 +924,8 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         public ushort getActualFrames()                 { return toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
-        public ushort getDetectorTemperatureRaw()       { return toUshort(getCmd(Opcodes.GET_CCD_TEMP,                   2)); } 
-        public short  getCCDGain()                      { return toShort (getCmd(Opcodes.GET_CCD_GAIN,                   2)); }
+        public ushort getCCDTemperature()               { return toUshort(getCmd(Opcodes.GET_CCD_TEMP,                   2)); } 
+        public float  getCCDGain()                      { return FunkyFloat.toFloat(toUshort(getCmd(Opcodes.GET_CCD_GAIN,2)));}
         public short  getCCDOffset()                    { return toShort (getCmd(Opcodes.GET_CCD_OFFSET,                 2)); }
         public ushort getCCDSensingThreshold()          { return toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD,      2)); }
         public bool   getCCDThresholdSensingEnabled()   { return toBool  (getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
@@ -920,10 +954,14 @@ namespace WasatchNET
         // Trivial setters
         ////////////////////////////////////////////////////////////////////////
 
+        public void setCCDGain              (float gain)        { sendCmd(Opcodes.SET_CCD_GAIN,                   FunkyFloat.fromFloat(gain)); } 
         public void setCCDTriggerSource     (ushort source)     { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE,         source); } 
-        public void setDetectorTECEnable    (bool flag)         { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE,            (ushort) (flag ? 1 : 0)); } 
+        public void setCCDTemperatureEnable (bool flag)         { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE,            (ushort) (flag ? 1 : 0)); } 
+        public void setCCDTemperatureSetpoint(ushort word)      { sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT,          word, 0); }
+        public void setDAC                  (ushort word)       { sendCmd(Opcodes.SET_DAC,                        word, 1); } // external laser power
         public void setLaserEnable          (bool flag)         { sendCmd(Opcodes.SET_LASER,                      (ushort) (flag ? 1 : 0)); } 
         public void setLaserModulationEnable(bool flag)         { sendCmd(Opcodes.SET_LASER_MOD,                  (ushort) (flag ? 1 : 0)); } 
+        public void setLaserRampingEnable   (bool flag)         { sendCmd(Opcodes.SET_LASER_RAMPING_MODE,         (ushort) (flag ? 1 : 0)); } 
         public void setHorizontalBinning    (HORIZ_BINNING mode){ sendCmd(Opcodes.SELECT_HORIZ_BINNING,           (ushort) mode); }
         public void setSelectedLaser        (byte id)           { sendCmd(Opcodes.SELECT_LASER,                   id); }
         public void setCCDOffset            (ushort value)      { sendCmd(Opcodes.SET_CCD_OFFSET,                 value); }

@@ -157,18 +157,18 @@ namespace WasatchNET
             cmd[Opcodes.SET_CCD_OFFSET                         ] = 0xb6; // impl
             cmd[Opcodes.SET_CCD_SENSING_THRESHOLD              ] = 0xd0; // impl
             cmd[Opcodes.SET_CCD_TEMP_ENABLE                    ] = 0xd6; // impl
-            cmd[Opcodes.SET_CCD_TEMP_SETPOINT                  ] = 0xd8; // alias of SET_DAC
+            cmd[Opcodes.SET_CCD_TEMP_SETPOINT                  ] = 0xd8; // impl
             cmd[Opcodes.SET_CCD_THRESHOLD_SENSING_MODE         ] = 0xce; // impl
             cmd[Opcodes.SET_CCD_TRIGGER_SOURCE                 ] = 0xd2; // impl
-            cmd[Opcodes.SET_DAC                                ] = 0xd8; // alias of SET_CCD_TEMP_SETPOINT
-            cmd[Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT            ] = 0xe0;
+            cmd[Opcodes.SET_DAC                                ] = 0xd8; // impl
+            cmd[Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT            ] = 0xe0; // impl
             cmd[Opcodes.SET_INTEGRATION_TIME                   ] = 0xb2; // impl
             cmd[Opcodes.SET_LASER                              ] = 0xbe; // impl
             cmd[Opcodes.SET_LASER_MOD                          ] = 0xbd; // impl
-            cmd[Opcodes.SET_LASER_MOD_DUR                      ] = 0xb9;
-            cmd[Opcodes.SET_LASER_MOD_PULSE_WIDTH              ] = 0xdb;
-            cmd[Opcodes.SET_LASER_RAMPING_MODE                 ] = 0xe9;
-            cmd[Opcodes.SET_LASER_TEMP_SETPOINT                ] = 0xe7;
+            cmd[Opcodes.SET_LASER_MOD_DUR                      ] = 0xb9; // impl
+            cmd[Opcodes.SET_LASER_MOD_PULSE_WIDTH              ] = 0xdb; // impl
+            cmd[Opcodes.SET_LASER_RAMPING_MODE                 ] = 0xe9; // impl
+            cmd[Opcodes.SET_LASER_TEMP_SETPOINT                ] = 0xe7; // impl
             cmd[Opcodes.SET_MOD_PERIOD                         ] = 0xc7;
             cmd[Opcodes.SET_MOD_PULSE_DELAY                    ] = 0xc6;
             cmd[Opcodes.SET_TRIGGER_DELAY                      ] = 0xaa;
@@ -183,7 +183,7 @@ namespace WasatchNET
 
             // wValue for SECOND_TIER_COMMAND
             cmd[Opcodes.GET_MODEL_CONFIG                       ] = 0x01; // impl
-            cmd[Opcodes.SET_MODEL_CONFIG                       ] = 0x02; // not implemented
+            cmd[Opcodes.SET_MODEL_CONFIG                       ] = 0x02;
             cmd[Opcodes.GET_LINE_LENGTH                        ] = 0x03; // impl
             cmd[Opcodes.READ_COMPILATION_OPTIONS               ] = 0x04; // impl
             cmd[Opcodes.OPT_INT_TIME_RES                       ] = 0x05; // impl

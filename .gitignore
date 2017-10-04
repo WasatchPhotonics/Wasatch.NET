@@ -5,3 +5,6 @@ WasatchNET/obj/
 WinFormDemo/bin/
 WinFormDemo/obj/
 lib/WasatchNET.dll
+packages/
+doxygen.out
+doxygen.err

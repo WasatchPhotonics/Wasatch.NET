@@ -9,14 +9,22 @@ doc:
 	@doxygen 1>doxygen.out 2>doxygen.err
 
 clean:
-	@rm -rf WasatchNET/bin \
-	        WasatchNET/obj \
-	        WinFormDemo/obj \
-	        WinFormDemo/bin \
-            Setup/Release \
-            Setup/Debug \
-            lib/WasatchNET.dll \
-            doc/doxygen \
-            doxygen.out \
-            doxygen.err \
+	@rm -rf WasatchNET/bin      \
+	        WasatchNET/obj      \
+                                \
+	        WinFormDemo/obj     \
+	        WinFormDemo/bin     \
+                                \
+	        UnitTests/obj       \
+	        UnitTests/bin       \
+                                \
+            Setup/Release       \
+            Setup/Debug         \
+                                \
+            lib/WasatchNET.dll  \
+                                \
+            doc/doxygen         \
+            doxygen.out         \
+            doxygen.err         \
+                                \
             .vs
