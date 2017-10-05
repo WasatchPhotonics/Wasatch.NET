@@ -13,7 +13,7 @@ namespace WasatchNET
     public enum FPGA_LASER_CONTROL { MODULATION, TRANSITION_POINTS, RAMPING, ERROR };
 
     public enum CCD_TRIGGER_SOURCE { USB, EXTERNAL, ERROR };
-    public enum EXTERNAL_TRIGGER_OUTPUT {  LASER_MODULATION, INTEGRATION_ACTIVE_PULSE, ERROR };
+    public enum EXTERNAL_TRIGGER_OUTPUT { LASER_MODULATION, INTEGRATION_ACTIVE_PULSE, ERROR };
     public enum HORIZ_BINNING { NONE, TWO_PIXEL, FOUR_PIXEL, ERROR };
 
     /// <summary>
@@ -106,21 +106,32 @@ namespace WasatchNET
     /// <summary>
     /// Utility class for automating Opcode operations and processing.
     /// </summary>
-    public class OpcodeUtil
+    /// <remarks>
+    /// It would be slightly more efficient if we made these constants,
+    /// rather than Dictionary lookups. However, accessing them through
+    /// an Enum key provides significant advantages in troubleshooting
+    /// and error reporting, as the Enum can always be stringified. As
+    /// this driver is oriented toward rapid-prototyping rather than
+    /// maximum performance, I'm sticking with the map for now.
+    /// </remarks>
+    public class OpcodeHelper
     {
-        /// <summary>
-        /// It would be slightly more efficient if we made these constants,
-        /// rather than Dictionary lookups. However, accessing them through
-        /// an Enum key provides significant advantages in troubleshooting
-        /// and error reporting, as the Enum can always be stringified. As
-        /// this driver is oriented toward rapid-prototyping rather than
-        /// maximum performance, I'm sticking with the map for now.
-        /// </summary>
-        /// <returns>A dictionary of the USB API byte value for each Opcode.</returns>
-        public static Dictionary<Opcodes, byte> getDictionary()
-        {
-            Dictionary<Opcodes, byte> cmd = new Dictionary<Opcodes, byte>();
+        static readonly OpcodeHelper instance = new OpcodeHelper();
 
+        public static OpcodeHelper getInstance()
+        {
+            return instance;
+        }
+
+        Dictionary<Opcodes, byte> cmd = new Dictionary<Opcodes, byte>();
+
+        public Dictionary<Opcodes, byte> getDict()
+        {
+            return cmd;
+        }
+        
+        OpcodeHelper()
+        {
             // bRequest commands
             cmd[Opcodes.ACQUIRE_CCD                            ] = 0xad; // impl
             cmd[Opcodes.GET_ACTUAL_FRAMES                      ] = 0xe4; // impl
@@ -176,18 +187,22 @@ namespace WasatchNET
             cmd[Opcodes.SET_MOD_PERIOD                         ] = 0xc7; // impl
             cmd[Opcodes.SET_MOD_PULSE_DELAY                    ] = 0xc6; // impl
             cmd[Opcodes.SET_TRIGGER_DELAY                      ] = 0xaa; // impl
-            cmd[Opcodes.VR_ENABLE_CCD_TEMP_CONTROL             ] = 0xd6;
-            cmd[Opcodes.VR_GET_CCD_TEMP_CONTROL                ] = 0xda;
-            cmd[Opcodes.VR_GET_CONTINUOUS_CCD                  ] = 0xcc;
-            cmd[Opcodes.VR_GET_LASER_TEMP                      ] = 0xd5;
+
+            // VR = Vendor Request (old nomenclature from Cypress EzUSB days)
+            cmd[Opcodes.VR_GET_CONTINUOUS_CCD                  ] = 0xcc;            
             cmd[Opcodes.VR_GET_NUM_FRAMES                      ] = 0xcd;
-            cmd[Opcodes.VR_READ_CCD_TEMPERATURE                ] = 0xd7;
             cmd[Opcodes.VR_SET_CONTINUOUS_CCD                  ] = 0xc8;
             cmd[Opcodes.VR_SET_NUM_FRAMES                      ] = 0xc9;
 
+            // duplicates?
+         // cmd[Opcodes.VR_ENABLE_CCD_TEMP_CONTROL             ] = 0xd6;
+         // cmd[Opcodes.VR_GET_CCD_TEMP_CONTROL                ] = 0xda;
+         // cmd[Opcodes.VR_GET_LASER_TEMP                      ] = 0xd5;
+         // cmd[Opcodes.VR_READ_CCD_TEMPERATURE                ] = 0xd7;
+
             // wValue for SECOND_TIER_COMMAND
             cmd[Opcodes.GET_MODEL_CONFIG                       ] = 0x01; // impl
-            cmd[Opcodes.SET_MODEL_CONFIG                       ] = 0x02;
+            cmd[Opcodes.SET_MODEL_CONFIG                       ] = 0x02; // impl
             cmd[Opcodes.GET_LINE_LENGTH                        ] = 0x03; // impl
             cmd[Opcodes.READ_COMPILATION_OPTIONS               ] = 0x04; // impl
             cmd[Opcodes.OPT_INT_TIME_RES                       ] = 0x05; // impl
@@ -198,8 +213,6 @@ namespace WasatchNET
             cmd[Opcodes.OPT_AREA_SCAN                          ] = 0x0a; // impl
             cmd[Opcodes.OPT_ACT_INT_TIME                       ] = 0x0b; // impl
             cmd[Opcodes.OPT_HORIZONTAL_BINNING                 ] = 0x0c; // impl
-
-            return cmd;
         }
     }
 }

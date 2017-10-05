@@ -51,11 +51,11 @@ namespace WasatchNET
             // Question: how would the ENUMs handle misconfigured spectrometers?
             try
             {
-                integrationTimeResolution = (FPGA_INTEG_TIME_RES) (word & 0x07);
-                dataHeader = (FPGA_DATA_HEADER) ((word & 0x0038) >> 3);
+                integrationTimeResolution = parseResolution(word & 0x07);
+                dataHeader = parseDataHeader((word & 0x0038) >> 3);
                 hasCFSelect = (word & 0x0040) != 0;
-                laserType = (FPGA_LASER_TYPE)((word & 0x0180) >> 7);
-                laserControl = (FPGA_LASER_CONTROL)((word & 0x0e00) >> 9);
+                laserType = parseLaserType((word & 0x0180) >> 7);
+                laserControl = parseLaserControl((word & 0x0e00) >> 9);
                 hasAreaScan = (word & 0x1000) != 0;
                 hasActualIntegTime = (word & 0x2000) != 0;
                 hasHorizBinning = (word & 0x4000) != 0;
@@ -76,6 +76,50 @@ namespace WasatchNET
                 logger.debug("  HasActualIntegTime        = {0}", hasActualIntegTime);
                 logger.debug("  HasHorizBinning           = {0}", hasHorizBinning);
             }
+        }
+
+        public FPGA_INTEG_TIME_RES parseResolution(int value)
+        {
+            switch (value)
+            {
+                case 0: return FPGA_INTEG_TIME_RES.ONE_MS;    
+                case 1: return FPGA_INTEG_TIME_RES.TEN_MS;    
+                case 2: return FPGA_INTEG_TIME_RES.SWITCHABLE;
+            }
+            return FPGA_INTEG_TIME_RES.ERROR;
+        }
+
+        public FPGA_DATA_HEADER parseDataHeader(int value)
+        {
+            switch (value)
+            {
+                case 0: return FPGA_DATA_HEADER.NONE;
+                case 1: return FPGA_DATA_HEADER.OCEAN_OPTICS;
+                case 2: return FPGA_DATA_HEADER.WASATCH;
+            }
+            return FPGA_DATA_HEADER.ERROR;
+        }
+
+        public FPGA_LASER_TYPE parseLaserType(int value)
+        {
+            switch (value)
+            {
+                case 0: return FPGA_LASER_TYPE.NONE;
+                case 1: return FPGA_LASER_TYPE.INTERNAL;
+                case 2: return FPGA_LASER_TYPE.EXTERNAL;
+            }
+            return FPGA_LASER_TYPE.ERROR;
+        }
+
+        public FPGA_LASER_CONTROL parseLaserControl(int value)
+        {
+            switch (value)
+            {
+                case 0: return FPGA_LASER_CONTROL.MODULATION;
+                case 1: return FPGA_LASER_CONTROL.TRANSITION_POINTS;
+                case 2: return FPGA_LASER_CONTROL.RAMPING;
+            }
+            return FPGA_LASER_CONTROL.ERROR;
         }
     }
 }

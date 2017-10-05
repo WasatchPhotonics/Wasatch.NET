@@ -560,5 +560,10 @@ namespace WinFormDemo
             if (spectrometer == currentSpectrometer)
                 updateStartButton(false);
         }
+
+        private void toolStripMenuItemTestWriteEEPROM_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

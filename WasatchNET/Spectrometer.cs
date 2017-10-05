@@ -57,7 +57,7 @@ namespace WasatchNET
         UsbEndpointReader spectralReader;
         internal UsbEndpointReader statusReader;
 
-        Dictionary<Opcodes, byte> cmd = OpcodeUtil.getDictionary();
+        Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
         Logger logger = Logger.getInstance();
 
         object acquisitionLock = new object();
@@ -218,6 +218,7 @@ namespace WasatchNET
         /// <param name="len">the number of needed return bytes</param>
         /// <param name="wIndex">an optional numeric argument used by some opcodes</param>
         /// <param name="fullLen">the actual number of expected return bytes (not all needed)</param>
+        /// <remarks>not sure fullLen is actually required...testing</remarks>
         /// <returns>the array of returned bytes (null on error)</returns>
         internal byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
         {
@@ -290,7 +291,8 @@ namespace WasatchNET
         /// <param name="wIndex">an optional tertiary argument used by some commands</param>
         /// <param name="buf">an data buffer used by some commands</param>
         /// <returns>true on success, false on error</returns>
-        bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
+        /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
+        internal bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
             ushort wLength = (ushort)((buf == null) ? 0 : buf.Length);
 
@@ -316,7 +318,7 @@ namespace WasatchNET
         #region spec_comms
 
         ////////////////////////////////////////////////////////////////////////
-        // Complex settors
+        // Settors
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
@@ -352,20 +354,15 @@ namespace WasatchNET
         }
 
         /// <summary>
-        /// Sets the laser modulation duration to the given 40-bit value.
+        /// Sets the laser modulation duration to the given 40-bit value (microseconds).
         /// </summary>
-        /// <remarks>
-        /// The LSB represents 1 microsecond (us).  Therefore, the precision is
-        /// approximately 1/256 us (4ns).  It's a 40-bit value, so the range
-        /// is 2^32 us (about 70min).
-        /// </remarks>
-        /// <param name="value">40-bit duration</param>
-        public void setLaserModulationDuration(UInt64 value)
+        /// <param name="us">duration in microseconds</param>
+        public void setLaserModulationDurationMicrosec(UInt64 us)
         {
             try
             {
-                UInt40 val = new UInt40(value);
-                sendCmd(Opcodes.SET_LASER_MOD_DUR, val.LSW, val.MidW, val.buf);
+                UInt40 value = new UInt40(us);
+                sendCmd(Opcodes.SET_LASER_MOD_DUR, value.LSW, value.MidW, value.buf);
             }
             catch(Exception ex)
             {
@@ -454,7 +451,7 @@ namespace WasatchNET
         {
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
             {
-                logger.error("setTriggerDelay not supported on {0}", featureIdentification.boardType);
+                logger.error("trigger delay not supported on {0}", featureIdentification.boardType);
                 return;
             }
 
@@ -463,8 +460,41 @@ namespace WasatchNET
             sendCmd(Opcodes.SET_TRIGGER_DELAY, lsw, msb);
         }
 
+        public void setLaserRampingEnable(bool flag)
+        {
+            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            {
+                logger.error("laser ramping not supported on {0}", featureIdentification.boardType);
+                return;
+            }
+            sendCmd(Opcodes.SET_LASER_RAMPING_MODE, (ushort) (flag ? 1 : 0));
+        } 
+
+        public void setHorizontalBinning(HORIZ_BINNING mode)
+        {
+            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            {
+                logger.error("horizontal binning not supported on {0}", featureIdentification.boardType);
+                return;
+            }
+            sendCmd(Opcodes.SELECT_HORIZ_BINNING,           (ushort) mode);
+        }
+
+        public void setCCDGain              (float gain)        { sendCmd(Opcodes.SET_CCD_GAIN,                   FunkyFloat.fromFloat(gain)); } 
+        public void setCCDTriggerSource     (ushort source)     { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE,         source); } 
+        public void setCCDTemperatureEnable (bool flag)         { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE,            (ushort) (flag ? 1 : 0)); } 
+        public void setCCDTemperatureSetpoint(ushort word)      { sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT,          word, 0); }
+        public void setDAC                  (ushort word)       { sendCmd(Opcodes.SET_DAC,                        word, 1); } // external laser power
+        public void setLaserEnable          (bool flag)         { sendCmd(Opcodes.SET_LASER,                      (ushort) (flag ? 1 : 0)); } 
+        public void setLaserModulationEnable(bool flag)         { sendCmd(Opcodes.SET_LASER_MOD,                  (ushort) (flag ? 1 : 0)); } 
+        public void setSelectedLaser        (byte id)           { sendCmd(Opcodes.SELECT_LASER,                   id); }
+        public void setCCDOffset            (ushort value)      { sendCmd(Opcodes.SET_CCD_OFFSET,                 value); }
+        public void setCCDSensingThreshold  (ushort value)      { sendCmd(Opcodes.SET_CCD_SENSING_THRESHOLD,      value); }
+        public void setCCDThresholdSensingEnable(bool flag)     { sendCmd(Opcodes.SET_CCD_THRESHOLD_SENSING_MODE, (ushort)(flag ? 1 : 0)); }
+        public void linkLaserModToIntegrationTime(bool flag)    { sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0)); } 
+
         ////////////////////////////////////////////////////////////////////////
-        // Complex Getters
+        // Getters
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
@@ -473,15 +503,10 @@ namespace WasatchNET
         /// <returns>integration time in milliseconds</returns>
         public uint getIntegrationTimeMS()
         {
-            byte[] buf = getCmd(Opcodes.GET_INTEGRATION_TIME, 3, fullLen: 6);
+            byte[] buf = getCmd(Opcodes.GET_INTEGRATION_TIME, 3, fullLen:6); // fullLen: 6?
             if (buf == null)
                 return 0;
-
-            int ms =  buf[0]
-                   + (buf[1] << 8)
-                   + (buf[2] << 16);
-
-            return integrationTimeMS_ = (uint)ms;
+            return integrationTimeMS_ = Unpack.toUint(buf);
         }
 
         public string getFPGARev()
@@ -497,6 +522,7 @@ namespace WasatchNET
 
         public string getFirmwareRev()
         {
+            // purportedly non-FID devices return 2 bytes, but we're not supporting those
             byte[] buf = getCmd(Opcodes.GET_CODE_REVISION, 4);
             if (buf == null)
                 return "ERROR";
@@ -542,6 +568,12 @@ namespace WasatchNET
 
         public HORIZ_BINNING getHorizBinning()
         {
+            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            {
+                logger.error("horizontal binning not supported on {0}", featureIdentification.boardType);
+                return HORIZ_BINNING.NONE;
+            }
+
             byte[] buf = getCmd(Opcodes.GET_EXTERNAL_TRIGGER_OUTPUT, 1);
             if (buf != null)
             {
@@ -555,9 +587,36 @@ namespace WasatchNET
             return HORIZ_BINNING.ERROR;
         }
 
-        ////////////////////////////////////////////////////////////////////////
-        // Trivial Getters
-        ////////////////////////////////////////////////////////////////////////
+        /// <summary>
+        /// Return integration time + clock-out time (and laser pulse time if externally triggered).
+        /// </summary>
+        /// <remarks>buggy? still testing</remarks>
+        /// <returns>actual integration time in µs (zero on error)</returns>
+        public uint getActualIntegrationTimeUS()
+        {
+            uint value = Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 6));
+            return (value == 0xffffff) ? 0 : value;
+        }
+
+        public bool getLaserRampingEnabled()
+        {
+            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            {
+                logger.error("laser ramping not supported on {0}", featureIdentification.boardType);
+                return false;
+            }
+            return Unpack.toBool(getCmd(Opcodes.GET_LASER_RAMPING_MODE, 1));
+        }
+
+        public uint getCCDTriggerDelay()
+        { 
+            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            {
+                logger.error("trigger delay not supported on {0}", featureIdentification.boardType);
+                return 0;
+            }
+            return Unpack.toUint(getCmd(Opcodes.GET_TRIGGER_DELAY, 3)); // fullLen: 6?
+        } 
 
         public ushort getActualFrames()                 { return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
         public ushort getCCDTemperature()               { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP,                   2)); } 
@@ -566,7 +625,6 @@ namespace WasatchNET
         public ushort getCCDSensingThreshold()          { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD,      2)); }
         public bool   getCCDThresholdSensingEnabled()   { return Unpack.toBool  (getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
         public bool   getCCDTempEnabled()               { return Unpack.toBool  (getCmd(Opcodes.GET_CCD_TEMP_ENABLE,            1)); }
-        public uint   getCCDTriggerDelay()              { return Unpack.toUint  (getCmd(Opcodes.GET_TRIGGER_DELAY,              3, fullLen: 6)); }
         public ushort getDAC()                          { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT,          2, 1)); }
         public bool   getInterlockEnabled()             { return Unpack.toBool  (getCmd(Opcodes.GET_INTERLOCK,                  1)); }
         public bool   getLaserEnabled()                 { return Unpack.toBool  (getCmd(Opcodes.GET_LASER,                      1)); }
@@ -575,47 +633,24 @@ namespace WasatchNET
         public UInt64 getLaserModulationPeriod()        { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PERIOD,                 5)); }
         public UInt64 getLaserModulationPulseDelay()    { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PULSE_DELAY,            5)); }
         public UInt64 getLaserModulationPulseWidth()    { return Unpack.toUint64(getCmd(Opcodes.GET_LASER_MOD_PULSE_WIDTH,      5)); }
-        public bool   getLaserRampingEnabled()          { return Unpack.toBool  (getCmd(Opcodes.GET_LASER_RAMPING_MODE,         1)); }
         public ushort getLaserTemperatureRaw()          { return Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMP,                 2)); } 
-        public byte   getLaserTemperatureSetpoint()     { return Unpack.toByte  (getCmd(Opcodes.GET_LASER_TEMP_SETPOINT,        1, fullLen: 6)); } // MZ: unit? 
+        public byte   getLaserTemperatureSetpoint()     { return Unpack.toByte  (getCmd(Opcodes.GET_LASER_TEMP_SETPOINT,        1)); } // fullLen: 6? unit? 
         public uint   getLineLength()                   { return Unpack.toUshort(getCmd2(Opcodes.GET_LINE_LENGTH,               2)); }
         public byte   getSelectedLaser()                { return Unpack.toByte  (getCmd(Opcodes.GET_SELECTED_LASER,             1)); }
         public bool   getLaserModulationLinkedToIntegrationTime() { return Unpack.toBool(getCmd(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME, 1)); }
 
-        // These USB calls duplicate FPGAOptions (for non-FPGA spectrometers?)
-        // For variety, and to handle misconfigured spectrometers, return
-        // these as ints rather than enums.
-        public int  getOptIntTimeRes()        { return Unpack.toInt (getCmd2(Opcodes.OPT_INT_TIME_RES, 1)); }
-        public int  getOptDataHdrTab()        { return Unpack.toInt (getCmd2(Opcodes.OPT_DATA_HDR_TAB, 1)); }
-        public bool getOptCFSelect()          { return Unpack.toBool(getCmd2(Opcodes.OPT_CF_SELECT, 1)); } 
-        public int  getOptLaserType()         { return Unpack.toInt (getCmd2(Opcodes.OPT_LASER, 1)); }
-        public int  getOptLaserControl()      { return Unpack.toInt (getCmd2(Opcodes.OPT_LASER_CONTROL, 1)); } 
-        public bool getOptAreaScan()          { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); } 
-        public bool getOptActIntTime()        { return Unpack.toBool(getCmd2(Opcodes.OPT_ACT_INT_TIME, 1)); } 
-        public bool getOptHorizontalBinning() { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN, 1)); }
-        
+        // These USB opcodes seem to duplicate the parameters of FPGAOptions (perhaps for non-FPGA spectrometers?)
+        public bool   getOptCFSelect()                  { return Unpack.toBool(getCmd2(Opcodes.OPT_CF_SELECT,                   1)); } 
+        public bool   getOptAreaScan()                  { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN,                   1)); } 
+        public bool   getOptActIntTime()                { return Unpack.toBool(getCmd2(Opcodes.OPT_ACT_INT_TIME,                1)); } 
+        public bool   getOptHorizontalBinning()         { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN,                   1)); }
+        public FPGA_INTEG_TIME_RES  getOptIntTimeRes()  { return fpgaOptions.parseResolution  (Unpack.toInt(getCmd2(Opcodes.OPT_INT_TIME_RES, 1))); }
+        public FPGA_DATA_HEADER     getOptDataHdrTab()  { return fpgaOptions.parseDataHeader  (Unpack.toInt(getCmd2(Opcodes.OPT_DATA_HDR_TAB, 1))); }
+        public FPGA_LASER_TYPE      getOptLaserType()   { return fpgaOptions.parseLaserType   (Unpack.toInt(getCmd2(Opcodes.OPT_LASER, 1))); }
+        public FPGA_LASER_CONTROL   getOptLaserControl(){ return fpgaOptions.parseLaserControl(Unpack.toInt(getCmd2(Opcodes.OPT_LASER_CONTROL, 1))); } 
+
         // TODO: something's buggy with these
-        public uint   getActualIntegrationTime()        { return Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 3, fullLen: 6)); }
         public ushort getCCDTempSetpoint()              { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, wIndex: 0)); }
-
-        ////////////////////////////////////////////////////////////////////////
-        // Trivial setters
-        ////////////////////////////////////////////////////////////////////////
-
-        public void setCCDGain              (float gain)        { sendCmd(Opcodes.SET_CCD_GAIN,                   FunkyFloat.fromFloat(gain)); } 
-        public void setCCDTriggerSource     (ushort source)     { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE,         source); } 
-        public void setCCDTemperatureEnable (bool flag)         { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE,            (ushort) (flag ? 1 : 0)); } 
-        public void setCCDTemperatureSetpoint(ushort word)      { sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT,          word, 0); }
-        public void setDAC                  (ushort word)       { sendCmd(Opcodes.SET_DAC,                        word, 1); } // external laser power
-        public void setLaserEnable          (bool flag)         { sendCmd(Opcodes.SET_LASER,                      (ushort) (flag ? 1 : 0)); } 
-        public void setLaserModulationEnable(bool flag)         { sendCmd(Opcodes.SET_LASER_MOD,                  (ushort) (flag ? 1 : 0)); } 
-        public void setLaserRampingEnable   (bool flag)         { sendCmd(Opcodes.SET_LASER_RAMPING_MODE,         (ushort) (flag ? 1 : 0)); } 
-        public void setHorizontalBinning    (HORIZ_BINNING mode){ sendCmd(Opcodes.SELECT_HORIZ_BINNING,           (ushort) mode); }
-        public void setSelectedLaser        (byte id)           { sendCmd(Opcodes.SELECT_LASER,                   id); }
-        public void setCCDOffset            (ushort value)      { sendCmd(Opcodes.SET_CCD_OFFSET,                 value); }
-        public void setCCDSensingThreshold  (ushort value)      { sendCmd(Opcodes.SET_CCD_SENSING_THRESHOLD,      value); }
-        public void setCCDThresholdSensingEnable(bool flag)     { sendCmd(Opcodes.SET_CCD_THRESHOLD_SENSING_MODE, (ushort)(flag ? 1 : 0)); }
-        public void linkLaserModToIntegrationTime(bool flag)    { sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0)); } 
 
         #endregion  
 

@@ -55,7 +55,7 @@ namespace WinFormDemo
             stub("hasBattery",               "Features/Has Battery");
 
             stub("integrationTimeMS",        "Acquisition/Integration Time (ms)");
-            stub("actualIntegrationTimeMS",  "Acquisition/Integration/Actual (ms)");
+            stub("actualIntegrationTimeUS",  "Acquisition/Integration/Actual (µs)");
             stub("minIntegrationTimeMS",     "Acquisition/Integration/Min (ms)");
             stub("maxIntegrationTimeMS",     "Acquisition/Integration/Max (ms)");
             stub("frame",                    "Acquisition/Frame");
@@ -125,6 +125,9 @@ namespace WinFormDemo
             stub("fpgaHasActualIntegTime",   "FPGA/Has Actual Integration Time");
             stub("fpgaHasHorizBinning",      "FPGA/Has Horiz Binning");
 
+            for (int i = 0; i < 5; i++)
+                stub("linearityCoeff" + i, "Linearity/Coeff" + i);
+
             stub("calibrationDate",          "Manufacture/Date");
             stub("calibrationBy",            "Manufacture/Technician");
 
@@ -189,6 +192,8 @@ namespace WinFormDemo
                 update(String.Format("ROIVertRegion{0}Start", i + 1), spec.modelConfig.ROIVertRegionStart[i]);
             for (int i = 0; i < spec.modelConfig.ROIVertRegionEnd.Length; i++)
                 update(String.Format("ROIVertRegion{0}End", i + 1), spec.modelConfig.ROIVertRegionEnd[i]);
+            for (int i = 0; i < spec.modelConfig.linearityCoeffs.Length; i++)
+                update("linearityCoeff" + i, spec.modelConfig.linearityCoeffs[i]);
             for (int i = 0; i < spec.modelConfig.badPixels.Length; i++)
                 update("badPixels" + i, spec.modelConfig.badPixels[i] == -1 ? "" : spec.modelConfig.badPixels[i].ToString());
         }
@@ -231,7 +236,7 @@ namespace WinFormDemo
                 update("ccdTempEnable", spec.getCCDTempEnabled());
 
             if (spec.fpgaOptions.hasActualIntegTime)
-                update("actualIntegrationTimeMS", spec.getActualIntegrationTime());
+                update("actualIntegrationTimeUS", spec.getActualIntegrationTimeUS());
 
             if (spec.fpgaOptions.hasHorizBinning)
                 update("horizBinning", spec.getHorizBinning());

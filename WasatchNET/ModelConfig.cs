@@ -7,8 +7,14 @@ namespace WasatchNET
 {
     public class ModelConfig
     {
+        const int MAX_PAGES = 6; // really 8, but last 2 are unallocated
+
         Spectrometer spectrometer;
         Logger logger = Logger.getInstance();
+
+        // cache (512 bytes)
+        List<byte[]> pages;
+        List<byte> format;
 
         // Page 0 
         public string model { get; private set; }
@@ -21,7 +27,7 @@ namespace WasatchNET
         public short slitSizeUM { get; private set; }
 
         // Page 1
-        public float[] wavecalCoeffs { get; private set; }
+        public float[] wavecalCoeffs { get; set; }  // writable
         public float[] detectorTempCoeffs { get; private set; }
         public float detectorTempMin { get; private set; }
         public float detectorTempMax { get; private set; }
@@ -42,7 +48,7 @@ namespace WasatchNET
         public short ROIHorizEnd { get; private set; }
         public short[] ROIVertRegionStart { get; private set; }
         public short[] ROIVertRegionEnd { get; private set; }
-        // public float[] linearityCoeffs { get; private set; }
+        public float[] linearityCoeffs { get; private set; }
 
         // Page 3
         // public int deviceLifetimeOperationMinutes { get; private set; }
@@ -69,20 +75,90 @@ namespace WasatchNET
             ROIVertRegionStart = new short[3];
             ROIVertRegionEnd = new short[3];
             badPixels = new short[15];
-            // linearityCoeffs = new float[5];
+            linearityCoeffs = new float[5];
+        }
+
+        /// <summary>
+        /// Save updated EEPROM fields to the device.
+        /// </summary>
+        /// <remarks>
+        /// The EEPROM isn't an SSD...it's not terribly fast, and there are a finite
+        /// number of writes before the EEPROM begins to wear down, so use sparingly.
+        ///
+        /// Currently, the only user-writable fields are on pages 0, 1, 4 and 5, so 
+        /// only those 4 pages get written.
+        ///
+        /// Due to the high risk of bricking a unit through a failed / bad EEPROM
+        /// write, all internal calls bail at the first error, hoping to salvage
+        /// the unit if at all possible.
+        /// </remarks>
+        /// <returns>true on success, false on failure</returns>
+        public bool write()
+        {
+            if (pages == null || pages.Count != MAX_PAGES)
+            {
+                logger.error("ModelConfig.write: need to perform a read first");
+                return false;
+            }
+
+            if (!ParseData.writeInt16(excitationNM, pages[0], 39)) return false;
+
+            if (!ParseData.writeFloat(wavecalCoeffs[0], pages[1], 0)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[1], pages[1], 4)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[2], pages[1], 8)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[3], pages[1], 12)) return false;
+
+            if (!ParseData.writeInt16(ROIHorizStart        , pages[2], 27)) return false;
+            if (!ParseData.writeInt16(ROIHorizEnd          , pages[2], 29)) return false;
+            if (!ParseData.writeInt16(ROIVertRegionStart[0], pages[2], 31)) return false;
+            if (!ParseData.writeInt16(ROIVertRegionEnd[0]  , pages[2], 33)) return false;
+            if (!ParseData.writeInt16(ROIVertRegionStart[1], pages[2], 35)) return false;
+            if (!ParseData.writeInt16(ROIVertRegionEnd[1]  , pages[2], 37)) return false;
+            if (!ParseData.writeInt16(ROIVertRegionStart[2], pages[2], 39)) return false;
+            if (!ParseData.writeInt16(ROIVertRegionEnd[2]  , pages[2], 41)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[0]   , pages[2], 43)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[1]   , pages[2], 47)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[2]   , pages[2], 51)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[3]   , pages[2], 55)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[4]   , pages[2], 59)) return false;
+
+            if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
+            if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
+
+            Array.Copy(userData, pages[4], userData.Length);
+
+            for (int i = 0; i < 15; i++)
+                if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
+                    return false;
+
+            // we'll need this to send commands
+            Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
+
+            // Deliberately write pages in reverse order (least important to most),
+            // so if there are any errors, hopefully they won't completely brick 
+            // the unit.
+            for (ushort page = MAX_PAGES - 1; page >= 0; page--)
+            {
+                if (!spectrometer.sendCmd(Opcodes.SECOND_TIER_COMMAND, cmd[Opcodes.SET_MODEL_CONFIG], page, pages[page]))
+                {
+                    logger.error("ModelConfig.write: failed to save page {0}", page);
+                    return false;
+                }
+                logger.debug("ModelConfig: wrote EEPROM page {0}", page);
+            }
+            return true;
         }
 
         public bool read()
         {
-            List<byte[]> pages = new List<byte[]>();
-            List<byte> format = new List<byte>();
-
-            for (ushort page = 0; page < 6; page++)
+            // read all pages into cache
+            pages = new List<byte[]>();
+            format = new List<byte>();
+            for (ushort page = 0; page < MAX_PAGES; page++)
             {
                 byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page);
                 if (buf == null)
                     return false;
-
                 pages.Add(buf);
                 format.Add(buf[63]); // page format is always last byte
             }
@@ -129,11 +205,11 @@ namespace WasatchNET
                 ROIVertRegionEnd[1]     = ParseData.toInt16(pages[2], 37);
                 ROIVertRegionStart[2]   = ParseData.toInt16(pages[2], 39);
                 ROIVertRegionEnd[2]     = ParseData.toInt16(pages[2], 41);
-                // linearityCoeff[0]    = ParseData.toFloat(pages[2], 43);
-                // linearityCoeff[1]    = ParseData.toFloat(pages[2], 47);
-                // linearityCoeff[2]    = ParseData.toFloat(pages[2], 51);
-                // linearityCoeff[3]    = ParseData.toFloat(pages[2], 55);
-                // linearityCoeff[4]    = ParseData.toFloat(pages[2], 59);
+                linearityCoeffs[0]      = ParseData.toFloat(pages[2], 43);
+                linearityCoeffs[1]      = ParseData.toFloat(pages[2], 47);
+                linearityCoeffs[2]      = ParseData.toFloat(pages[2], 51);
+                linearityCoeffs[3]      = ParseData.toFloat(pages[2], 55);
+                linearityCoeffs[4]      = ParseData.toFloat(pages[2], 59);
 
                 // deviceLifetimeOperationMinutes = ParseData.toInt32(pages[3], 0);
                 // laserLifetimeOperationMinutes = ParseData.toInt32(pages[3], 4);
@@ -196,6 +272,8 @@ namespace WasatchNET
                 logger.debug("ROIVertRegionStart[{0}] = {1}", i, ROIVertRegionStart[i]);
             for (int i = 0; i < ROIVertRegionEnd.Length; i++)
                 logger.debug("ROIVertRegionEnd[{0}]   = {1}", i, ROIVertRegionEnd[i]);
+            for (int i = 0; i < linearityCoeffs.Length; i++)
+                logger.debug("linearityCoeffs[{0}]    = {1}", i, linearityCoeffs[i]);
 
             logger.debug("userText          = {0}", userText);
 

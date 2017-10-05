@@ -2,7 +2,7 @@
 {
     public class FeatureIdentification
     {
-        public enum BOARD_TYPES {  RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, STROKER_ARM, ERROR };
+        public enum BOARD_TYPES { RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, STROKER_ARM, ERROR };
 
         Logger logger = Logger.getInstance();
 
@@ -26,12 +26,14 @@
             }
             else if (pid == 0x3000)
             {
+                // older OCT product
                 boardType = BOARD_TYPES.DRAGSTER_FX3;
                 firmwarePartNum = "170001";
                 firmwareDesc = "Dragster USB Board FX3 Code";
             }
             else if (pid == 0x4000)
             {
+                // watch this space!
                 boardType = BOARD_TYPES.STROKER_ARM;
                 firmwarePartNum = "170019";
                 firmwareDesc = "Stroker ARM USB Board";

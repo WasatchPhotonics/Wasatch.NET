@@ -9,6 +9,7 @@ namespace WasatchNET
     public class Logger
     {
         static readonly Logger instance = new Logger();
+        const int MAX_ERRORS = 100; // how many to queue for retrieval by getErrors()
 
         public enum LogLevel { DEBUG, INFO, ERROR, NEVER };
         public LogLevel level = LogLevel.INFO;
@@ -16,7 +17,8 @@ namespace WasatchNET
         TextBox textBox = null;
         StreamWriter outfile;
 
-        Queue<string> recentErrors = new Queue<string>();
+        LinkedList<string> errors = new LinkedList<string>();
+        int errorCount;
 
         static public Logger getInstance()
         {
@@ -53,26 +55,36 @@ namespace WasatchNET
 
         public bool debugEnabled() { return level <= LogLevel.DEBUG; }
 
+        // just peel-off the most recent error, but leave the rest
         public string getLastError()
         {
             lock (instance)
             {
-                if (recentErrors.Count > 0)
-                    return recentErrors.Dequeue();
+                if (errorCount > 0)
+                {
+                    errorCount--;
+                    string msg = errors.Last.ToString();
+                    errors.RemoveLast();
+                    return msg;
+                }
                 else
                     return null;
             }
         }
 
+        /// <summary>
+        /// Returns a list of recent errors.
+        /// </summary>
+        /// <returns>list of queued error strings</returns>
         public List<string> getErrors()
         {
             lock (instance)
             {
-                if (recentErrors.Count > 0)
+                if (errorCount > 0)
                 {
-                    List<string> retval = new List<string>();
-                    while (recentErrors.Count > 0)
-                        retval.Add(recentErrors.Dequeue());
+                    List<string> retval = new List<string>(errors);
+                    errors.Clear();
+                    errorCount = 0;
                     return retval;
                 }
                 return null;
@@ -82,16 +94,21 @@ namespace WasatchNET
         public bool hasError()
         {
             lock (instance)
-                return recentErrors.Count > 0;
+                return errorCount > 0;
         }
 
         public void error(string fmt, params Object[] obj)
         {
             lock (instance)
             {
-                recentErrors.Enqueue(String.Format(String.Format(fmt, obj)));
-                while (recentErrors.Count > 100)
-                    recentErrors.Dequeue();
+                // you'd think there'd be a standard collection that does this
+                errors.AddLast(String.Format(String.Format(fmt, obj)));
+                errorCount++;
+                while (errorCount > MAX_ERRORS)
+                {
+                    errors.RemoveFirst();
+                    errorCount--;
+                }
             }
 
             if (level <= LogLevel.ERROR)
@@ -122,7 +139,7 @@ namespace WasatchNET
                     outfile.WriteLine(msg);
 
                 if (textBox != null)
-                    textBox.BeginInvoke(new MethodInvoker(delegate { textBox.AppendText(msg); }));
+                    textBox.BeginInvoke(new MethodInvoker(delegate { textBox.AppendText(msg + Environment.NewLine); }));
             }
         }
 

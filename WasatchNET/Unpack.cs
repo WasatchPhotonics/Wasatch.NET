@@ -52,8 +52,8 @@ namespace WasatchNET
             if (buf == null)
                 return 0;
 
-            byte[] tmp = new byte[4];   // round up
-            Array.Copy(buf, tmp, buf.Length);
+            byte[] tmp = new byte[4];
+            Array.Copy(buf, tmp, Math.Min(buf.Length, tmp.Length));
             return BitConverter.ToUInt32(tmp, 0);
         }
 
@@ -62,8 +62,8 @@ namespace WasatchNET
             if (buf == null)
                 return -1;
 
-            byte[] tmp = new byte[4]; // round up
-            Array.Copy(buf, tmp, buf.Length);
+            byte[] tmp = new byte[4];
+            Array.Copy(buf, tmp, Math.Min(buf.Length, tmp.Length));
             return BitConverter.ToInt32(tmp, 0);
         }
 
@@ -72,8 +72,8 @@ namespace WasatchNET
             if (buf == null)
                 return 0;
 
-            byte[] tmp = new byte[8];   // round up
-            Array.Copy(buf, tmp, buf.Length);
+            byte[] tmp = new byte[8];
+            Array.Copy(buf, tmp, Math.Min(buf.Length, tmp.Length));
             return BitConverter.ToUInt64(tmp, 0);
         }
     }
