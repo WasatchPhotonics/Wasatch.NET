@@ -11,7 +11,7 @@ namespace WasatchNET
     /// </summary>
     ///
     /// <remarks>
-    /// For WP spectrometer API, see "WP Raman USB Interface Specification r1.4"
+    /// For WP spectrometer API, see ENG-0001 "WP Raman USB Interface Specification r1.4"
     ///
     /// NOT rigorously tested for thread-safety. It MAY be thread-safe, 
     /// it WILL be thread-safe, but currently it is not GUARANTEED thread-safe.
@@ -327,6 +327,27 @@ namespace WasatchNET
             return true;
         }
 
+        /// <remarks>
+        /// math from http://wasatchphotonics.com/oem-api-specification/ 
+        ///
+        /// I would anticipate that these should probably be referenced somehow:
+        ///   detectorTempCoeffs[3]
+        ///   detectorTempMax
+        ///   detectorTempMin
+        ///   adcCoeffs[3]
+        ///   thermistorResistanceAt298K
+        ///   thermistorBeta
+        /// 
+        /// Compare to process used in Enlighten's control.py local_tec_conversion()
+        /// </remarks>
+        double adcToCelsius(ushort adc)
+        {
+            double thermistor_voltage = 2.468 * adc / 4096;
+            double thermistor_resistance = thermistor_voltage / ((2.468 - thermistor_voltage) / 21450);
+            double deg_C = 3977 / (Math.Log(thermistor_resistance / 10000) + 3977 / (25 + 273) - 273);
+            return deg_C;
+        }
+
         #region spec_comms
 
         ////////////////////////////////////////////////////////////////////////
@@ -606,7 +627,7 @@ namespace WasatchNET
         /// Return integration time + clock-out time (and laser pulse time if externally triggered).
         /// </summary>
         /// <remarks>buggy? still testing</remarks>
-        /// <returns>actual integration time in µs (zero on error)</returns>
+        /// <returns>actual integration time in microseconds (zero on error)</returns>
         public uint getActualIntegrationTimeUS()
         {
             uint value = Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 6));
@@ -633,8 +654,17 @@ namespace WasatchNET
             return Unpack.toUint(getCmd(Opcodes.GET_TRIGGER_DELAY, 3)); // fullLen: 6?
         } 
 
+        public ushort getCCDTemperatureRaw()
+        {
+            return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2));
+        } 
+
+        public float getCCDTemperatureDegC()
+        {
+            return (float)adcToCelsius(getCCDTemperatureRaw());
+        }
+
         public ushort getActualFrames()                 { return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
-        public ushort getCCDTemperature()               { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP,                   2)); } 
         public float  getCCDGain()                      { return FunkyFloat.toFloat(Unpack.toUshort(getCmd(Opcodes.GET_CCD_GAIN,2)));}
         public short  getCCDOffset()                    { return Unpack.toShort (getCmd(Opcodes.GET_CCD_OFFSET,                 2)); }
         public ushort getCCDSensingThreshold()          { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD,      2)); }
@@ -648,7 +678,6 @@ namespace WasatchNET
         public UInt64 getLaserModulationPeriod()        { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PERIOD,                 5)); }
         public UInt64 getLaserModulationPulseDelay()    { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PULSE_DELAY,            5)); }
         public UInt64 getLaserModulationPulseWidth()    { return Unpack.toUint64(getCmd(Opcodes.GET_LASER_MOD_PULSE_WIDTH,      5)); }
-        public ushort getLaserTemperatureRaw()          { return Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMP,                 2)); } 
         public byte   getLaserTemperatureSetpoint()     { return Unpack.toByte  (getCmd(Opcodes.GET_LASER_TEMP_SETPOINT,        1)); } // fullLen: 6? unit? 
         public uint   getLineLength()                   { return Unpack.toUshort(getCmd2(Opcodes.GET_LINE_LENGTH,               2)); }
         public byte   getSelectedLaser()                { return Unpack.toByte  (getCmd(Opcodes.GET_SELECTED_LASER,             1)); }
@@ -664,8 +693,64 @@ namespace WasatchNET
         public FPGA_LASER_TYPE      getOptLaserType()   { return fpgaOptions.parseLaserType   (Unpack.toInt(getCmd2(Opcodes.OPT_LASER, 1))); }
         public FPGA_LASER_CONTROL   getOptLaserControl(){ return fpgaOptions.parseLaserControl(Unpack.toInt(getCmd2(Opcodes.OPT_LASER_CONTROL, 1))); } 
 
-        // TODO: something's buggy with these
-        public ushort getCCDTempSetpoint()              { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, wIndex: 0)); }
+        // Thermistor_Voltage = (ADC_Reading/4096)*2.468;
+        // Thermistor_Resistance = Thermistor_Voltage/((2.468-Thermistor_Voltage)/21450));
+        // Temp_in_C = 3977/(log(Thermistor_Resistance/10000) + 3977/(25+273) – 273;
+        public ushort getLaserTemperatureRaw()
+        {
+            return Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMP, 2));
+        } 
+
+        /// <summary>
+        /// convert the raw laser temperature reading into degrees centigrade
+        /// </summary>
+        /// <returns>laser temperature in &deg;C</returns>
+        public float getLaserTemperatureDegC()
+        {
+            return (float) adcToCelsius(getLaserTemperatureRaw());
+        }
+
+        // TODO: something's buggy with this?
+        public ushort getCCDTempSetpoint()
+        {
+            return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, wIndex: 0));
+        }
+
+        /// <summary>
+        /// When using external triggering, perform multiple acquisitions on a single inbound trigger event.
+        /// </summary>
+        /// <param name="flag">whether to acquire multiple spectra per trigger</param>
+        public void setContinuousCCDEnable(bool flag)
+        {
+            sendCmd(Opcodes.VR_SET_CONTINUOUS_CCD, (ushort)(flag ? 1 : 0));
+        }
+
+        /// <summary>
+        /// Determine whether continuous acquisition is enabled
+        /// </summary>
+        /// <returns>whether continuous acquisition is enabled</returns>
+        public bool getContinuousCCDEnable()
+        {
+            return Unpack.toBool(getCmd(Opcodes.VR_SET_CONTINUOUS_CCD, 1));
+        }
+
+        /// <summary>
+        /// When using "continous CCD" acquisitions with external triggers, how many spectra to acquire per trigger event.
+        /// </summary>
+        /// <param name="n">how many spectra to acquire</param>
+        public void setContinuousCCDFrames(byte n)
+        {
+            sendCmd(Opcodes.VR_SET_NUM_FRAMES, n);
+        }
+
+        /// <summary>
+        /// When using "continuous CCD" acquisitions with external triggering, how many spectra are being acquired per trigger event.
+        /// </summary>
+        /// <returns>number of spectra</returns>
+        public byte getContinuousCCDFrames()
+        {
+            return Unpack.toByte(getCmd(Opcodes.VR_GET_NUM_FRAMES, 1));
+        }
 
         #endregion  
 

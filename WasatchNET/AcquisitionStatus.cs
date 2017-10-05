@@ -3,10 +3,19 @@ using LibUsbDotNet.Main;
 
 namespace WasatchNET
 {
+    /// <summary>
+    /// Developmental class to support the acquisition status we plan to send on endpoint 6 following an integration.
+    /// </summary>
+    /// <remarks>not currently used</remarks>
     public class AcquisitionStatus
     {
+        /// <summary>mathematical sum of the spectral values for all pixels, with 16-bit unsigned rollover</summary>
         public ushort checksum;
+
+        /// <summary>absolute acquisition count from last spectrometer power-on</summary>
         public ushort frame;
+
+        // MS or US?
         public uint integTimeMS;
 
         // spectrum status is currently unimplemented in firmware

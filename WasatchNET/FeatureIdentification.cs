@@ -1,16 +1,23 @@
 ﻿namespace WasatchNET
 {
+    /// <summary>
+    /// Encapsulates metadata inferred by the spectrometer PID
+    /// </summary>
+    /// <remarks>see ENG-0034, "WP Raman and Dragster Feature Identification Specification"</remarks>
     public class FeatureIdentification
     {
+        /// <summary>the fundamental electronic board configurations supported by our spectrometers</summary>
         public enum BOARD_TYPES { RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, STROKER_ARM, ERROR };
 
         Logger logger = Logger.getInstance();
 
+        /// <summary>board configuration</summary>
         public BOARD_TYPES boardType;
+
         public string firmwarePartNum;
         public string firmwareDesc;
 
-        public FeatureIdentification(int pid)
+        internal FeatureIdentification(int pid)
         {
             if (pid == 0x1000)
             {

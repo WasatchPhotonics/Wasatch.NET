@@ -41,11 +41,12 @@ Key classes:
 - WasatchNET.Spectrometer
 - WasatchNET.Util (post-acquisition spectral processing)
 
-The driver is designed to closely mimic the USB API defined in the following 
+The driver is designed to closely mimic the USB APIs defined in the following 
 documents:
 
-- http://wasatchdevices.com/wp-content/uploads/2017/02/OEM-WP-Raman-USB-Interface-Spec-Rev1\_4.pdf
-- http://wasatchdevices.com/wp-content/uploads/2016/08/OEM-API-Specification.pdf
+- http://wasatchphotonics.com/eng-0001/ (USB API)
+- http://wasatchphotonics.com/eng-0034/ (FID API)
+- http://wasatchphotonics.com/oem-api-specification/ (SPI API)
 
 Therefore, most questions about parameters, modes and options can likely be
 resolved by review of the underlying spectrometer USB interface.
@@ -122,20 +123,21 @@ That said, some known areas for improvement can be found in our Backlog
 
 # Backlog
 
-- [ ] cover all API functions
+- [ ] confirm algorithm to convert raw ADC to degrees C
 - [ ] add EEPROM write to WinFormDemo
-- [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
+- [ ] test with multiple parallel spectrometers
 - [ ] test on more hardware (NIR)
+- [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
 
 ## Complete
 
+- [x] cover all API functions
 - [x] perform a sweep for boardType incompatibilities in API calls
 - [x] Doxygen rendered API documentation
 - [x] support writing EEPROM
-- [x] expand GET\_MODEL\_CONFIG to include new pages from OEM API
-- [x] populate more config fields in WinFormDemo
-- [x] post to GitHub
 - [x] implement "Save" in demo
+- [x] expand GET\_MODEL\_CONFIG to include new pages from OEM API
+- [x] post to GitHub
 
 # Version History
 

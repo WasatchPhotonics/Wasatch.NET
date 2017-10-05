@@ -7,8 +7,7 @@ using System.Globalization;
 namespace WasatchNET
 {
     /// <summary>
-    /// This is the class WasatchNET uses for logging and debugging.
-    /// it too if you wish.
+    /// Singleton used throughout WasatchNET for logging and debugging.
     /// </summary>
     /// <remarks>
     /// Note that if running applications using Wasatch.NET from within Visual 

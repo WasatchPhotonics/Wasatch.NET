@@ -77,7 +77,8 @@ namespace WinFormDemo
             stub("actualHoriz",              "Detector/Pixels/Actual/Horizontal");
             stub("ccdTempEnable",            "Detector/TEC/Enabled");
             stub("ccdTempSetpoint",          "Detector/TEC/Setpoint");
-            stub("ccdTemp",                  "Detector/TEC/Temperature");
+            stub("ccdTempRaw",               "Detector/TEC/Temperature (raw)");
+            stub("ccdTempDegC",              "Detector/TEC/Temperature (ºC)");
             stub("thermistorResistanceAt298K", "Detector/TEC/Thermistor/Resistance at 298K");
             stub("thermistorBeta",           "Detector/TEC/Thermistor/Beta value");
             stub("ccdOffset",                "Detector/CCD/Offset");
@@ -98,7 +99,8 @@ namespace WinFormDemo
             stub("laserEnabled",             "Laser/Enabled");
             stub("excitationNM",             "Laser/Excitation (nm)");
             stub("dac",                      "Laser/DAC"); // MZ: output power?
-            stub("laserTemperature",         "Laser/TEC/Temperature");
+            stub("laserTemperatureRaw",      "Laser/TEC/Temperature (raw)");
+            stub("laserTemperatureDegC",     "Laser/TEC/Temperature (ºC)");
             stub("laserTemperatureSetpoint", "Laser/TEC/Setpoint"); 
             stub("laserModEnabled",          "Laser/Modulation/Enabled");
             stub("laserModDuration",         "Laser/Modulation/Duration");
@@ -115,6 +117,8 @@ namespace WinFormDemo
             stub("ccdTriggerDelay",          "Triggering/Delay (us)");
             stub("ccdTriggerSource",         "Triggering/Source");
             stub("externalTriggerOutput",    "Triggering/External Output");
+            stub("continuousCCDEnabled",     "Triggering/Continuous/Enabled");
+            stub("continuousCCDFrames",      "Triggering/Continuous/Frames");
 
             stub("fpgaIntegrationTimeResolution", "FPGA/Integ Time Resolution (enum)");
             stub("fpgaDataHeader",           "FPGA/Data Header");
@@ -231,9 +235,15 @@ namespace WinFormDemo
             update("firmwareRev", spec.getFirmwareRev());
             update("fpgaRev", spec.getFPGARev());
             update("integrationTimeMS", spec.getIntegrationTimeMS());
+            update("continuousCCDEnabled", spec.getContinuousCCDEnable());
+            update("continuousCCDFrames", spec.getContinuousCCDFrames());
 
             if (spec.modelConfig.hasCooling)
+            {
                 update("ccdTempEnable", spec.getCCDTempEnabled());
+                update("ccdTempRaw", spec.getCCDTemperatureRaw());
+                update("ccdTempDegC", spec.getCCDTemperatureDegC());
+            }
 
             if (spec.fpgaOptions.hasActualIntegTime)
                 update("actualIntegrationTimeUS", spec.getActualIntegrationTimeUS());
@@ -254,6 +264,8 @@ namespace WinFormDemo
                 update("laserRampingEnabled", spec.getLaserRampingEnabled());
                 update("laserSelection", spec.getSelectedLaser());
                 update("laserTemperatureSetpoint", spec.getLaserTemperatureSetpoint());
+                update("laserTemperatureRaw",  spec.getLaserTemperatureRaw());
+                update("laserTemperatureDegC", spec.getLaserTemperatureDegC());
             }
         }
 
