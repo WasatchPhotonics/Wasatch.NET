@@ -120,9 +120,10 @@ namespace WinFormDemo
             // one or more of these seriously increases laser power
             s.linkLaserModToIntegrationTime(false);
             s.setLaserModulationEnable(false);
-            s.setIntegrationTimeMS(100);
             s.setCCDTriggerSource(0);
             s.setLaserEnable(false);
+
+            s.integrationTimeMS = 100;
         }
 
         void updateCurrentSpectrometer()
@@ -272,7 +273,7 @@ namespace WinFormDemo
 
         private void numericUpDownIntegTimeMS_ValueChanged(object sender, EventArgs e)
         {
-            currentSpectrometer.setIntegrationTimeMS((uint)numericUpDownIntegTimeMS.Value);
+            currentSpectrometer.integrationTimeMS = (uint)numericUpDownIntegTimeMS.Value;
         }
 
         private void numericUpDownScanAveraging_ValueChanged(object sender, EventArgs e)

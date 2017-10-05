@@ -5,6 +5,10 @@ using System.Text;
 
 namespace WasatchNET
 {
+    /// <summary>
+    /// A collection of static functions provided to automate common algorithms 
+    /// and post-processing steps in spectroscopy applications.
+    /// </summary>
     public class Util
     {
         static Logger logger = Logger.getInstance();
@@ -83,6 +87,7 @@ namespace WasatchNET
         /// <param name="reference">collected with the light source shining through the reference medium (e.g. cuvette filled with air or water)</param>
         /// <param name="sample">collected with the light source shining through the sample</param>
         /// <returns>absorbance spectrum in AU</returns>
+        /// <see cref="https://en.wikipedia.org/wiki/Beer–Lambert_law"/>
         public static double[] computeAbsorbance(double[] dark, double[] reference, double[] sample)
         {
             if (dark == null || reference == null || sample == null || dark.Length != reference.Length || reference.Length != sample.Length)
@@ -103,6 +108,7 @@ namespace WasatchNET
         /// <param name="darkCorrectedReference">dark-corrected reference spectrum of the light source shining through the reference medium (e.g. cuvette filled with air or water)</param>
         /// <param name="darkCorrectedSample">dark-corrected sample spectrum light source shining through the sample</param>
         /// <returns>absorbance spectrum in AU</returns>
+        /// <see cref="https://en.wikipedia.org/wiki/Beer–Lambert_law"/>
         public static double[] computeAbsorbance(double[] darkCorrectedReference, double[] darkCorrectedSample)
         {
             if (darkCorrectedReference == null || darkCorrectedSample == null || darkCorrectedReference.Length != darkCorrectedSample.Length)

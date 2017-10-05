@@ -15,14 +15,11 @@ namespace WasatchNET
     ///
     /// NOT rigorously tested for thread-safety. It MAY be thread-safe, 
     /// it WILL be thread-safe, but currently it is not GUARANTEED thread-safe.
-    /// The only synchronization at present are some locks around getSpectrum()
-    /// and clearly-related properties like integrationTimeMS, dark, 
-    /// scansToAverage, boxcarHalfWidth etc. 
     ///
     /// Currently the only supported bus is USB (using LibUsbDotNet). There are
     /// relatively few accesses to the raw USB objects in this implementation, 
-    /// so it should be relatively easy to refactor to support Bluetooth, 
-    /// Ethernet etc when I get test units.
+    /// so it should be fairly easy to refactor to support Bluetooth, Ethernet 
+    /// etc when I get test units.
     ///
     /// Most features are provided as methods, with only a few acquisition-related
     /// features provided as properties. I don't have a strong reason for this,
@@ -31,8 +28,8 @@ namespace WasatchNET
     /// (e.g. pixels, wavelengths, integrationTime) and should therefore be cached in
     /// the driver, versus settings that should always be communicated 
     /// explicitly with the spectrometer (e.g. laser enable status). Also, it 
-    /// seemed efficient to unpack GetModelConfig and FPGACompilationOptions 
-    /// into cached properties rather than making each into duplicate API calls.
+    /// seemed efficient to unpack ModelConfig and FPGAOptions into cached 
+    /// properties rather than making each into duplicate API calls.
     ///
     /// Nevertheless...it seems more ".NET"-ish to expose most get/set pairs as
     /// properties.  This clay remains soft.
@@ -69,16 +66,30 @@ namespace WasatchNET
         // Public properties
         ////////////////////////////////////////////////////////////////////////
 
+        /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
         public uint pixels { get; private set; }
+
+        /// <summary>pre-populated array of wavelengths (nm) by pixel, generated from ModelConfig.wavecalCoeffs</summary>
+        /// <see cref="Util.generateWavelengths(uint, float[])"/>
         public double[] wavelengths { get; private set; }
+
+        /// <summary>pre-populated array of Raman shifts in wavenumber (1/cm) by pixel, generated from wavelengths[] and excitationNM</summary>
+        /// <see cref="Util.wavelengthsToWavenumbers(double, double[])"/>
         public double[] wavenumbers { get; private set; }
 
-        // pre-FID spectrometers store these differently, so keeping them at the Spectrometer level
+        /// <summary>spectrometer model</summary>
         public string model;
+
+        /// <summary>spectrometer serial number</summary>
         public string serialNumber;
 
+        /// <summary>metadata inferred from the spectrometer's USB PID</summary>
         public FeatureIdentification featureIdentification;
+
+        /// <summary>set of compilation options used to compile the FPGA firmware in this spectrometer</summary>
         public FPGAOptions fpgaOptions;
+
+        /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
         public ModelConfig modelConfig;
 
         ////////////////////////////////////////////////////////////////////////
@@ -94,12 +105,13 @@ namespace WasatchNET
         /// returns a CACHED value for performance reasons; use getIntegrationTimeMS
         /// to read from spectrometer.
         /// </summary>
+        /// <see cref="getIntegrationTimeMS"/>
         public uint integrationTimeMS
         {
             get { return integrationTimeMS_; }
             set { lock (acquisitionLock) setIntegrationTimeMS(value); }
         }
-        private uint integrationTimeMS_;
+        uint integrationTimeMS_;
 
         /// <summary>
         /// How many acquisitions to average together (zero for no averaging)
@@ -109,7 +121,7 @@ namespace WasatchNET
             get { return scanAveraging_; }
             set { lock(acquisitionLock) scanAveraging_ = value; }
         }
-        private uint scanAveraging_;
+        uint scanAveraging_;
 
         /// <summary>
         /// Perform post-acquisition high-frequency smoothing by averaging
@@ -121,7 +133,7 @@ namespace WasatchNET
             get { return boxcarHalfWidth_;  }
             set { lock (acquisitionLock) boxcarHalfWidth_ = value; }
         }
-        private uint boxcarHalfWidth_;
+        uint boxcarHalfWidth_;
 
         /// <summary>
         /// Perform automatic dark subtraction by setting this property to
@@ -132,7 +144,7 @@ namespace WasatchNET
             get { return dark_; }
             set { lock(acquisitionLock) dark_ = value; }
         }
-        private double[] dark_;
+        double[] dark_;
         #endregion
 
         ////////////////////////////////////////////////////////////////////////
@@ -140,13 +152,13 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         #region lifecycle
-        public Spectrometer(UsbRegistry usbReg)
+        internal Spectrometer(UsbRegistry usbReg)
         {
             usbRegistry = usbReg;
             pixels = 0;
         }
 
-        public bool open()
+        internal bool open()
         {
             if (!usbRegistry.Open(out usbDevice))
             {
@@ -325,8 +337,11 @@ namespace WasatchNET
         /// set the acquisition time in milliseconds
         /// </summary>
         /// <param name="ms">integration time in milliseconds</param>        
-        /// <remarks>Does not currently support microsecond resolution</remarks>
-        public void setIntegrationTimeMS(uint ms)
+        /// <remarks>
+        /// Does not currently support microsecond resolution.
+        /// Method is private because attribute is public.
+        /// </remarks>
+        void setIntegrationTimeMS(uint ms)
         {
             if (ms < modelConfig.minIntegrationTimeMS)
             {

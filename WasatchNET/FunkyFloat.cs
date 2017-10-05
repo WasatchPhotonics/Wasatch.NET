@@ -26,26 +26,30 @@ namespace WasatchNET
     ///
     /// Example: 0x01e6 is approximately equal to 1.9
     ///
-    /// <code>
+    /// <pre>
     ///    MSB       LSB
     /// --------- ---------
     /// 0000 0001 1110 0110
-    ///         | |||| |||` 0 * 1/256 = 0
-    ///         | |||| ||`- 1 * 1/128 = 0.0078125
-    ///         | |||| |`-- 1 * 1/64  = 0.015625
-    ///         | |||| `--- 0 * 1/32  = 0
-    ///         | |||`----- 0 * 1/16  = 0
-    ///         | ||`------ 1 * 1/8   = 0.125
-    ///         | |`------- 1 * 1/4   = 0.25
-    ///         | ``------- 1 * 1/2   = 0.5
-    ///         `---------- 1 * 1     = 1
+    ///         | |||| |||+ 0 * 1/256 = 0
+    ///         | |||| ||+- 1 * 1/128 = 0.0078125
+    ///         | |||| |+-- 1 * 1/64  = 0.015625
+    ///         | |||| +--- 0 * 1/32  = 0
+    ///         | |||+----- 0 * 1/16  = 0
+    ///         | ||+------ 1 * 1/8   = 0.125
+    ///         | |+------- 1 * 1/4   = 0.25
+    ///         | +-------- 1 * 1/2   = 0.5
+    ///         +---------- 1 * 1     = 1
     ///                               ===========
     ///                                 1.8984375
-    /// </code>
-    ///
+    /// </pre>
     /// </remarks>
     public class FunkyFloat
     {
+        /// <summary>
+        /// convert a standard IEEE float into the MSB-LSB UInt16 used within the spectrometer for gain control
+        /// </summary>
+        /// <param name="f">single-precision IEEE float</param>
+        /// <returns>a UInt16 in which the MSB is a standard 8-bit byte and the LSB represents 8 bits of decreasing fractional precision</returns>
         public static ushort fromFloat(float f)
         {
             if (f < 0 || f >= 256)
@@ -55,14 +59,14 @@ namespace WasatchNET
             }
 
             byte msb = (byte) Math.Floor(f);
-            float frac = (float) (f - Math.Floor(f));
+            double frac = f - Math.Floor(f);
             byte lsb = 0;
 
             // iterate RIGHTWARDS from the decimal point, in DECREASING significance
             // (traverse the LSB in order --> 0123 4567)
             for (int bit = 0; bit < 8; bit++)
             {
-                float placeValue = (float) Math.Pow(2, -1 - bit);
+                double placeValue = Math.Pow(2, -1 - bit);
                 if (frac >= placeValue) 
                 { 
                     byte mask = (byte) (1 << (7 - bit));
@@ -74,11 +78,16 @@ namespace WasatchNET
             return (ushort)((msb << 8) | lsb);
         }
 
+        /// <summary>
+        /// convert the MSB-LSB UInt16 used within the spectrometer for gain control into a standard single-precision IEEE float
+        /// </summary>
+        /// <param name="n">UInt16 in which the MSB is a standard 8-bit byte and the LSB represents 8 bits of decreasing fractional precision</param>
+        /// <returns>single-precision IEEE float</returns>
         public static float toFloat(ushort n)
         {
             byte msb = (byte) ((n >> 8) & 0xff);
             byte lsb = (byte) (n & 0xff);
-            float frac = 0;
+            double frac = 0;
 
             // iterate RIGHTWARDS from the decimal point, in DECREASING significance
             // (traverse the LSB in order --> 0123 4567)
@@ -87,11 +96,11 @@ namespace WasatchNET
                 byte mask = (byte)(1 << (7 - bit));
                 if ((lsb & mask) != 0)
                 {
-                    float placeValue = (float)Math.Pow(2, -1 - bit);
+                    double placeValue = Math.Pow(2, -1 - bit);
                     frac += placeValue;
                 }
             }
-            return msb + frac;
+            return (float) (msb + frac);
         }
     }
 }

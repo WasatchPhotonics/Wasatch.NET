@@ -109,7 +109,7 @@ namespace WasatchNET
         /// <summary>
         /// How many Wasatch USB spectrometers were found.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>number of enumerated Wasatch spectrometers</returns>
         public int getNumberOfSpectrometers()
         {
             return spectrometers.Count;

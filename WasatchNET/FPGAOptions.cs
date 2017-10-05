@@ -5,6 +5,9 @@ using System.Text;
 
 namespace WasatchNET
 {
+    /// <summary>
+    /// The set of options and settings enabled when the FPGA firmware was compiled for this spectrometer.
+    /// </summary>
     public class FPGAOptions
     {
         // public attributes
@@ -48,7 +51,6 @@ namespace WasatchNET
             // bit   13: 0010 0000 0000 0000 HasActualIntegTime
             // bit   14: 0100 0000 0000 0000 HasHorizBinning
 
-            // Question: how would the ENUMs handle misconfigured spectrometers?
             try
             {
                 integrationTimeResolution = parseResolution(word & 0x07);

@@ -46,12 +46,6 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_3229514713A5170701DDED9254FC6E5D"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_FA464094DC4CDDD8AB70E66219C7A9A6"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -65,6 +59,12 @@
         {
         "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_D15F3804600748A28A6C68EB63BA302F"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_3229514713A5170701DDED9254FC6E5D"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -85,6 +85,22 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.6.1"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.6.1 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.6.1"
+                    }
+                }
+            }
         }
         "Release"
         {
@@ -101,6 +117,14 @@
         "PrivateKeyFile" = "8:"
         "TimeStampServer" = "8:"
         "InstallerBootstrapper" = "3:2"
+            "BootstrapperCfg:{63ACBE69-63AA-4F98-B2B6-99F9E24495F2}"
+            {
+            "Enabled" = "11:TRUE"
+            "PromptEnabled" = "11:TRUE"
+            "PrerequisitesLocation" = "2:1"
+            "Url" = "8:"
+            "ComponentsUrl" = "8:"
+            }
         }
     }
     "Deployable"
@@ -290,15 +314,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Wasatch.NET"
-        "ProductCode" = "8:{1312837E-1E1E-4751-80E9-1AA1E196BD76}"
-        "PackageCode" = "8:{F214E63E-F84A-453D-88BE-0A14BF9BA916}"
+        "ProductCode" = "8:{0FC0DC3D-7377-4D7D-BC89-16F880A5CEBF}"
+        "PackageCode" = "8:{B85A028C-45C4-4643-AE40-3B41486880F7}"
         "UpgradeCode" = "8:{B426ECFF-D5FC-49AD-BD67-B409F23F32D9}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.0"
+        "ProductVersion" = "8:1.0.1"
         "Manufacturer" = "8:Wasatch Photonics"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://www.wasatchphotonics.com"
@@ -826,7 +850,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_D15F3804600748A28A6C68EB63BA302F"
             {
-            "SourcePath" = "8:..\\WinFormDemo\\obj\\Debug\\WasatchNETWinFormDemo.exe"
+            "SourcePath" = "8:..\\WinFormDemo\\obj\\Debug\\WinFormDemo.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_DE02E3F7DE19448E86132B84BF83CB7D"
