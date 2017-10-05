@@ -123,13 +123,15 @@ That said, some known areas for improvement can be found in our Backlog
 # Backlog
 
 - [ ] cover all API functions
-- [ ] support writing EEPROM
-- [ ] Doxygen rendered API documentation
-- [ ] perform a sweep for boardType incompatibilities in API calls
+- [ ] add EEPROM write to WinFormDemo
 - [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
+- [ ] test on more hardware (NIR)
 
 ## Complete
 
+- [x] perform a sweep for boardType incompatibilities in API calls
+- [x] Doxygen rendered API documentation
+- [x] support writing EEPROM
 - [x] expand GET\_MODEL\_CONFIG to include new pages from OEM API
 - [x] populate more config fields in WinFormDemo
 - [x] post to GitHub
@@ -137,6 +139,5 @@ That said, some known areas for improvement can be found in our Backlog
 
 # Version History
 
-- 2017-10-02 initial Doxygen
-- 2017-09-29 initial GitHub release
+- 2017-09-29 initial GitHub release (alpha)
 - 2017-09-25 initial creation
