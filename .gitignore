@@ -6,7 +6,7 @@ WinFormDemo/bin/
 WinFormDemo/obj/
 UnitTests/bin/
 UnitTests/obj/
-lib/WasatchNET.dll
 packages/
+lib/WasatchNET.dll
 doxygen.out
 doxygen.err
