@@ -15,9 +15,9 @@ namespace WasatchNET
     /// In defiance of Microsoft convention, there are no Hungarian 
     /// prefixes, and camelCase is used throughout. Sorry.
     /// </summary>
-    public sealed class Driver
+    public class Driver
     {
-        static readonly Driver instance = new Driver();
+        static Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
 
         public Logger logger = Logger.getInstance();
@@ -94,6 +94,7 @@ namespace WasatchNET
             }
 
             // add to final list in sorted order
+            spectrometers.Clear();
             foreach (KeyValuePair<string, List<Spectrometer>> pair in sorted)
             {
                 foreach (Spectrometer s in pair.Value)
@@ -245,5 +246,26 @@ namespace WasatchNET
         {
             logger.debug("WasatchNET.Driver: UsbError: {0}", usbError.ToString());
         }
+    }
+
+    /// <summary>
+    /// A way to get to the static Singleton from languages that
+    /// don't support static class methods like Driver.getInstance().
+    /// </summary>
+    /// <remarks>
+    /// Research indicates that at least some versions of Visual Basic (pre-.NET),
+    /// as well as Visual Basic for Applications (VBA) limit .NET classes to
+    /// object creation, instance methods and instance properties. Unfortunately,
+    /// that means they can't call pure static methods like 
+    /// WasatchNET.Driver.getInstance().
+    ///
+    /// This class is provided as something that any caller can easily create
+    /// (instantiate), and then access the Driver Singleton via the single
+    /// exposed "instance" property.
+    /// </remarks>
+    public class DriverVBAWrapper
+    {
+        public Driver instance = Driver.getInstance();
+        public DriverVBAWrapper() { }
     }
 }
