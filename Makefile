@@ -18,8 +18,11 @@ clean:
 	        UnitTests/obj       \
 	        UnitTests/bin       \
                                 \
-            Setup/Release       \
-            Setup/Debug         \
+            Setup32/Release     \
+            Setup32/Debug       \
+                                \
+            Setup64/Release     \
+            Setup64/Debug       \
                                 \
             lib/WasatchNET.dll  \
                                 \
