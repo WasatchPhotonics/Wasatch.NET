@@ -321,7 +321,7 @@ namespace WasatchNET
                 detectorTempCoeffs[2]   = ParseData.toFloat (pages[1], 24);
                 detectorTempMax         = ParseData.toInt16 (pages[1], 28);
                 detectorTempMin         = ParseData.toInt16 (pages[1], 30);
-                adcCoeffs[0]            = ParseData.toFloat(pages[1], 32);
+                adcCoeffs[0]            = ParseData.toFloat(pages[1], 32); // should these be called laserTempCoeffs?
                 adcCoeffs[1]            = ParseData.toFloat(pages[1], 36);
                 adcCoeffs[2]            = ParseData.toFloat(pages[1], 40);
                 thermistorResistanceAt298K = ParseData.toInt16(pages[1], 44);

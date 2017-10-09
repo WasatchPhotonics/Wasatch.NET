@@ -70,11 +70,11 @@ namespace WasatchNET
         public uint pixels { get; private set; }
 
         /// <summary>pre-populated array of wavelengths (nm) by pixel, generated from ModelConfig.wavecalCoeffs</summary>
-        /// <see cref="Util.generateWavelengths(uint, float[])"/>
+        /// <remarks>see Util.generateWavelengths</remarks>
         public double[] wavelengths { get; private set; }
 
         /// <summary>pre-populated array of Raman shifts in wavenumber (1/cm) by pixel, generated from wavelengths[] and excitationNM</summary>
-        /// <see cref="Util.wavelengthsToWavenumbers(double, double[])"/>
+        /// <remarks>see Util.wavelengthsToWavenumbers</remarks>
         public double[] wavenumbers { get; private set; }
 
         /// <summary>spectrometer model</summary>
@@ -325,27 +325,6 @@ namespace WasatchNET
                 }
             }
             return true;
-        }
-
-        /// <remarks>
-        /// math from http://wasatchphotonics.com/oem-api-specification/ 
-        ///
-        /// I would anticipate that these should probably be referenced somehow:
-        ///   detectorTempCoeffs[3]
-        ///   detectorTempMax
-        ///   detectorTempMin
-        ///   adcCoeffs[3]
-        ///   thermistorResistanceAt298K
-        ///   thermistorBeta
-        /// 
-        /// Compare to process used in Enlighten's control.py local_tec_conversion()
-        /// </remarks>
-        double adcToCelsius(ushort adc)
-        {
-            double thermistor_voltage = 2.468 * adc / 4096;
-            double thermistor_resistance = thermistor_voltage / ((2.468 - thermistor_voltage) / 21450);
-            double deg_C = 3977 / (Math.Log(thermistor_resistance / 10000) + 3977 / (25 + 273) - 273);
-            return deg_C;
         }
 
         #region spec_comms
@@ -661,7 +640,11 @@ namespace WasatchNET
 
         public float getCCDTemperatureDegC()
         {
-            return (float)adcToCelsius(getCCDTemperatureRaw());
+            ushort raw = getCCDTemperatureRaw();
+            float degC = modelConfig.detectorTempCoeffs[0]
+                       + modelConfig.detectorTempCoeffs[1] * raw
+                       + modelConfig.detectorTempCoeffs[2] * raw * raw;
+            return degC;
         }
 
         public ushort getActualFrames()                 { return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
@@ -707,7 +690,11 @@ namespace WasatchNET
         /// <returns>laser temperature in &deg;C</returns>
         public float getLaserTemperatureDegC()
         {
-            return (float) adcToCelsius(getLaserTemperatureRaw());
+            ushort raw = getLaserTemperatureRaw();
+            float degC = modelConfig.adcCoeffs[0]
+                       + modelConfig.adcCoeffs[1] * raw
+                       + modelConfig.adcCoeffs[2] * raw * raw;
+            return degC;
         }
 
         // TODO: something's buggy with this?

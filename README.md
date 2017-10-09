@@ -60,16 +60,41 @@ The driver was written and tested under Visual Studio 2017 Community on Win10
 
 URL: https://sourceforge.net/projects/libusbdotnet/files/LibUsbDotNet/
 
+This is a .NET wrapper over the standard libusb-win32 which is used by many
+USB device vendors.
+
 The pre-compiled DLL provided in our lib/ directory was built from v2.2.8 using
 Visual Studio 2017 Community against the .NET 4.0 Client Profile.
 
-## Wasatch Enlighten
+## .INF file installation
 
-Wasatch.NET *does not* come with the INF or other setup files required to 
-associate Wasatch Photonic's VID/PID tuples with libusb-win32.  The simplest
-solution for now is to install Enlighten, which automatically configures the 
-low-level USB driver bindings so that your spectrometer will be properly
-enumerated by LibUsbDotNet and therefore visible in Wasatch.NET.
+Wasatch.NET is a high-level "application driver," which communicates with our
+spectrometers using the "mid-level" driver LibUsbDotNet, which in-turn 
+communicates using the "low-level" USB driver libusb-win32.  However, Windows 
+doesn't *know* that our spectrometers are meant to use libusb-win32 until we tell
+it!  
+
+So the first thing we need to do is install the .INF files which associate our 
+USB devices (via VID/PID) with libusb.  This is the process to do so:
+
+1. Plug in a Wasatch Photonics spectrometer. (Go and buy one from our website
+   if you haven't already done so!)
+2. Windows should prompt you to "locate drivers for this device."
+3. Browse to C:\Program Files (x86)\Wasatch Photonics\Wasatch.NET (or wherever
+   you've installed our driver), then select "libusb\_drivers".
+4. Ensure that "include subfolders" is checked, then click "Ok."
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-open-device-manager.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-open-device-manager.png" width="20%" height="20%" align="right" style="clear:both"/></a>
+5. After the driver has installed, go to Device Manager (just type "Device Manager"
+   into the Win10 Cortana search field on the Start Menu), and check that your
+   spectrometer appears under "libusb-win32 devices".
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-02-device-manager.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-02-device-manager.png" width="20%" height="20%" align="right" style="clear:both"/></a>
+
+### Alternative: install Enlighten
+
+Another way to associate Wasatch Photonic's VID/PID tuples with libusb-win32 is 
+simply to install Enlighten, which automatically configures the low-level USB 
+driver bindings so that your spectrometer will be properly enumerated by 
+LibUsbDotNet and therefore visible in Wasatch.NET.
 
 # Build Configuration
 
