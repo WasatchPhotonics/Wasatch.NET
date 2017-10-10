@@ -124,6 +124,9 @@ namespace WinFormDemo
             s.setLaserEnable(false);
 
             s.integrationTimeMS = 100;
+
+            logger.info("Found {0} {1} with {2} pixels from {3:f2} to {4:f2}nm",
+                s.model, s.serialNumber, s.pixels, s.wavelengths[0], s.wavelengths[s.wavelengths.Length-1]);
         }
 
         void updateCurrentSpectrometer()
@@ -237,6 +240,13 @@ namespace WinFormDemo
                 comboBoxSpectrometer.SelectedIndex = 0;
 
                 AcceptButton = buttonStart;
+
+                // go ahead and click it...you know you want to
+                buttonStart_Click(null, null);
+            }
+            else
+            {
+                logger.info("No Wasatch Photonics spectrometers were found.");
             }
         }
 
