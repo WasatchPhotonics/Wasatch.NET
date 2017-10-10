@@ -184,7 +184,10 @@ namespace WinFormDemo
                     SpectrometerState state = spectrometerStates[spectrometer];
 
                     if (state.spectrum == null)
+                    {
+                        // logger.debug("not graphing because spectrum null");
                         continue;
+                    }
 
                     Series series = state.series;
                     series.Points.Clear();
@@ -242,6 +245,7 @@ namespace WinFormDemo
                 AcceptButton = buttonStart;
 
                 // go ahead and click it...you know you want to
+                Thread.Sleep(200); // helps?
                 buttonStart_Click(null, null);
             }
             else
@@ -495,16 +499,16 @@ namespace WinFormDemo
         /// <param name="e"></param>
         private void backgroundWorkerGUIUpdate_DoWork(object sender, DoWorkEventArgs e)
         {
+            logger.debug("GUIUpdate thread starting");
             BackgroundWorker worker = sender as BackgroundWorker;
             while(true)
             {
                 if (worker.CancellationPending || shutdownPending)
                     break;
-
-                chart1.BeginInvoke(new MethodInvoker(delegate { updateGraph(); }));
-
                 Thread.Sleep(100);
+                chart1.BeginInvoke(new MethodInvoker(delegate { updateGraph(); }));
             }
+            logger.debug("GUIUpdate thread exiting");
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -522,7 +526,9 @@ namespace WinFormDemo
         /// </remarks>
         private void backgroundWorkerSettings_DoWork(object sender, DoWorkEventArgs e)
         {
+            logger.debug("Settings thread starting");
             settings.updateAll(currentSpectrometer);
+            logger.debug("Settings thread exiting");
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -535,6 +541,8 @@ namespace WinFormDemo
         /// <remarks>
         /// Note that this method is used by potentially several different 
         /// BackgroundWorkers in parallel (one per attached spectrometer).
+        ///
+        /// TODO: rename backgroundWorkerAcquisition
         /// </remarks>
         private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
@@ -547,6 +555,7 @@ namespace WinFormDemo
             BackgroundWorker worker = sender as BackgroundWorker;
             while (true)
             {
+                // logger.debug("workerAcquisition: getting spectrum");
                 double[] raw = spectrometer.getSpectrum();
 
                 // process for graphing
