@@ -1,0 +1,16 @@
+#!/bin/sh
+
+read -p "Username: " USERNAME
+read -p "Version: " VERSION 
+
+# render documentation
+make doc
+
+read -p "Press return to continue..." FOO
+
+# upload installers
+scp Setup32/Debug/WasatchNET-XYZ-Setup32.msi $USERNAME@wasatchphotonics.com:www/binaries/drivers/Wasatch.NET/WasatchNET-${VERSION}-Setup32.msi
+scp Setup64/Debug/WasatchNET-XYZ-Setup64.msi $USERNAME@wasatchphotonics.com:www/binaries/drivers/Wasatch.NET/WasatchNET-${VERSION}-Setup64.msi
+
+# upload documentation
+rsync --archive doc/doxygen/html/ ${USERNAME}@wasatchphotonics.com:www/api/Wasatch.NET/

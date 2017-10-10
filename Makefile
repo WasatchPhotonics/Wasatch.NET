@@ -7,6 +7,8 @@ doc:
 	@echo "Rendering Doxygen..."
 	@mkdir -p doc/doxygen
 	@doxygen 1>doxygen.out 2>doxygen.err
+	@cat doxygen.out
+	@cat doxygen.err
 
 clean:
 	@rm -rf WasatchNET/bin      \
