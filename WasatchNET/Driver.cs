@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Reflection;
 using LibUsbDotNet;
 using LibUsbDotNet.Info;
@@ -263,6 +264,8 @@ namespace WasatchNET
     /// (instantiate), and then access the Driver Singleton via the single
     /// exposed "instance" property.
     /// </remarks>
+    [ComVisible(true), GuidAttribute("BB20CDE1-E5A3-4649-8161-7B6E8DAD66FE")]
+    [ProgId("WasatchNET.DriverVBAWrapper")]
     public class DriverVBAWrapper
     {
         public Driver instance = Driver.getInstance();

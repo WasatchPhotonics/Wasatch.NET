@@ -97,6 +97,14 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y "$(TargetDir)$(ProjectName).dll" "$(SolutionDir)lib\$(ProjectName).dll"</PostBuildEvent>
+    <PostBuildEvent>if "$(Platform)" == "x64" (
+    echo "Exporting 64-bit TLB (assuming host OS is 64-bit)"
+    "$(FrameworkSdkDir)bin\NetFX 4.6.1 Tools\tlbexp.exe" $(TargetDir)$(ProjectName).dll
+) else (
+    echo Exporting 32-bit TLB
+    "$(FrameworkSdkDir)bin\NetFX 4.6.1 Tools\tlbexp.exe" $(TargetDir)$(ProjectName).dll /Win32
+)
+
+copy /Y "$(TargetDir)$(ProjectName).*" "$(SolutionDir)lib\$(Platform)\"</PostBuildEvent>
   </PropertyGroup>
 </Project>
