@@ -7,13 +7,13 @@ properties and methods like integrationTimeMS and getSpectrum().
 
 Wasatch.NET is expected to work from all .NET-compatible languages, including:
 
-- C#
-- LabVIEW (tested with 2017)
-- MATLAB/Simulink
+- C# (tested with Visual Studio 2017 Community)
+- LabVIEW (tested with 2017 32-bit)
+- MATLAB/Simulink (tested with 2017b 64-bit)
 - Embarcadero Delphi
 - Xamarin
 - Visual Basic.NET
-- VBA (Excel)
+- VBA (Excel) (tested with Office 2010 64-bit)
 - F#
 
 If there are others you would like to see listed, please let us know and we'll 
@@ -24,6 +24,7 @@ test them!
 API docs: http://www.wasatchphotonics.com/api/Wasatch.NET/
 
 \code{.cs}
+
     WasatchNET.Driver driver = WasatchNET.Driver.getInstance();
     if (driver.openAllSpectrometers() > 0)
     {
@@ -31,6 +32,7 @@ API docs: http://www.wasatchphotonics.com/api/Wasatch.NET/
         spectrometer.integrationTimeMS = 100;
         double[] spectrum = spectrometer.getSpectrum();
     }
+
 \endcode
 
 Key classes:
@@ -101,8 +103,6 @@ USB devices (via VID/PID) with libusb.  This is the process to do so:
 2. Windows may prompt you to "locate drivers for this device".  If not, go to the
    Device Manager (just type "Device Manager" into the Win10 search field on the
    Start Bar).
-
-![Open Device Manager](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-open-device-manager.png)
 
 3. Your spectrometers should appear as "Stroker FX2" under "Other devices".
 
