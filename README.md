@@ -19,9 +19,13 @@ Wasatch.NET is expected to work from all .NET-compatible languages, including:
 If there are others you would like to see listed, please let us know and we'll 
 test them!
 
-# Quick Start
+# Downloads
 
-API docs: http://www.wasatchphotonics.com/api/Wasatch.NET/
+Pre-compiled installers are available for 32-bit and 64-bit Windows:
+
+- http://wasatchphotonics.com/binaries/drivers/Wasatch.NET/
+
+# Quick Start
 
 \code{.cs}
 
@@ -35,11 +39,11 @@ API docs: http://www.wasatchphotonics.com/api/Wasatch.NET/
 
 \endcode
 
-Key classes:
+# Documentation
 
-- WasatchNET.Driver 
-- WasatchNET.Spectrometer
-- WasatchNET.Util (post-acquisition spectral processing)
+API documentation is available here:
+
+- http://wasatchphotonics.com/api/Wasatch.NET/
 
 The driver is designed to closely mimic the USB APIs defined in the following 
 documents:
@@ -51,41 +55,19 @@ documents:
 Therefore, most questions about parameters, modes and options can likely be
 resolved by review of the underlying spectrometer USB interface.
 
-# Dependencies
-
-The driver was written and tested under Visual Studio 2017 Community on Win10 
-64-bit. It uses the following external components:
-
-## LibUsbDotNet
-
-URL: https://sourceforge.net/projects/libusbdotnet/files/LibUsbDotNet/
-
-This is a .NET wrapper over the standard libusb-win32 which is used by many
-USB device vendors.
-
-The pre-compiled DLL provided in our lib/ directory was built from v2.2.8 using
-Visual Studio 2017 Community against the .NET 4.0 Client Profile.
-
-# Build Configuration
-
-Our standard DLL is built against .NET 4.0 Client Profile with debugging enabled,
-and the WinFormDemo is built against .NET 4.6.1. 
-
-Although the DLL and demo will build and run "For Any CPU", we went ahead and made
-build configurations for x64 and x86 because some client platforms prefer binding
-to specific architectures.
-
-Users are welcome to build the library in other configurations; please let us 
-know if you encounter any issues which we may help resolve.
-
 # Installation
 
 Wasatch.NET is distributed in a Microsoft Installer (.msi) file, which installs
 the WasatchNET.dll and LibUsbDotNet.dll under C:\\Windows (so they'll always be
-in the system path).  It also installs a simple C# spectroscopy GUI app, 
-WinFormDemo, under \\Program Files\\Wasatch Photonics (or Program Files (x86) on
-32-bit systems), giving you a means to control the spectrometer and quickly verify
-the driver is installed and working.
+in the system path).  
+
+It also installs a simple C# spectroscopy GUI app, WinFormDemo, under 
+\\Program Files\\Wasatch Photonics (or Program Files (x86) on 32-bit systems), 
+giving you a means to control the spectrometer and quickly verify the driver is 
+installed and working correctly.
+
+Besides double-clicking the .msi installer, there are one or two additional steps
+required for a complete installation:
 
 ## Post-Install Step #1: libusb drivers
 
@@ -98,36 +80,35 @@ it!
 So the first thing we need to do is install the .INF files which associate our 
 USB devices (via VID/PID) with libusb.  This is the process to do so:
 
-1. Plug in a Wasatch Photonics spectrometer.
-
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-device-manager.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-device-manager.png" width="20%" height="20%" align="right"/></a>
+1. Plug in a USB Wasatch Photonics spectrometer.
 2. Windows may prompt you to "locate drivers for this device".  If not, go to the
    Device Manager (just type "Device Manager" into the Win10 search field on the
    Start Bar).
+<br clear="all"/>
 
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-02-update-drivers.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-02-update-drivers.png" width="20%" height="20%" align="right"/></a>
 3. Your spectrometers should appear as "Stroker FX2" under "Other devices".
-
-![Update Drivers](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-02-update-drivers.png)
-
 4. Right-click on the Stroker FX2 and select "Update Driver".
+<br clear="all"/>
 
-![Browse](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-03-browse.png)
-
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-03-browse.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-03-browse.png" width="20%" height="20%" align="right"/></a>
 5. Select "Manually browse for drivers" .
+<br clear="all"/>
 
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-04-select.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-04-select.png" width="20%" height="20%" align="right"/></a>
 6. Ensure "[x] include subfolders" is checked
-
 7. Browse to "C:\Program Files\Wasatch Photonics\Wasatch.NET\libusb\_drivers" or 
              "C:\Program Files (x86)\Wasatch Photonics\Wasatch.NET\libusb\_drivers" as appropriate.
+<br clear="all"/>
 
-![Select](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-04-select.png)
-
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-05-install.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-05-install.png" width="20%" height="20%" align="right"/></a>
 8. When prompted to confirm whether you wish to install the libusb drivers, click "Install."
+<br clear="all"/>
 
-![Install](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-05-install.png)
-
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-06-done.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-06-done.png" width="20%" height="20%" align="right"/></a>
 9. Confirm that your spectrometer now appears under "libusb-win32 devices".
-
-![Done](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-06-done.png)
+<br clear="all"/>
 
 ## Post-Install Step #2: COM registration (optional)
 
@@ -147,6 +128,38 @@ you need to perform one additional manual step:
 3. Confirm no errors appear in the result
 
 ![Success](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-02-done.png)
+
+# Build 
+
+So you'd like to build and compile Wasatch.NET yourself from source?  Good,
+that's how we like to do it too...you learn so much more that way :-)
+
+## Dependencies
+
+The driver was written and tested under 
+[Visual Studio 2017 Community](https://www.visualstudio.com/vs/community/) on 
+Win10 64-bit. It is itself dependent on the following libraries:
+
+## LibUsbDotNet
+
+URL: https://sourceforge.net/projects/libusbdotnet/files/LibUsbDotNet/
+
+This is a .NET wrapper over the standard libusb-win32 which is used by many
+USB device vendors.  The pre-compiled DLL provided in our lib/ directory was 
+built from v2.2.8 using Visual Studio 2017 Community against the .NET 4.0 Client
+Profile.
+
+## Build Configuration
+
+Our standard DLL is built against .NET 4.0 Client Profile with debugging enabled,
+and the WinFormDemo is built against .NET 4.6.1. 
+
+Although the DLL and demo will build and run "For Any CPU", we went ahead and made
+build configurations for x64 and x86 because some client platforms prefer binding
+to specific architectures.
+
+Users are welcome to build the library in other configurations; please let us 
+know if you encounter any issues which we may help resolve.
 
 # Testing
 
