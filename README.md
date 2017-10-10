@@ -97,23 +97,31 @@ So the first thing we need to do is install the .INF files which associate our
 USB devices (via VID/PID) with libusb.  This is the process to do so:
 
 1. Plug in a Wasatch Photonics spectrometer.
-<div style="clear:both"><a style="clear:both" href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-open-device-manager.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-open-device-manager.png" width="20%" height="20%" align="right" style="clear:both"/></a></div>
+
 2. Windows may prompt you to "locate drivers for this device".  If not, go to the
    Device Manager (just type "Device Manager" into the Win10 search field on the
    Start Bar).
-<div style="clear:both"><a style="clear:both" href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-02-update-drivers.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-02-update-drivers.png" width="20%" height="20%" align="right" style="clear:both"/></a></div>
+![Open Device Manager](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-open-device-manager.png)
+
 3. Your spectrometers should appear as "Stroker FX2" under "Other devices".
-<div style="clear:both"><a style="clear:both" href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-03-browse.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-03-browse.png" width="20%" height="20%" align="right" style="clear:both"/></a></div>
+![Update Drivers](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-02-update-drivers.png)
+
 4. Right-click on the Stroker FX2 and select "Update Driver".
+![Browse](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-03-browse.png)
+
 5. Select "Manually browse for drivers" .
+
 6. Ensure "[x] include subfolders" is checked
-<div style="clear:both"><a style="clear:both" href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-04-select.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-04-select.png" width="20%" height="20%" align="right" style="clear:both"/></a></div>
+
 7. Browse to "C:\Program Files\Wasatch Photonics\Wasatch.NET\libusb\_drivers" or 
              "C:\Program Files (x86)\Wasatch Photonics\Wasatch.NET\libusb\_drivers" as appropriate.
-<div style="clear:both"><a style="clear:both" href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-05-install.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-05-install.png" width="20%" height="20%" align="right" style="clear:both"/></a></div>
+![Select](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-04-select.png)
+
 8. When prompted to confirm whether you wish to install the libusb drivers, click "Install."
-<div style="clear:both"><a style="clear:both" href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-06-done.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-06-done.png" width="20%" height="20%" align="right" style="clear:both"/></a></div>
+![Install](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-05-install.png)
+
 9. Confirm that your spectrometer now appears under "libusb-win32 devices".
+![Done](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-06-done.png)
 
 ## Post-Install Step #2: COM registration (optional)
 
@@ -123,12 +131,14 @@ or Visual Basic for Applications (VBA, part of Microsoft Excel).
 Because our .msi installer does not register the .tlb file needed by VB6/VBA, 
 you need to perform one additional manual step:
 
-<div style="clear:both"><a style="clear:both" href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-01-administrator.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-01-administrator.png" width="20%" height="20%" align="right" style="clear:both"/></a></div>
 1. Navigate to \\Program Files\\Wasatch Photonics\\Wasatch.NET (or Program Files
    (x86) on 32-bit systems)
+
 2. Right-click the batch file "RegisterDLL.bat", and select "Run as Administrator"
-<div style="clear:both"><a style="clear:both" href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-02-done.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-02-done.png" width="20%" height="20%" align="right" style="clear:both"/></a></div>
+![Run as Administrator](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-01-administrator.png)
+
 3. Confirm no errors appear in the result
+![Success](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-02-done.png)
 
 # Testing
 
