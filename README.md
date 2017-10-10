@@ -122,16 +122,15 @@ or Visual Basic for Applications (VBA, part of Microsoft Excel).
 Because our .msi installer does not register the .tlb file needed by VB6/VBA, 
 you need to perform one additional manual step:
 
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-01-administrator.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-01-administrator.png" width="20%" height="20%" align="right"/></a>
 1. Navigate to \\Program Files\\Wasatch Photonics\\Wasatch.NET (or Program Files
    (x86) on 32-bit systems)
 
 2. Right-click the batch file "RegisterDLL.bat", and select "Run as Administrator"
+<br clear="all"/>
 
-![Run as Administrator](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-01-administrator.png)
-
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-02-done.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-02-done.png" width="20%" height="20%" align="right"/></a>
 3. Confirm no errors appear in the result
-
-![Success](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/register-02-done.png)
 
 # Build 
 
