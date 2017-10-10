@@ -14,6 +14,7 @@ Wasatch.NET is expected to work from all .NET-compatible languages, including:
 - Xamarin
 - Visual Basic.NET
 - VBA (Excel) (tested with Office 2010 64-bit)
+- R (via [rclr](https://rclr.codeplex.com/))
 - F#
 
 If there are others you would like to see listed, please let us know and we'll 
@@ -80,7 +81,7 @@ it!
 So the first thing we need to do is install the .INF files which associate our 
 USB devices (via VID/PID) with libusb.  This is the process to do so:
 
-<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-device-manager.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-device-manager.png" width="20%" height="20%" align="right"/></a>
+<a href="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-open-device-manager.png"><img src="https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-01-open-device-manager.png" width="20%" height="20%" align="right"/></a>
 1. Plug in a USB Wasatch Photonics spectrometer.
 2. Windows may prompt you to "locate drivers for this device".  If not, go to the
    Device Manager (just type "Device Manager" into the Win10 search field on the
