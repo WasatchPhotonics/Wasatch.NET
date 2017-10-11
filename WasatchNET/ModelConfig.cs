@@ -193,13 +193,13 @@ namespace WasatchNET
         /////////////////////////////////////////////////////////////////////////       
 
         /// <summary>
-        /// Save updated EEPROM fields to the device (DISABLED).
+        /// Save updated EEPROM fields to the device.
         /// </summary>
         /// <remarks>
         /// Only a handful of fields are recommended to be changed by users: 
         ///
-        /// - excitationNM (if using an external laser)
-        /// - wavecalCoeffs (if you are comfortable generating your own wavelength calibration)
+        /// - excitationNM
+        /// - wavecalCoeffs
         /// - calibrationDate
         /// - calibrationBy
         /// - ROI
@@ -207,15 +207,15 @@ namespace WasatchNET
         /// - userData
         /// - badPixels
         /// 
-        /// The EEPROM isn't an SSD...it's not terribly fast, and there are a finite
-        /// number of writes before the EEPROM begins to wear down, so use sparingly.
+        /// Note that the EEPROM isn't an SSD...it's not terribly fast, and there
+        /// are a finite number of lifetime writes, so use sparingly.
         ///
         /// Due to the high risk of bricking a unit through a failed / bad EEPROM
         /// write, all internal calls bail at the first error in hopes of salvaging
         /// the unit if at all possible.
         ///
-        /// Note that if you do frag your EEPROM, Wasatch has a "Model Configuration"
-        /// utility to let you manually write EEPROM fields...contact your sales rep
+        /// That said, if you do frag your EEPROM, Wasatch has a "Model Configuration"
+        /// utility to let you manually write EEPROM fields; contact your sales rep
         /// for a copy.
         /// </remarks>
         /// <returns>true on success, false on failure</returns>
