@@ -16,13 +16,13 @@ function validateAssemblyVersion()
 
     ASSEMBLY_INFO="${PROJ}/Properties/AssemblyInfo.cs"
 
-    if ! egrep -q "AssemblyVersion(\"${VERSION}\.0\")" $ASSEMBLY_INFO
+    if ! egrep -q "AssemblyVersion\\(\"${VERSION}\\.0\"\\)" $ASSEMBLY_INFO
     then
         echo "ERROR: wrong AssemblyVersion in $ASSEMBLY_INFO"
         exit 1
     fi
 
-    if ! egrep -q "AssemblyFileVersion(\"${VERSION}\.0\")" $ASSEMBLY_INFO
+    if ! egrep -q "AssemblyFileVersion\\(\"${VERSION}\\.0\"\\)" $ASSEMBLY_INFO
     then
         echo "ERROR: wrong AssemblyFileVersion in $ASSEMBLY_INFO"
         exit 1

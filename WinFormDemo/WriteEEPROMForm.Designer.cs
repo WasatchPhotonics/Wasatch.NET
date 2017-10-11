@@ -159,7 +159,7 @@
             this.groupBoxWritable.Size = new System.Drawing.Size(516, 483);
             this.groupBoxWritable.TabIndex = 1;
             this.groupBoxWritable.TabStop = false;
-            this.groupBoxWritable.Text = "Writable EEPROM Fields";
+            this.groupBoxWritable.Text = "Customer-writable fields";
             // 
             // groupBox10
             // 
@@ -200,7 +200,7 @@
             -2147483648});
             this.numericUpDownBadPixel12.Name = "numericUpDownBadPixel12";
             this.numericUpDownBadPixel12.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel12.TabIndex = 22;
+            this.numericUpDownBadPixel12.TabIndex = 33;
             this.numericUpDownBadPixel12.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel12.Value = new decimal(new int[] {
             1,
@@ -224,7 +224,7 @@
             -2147483648});
             this.numericUpDownBadPixel11.Name = "numericUpDownBadPixel11";
             this.numericUpDownBadPixel11.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel11.TabIndex = 21;
+            this.numericUpDownBadPixel11.TabIndex = 32;
             this.numericUpDownBadPixel11.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel11.Value = new decimal(new int[] {
             1,
@@ -248,7 +248,7 @@
             -2147483648});
             this.numericUpDownBadPixel10.Name = "numericUpDownBadPixel10";
             this.numericUpDownBadPixel10.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel10.TabIndex = 20;
+            this.numericUpDownBadPixel10.TabIndex = 31;
             this.numericUpDownBadPixel10.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel10.Value = new decimal(new int[] {
             1,
@@ -272,7 +272,7 @@
             -2147483648});
             this.numericUpDownBadPixel9.Name = "numericUpDownBadPixel9";
             this.numericUpDownBadPixel9.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel9.TabIndex = 19;
+            this.numericUpDownBadPixel9.TabIndex = 30;
             this.numericUpDownBadPixel9.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel9.Value = new decimal(new int[] {
             1,
@@ -296,7 +296,7 @@
             -2147483648});
             this.numericUpDownBadPixel8.Name = "numericUpDownBadPixel8";
             this.numericUpDownBadPixel8.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel8.TabIndex = 18;
+            this.numericUpDownBadPixel8.TabIndex = 29;
             this.numericUpDownBadPixel8.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel8.Value = new decimal(new int[] {
             1,
@@ -320,7 +320,7 @@
             -2147483648});
             this.numericUpDownBadPixel14.Name = "numericUpDownBadPixel14";
             this.numericUpDownBadPixel14.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel14.TabIndex = 17;
+            this.numericUpDownBadPixel14.TabIndex = 35;
             this.numericUpDownBadPixel14.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel14.Value = new decimal(new int[] {
             1,
@@ -344,7 +344,7 @@
             -2147483648});
             this.numericUpDownBadPixel13.Name = "numericUpDownBadPixel13";
             this.numericUpDownBadPixel13.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel13.TabIndex = 16;
+            this.numericUpDownBadPixel13.TabIndex = 34;
             this.numericUpDownBadPixel13.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel13.Value = new decimal(new int[] {
             1,
@@ -368,7 +368,7 @@
             -2147483648});
             this.numericUpDownBadPixel7.Name = "numericUpDownBadPixel7";
             this.numericUpDownBadPixel7.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel7.TabIndex = 15;
+            this.numericUpDownBadPixel7.TabIndex = 28;
             this.numericUpDownBadPixel7.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel7.Value = new decimal(new int[] {
             1,
@@ -392,7 +392,7 @@
             -2147483648});
             this.numericUpDownBadPixel6.Name = "numericUpDownBadPixel6";
             this.numericUpDownBadPixel6.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel6.TabIndex = 14;
+            this.numericUpDownBadPixel6.TabIndex = 27;
             this.numericUpDownBadPixel6.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel6.Value = new decimal(new int[] {
             1,
@@ -416,7 +416,7 @@
             -2147483648});
             this.numericUpDownBadPixel5.Name = "numericUpDownBadPixel5";
             this.numericUpDownBadPixel5.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel5.TabIndex = 13;
+            this.numericUpDownBadPixel5.TabIndex = 26;
             this.numericUpDownBadPixel5.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel5.Value = new decimal(new int[] {
             1,
@@ -440,7 +440,7 @@
             -2147483648});
             this.numericUpDownBadPixel4.Name = "numericUpDownBadPixel4";
             this.numericUpDownBadPixel4.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel4.TabIndex = 12;
+            this.numericUpDownBadPixel4.TabIndex = 25;
             this.numericUpDownBadPixel4.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel4.Value = new decimal(new int[] {
             1,
@@ -464,7 +464,7 @@
             -2147483648});
             this.numericUpDownBadPixel3.Name = "numericUpDownBadPixel3";
             this.numericUpDownBadPixel3.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel3.TabIndex = 11;
+            this.numericUpDownBadPixel3.TabIndex = 24;
             this.numericUpDownBadPixel3.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel3.Value = new decimal(new int[] {
             1,
@@ -488,7 +488,7 @@
             -2147483648});
             this.numericUpDownBadPixel2.Name = "numericUpDownBadPixel2";
             this.numericUpDownBadPixel2.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel2.TabIndex = 10;
+            this.numericUpDownBadPixel2.TabIndex = 22;
             this.numericUpDownBadPixel2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel2.Value = new decimal(new int[] {
             1,
@@ -512,7 +512,7 @@
             -2147483648});
             this.numericUpDownBadPixel1.Name = "numericUpDownBadPixel1";
             this.numericUpDownBadPixel1.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel1.TabIndex = 9;
+            this.numericUpDownBadPixel1.TabIndex = 21;
             this.numericUpDownBadPixel1.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel1.Value = new decimal(new int[] {
             1,
@@ -536,7 +536,7 @@
             -2147483648});
             this.numericUpDownBadPixel0.Name = "numericUpDownBadPixel0";
             this.numericUpDownBadPixel0.Size = new System.Drawing.Size(50, 20);
-            this.numericUpDownBadPixel0.TabIndex = 8;
+            this.numericUpDownBadPixel0.TabIndex = 20;
             this.numericUpDownBadPixel0.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownBadPixel0.Value = new decimal(new int[] {
             1,
@@ -550,10 +550,10 @@
             this.buttonSave.BackColor = System.Drawing.Color.DarkRed;
             this.buttonSave.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonSave.ForeColor = System.Drawing.Color.White;
-            this.buttonSave.Location = new System.Drawing.Point(440, 456);
+            this.buttonSave.Location = new System.Drawing.Point(428, 455);
             this.buttonSave.Name = "buttonSave";
             this.buttonSave.Size = new System.Drawing.Size(83, 25);
-            this.buttonSave.TabIndex = 7;
+            this.buttonSave.TabIndex = 37;
             this.buttonSave.Text = "Save";
             this.buttonSave.UseVisualStyleBackColor = false;
             this.buttonSave.Click += new System.EventHandler(this.buttonSave_Click);
@@ -640,7 +640,7 @@
             -2147483648});
             this.numericUpDownROIVertEnd0.Name = "numericUpDownROIVertEnd0";
             this.numericUpDownROIVertEnd0.Size = new System.Drawing.Size(63, 20);
-            this.numericUpDownROIVertEnd0.TabIndex = 7;
+            this.numericUpDownROIVertEnd0.TabIndex = 15;
             this.numericUpDownROIVertEnd0.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownROIVertEnd0.ValueChanged += new System.EventHandler(this.numericUpDownROIVertEnd0_ValueChanged);
             // 
@@ -659,7 +659,7 @@
             -2147483648});
             this.numericUpDownROIVertStart0.Name = "numericUpDownROIVertStart0";
             this.numericUpDownROIVertStart0.Size = new System.Drawing.Size(63, 20);
-            this.numericUpDownROIVertStart0.TabIndex = 6;
+            this.numericUpDownROIVertStart0.TabIndex = 14;
             this.numericUpDownROIVertStart0.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownROIVertStart0.ValueChanged += new System.EventHandler(this.numericUpDownROIVertStart0_ValueChanged);
             // 
@@ -678,7 +678,7 @@
             -2147483648});
             this.numericUpDownROIVertEnd2.Name = "numericUpDownROIVertEnd2";
             this.numericUpDownROIVertEnd2.Size = new System.Drawing.Size(63, 20);
-            this.numericUpDownROIVertEnd2.TabIndex = 5;
+            this.numericUpDownROIVertEnd2.TabIndex = 19;
             this.numericUpDownROIVertEnd2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownROIVertEnd2.ValueChanged += new System.EventHandler(this.numericUpDownROIVertEnd2_ValueChanged);
             // 
@@ -697,7 +697,7 @@
             -2147483648});
             this.numericUpDownROIVertStart2.Name = "numericUpDownROIVertStart2";
             this.numericUpDownROIVertStart2.Size = new System.Drawing.Size(63, 20);
-            this.numericUpDownROIVertStart2.TabIndex = 4;
+            this.numericUpDownROIVertStart2.TabIndex = 18;
             this.numericUpDownROIVertStart2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownROIVertStart2.ValueChanged += new System.EventHandler(this.numericUpDownROIVertStart2_ValueChanged);
             // 
@@ -716,7 +716,7 @@
             -2147483648});
             this.numericUpDownROIVertEnd1.Name = "numericUpDownROIVertEnd1";
             this.numericUpDownROIVertEnd1.Size = new System.Drawing.Size(63, 20);
-            this.numericUpDownROIVertEnd1.TabIndex = 3;
+            this.numericUpDownROIVertEnd1.TabIndex = 17;
             this.numericUpDownROIVertEnd1.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownROIVertEnd1.ValueChanged += new System.EventHandler(this.numericUpDownROIVertEnd1_ValueChanged);
             // 
@@ -735,7 +735,7 @@
             -2147483648});
             this.numericUpDownROIVertStart1.Name = "numericUpDownROIVertStart1";
             this.numericUpDownROIVertStart1.Size = new System.Drawing.Size(63, 20);
-            this.numericUpDownROIVertStart1.TabIndex = 2;
+            this.numericUpDownROIVertStart1.TabIndex = 16;
             this.numericUpDownROIVertStart1.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownROIVertStart1.ValueChanged += new System.EventHandler(this.numericUpDownROIVertStart1_ValueChanged);
             // 
@@ -774,7 +774,7 @@
             -2147483648});
             this.numericUpDownROIHorizEnd.Name = "numericUpDownROIHorizEnd";
             this.numericUpDownROIHorizEnd.Size = new System.Drawing.Size(63, 20);
-            this.numericUpDownROIHorizEnd.TabIndex = 1;
+            this.numericUpDownROIHorizEnd.TabIndex = 13;
             this.numericUpDownROIHorizEnd.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownROIHorizEnd.ValueChanged += new System.EventHandler(this.numericUpDownROIHorizEnd_ValueChanged);
             // 
@@ -793,7 +793,7 @@
             -2147483648});
             this.numericUpDownROIHorizStart.Name = "numericUpDownROIHorizStart";
             this.numericUpDownROIHorizStart.Size = new System.Drawing.Size(63, 20);
-            this.numericUpDownROIHorizStart.TabIndex = 0;
+            this.numericUpDownROIHorizStart.TabIndex = 12;
             this.numericUpDownROIHorizStart.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownROIHorizStart.ValueChanged += new System.EventHandler(this.numericUpDownROIHorizStart_ValueChanged);
             // 
@@ -841,7 +841,7 @@
             this.textBoxLinearityCoeff4.Location = new System.Drawing.Point(6, 123);
             this.textBoxLinearityCoeff4.Name = "textBoxLinearityCoeff4";
             this.textBoxLinearityCoeff4.Size = new System.Drawing.Size(68, 20);
-            this.textBoxLinearityCoeff4.TabIndex = 16;
+            this.textBoxLinearityCoeff4.TabIndex = 11;
             this.textBoxLinearityCoeff4.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.textBoxLinearityCoeff4.TextChanged += new System.EventHandler(this.textBoxLinearityCoeff4_TextChanged);
             // 
@@ -859,7 +859,7 @@
             this.textBoxLinearityCoeff3.Location = new System.Drawing.Point(6, 97);
             this.textBoxLinearityCoeff3.Name = "textBoxLinearityCoeff3";
             this.textBoxLinearityCoeff3.Size = new System.Drawing.Size(68, 20);
-            this.textBoxLinearityCoeff3.TabIndex = 14;
+            this.textBoxLinearityCoeff3.TabIndex = 10;
             this.textBoxLinearityCoeff3.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.textBoxLinearityCoeff3.TextChanged += new System.EventHandler(this.textBoxLinearityCoeff3_TextChanged);
             // 
@@ -877,7 +877,7 @@
             this.textBoxLinearityCoeff2.Location = new System.Drawing.Point(6, 71);
             this.textBoxLinearityCoeff2.Name = "textBoxLinearityCoeff2";
             this.textBoxLinearityCoeff2.Size = new System.Drawing.Size(68, 20);
-            this.textBoxLinearityCoeff2.TabIndex = 12;
+            this.textBoxLinearityCoeff2.TabIndex = 9;
             this.textBoxLinearityCoeff2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.textBoxLinearityCoeff2.TextChanged += new System.EventHandler(this.textBoxLinearityCoeff2_TextChanged);
             // 
@@ -895,7 +895,7 @@
             this.textBoxLinearityCoeff1.Location = new System.Drawing.Point(6, 45);
             this.textBoxLinearityCoeff1.Name = "textBoxLinearityCoeff1";
             this.textBoxLinearityCoeff1.Size = new System.Drawing.Size(68, 20);
-            this.textBoxLinearityCoeff1.TabIndex = 10;
+            this.textBoxLinearityCoeff1.TabIndex = 8;
             this.textBoxLinearityCoeff1.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.textBoxLinearityCoeff1.TextChanged += new System.EventHandler(this.textBoxLinearityCoeff1_TextChanged);
             // 
@@ -913,7 +913,7 @@
             this.textBoxLinearityCoeff0.Location = new System.Drawing.Point(6, 19);
             this.textBoxLinearityCoeff0.Name = "textBoxLinearityCoeff0";
             this.textBoxLinearityCoeff0.Size = new System.Drawing.Size(68, 20);
-            this.textBoxLinearityCoeff0.TabIndex = 8;
+            this.textBoxLinearityCoeff0.TabIndex = 7;
             this.textBoxLinearityCoeff0.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.textBoxLinearityCoeff0.TextChanged += new System.EventHandler(this.textBoxLinearityCoeff0_TextChanged);
             // 
@@ -966,7 +966,7 @@
             this.textBoxWavecalCoeff2.Location = new System.Drawing.Point(6, 71);
             this.textBoxWavecalCoeff2.Name = "textBoxWavecalCoeff2";
             this.textBoxWavecalCoeff2.Size = new System.Drawing.Size(68, 20);
-            this.textBoxWavecalCoeff2.TabIndex = 4;
+            this.textBoxWavecalCoeff2.TabIndex = 5;
             this.textBoxWavecalCoeff2.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.textBoxWavecalCoeff2.TextChanged += new System.EventHandler(this.textBoxWavecalCoeff2_TextChanged);
             // 
@@ -984,7 +984,7 @@
             this.textBoxWavecalCoeff1.Location = new System.Drawing.Point(6, 45);
             this.textBoxWavecalCoeff1.Name = "textBoxWavecalCoeff1";
             this.textBoxWavecalCoeff1.Size = new System.Drawing.Size(68, 20);
-            this.textBoxWavecalCoeff1.TabIndex = 2;
+            this.textBoxWavecalCoeff1.TabIndex = 4;
             this.textBoxWavecalCoeff1.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.textBoxWavecalCoeff1.TextChanged += new System.EventHandler(this.textBoxWavecalCoeff1_TextChanged);
             // 
@@ -1002,7 +1002,7 @@
             this.textBoxWavecalCoeff0.Location = new System.Drawing.Point(6, 19);
             this.textBoxWavecalCoeff0.Name = "textBoxWavecalCoeff0";
             this.textBoxWavecalCoeff0.Size = new System.Drawing.Size(68, 20);
-            this.textBoxWavecalCoeff0.TabIndex = 0;
+            this.textBoxWavecalCoeff0.TabIndex = 3;
             this.textBoxWavecalCoeff0.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.textBoxWavecalCoeff0.TextChanged += new System.EventHandler(this.textBoxWavecalCoeff0_TextChanged);
             // 
@@ -1024,7 +1024,7 @@
             this.textBoxUserText.Name = "textBoxUserText";
             this.textBoxUserText.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.textBoxUserText.Size = new System.Drawing.Size(499, 81);
-            this.textBoxUserText.TabIndex = 0;
+            this.textBoxUserText.TabIndex = 36;
             this.textBoxUserText.TextChanged += new System.EventHandler(this.textBoxUserText_TextChanged);
             // 
             // groupBox2
@@ -1075,7 +1075,7 @@
             this.textBoxCalibrationDate.MaxLength = 12;
             this.textBoxCalibrationDate.Name = "textBoxCalibrationDate";
             this.textBoxCalibrationDate.Size = new System.Drawing.Size(83, 20);
-            this.textBoxCalibrationDate.TabIndex = 0;
+            this.textBoxCalibrationDate.TabIndex = 1;
             this.textBoxCalibrationDate.Text = "123456789012";
             this.textBoxCalibrationDate.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.textBoxCalibrationDate.TextChanged += new System.EventHandler(this.textBoxCalibrationDate_TextChanged);
@@ -1107,7 +1107,7 @@
             this.ClientSize = new System.Drawing.Size(516, 483);
             this.Controls.Add(this.groupBoxWritable);
             this.Name = "WriteEEPROMForm";
-            this.Text = "WriteEEPROMForm";
+            this.Text = "Update EEPROM";
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownExcitationNM)).EndInit();
             this.groupBoxWritable.ResumeLayout(false);
             this.groupBox10.ResumeLayout(false);

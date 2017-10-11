@@ -52,12 +52,12 @@ namespace WasatchNET
         UsbRegistry usbRegistry;
         UsbDevice usbDevice;
         UsbEndpointReader spectralReader;
-        internal UsbEndpointReader statusReader;
+        UsbEndpointReader statusReader;
 
         Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
         Logger logger = Logger.getInstance();
 
-        internal object acquisitionLock = new object();
+        object acquisitionLock = new object();
         object commsLock = new object();
 
         #region properties
@@ -857,7 +857,7 @@ namespace WasatchNET
             // STEP FOUR: read status
             // try
             // {
-            //      AcquisitionStatus status = new AcquisitionStatus(this);
+            //      AcquisitionStatus status = new AcquisitionStatus(statusReader);
             //      if (sum != status.checksum)
             //         logger.error("getSpectrum: sum {0} != checksum {1}", sum, status.checksum);
             // }

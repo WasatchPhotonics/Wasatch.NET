@@ -213,6 +213,10 @@ namespace WasatchNET
         /// Due to the high risk of bricking a unit through a failed / bad EEPROM
         /// write, all internal calls bail at the first error in hopes of salvaging
         /// the unit if at all possible.
+        ///
+        /// Note that if you do frag your EEPROM, Wasatch has a "Model Configuration"
+        /// utility to let you manually write EEPROM fields...contact your sales rep
+        /// for a copy.
         /// </remarks>
         /// <returns>true on success, false on failure</returns>
         public bool write()
@@ -223,31 +227,26 @@ namespace WasatchNET
                 return false;
             }
 
-            logger.error("FUNCTION DISABLED WHILE TROUBLESHOOTING");
-            return false;
-
-            if (!ParseData.writeInt16(excitationNM, pages[0], 39)) return false;
-
-            if (!ParseData.writeFloat(wavecalCoeffs[0], pages[1], 0)) return false;
-            if (!ParseData.writeFloat(wavecalCoeffs[1], pages[1], 4)) return false;
-            if (!ParseData.writeFloat(wavecalCoeffs[2], pages[1], 8)) return false;
-            if (!ParseData.writeFloat(wavecalCoeffs[3], pages[1], 12)) return false;
-            if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
-            if (!ParseData.writeString(calibrationBy,   pages[1], 60, 3)) return false;
-
-            if (!ParseData.writeInt16(ROIHorizStart        , pages[2], 27)) return false;
-            if (!ParseData.writeInt16(ROIHorizEnd          , pages[2], 29)) return false;
+            if (!ParseData.writeInt16(excitationNM,          pages[0], 39)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[0],      pages[1],  0)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[1],      pages[1],  4)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[2],      pages[1],  8)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[3],      pages[1], 12)) return false;
+            if (!ParseData.writeString(calibrationDate,      pages[1], 48, 12)) return false;
+            if (!ParseData.writeString(calibrationBy,        pages[1], 60,  3)) return false;
+            if (!ParseData.writeInt16(ROIHorizStart,         pages[2], 27)) return false;
+            if (!ParseData.writeInt16(ROIHorizEnd,           pages[2], 29)) return false;
             if (!ParseData.writeInt16(ROIVertRegionStart[0], pages[2], 31)) return false;
-            if (!ParseData.writeInt16(ROIVertRegionEnd[0]  , pages[2], 33)) return false;
+            if (!ParseData.writeInt16(ROIVertRegionEnd  [0], pages[2], 33)) return false;
             if (!ParseData.writeInt16(ROIVertRegionStart[1], pages[2], 35)) return false;
-            if (!ParseData.writeInt16(ROIVertRegionEnd[1]  , pages[2], 37)) return false;
+            if (!ParseData.writeInt16(ROIVertRegionEnd  [1], pages[2], 37)) return false;
             if (!ParseData.writeInt16(ROIVertRegionStart[2], pages[2], 39)) return false;
-            if (!ParseData.writeInt16(ROIVertRegionEnd[2]  , pages[2], 41)) return false;
-            if (!ParseData.writeFloat(linearityCoeffs[0]   , pages[2], 43)) return false;
-            if (!ParseData.writeFloat(linearityCoeffs[1]   , pages[2], 47)) return false;
-            if (!ParseData.writeFloat(linearityCoeffs[2]   , pages[2], 51)) return false;
-            if (!ParseData.writeFloat(linearityCoeffs[3]   , pages[2], 55)) return false;
-            if (!ParseData.writeFloat(linearityCoeffs[4]   , pages[2], 59)) return false;
+            if (!ParseData.writeInt16(ROIVertRegionEnd  [2], pages[2], 41)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[0],    pages[2], 43)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[1],    pages[2], 47)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[2],    pages[2], 51)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[3],    pages[2], 55)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[4],    pages[2], 59)) return false;
 
             Array.Copy(userData, pages[4], userData.Length);
 
@@ -259,20 +258,21 @@ namespace WasatchNET
             Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
 
             // Deliberately write pages in reverse order (least important to most),
-            // so if there are any errors, hopefully they won't completely brick 
+            // so if there are any errors, hopefully we won't completely brick 
             // the unit.
-            lock (spectrometer.acquisitionLock)
+            for (short page = (short)(pages.Count - 1); page >= 0; page--)
             {
-                for (short page = 0; page < pages.Count; page++)
+                const uint DATA_START = 0x3c00; // from Wasatch Stroker Console's EnhancedStroker.setModelInformation()
+                ushort pageOffset = (ushort) (DATA_START + page * 64);
+
+                logger.hexdump(pages[page], String.Format("writing page {0} at offset {1:x4}: ", page, pageOffset));
+
+                if (!spectrometer.sendCmd(Opcodes.SET_MODEL_CONFIG_REAL, pageOffset, 0, pages[page]))
                 {
-                    logger.hexdump(pages[page], String.Format("writing page {0}: ", page));
-                    if (!spectrometer.sendCmd(Opcodes.SECOND_TIER_COMMAND, cmd[Opcodes.SET_MODEL_CONFIG], (ushort)page, pages[page]))
-                    {
-                        logger.error("ModelConfig.write: failed to save page {0}", page);
-                        return false;
-                    }
-                    logger.debug("ModelConfig: wrote EEPROM page {0}", page);
+                    logger.error("ModelConfig.write: failed to save page {0}", page);
+                    return false;
                 }
+                logger.debug("ModelConfig: wrote EEPROM page {0}", page);
             }
             return true;
         }
@@ -330,33 +330,33 @@ namespace WasatchNET
                 detectorTempCoeffs[2]   = ParseData.toFloat (pages[1], 24);
                 detectorTempMax         = ParseData.toInt16 (pages[1], 28);
                 detectorTempMin         = ParseData.toInt16 (pages[1], 30);
-                adcCoeffs[0]            = ParseData.toFloat(pages[1], 32); // should these be called laserTempCoeffs?
-                adcCoeffs[1]            = ParseData.toFloat(pages[1], 36);
-                adcCoeffs[2]            = ParseData.toFloat(pages[1], 40);
-                thermistorResistanceAt298K = ParseData.toInt16(pages[1], 44);
-                thermistorBeta          = ParseData.toInt16(pages[1], 46);
+                adcCoeffs[0]            = ParseData.toFloat (pages[1], 32); // should these be called laserTempCoeffs?
+                adcCoeffs[1]            = ParseData.toFloat (pages[1], 36);
+                adcCoeffs[2]            = ParseData.toFloat (pages[1], 40);
+             thermistorResistanceAt298K = ParseData.toInt16 (pages[1], 44);
+                thermistorBeta          = ParseData.toInt16 (pages[1], 46);
                 calibrationDate         = ParseData.toString(pages[1], 48, 12);
                 calibrationBy           = ParseData.toString(pages[1], 60, 3);
 
-                detectorName            = ParseData.toString(pages[2], 0, 16);
-                activePixelsHoriz       = ParseData.toInt16(pages[2], 16); // note: byte 18 apparently unused
-                activePixelsVert        = ParseData.toInt16(pages[2], 19);
+                detectorName            = ParseData.toString(pages[2],  0, 16);
+                activePixelsHoriz       = ParseData.toInt16 (pages[2], 16); // note: byte 18 apparently unused
+                activePixelsVert        = ParseData.toInt16 (pages[2], 19);
                 minIntegrationTimeMS    = ParseData.toUInt16(pages[2], 21);
                 maxIntegrationTimeMS    = ParseData.toUInt16(pages[2], 23);
-                actualHoriz             = ParseData.toInt16(pages[2], 25);
-                ROIHorizStart           = ParseData.toInt16(pages[2], 27);
-                ROIHorizEnd             = ParseData.toInt16(pages[2], 29);
-                ROIVertRegionStart[0]   = ParseData.toInt16(pages[2], 31);
-                ROIVertRegionEnd[0]     = ParseData.toInt16(pages[2], 33);
-                ROIVertRegionStart[1]   = ParseData.toInt16(pages[2], 35);
-                ROIVertRegionEnd[1]     = ParseData.toInt16(pages[2], 37);
-                ROIVertRegionStart[2]   = ParseData.toInt16(pages[2], 39);
-                ROIVertRegionEnd[2]     = ParseData.toInt16(pages[2], 41);
-                linearityCoeffs[0]      = ParseData.toFloat(pages[2], 43);
-                linearityCoeffs[1]      = ParseData.toFloat(pages[2], 47);
-                linearityCoeffs[2]      = ParseData.toFloat(pages[2], 51);
-                linearityCoeffs[3]      = ParseData.toFloat(pages[2], 55);
-                linearityCoeffs[4]      = ParseData.toFloat(pages[2], 59);
+                actualHoriz             = ParseData.toInt16 (pages[2], 25);
+                ROIHorizStart           = ParseData.toInt16 (pages[2], 27);
+                ROIHorizEnd             = ParseData.toInt16 (pages[2], 29);
+                ROIVertRegionStart[0]   = ParseData.toInt16 (pages[2], 31);
+                ROIVertRegionEnd[0]     = ParseData.toInt16 (pages[2], 33);
+                ROIVertRegionStart[1]   = ParseData.toInt16 (pages[2], 35);
+                ROIVertRegionEnd[1]     = ParseData.toInt16 (pages[2], 37);
+                ROIVertRegionStart[2]   = ParseData.toInt16 (pages[2], 39);
+                ROIVertRegionEnd[2]     = ParseData.toInt16 (pages[2], 41);
+                linearityCoeffs[0]      = ParseData.toFloat (pages[2], 43);
+                linearityCoeffs[1]      = ParseData.toFloat (pages[2], 47);
+                linearityCoeffs[2]      = ParseData.toFloat (pages[2], 51);
+                linearityCoeffs[3]      = ParseData.toFloat (pages[2], 55);
+                linearityCoeffs[4]      = ParseData.toFloat (pages[2], 59);
 
                 // deviceLifetimeOperationMinutes = ParseData.toInt32(pages[3], 0);
                 // laserLifetimeOperationMinutes = ParseData.toInt32(pages[3], 4);
