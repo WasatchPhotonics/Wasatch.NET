@@ -12,12 +12,13 @@ Wasatch.NET is expected to work from all .NET-compatible languages, including:
 | C#                    | tested with Visual Studio 2017 Community
 | LabVIEW               | tested with 2017 32-bit
 | MATLAB/Simulink       | tested with 2017b 64-bit
-| Embarcadero Delphi    |
-| Xamarin               |
-| Visual Basic.NET      |
+| Embarcadero Delphi    | not started
+| Xamarin               | not started
+| Visual Basic.NET      | not started
 | VBA (Excel)           | tested with Office 2010 64-bit
 | R                     | planned via [rClr](https://rclr.codeplex.com/)
-| F#                    |
+| F#                    | not started
+| Wolfram Mathematica   | not started
 
 If there are others you would like to see listed, please let us know and we'll 
 test them!

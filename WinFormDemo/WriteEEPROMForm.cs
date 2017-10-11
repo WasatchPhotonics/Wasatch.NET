@@ -82,11 +82,13 @@ namespace WinFormDemo
         private void buttonSave_Click(object sender, EventArgs e)
         {
             DialogResult result = MessageBox.Show("Are you sure? Writing bad values to the EEPROM could invalidate its factory calibration and lead to degraded measurements.", 
-                "Terrifying Warning Message", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+                "Extreme Caution Alert", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
             if (result != DialogResult.Yes)
                 return;
 
             config.write();
+
+            Close();
         }
 
         void updateFloat(TextBox tb, ref float value)
