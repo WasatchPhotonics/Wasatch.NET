@@ -7,15 +7,15 @@ properties and methods like integrationTimeMS and getSpectrum().
 
 Wasatch.NET is expected to work from all .NET-compatible languages, including:
 
-- C# (tested with Visual Studio 2017 Community)
-- LabVIEW (tested with 2017 32-bit)
-- MATLAB/Simulink (tested with 2017b 64-bit)
-- Embarcadero Delphi
-- Xamarin
-- Visual Basic.NET
-- VBA (Excel) (tested with Office 2010 64-bit)
-- R (via [rclr](https://rclr.codeplex.com/))
-- F#
+| C#                    | tested with Visual Studio 2017 Community
+| LabVIEW               | tested with 2017 32-bit
+| MATLAB/Simulink       | tested with 2017b 64-bit
+| Embarcadero Delphi    |
+| Xamarin               |
+| Visual Basic.NET      |
+| VBA (Excel)           | tested with Office 2010 64-bit
+| R                     | planned via [rClr](https://rclr.codeplex.com/)
+| F#                    |
 
 If there are others you would like to see listed, please let us know and we'll 
 test them!
@@ -205,23 +205,18 @@ community, but not too proud to decline patches when they improve the product!
 That said, some known areas for improvement can be found in our Backlog 
 (below).
 
-# Known Issues
-
-**DO NOT CALL ModelConfig.write() TO SAVE EEPROM DATA AT THIS TIME**
-
-EEPROM data is being corrupted and I'm trying to figure out why.
-
 # Backlog
 
-- [ ] add EEPROM write to WinFormDemo
 - [ ] test with multiple parallel spectrometers
-- [ ] test on more hardware (NIR)
+- [ ] test on more hardware, including NIR and ARM
 - [ ] consider turning all accessors into Properties
 - [ ] refactor into LaserController, TECController etc
 - [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
 
 # Version History
 
+- 2017-10-11 1.0.4 fixed and restored ModelConfig.write 
+- 2017-10-11 1.0.3 disabled ModelConfig.write due to corruption
 - 2017-10-10 1.0.2 separate 32/64-bit installers
 - 2017-09-29 1.0.1 initial GitHub release (alpha)
 - 2017-09-25 1.0.0 initial creation
