@@ -638,8 +638,51 @@ namespace WasatchNET
 
         public ushort getCCDTemperatureRaw()
         {
-            return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2));
-        } 
+            return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2)));
+        }
+
+        /// <summary>
+        /// Although most values read from the spectrometer are little-endian by
+        /// design, a couple big-endians slipped in there.
+        /// </summary>
+        /// <param name="raw">input value in one endian</param>
+        /// <returns>same value with the bytes reversed</returns>
+        ushort swapBytes(ushort raw)
+        {
+            byte lsb = (byte)(raw & 0xff);
+            byte msb = (byte)((raw >> 8) & 0xff);
+            return (ushort) ((lsb << 8) | msb);
+        }
+
+        /// <summary>
+        /// You generally would not want to use this function (it's better to use
+        /// the EEPROM coefficients), but if your EEPROM is blown this can give 
+        /// you a reasonable approximation.
+        /// </summary>
+        /// <param name="raw">12-bit ADC value (ensure it was read as big-endian, or swap with swapBytes())</param>
+        /// <remarks>
+        /// Borrowed from Enlighten's fid_hardware.get_ccd_temperature(). 
+        ///
+        /// I *think* that the laser version would be this:
+        /// 
+        /// Thermistor_Voltage = (raw/4096)*2.468;
+        /// Thermistor_Resistance = Thermistor_Voltage/((2.468-Thermistor_Voltage)/21450));
+        /// Temp_in_C = 3977/(log(Thermistor_Resistance/10000) + 3977/(25+273) – 273;
+        /// </remarks>
+        /// <returns></returns>
+        float adcToDegC(ushort raw)
+        {
+            // Scale to a voltage level from 0 to 1.5VDC
+            double vdc = 1.5 * raw / 4096.0;
+
+            // Convert to resistance
+            double resistance = 10000 * vdc / (2 - vdc);
+
+            // Find the log of the resistance with a 10kOHM resistor
+            double logVal = Math.Log(resistance / 10000);
+            double insideMain = logVal + (3977.0 / (25 + 273.0));
+            return (float)((3977.0 / insideMain) - 273.0);
+        }
 
         public float getCCDTemperatureDegC()
         {
@@ -647,7 +690,7 @@ namespace WasatchNET
             float degC = modelConfig.detectorTempCoeffs[0]
                        + modelConfig.detectorTempCoeffs[1] * raw
                        + modelConfig.detectorTempCoeffs[2] * raw * raw;
-            return degC;
+            return degC; 
         }
 
         public ushort getActualFrames()                 { return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
@@ -679,12 +722,9 @@ namespace WasatchNET
         public FPGA_LASER_TYPE      getOptLaserType()   { return fpgaOptions.parseLaserType   (Unpack.toInt(getCmd2(Opcodes.OPT_LASER, 1))); }
         public FPGA_LASER_CONTROL   getOptLaserControl(){ return fpgaOptions.parseLaserControl(Unpack.toInt(getCmd2(Opcodes.OPT_LASER_CONTROL, 1))); } 
 
-        // Thermistor_Voltage = (ADC_Reading/4096)*2.468;
-        // Thermistor_Resistance = Thermistor_Voltage/((2.468-Thermistor_Voltage)/21450));
-        // Temp_in_C = 3977/(log(Thermistor_Resistance/10000) + 3977/(25+273) – 273;
         public ushort getLaserTemperatureRaw()
         {
-            return Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMP, 2));
+            return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMP, 2)));
         } 
 
         /// <summary>

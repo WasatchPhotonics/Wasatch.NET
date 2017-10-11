@@ -23,12 +23,16 @@ namespace WinFormDemo
             public Spectrometer spectrometer;
             public BackgroundWorker worker = new BackgroundWorker();
             public Series series = new Series();
-            public bool running;
+
             public double[] raw;
             public double[] spectrum;
             public double[] reference;
+            public double detTempDegC;
+
+            public bool running;
             public ProcessingMode processingMode = ProcessingMode.SCOPE;
             public DateTime lastUpdate;
+
             Logger logger = Logger.getInstance();
 
             public SpectrometerState(Spectrometer s)
@@ -160,7 +164,8 @@ namespace WinFormDemo
 
             groupBoxSettings.Enabled = 
             groupBoxControl.Enabled = 
-            toolStripMenuItemTestWriteEEPROM.Enabled = true;
+            toolStripMenuItemTestWriteEEPROM.Enabled = 
+            labelDetTempDegC.Visible = true;
         }
 
         void updateStartButton(bool isRunning)
@@ -205,11 +210,16 @@ namespace WinFormDemo
                             series.Points.AddXY(spectrometer.wavelengths[i], state.spectrum[i]);
                     }
 
-                    // current spectrometer (now) has spectra, so allow darks and traces
+                    // extra handling for current spectrometer
                     if (spectrometer == currentSpectrometer)
+                    {
+                        /// has spectra, so allow darks and traces
                         checkBoxTakeDark.Enabled =
-                            buttonAddTrace.Enabled = 
+                            buttonAddTrace.Enabled =
                             buttonSave.Enabled = true;
+
+                        labelDetTempDegC.Text = String.Format("{0:f1}°C", state.detTempDegC);
+                    }
                 }
             }
         }
@@ -503,12 +513,24 @@ namespace WinFormDemo
         {
             logger.debug("GUIUpdate thread starting");
             BackgroundWorker worker = sender as BackgroundWorker;
+            ushort lowFreqOperations = 0;
             while(true)
             {
                 if (worker.CancellationPending || shutdownPending)
                     break;
                 Thread.Sleep(100);
                 chart1.BeginInvoke(new MethodInvoker(delegate { updateGraph(); }));
+
+                // once a second, update temperatures
+                if (lowFreqOperations++ > 10)
+                {
+                    foreach (Spectrometer s in spectrometers)
+                    {
+                        SpectrometerState state = spectrometerStates[s];
+                        state.detTempDegC = s.getCCDTemperatureDegC();
+                    }
+                    lowFreqOperations = 0;
+                }
             }
             logger.debug("GUIUpdate thread exiting");
         }

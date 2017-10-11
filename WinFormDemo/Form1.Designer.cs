@@ -35,6 +35,9 @@
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerGraphVsControls = new System.Windows.Forms.SplitContainer();
             this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
+            this.toolStripMenuItemTest = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemTestWriteEEPROM = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBoxSettings = new System.Windows.Forms.GroupBox();
             this.treeViewSettings = new System.Windows.Forms.TreeView();
             this.groupBoxSpectrometers = new System.Windows.Forms.GroupBox();
@@ -68,9 +71,7 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
-            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
-            this.toolStripMenuItemTest = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItemTestWriteEEPROM = new System.Windows.Forms.ToolStripMenuItem();
+            this.labelDetTempDegC = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -80,6 +81,7 @@
             this.splitContainerGraphVsControls.Panel2.SuspendLayout();
             this.splitContainerGraphVsControls.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
+            this.menuStrip1.SuspendLayout();
             this.groupBoxSettings.SuspendLayout();
             this.groupBoxSpectrometers.SuspendLayout();
             this.groupBoxControl.SuspendLayout();
@@ -89,7 +91,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBoxcarHalfWidth)).BeginInit();
             this.groupBoxSetup.SuspendLayout();
             this.groupBoxEventLog.SuspendLayout();
-            this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // splitContainerTopVsLog
@@ -155,6 +156,33 @@
             this.chart1.TabIndex = 0;
             this.chart1.Text = "chart1";
             // 
+            // menuStrip1
+            // 
+            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripMenuItemTest});
+            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
+            this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Size = new System.Drawing.Size(479, 24);
+            this.menuStrip1.TabIndex = 1;
+            this.menuStrip1.Text = "menuStrip1";
+            // 
+            // toolStripMenuItemTest
+            // 
+            this.toolStripMenuItemTest.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripMenuItemTestWriteEEPROM});
+            this.toolStripMenuItemTest.Name = "toolStripMenuItemTest";
+            this.toolStripMenuItemTest.Size = new System.Drawing.Size(40, 20);
+            this.toolStripMenuItemTest.Text = "Test";
+            // 
+            // toolStripMenuItemTestWriteEEPROM
+            // 
+            this.toolStripMenuItemTestWriteEEPROM.Enabled = false;
+            this.toolStripMenuItemTestWriteEEPROM.Name = "toolStripMenuItemTestWriteEEPROM";
+            this.toolStripMenuItemTestWriteEEPROM.Size = new System.Drawing.Size(160, 22);
+            this.toolStripMenuItemTestWriteEEPROM.Text = "Write EEPROM...";
+            this.toolStripMenuItemTestWriteEEPROM.ToolTipText = "Demonstrate how to write to the EEPROM";
+            this.toolStripMenuItemTestWriteEEPROM.Click += new System.EventHandler(this.toolStripMenuItemTestWriteEEPROM_Click);
+            // 
             // groupBoxSettings
             // 
             this.groupBoxSettings.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -165,7 +193,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(214, 115);
+            this.groupBoxSettings.Size = new System.Drawing.Size(215, 115);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -176,7 +204,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(210, 98);
+            this.treeViewSettings.Size = new System.Drawing.Size(211, 98);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -473,6 +501,7 @@
             // 
             // groupBoxSetup
             // 
+            this.groupBoxSetup.Controls.Add(this.labelDetTempDegC);
             this.groupBoxSetup.Controls.Add(this.label4);
             this.groupBoxSetup.Controls.Add(this.comboBoxXAxis);
             this.groupBoxSetup.Controls.Add(this.checkBoxVerbose);
@@ -570,32 +599,16 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
-            // menuStrip1
+            // labelDetTempDegC
             // 
-            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripMenuItemTest});
-            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
-            this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(479, 24);
-            this.menuStrip1.TabIndex = 1;
-            this.menuStrip1.Text = "menuStrip1";
-            // 
-            // toolStripMenuItemTest
-            // 
-            this.toolStripMenuItemTest.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripMenuItemTestWriteEEPROM});
-            this.toolStripMenuItemTest.Name = "toolStripMenuItemTest";
-            this.toolStripMenuItemTest.Size = new System.Drawing.Size(40, 20);
-            this.toolStripMenuItemTest.Text = "Test";
-            // 
-            // toolStripMenuItemTestWriteEEPROM
-            // 
-            this.toolStripMenuItemTestWriteEEPROM.Enabled = false;
-            this.toolStripMenuItemTestWriteEEPROM.Name = "toolStripMenuItemTestWriteEEPROM";
-            this.toolStripMenuItemTestWriteEEPROM.Size = new System.Drawing.Size(160, 22);
-            this.toolStripMenuItemTestWriteEEPROM.Text = "Write EEPROM...";
-            this.toolStripMenuItemTestWriteEEPROM.ToolTipText = "Demonstrate how to write to the EEPROM";
-            this.toolStripMenuItemTestWriteEEPROM.Click += new System.EventHandler(this.toolStripMenuItemTestWriteEEPROM_Click);
+            this.labelDetTempDegC.AutoSize = true;
+            this.labelDetTempDegC.ForeColor = System.Drawing.SystemColors.ControlDark;
+            this.labelDetTempDegC.Location = new System.Drawing.Point(172, 9);
+            this.labelDetTempDegC.Name = "labelDetTempDegC";
+            this.labelDetTempDegC.Size = new System.Drawing.Size(30, 13);
+            this.labelDetTempDegC.TabIndex = 4;
+            this.labelDetTempDegC.Text = "10°C";
+            this.labelDetTempDegC.Visible = false;
             // 
             // Form1
             // 
@@ -621,6 +634,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerGraphVsControls)).EndInit();
             this.splitContainerGraphVsControls.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
+            this.menuStrip1.ResumeLayout(false);
+            this.menuStrip1.PerformLayout();
             this.groupBoxSettings.ResumeLayout(false);
             this.groupBoxSpectrometers.ResumeLayout(false);
             this.groupBoxControl.ResumeLayout(false);
@@ -634,8 +649,6 @@
             this.groupBoxSetup.PerformLayout();
             this.groupBoxEventLog.ResumeLayout(false);
             this.groupBoxEventLog.PerformLayout();
-            this.menuStrip1.ResumeLayout(false);
-            this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -681,6 +694,7 @@
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemTest;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemTestWriteEEPROM;
+        private System.Windows.Forms.Label labelDetTempDegC;
     }
 }
 

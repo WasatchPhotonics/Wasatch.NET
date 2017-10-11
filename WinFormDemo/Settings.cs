@@ -78,7 +78,7 @@ namespace WinFormDemo
             stub("ccdTempEnable",            "Detector/TEC/Enabled");
             stub("ccdTempSetpoint",          "Detector/TEC/Setpoint");
             stub("ccdTempRaw",               "Detector/TEC/Temperature (raw)");
-            stub("ccdTempDegC",              "Detector/TEC/Temperature (ºC)");
+            stub("ccdTempDegC",              "Detector/TEC/Temperature (°C)");
             stub("thermistorResistanceAt298K", "Detector/TEC/Thermistor/Resistance at 298K");
             stub("thermistorBeta",           "Detector/TEC/Thermistor/Beta value");
             stub("ccdOffset",                "Detector/CCD/Offset");
@@ -100,7 +100,7 @@ namespace WinFormDemo
             stub("excitationNM",             "Laser/Excitation (nm)");
             stub("dac",                      "Laser/DAC"); // MZ: output power?
             stub("laserTemperatureRaw",      "Laser/TEC/Temperature (raw)");
-            stub("laserTemperatureDegC",     "Laser/TEC/Temperature (ºC)");
+            stub("laserTemperatureDegC",     "Laser/TEC/Temperature (°C)");
             stub("laserTemperatureSetpoint", "Laser/TEC/Setpoint"); 
             stub("laserModEnabled",          "Laser/Modulation/Enabled");
             stub("laserModDuration",         "Laser/Modulation/Duration");

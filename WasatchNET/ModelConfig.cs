@@ -28,8 +28,7 @@ namespace WasatchNET
         Spectrometer spectrometer;
         Logger logger = Logger.getInstance();
 
-        // cache (512 bytes)
-        List<byte[]> pages;
+        public List<byte[]> pages;
         List<byte> format;
         
         /////////////////////////////////////////////////////////////////////////       
