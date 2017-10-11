@@ -9,13 +9,13 @@ Wasatch.NET is expected to work from all .NET-compatible languages, including:
 
 | Platform              | Test status
 | --------------------- | ----------------------------------------
-| C#                    | tested with Visual Studio 2017 Community
-| LabVIEW               | tested with 2017 32-bit
-| MATLAB/Simulink       | tested with 2017b 64-bit
+| C#                    | tested with Visual Studio 2017 Community (see WinFormDemo)
+| LabVIEW               | tested with 2017 32-bit (see [Wasatch.LV](https://github.com/WasatchPhotonics/Wasatch.LV/))
+| MATLAB/Simulink       | tested with 2017b 64-bit (see [Wasatch.MATLAB](https://github.com/WasatchPhotonics/Wasatch.MATLAB/))
 | Embarcadero Delphi    | not started
 | Xamarin               | not started
 | Visual Basic.NET      | not started
-| VBA (Excel)           | tested with Office 2010 64-bit
+| VBA (Excel)           | tested with Office 2010 64-bit (see [Wasatch.Excel](https://github.com/WasatchPhotonics/Wasatch.Excel/))
 | R                     | planned via [rClr](https://rclr.codeplex.com/)
 | F#                    | not started
 | Wolfram Mathematica   | not started
