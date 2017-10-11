@@ -7,6 +7,8 @@ properties and methods like integrationTimeMS and getSpectrum().
 
 Wasatch.NET is expected to work from all .NET-compatible languages, including:
 
+| Platform              | Test status
+| --------------------- | ----------------------------------------
 | C#                    | tested with Visual Studio 2017 Community
 | LabVIEW               | tested with 2017 32-bit
 | MATLAB/Simulink       | tested with 2017b 64-bit
