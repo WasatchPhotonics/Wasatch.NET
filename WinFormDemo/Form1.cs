@@ -133,8 +133,9 @@ namespace WinFormDemo
         {
             if (currentSpectrometer == null)
             {
-                groupBoxSettings.Enabled = false;
-                groupBoxControl.Enabled = false;
+                groupBoxSettings.Enabled =
+                groupBoxControl.Enabled = 
+                toolStripMenuItemTestWriteEEPROM.Enabled = false;
                 return;
             }
 
@@ -157,8 +158,9 @@ namespace WinFormDemo
             else
                 radioButtonModeAbsorbance.Checked = true;
 
-            groupBoxSettings.Enabled = true;
-            groupBoxControl.Enabled = true;
+            groupBoxSettings.Enabled = 
+            groupBoxControl.Enabled = 
+            toolStripMenuItemTestWriteEEPROM.Enabled = true;
         }
 
         void updateStartButton(bool isRunning)
@@ -583,7 +585,11 @@ namespace WinFormDemo
 
         private void toolStripMenuItemTestWriteEEPROM_Click(object sender, EventArgs e)
         {
+            if (currentSpectrometer == null)
+                return;
 
+            WriteEEPROMForm eepromForm = new WriteEEPROMForm(currentSpectrometer.modelConfig);
+            eepromForm.ShowDialog();
         }
     }
 }

@@ -1,16 +1,69 @@
-#!/bin/sh
+#!/bin/bash
+################################################################################
+#                                  deploy                                      #
+################################################################################
+#                                                                              #
+#  DESCRIPTION:  Quick script to consistently and reliably upload releases     #
+#                to our website.                                               #
+#                                                                              #
+#  AUTHOR:       Mark Zieg <mzieg@wasatchphotonics.com>                        #
+#                                                                              #
+################################################################################
+
+function validateAssemblyVersion()
+{
+    local PROJ="$1"
+
+    ASSEMBLY_INFO="${PROJ}/Properties/AssemblyInfo.cs"
+
+    if ! egrep -q "AssemblyVersion(\"${VERSION}\.0\")" $ASSEMBLY_INFO
+    then
+        echo "ERROR: wrong AssemblyVersion in $ASSEMBLY_INFO"
+        exit 1
+    fi
+
+    if ! egrep -q "AssemblyFileVersion(\"${VERSION}\.0\")" $ASSEMBLY_INFO
+    then
+        echo "ERROR: wrong AssemblyFileVersion in $ASSEMBLY_INFO"
+        exit 1
+    fi
+}
+
+function postAndRename()
+{
+    local ARCH="$1"
+    
+    LOCAL_NAME="WasatchNET-${ARCH}-${VERSION}.msi"
+    LOCAL_PATH="${ARCH}/Debug/$LOCAL_NAME"
+
+    REMOTE_NAME="WasatchNET-${VERSION}-${ARCH}.msi"
+    REMOTE_PATH="www/binaries/drivers/Wasatch.NET/$REMOTE_NAME"
+
+    if ! [ -f $LOCAL_PATH ]
+    then
+        echo "ERROR: can't find $LOCAL_PATH"
+        exit 1
+    fi
+
+    scp $LOCAL_PATH $USERNAME@wasatchphotonics.com:$REMOTE_PATH
+}
 
 read -p "Username: " USERNAME
-read -p "Version: " VERSION 
+read -p "Version:  " VERSION 
 
-# render documentation
+# render documentation (TODO: incorporate VERSION into rendered docs)
 make doc
 
+echo
 read -p "Press return to continue..." FOO
 
+# verify version number is consistent (postAndRename handles for MSI)
+validateAssemblyVersion "WasatchNET"
+validateAssemblyVersion "WinFormDemo"
+
 # upload installers
-scp Setup32/Debug/WasatchNET-XYZ-Setup32.msi $USERNAME@wasatchphotonics.com:www/binaries/drivers/Wasatch.NET/WasatchNET-${VERSION}-Setup32.msi
-scp Setup64/Debug/WasatchNET-XYZ-Setup64.msi $USERNAME@wasatchphotonics.com:www/binaries/drivers/Wasatch.NET/WasatchNET-${VERSION}-Setup64.msi
+postAndRename "Setup32"
+postAndRename "Setup64"
 
 # upload documentation
 rsync --archive doc/doxygen/html/ ${USERNAME}@wasatchphotonics.com:www/api/Wasatch.NET/

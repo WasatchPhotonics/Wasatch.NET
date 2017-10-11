@@ -63,7 +63,7 @@ namespace WasatchNET
         /// <summary>the integral center wavelength of the laser in nanometers, if present</summary>
         /// <remarks>user-writable</remarks>
         /// <see cref="Util.wavelengthsToWavenumbers(double, double[])"/>
-        public short excitationNM { get; private set; }
+        public short excitationNM { get; set; }
 
         /// <summary>the slit width in µm</summary>
         public short slitSizeUM { get; private set; }
@@ -94,11 +94,11 @@ namespace WasatchNET
 
         /// <summary>when the unit was last calibrated (unstructured 12-char field)</summary>
         /// <remarks>user-writable</remarks>
-        public string calibrationDate { get; private set; }
+        public string calibrationDate { get; set; }
 
         /// <summary>whom the unit was last calibrated by (unstructured 3-char field)</summary>
         /// <remarks>user-writable</remarks>
-        public string calibrationBy { get; private set; }
+        public string calibrationBy { get; set; }
 
         /////////////////////////////////////////////////////////////////////////       
         // Page 2
@@ -193,7 +193,7 @@ namespace WasatchNET
         /////////////////////////////////////////////////////////////////////////       
 
         /// <summary>
-        /// Save updated EEPROM fields to the device.
+        /// Save updated EEPROM fields to the device (DISABLED).
         /// </summary>
         /// <remarks>
         /// Only a handful of fields are recommended to be changed by users: 
@@ -223,6 +223,9 @@ namespace WasatchNET
                 return false;
             }
 
+            logger.error("FUNCTION DISABLED WHILE TROUBLESHOOTING");
+            return false;
+
             if (!ParseData.writeInt16(excitationNM, pages[0], 39)) return false;
 
             if (!ParseData.writeFloat(wavecalCoeffs[0], pages[1], 0)) return false;
@@ -248,7 +251,7 @@ namespace WasatchNET
 
             Array.Copy(userData, pages[4], userData.Length);
 
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < badPixels.Length; i++)
                 if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
                     return false;
 
@@ -258,14 +261,18 @@ namespace WasatchNET
             // Deliberately write pages in reverse order (least important to most),
             // so if there are any errors, hopefully they won't completely brick 
             // the unit.
-            for (ushort page = MAX_PAGES - 1; page >= 0; page--)
+            lock (spectrometer.acquisitionLock)
             {
-                if (!spectrometer.sendCmd(Opcodes.SECOND_TIER_COMMAND, cmd[Opcodes.SET_MODEL_CONFIG], page, pages[page]))
+                for (short page = 0; page < pages.Count; page++)
                 {
-                    logger.error("ModelConfig.write: failed to save page {0}", page);
-                    return false;
+                    logger.hexdump(pages[page], String.Format("writing page {0}: ", page));
+                    if (!spectrometer.sendCmd(Opcodes.SECOND_TIER_COMMAND, cmd[Opcodes.SET_MODEL_CONFIG], (ushort)page, pages[page]))
+                    {
+                        logger.error("ModelConfig.write: failed to save page {0}", page);
+                        return false;
+                    }
+                    logger.debug("ModelConfig: wrote EEPROM page {0}", page);
                 }
-                logger.debug("ModelConfig: wrote EEPROM page {0}", page);
             }
             return true;
         }
@@ -299,6 +306,8 @@ namespace WasatchNET
                     return false;
                 pages.Add(buf);
                 format.Add(buf[63]); // page format is always last byte
+
+                logger.hexdump(buf, String.Format("read page {0}: ", page));
             }
 
             try 

@@ -96,6 +96,7 @@ namespace WasatchNET
 
         public static bool writeInt16(Int16 value, byte[] buf, int index)
         {
+            Logger logger = Logger.getInstance();
             byte[] tmp = BitConverter.GetBytes(value);
             if (tmp == null || tmp.Length != 2)
             {
@@ -103,6 +104,8 @@ namespace WasatchNET
                 return false;
             }
             Array.Copy(tmp, 0, buf, index, tmp.Length);
+            logger.debug("writeInt16: wrote {0} as 0x{1:x2} 0x{2:x2} to index {3} of {4}-byte buf",
+                value, tmp[0], tmp[1], index, buf.Length);
             return true;
         }
     }

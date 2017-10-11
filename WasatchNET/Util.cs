@@ -203,5 +203,6 @@ namespace WasatchNET
                          ? replacement : spectrum[i];
             return clean;
         }
+
     }
 }

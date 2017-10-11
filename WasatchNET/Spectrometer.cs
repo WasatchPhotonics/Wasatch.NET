@@ -57,7 +57,7 @@ namespace WasatchNET
         Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
         Logger logger = Logger.getInstance();
 
-        object acquisitionLock = new object();
+        internal object acquisitionLock = new object();
         object commsLock = new object();
 
         #region properties
@@ -301,7 +301,7 @@ namespace WasatchNET
         /// <param name="opcode">the desired command</param>
         /// <param name="wValue">an optional secondary argument used by some commands</param>
         /// <param name="wIndex">an optional tertiary argument used by some commands</param>
-        /// <param name="buf">an data buffer used by some commands</param>
+        /// <param name="buf">a data buffer used by some commands</param>
         /// <returns>true on success, false on error</returns>
         /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
         internal bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
@@ -317,6 +317,8 @@ namespace WasatchNET
 
             lock (commsLock)
             {
+                if (buf != null)
+                    logger.hexdump(buf, String.Format("sendCmd({0}, {1}, {2}, {3}): ", opcode, wValue, wIndex, wLength));
                 if (!usbDevice.ControlTransfer(ref setupPacket, buf, wLength, out int bytesWritten))
                 {
                     logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4})",
@@ -542,11 +544,12 @@ namespace WasatchNET
             if (buf == null)
                 return "ERROR";
 
+            // iterate backwards (MSB to LSB)
             string s = "";
-            for (uint i = 0; i < 4; i++)
+            for (int i = 3; i >= 0; i--)
             {
                 s += String.Format("{0}", buf[i]);
-                if (i < 3)
+                if (i > 0)
                     s += ".";
             }
 

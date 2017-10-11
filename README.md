@@ -205,6 +205,12 @@ community, but not too proud to decline patches when they improve the product!
 That said, some known areas for improvement can be found in our Backlog 
 (below).
 
+# Known Issues
+
+**DO NOT CALL ModelConfig.write() TO SAVE EEPROM DATA AT THIS TIME**
+
+EEPROM data is being corrupted and I'm trying to figure out why.
+
 # Backlog
 
 - [ ] add EEPROM write to WinFormDemo

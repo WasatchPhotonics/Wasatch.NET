@@ -195,6 +195,26 @@ namespace WasatchNET
             }
         }
 
+        public void hexdump(byte[] buf, string prefix = "")
+        {
+            string line = "";
+            for (int i = 0;  i < buf.Length; i++)
+            {
+                if (i % 16 == 0)
+                {
+                    if (i > 0)
+                    {
+                        debug("{0}{1}", prefix, line);
+                        line = "";
+                    }
+                    line += String.Format("{0:x4}:", i);
+                }
+                line += String.Format(" {0:x2}", buf[i]);
+            }
+            if (line.Length > 0)
+                debug("{0}{1}", prefix, line);
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Private methods
         ////////////////////////////////////////////////////////////////////////
