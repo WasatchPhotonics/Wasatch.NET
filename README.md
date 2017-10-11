@@ -218,6 +218,7 @@ That said, some known areas for improvement can be found in our Backlog
 
 # Version History
 
+- 2017-10-11 1.0.5 fixed temperature read-out in degrees
 - 2017-10-11 1.0.4 fixed and restored ModelConfig.write 
 - 2017-10-11 1.0.3 disabled ModelConfig.write due to corruption
 - 2017-10-10 1.0.2 separate 32/64-bit installers
