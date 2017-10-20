@@ -208,6 +208,14 @@ community, but not too proud to decline patches when they improve the product!
 That said, some known areas for improvement can be found in our Backlog 
 (below).
 
+# Troubleshooting
+
+## "The best driver is already installed."
+
+If you have trouble installing our libusb-win32 drivers, see: 
+
+- [README-CyUsb3.md](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/doc/README-CyUsb3.md)
+
 # Backlog
 
 - [ ] test with multiple parallel spectrometers
