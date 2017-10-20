@@ -29,7 +29,7 @@ spectrometer and select "Properties".  Select the "Details" tab, and use the
 drop-down menu to select "INF Name".  In the example shown, that happened to be
 "oem10":
 
-![Best Driver Already Installed](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/cyusb3-02-device-manager.png)
+![Best Driver Already Installed](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/cyusb3-03-inf.png)
 
 Now open an Administrative Cmd shell.
 
