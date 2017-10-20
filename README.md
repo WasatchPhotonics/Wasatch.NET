@@ -214,7 +214,7 @@ That said, some known areas for improvement can be found in our Backlog
 
 If you have trouble installing our libusb-win32 drivers, see: 
 
-- [README-CyUsb3.md](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/doc/README-CyUsb3.md)
+- [README-CyUsb3.md](./doc/README-CyUsb3.md)
 
 # Backlog
 
