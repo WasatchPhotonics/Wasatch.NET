@@ -168,6 +168,8 @@ namespace WasatchNET
 
             // derive some values from PID
             featureIdentification = new FeatureIdentification(usbRegistry.Pid);
+            if (!featureIdentification.isSupported)
+                return false;
 
             // load EEPROM configuration
             modelConfig = new ModelConfig(this);
@@ -618,7 +620,8 @@ namespace WasatchNET
 
         public bool getLaserRampingEnabled()
         {
-            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2 ||
+                featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.INGAAS_FX2)
             {
                 logger.error("laser ramping not supported on {0}", featureIdentification.boardType);
                 return false;
@@ -693,6 +696,16 @@ namespace WasatchNET
             return degC; 
         }
 
+        public byte getLaserTemperatureSetpoint()
+        {
+            // if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.INGAAS_FX2)
+            // {
+            //     logger.error("laser setpoint not readable on {0}", featureIdentification.boardType);
+            //     return 0;
+            // }
+            return Unpack.toByte(getCmd(Opcodes.GET_LASER_TEMP_SETPOINT, 1)); // fullLen: 6? unit?
+        } 
+
         public ushort getActualFrames()                 { return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
         public float  getCCDGain()                      { return FunkyFloat.toFloat(Unpack.toUshort(getCmd(Opcodes.GET_CCD_GAIN,2)));}
         public short  getCCDOffset()                    { return Unpack.toShort (getCmd(Opcodes.GET_CCD_OFFSET,                 2)); }
@@ -707,9 +720,8 @@ namespace WasatchNET
         public UInt64 getLaserModulationPeriod()        { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PERIOD,                 5)); }
         public UInt64 getLaserModulationPulseDelay()    { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PULSE_DELAY,            5)); }
         public UInt64 getLaserModulationPulseWidth()    { return Unpack.toUint64(getCmd(Opcodes.GET_LASER_MOD_PULSE_WIDTH,      5)); }
-        public byte   getLaserTemperatureSetpoint()     { return Unpack.toByte  (getCmd(Opcodes.GET_LASER_TEMP_SETPOINT,        1)); } // fullLen: 6? unit? 
         public uint   getLineLength()                   { return Unpack.toUshort(getCmd2(Opcodes.GET_LINE_LENGTH,               2)); }
-        public byte   getSelectedLaser()                { return Unpack.toByte  (getCmd(Opcodes.GET_SELECTED_LASER,             1)); }
+        public byte   getSelectedLaser()                { return Unpack.toByte  (getCmd(Opcodes.GET_SELECTED_LASER,             1)); } 
         public bool   getLaserModulationLinkedToIntegrationTime() { return Unpack.toBool(getCmd(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME, 1)); }
 
         // These USB opcodes seem to duplicate the parameters of FPGAOptions (perhaps for non-FPGA spectrometers?)

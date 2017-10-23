@@ -218,15 +218,15 @@ If you have trouble installing our libusb-win32 drivers, see:
 
 # Backlog
 
-- [ ] test with multiple parallel spectrometers
-- [ ] test on more hardware, including NIR and ARM
+- [ ] test on more hardware, including ARM
 - [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
 - [ ] consider turning all accessors into Properties?
 - [ ] refactor into LaserController, TECController etc?
 
 # Version History
 
-- 2017-10-11 1.0.6 added cmd-line args to support scripted testing
+- 2017-10-23 1.0.7 tweaks after multi-spectrometer testing with 1064-L
+- 2017-10-22 1.0.6 added cmd-line args to WinFormDemo
 - 2017-10-11 1.0.5 fixed temperature read-out in degrees
 - 2017-10-11 1.0.4 fixed and restored ModelConfig.write 
 - 2017-10-11 1.0.3 disabled ModelConfig.write due to corruption

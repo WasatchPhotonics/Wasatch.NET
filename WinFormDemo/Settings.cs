@@ -251,7 +251,7 @@ namespace WinFormDemo
             if (spec.fpgaOptions.hasHorizBinning)
                 update("horizBinning", spec.getHorizBinning());
 
-            if (spec.modelConfig.hasLaser)
+            if (spec.modelConfig.hasLaser && spec.fpgaOptions.laserType != FPGA_LASER_TYPE.NONE)
             {
                 update("interlock", spec.getInterlockEnabled());
                 update("laserEnabled", spec.getLaserEnabled());

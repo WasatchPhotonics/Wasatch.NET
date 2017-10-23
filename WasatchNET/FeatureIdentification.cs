@@ -16,6 +16,7 @@
 
         public string firmwarePartNum;
         public string firmwareDesc;
+        public bool isSupported = true;
 
         internal FeatureIdentification(int pid)
         {
@@ -48,6 +49,7 @@
             else
             {
                 logger.error("Unrecognized PID {0:x4}", pid);
+                isSupported = false;
             }
         }
     }

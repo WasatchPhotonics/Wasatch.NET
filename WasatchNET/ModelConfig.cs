@@ -384,36 +384,36 @@ namespace WasatchNET
 
         void dump()
         {
-            logger.debug("Model             = {0}", model);
-            logger.debug("serialNumber      = {0}", serialNumber);
-            logger.debug("baudRate          = {0}", baudRate);
-            logger.debug("hasCooling        = {0}", hasCooling);
-            logger.debug("hasBattery        = {0}", hasBattery);
-            logger.debug("hasLaser          = {0}", hasLaser);
-            logger.debug("excitationNM      = {0}", excitationNM);
-            logger.debug("slitSizeUM        = {0}", slitSizeUM);
+            logger.debug("Model                 = {0}", model);
+            logger.debug("serialNumber          = {0}", serialNumber);
+            logger.debug("baudRate              = {0}", baudRate);
+            logger.debug("hasCooling            = {0}", hasCooling);
+            logger.debug("hasBattery            = {0}", hasBattery);
+            logger.debug("hasLaser              = {0}", hasLaser);
+            logger.debug("excitationNM          = {0}", excitationNM);
+            logger.debug("slitSizeUM            = {0}", slitSizeUM);
 
             for (int i = 0; i < wavecalCoeffs.Length; i++)
-                logger.debug("wavecalCoeffs[{0}]  = {1}", i, wavecalCoeffs[i]);
+                logger.debug("wavecalCoeffs[{0}]      = {1}", i, wavecalCoeffs[i]);
             for (int i = 0; i < detectorTempCoeffs.Length; i++)
                 logger.debug("detectorTempCoeffs[{0}] = {1}", i, detectorTempCoeffs[i]);
-            logger.debug("detectorTempMin   = {0}", detectorTempMin);
-            logger.debug("detectorTempMax   = {0}", detectorTempMax);
+            logger.debug("detectorTempMin       = {0}", detectorTempMin);
+            logger.debug("detectorTempMax       = {0}", detectorTempMax);
             for (int i = 0; i < adcCoeffs.Length; i++)
-                logger.debug("adcCoeffs[{0}]      = {1}", i, detectorTempCoeffs[i]);
+                logger.debug("adcCoeffs[{0}]          = {1}", i, detectorTempCoeffs[i]);
             logger.debug("thermistorResistanceAt298K = {0}", thermistorResistanceAt298K);
-            logger.debug("thermistorBeta    = {0}", thermistorBeta);
-            logger.debug("calibrationDate   = {0}", calibrationDate);
-            logger.debug("calibrationBy     = {0}", calibrationBy);
-
-            logger.debug("detectorName      = {0}", detectorName);
-            logger.debug("activePixelsHoriz = {0}", activePixelsHoriz);
-            logger.debug("activePixelsVert  = {0}", activePixelsVert);
-            logger.debug("minIntegrationTimeMS = {0}", minIntegrationTimeMS);
-            logger.debug("maxIntegrationTimeMS = {0}", maxIntegrationTimeMS);
-            logger.debug("actualHoriz       = {0}", actualHoriz);
-            logger.debug("ROIHorizStart     = {0}", ROIHorizStart);
-            logger.debug("ROIHorizEnd       = {0}", ROIHorizEnd);
+            logger.debug("thermistorBeta        = {0}", thermistorBeta);
+            logger.debug("calibrationDate       = {0}", calibrationDate);
+            logger.debug("calibrationBy         = {0}", calibrationBy);
+                                               
+            logger.debug("detectorName          = {0}", detectorName);
+            logger.debug("activePixelsHoriz     = {0}", activePixelsHoriz);
+            logger.debug("activePixelsVert      = {0}", activePixelsVert);
+            logger.debug("minIntegrationTimeMS  = {0}", minIntegrationTimeMS);
+            logger.debug("maxIntegrationTimeMS  = {0}", maxIntegrationTimeMS);
+            logger.debug("actualHoriz           = {0}", actualHoriz);
+            logger.debug("ROIHorizStart         = {0}", ROIHorizStart);
+            logger.debug("ROIHorizEnd           = {0}", ROIHorizEnd);
             for (int i = 0; i < ROIVertRegionStart.Length; i++)
                 logger.debug("ROIVertRegionStart[{0}] = {1}", i, ROIVertRegionStart[i]);
             for (int i = 0; i < ROIVertRegionEnd.Length; i++)
@@ -421,10 +421,10 @@ namespace WasatchNET
             for (int i = 0; i < linearityCoeffs.Length; i++)
                 logger.debug("linearityCoeffs[{0}]    = {1}", i, linearityCoeffs[i]);
 
-            logger.debug("userText          = {0}", userText);
+            logger.debug("userText              = {0}", userText);
 
             for (int i = 0; i < badPixels.Length; i++)
-                logger.debug("badPixels[{0}]      = {1}", i, badPixels[i]);
+                logger.debug("badPixels[{0,2}]         = {1}", i, badPixels[i]);
         }
     }
 }

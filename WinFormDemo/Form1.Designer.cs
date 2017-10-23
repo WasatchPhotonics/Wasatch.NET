@@ -193,7 +193,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(217, 115);
+            this.groupBoxSettings.Size = new System.Drawing.Size(218, 115);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -204,7 +204,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(213, 98);
+            this.treeViewSettings.Size = new System.Drawing.Size(214, 98);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -588,6 +588,7 @@
             // textBoxEventLog
             // 
             this.textBoxEventLog.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.textBoxEventLog.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBoxEventLog.Location = new System.Drawing.Point(2, 15);
             this.textBoxEventLog.Margin = new System.Windows.Forms.Padding(2);
             this.textBoxEventLog.Multiline = true;

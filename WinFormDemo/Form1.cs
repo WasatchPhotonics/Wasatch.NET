@@ -437,9 +437,10 @@ namespace WinFormDemo
             ushort lowFreqOperations = 0;
             while(true)
             {
+                Thread.Sleep(100);
                 if (worker.CancellationPending || shutdownPending)
                     break;
-                Thread.Sleep(100);
+
                 chart1.BeginInvoke(new MethodInvoker(delegate { updateGraph(); }));
 
                 // once a second, update temperatures
