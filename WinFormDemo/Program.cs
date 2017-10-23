@@ -12,11 +12,13 @@ namespace WinFormDemo
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            Options opts = new Options(args);
+            if (!opts.shutdown)
+                Application.Run(new Form1(opts));
         }
     }
 }

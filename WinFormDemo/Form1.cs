@@ -13,53 +13,6 @@ namespace WinFormDemo
     public partial class Form1 : Form
     {
         ////////////////////////////////////////////////////////////////////////
-        // Inner types
-        ////////////////////////////////////////////////////////////////////////
-
-        enum ProcessingMode { SCOPE, ABSORBANCE, TRANSMISSION };
-
-        class SpectrometerState
-        {
-            public Spectrometer spectrometer;
-            public BackgroundWorker worker = new BackgroundWorker();
-            public Series series = new Series();
-
-            public double[] raw;
-            public double[] spectrum;
-            public double[] reference;
-            public double detTempDegC;
-
-            public bool running;
-            public ProcessingMode processingMode = ProcessingMode.SCOPE;
-            public DateTime lastUpdate;
-
-            Logger logger = Logger.getInstance();
-
-            public SpectrometerState(Spectrometer s)
-            {
-                spectrometer = s;
-                series.Name = s.serialNumber;
-                series.ChartType = SeriesChartType.Line;
-                worker.WorkerReportsProgress = false;
-                worker.WorkerSupportsCancellation = true;
-            }
-
-            public void processSpectrum(double[] latest)
-            {
-                raw = latest;
-                lastUpdate = DateTime.Now;
-
-                // note: we are using the dark-corrected versions of these functions
-                if (processingMode == ProcessingMode.TRANSMISSION && reference != null && spectrometer.dark != null)
-                    spectrum = Util.cleanNan(Util.computeTransmission(reference, raw));
-                else if (processingMode == ProcessingMode.ABSORBANCE && reference != null && spectrometer.dark != null)
-                    spectrum = Util.cleanNan(Util.computeAbsorbance(reference, raw));
-                else
-                    spectrum = raw;
-            }
-        }
-
-        ////////////////////////////////////////////////////////////////////////
         // Attributes
         ////////////////////////////////////////////////////////////////////////
 
@@ -74,12 +27,13 @@ namespace WinFormDemo
         bool shutdownPending;
 
         Settings settings;
+        Options opts;
        
         ////////////////////////////////////////////////////////////////////////
         // Methods
         ////////////////////////////////////////////////////////////////////////
 
-        public Form1()
+        public Form1(Options options)
         {
             InitializeComponent();
 
@@ -98,6 +52,9 @@ namespace WinFormDemo
 
             // kick this off to flush log messages from the GUI thread
             backgroundWorkerGUIUpdate.RunWorkerAsync();
+
+            opts = options;
+
         }
         
         protected override void OnFormClosing(FormClosingEventArgs e)
@@ -111,7 +68,7 @@ namespace WinFormDemo
 
         void initializeSpectrometer(Spectrometer s)
         {
-            SpectrometerState state = new SpectrometerState(s);
+            SpectrometerState state = new SpectrometerState(s, opts);
 
             // TODO: move into SpectrometerState ctor
             state.worker.DoWork += backgroundWorker_DoWork;
@@ -155,9 +112,9 @@ namespace WinFormDemo
                 buttonSave.Enabled = state.spectrum != null;
             checkBoxTakeReference.Enabled = state.spectrum != null && currentSpectrometer.dark != null;
 
-            if (state.processingMode == ProcessingMode.SCOPE)
+            if (state.processingMode == SpectrometerState.ProcessingModes.SCOPE)
                 radioButtonModeScope.Checked = true;
-            else if (state.processingMode == ProcessingMode.TRANSMISSION)
+            else if (state.processingMode == SpectrometerState.ProcessingModes.TRANSMISSION)
                 radioButtonModeTransmission.Checked = true;
             else
                 radioButtonModeAbsorbance.Checked = true;
@@ -247,6 +204,9 @@ namespace WinFormDemo
                     spectrometers.Add(s);
                     comboBoxSpectrometer.Items.Add(String.Format("{0} ({1})", s.model, s.serialNumber));
                     initializeSpectrometer(s);
+
+                    if (opts.integrationTimeMS > 0)
+                        s.integrationTimeMS = opts.integrationTimeMS;
                 }
 
                 buttonInitialize.Enabled = false;
@@ -256,7 +216,7 @@ namespace WinFormDemo
 
                 AcceptButton = buttonStart;
 
-                // go ahead and click it...you know you want to
+                // By default, go ahead and start the first spectrometer.
                 Thread.Sleep(200); // helps?
                 buttonStart_Click(null, null);
             }
@@ -385,17 +345,17 @@ namespace WinFormDemo
 
         private void radioButtonModeScope_CheckedChanged(object sender, EventArgs e)
         {
-            spectrometerStates[currentSpectrometer].processingMode = ProcessingMode.SCOPE;
+            spectrometerStates[currentSpectrometer].processingMode = SpectrometerState.ProcessingModes.SCOPE;
         }
 
         private void radioButtonModeAbsorbance_CheckedChanged(object sender, EventArgs e)
         {
-            spectrometerStates[currentSpectrometer].processingMode = ProcessingMode.ABSORBANCE;
+            spectrometerStates[currentSpectrometer].processingMode = SpectrometerState.ProcessingModes.ABSORBANCE;
         }
 
         private void radioButtonModeTransmission_CheckedChanged(object sender, EventArgs e)
         {
-            spectrometerStates[currentSpectrometer].processingMode = ProcessingMode.TRANSMISSION;
+            spectrometerStates[currentSpectrometer].processingMode = SpectrometerState.ProcessingModes.TRANSMISSION;
         }
 
         private void buttonAddTrace_Click(object sender, EventArgs e)
@@ -425,12 +385,21 @@ namespace WinFormDemo
             buttonClearTraces.Enabled = false;
         }
 
+        public bool initSaveDir()
+        {
+            DialogResult result = folderBrowserDialog1.ShowDialog();
+            if (result != DialogResult.OK)
+                return false;
+
+            opts.saveDir = folderBrowserDialog1.SelectedPath;
+            return true;
+        }
+
         private void buttonSave_Click(object sender, EventArgs e)
         {
-            saveFileDialog1.FileName = String.Format("{0}-{1}", currentSpectrometer.serialNumber, DateTime.Now.ToString("yyyyMMdd-HHmmss"));
-            DialogResult result = saveFileDialog1.ShowDialog();
-            if (result != DialogResult.OK)
-                return;
+            if (opts.saveDir.Length == 0)
+                if (!initSaveDir())
+                    return;
 
             // More complex implementations could save all spectra from all spectrometers;
             // or include snapped traces; or export directly to multi-tab Excel spreadsheets.
@@ -441,55 +410,7 @@ namespace WinFormDemo
                 if (state.spectrum == null)
                     return;
 
-                // assemble the columns we're going to save
-                List<Tuple<string, double[]>> cols = new List<Tuple<string, double[]>>();
-
-                cols.Add(new Tuple<string, double[]>("wavelength", currentSpectrometer.wavelengths));
-                if (graphWavenumbers)
-                    cols.Add(new Tuple<string, double[]>("wavenumber", currentSpectrometer.wavenumbers));
-
-                string label = "spectrum";
-                if (state.processingMode == ProcessingMode.TRANSMISSION)
-                    label = "trans/refl";
-                else if (state.processingMode == ProcessingMode.ABSORBANCE)
-                    label = "abs";
-                cols.Add(new Tuple<string, double[]>(label, state.spectrum));
-
-                if (state.raw != state.spectrum)
-                    cols.Add(new Tuple<string, double[]>("raw", state.raw));
-
-                if (state.reference != null)
-                    cols.Add(new Tuple<string, double[]>("reference", state.reference));
-
-                if (currentSpectrometer.dark != null)
-                    cols.Add(new Tuple<string, double[]>("dark", currentSpectrometer.dark));
-
-                using (System.IO.StreamWriter outfile = new System.IO.StreamWriter(saveFileDialog1.FileName))
-                {
-                    // metadata
-                    outfile.WriteLine("model,{0}", currentSpectrometer.model);
-                    outfile.WriteLine("serialNumber,{0}", currentSpectrometer.serialNumber);
-                    outfile.WriteLine("timestamp,{0}", state.lastUpdate);
-                    outfile.WriteLine("integration time (ms),{0}", currentSpectrometer.integrationTimeMS);
-                    outfile.WriteLine("scan averaging,{0}", currentSpectrometer.scanAveraging);
-                    outfile.WriteLine("boxcar,{0}", currentSpectrometer.boxcarHalfWidth);
-                    outfile.WriteLine();
-
-                    // header row
-                    outfile.Write("pixel");
-                    for (int i = 0; i < cols.Count; i++)
-                        outfile.Write(",{0}", cols[i].Item1);
-                    outfile.WriteLine();
-
-                    // data
-                    for (uint pixel = 0; pixel < currentSpectrometer.pixels; pixel++)
-                    {
-                        outfile.Write(String.Format("{0}", pixel));
-                        foreach (Tuple<string, double[]> col in cols)
-                            outfile.Write(String.Format(",{0}", col.Item2[pixel]));
-                        outfile.WriteLine();
-                    }                        
-                }
+                state.save();
             }
         }
 
@@ -583,15 +504,19 @@ namespace WinFormDemo
                 double[] raw = spectrometer.getSpectrum();
 
                 // process for graphing
-                lock(spectrometers)
+                lock (spectrometers)
                     state.processSpectrum(raw);
+
+                // end thread if we've completed our allocated acquisitions
+                if (opts.scanCount > 0 && state.scanCount >= opts.scanCount)
+                    break;
 
                 // end thread if we've been asked to cancel
                 if (worker.CancellationPending)
                     break;
 
-                // for debugging only
-                Thread.Sleep(10);
+                if (opts.scanIntervalSec > 0)
+                    Thread.Sleep((int) opts.scanIntervalSec * 1000);
             }
 
             state.running = false;
@@ -603,6 +528,23 @@ namespace WinFormDemo
             Spectrometer spectrometer = e.Result as Spectrometer;
             if (spectrometer == currentSpectrometer)
                 updateStartButton(false);
+
+            // should we auto-exit?
+            if (opts.autoStart && opts.scanCount > 0)
+            {
+                bool shutdown = true;
+                lock (spectrometers)
+                {
+                    foreach (Spectrometer s in spectrometers)
+                    {
+                        SpectrometerState ss = spectrometerStates[s];
+                        if (ss.scanCount < opts.scanCount)
+                            shutdown = false;
+                    }
+                }
+                if (shutdown)
+                    Close();
+            }
         }
 
         private void toolStripMenuItemTestWriteEEPROM_Click(object sender, EventArgs e)
@@ -612,6 +554,12 @@ namespace WinFormDemo
 
             WriteEEPROMForm eepromForm = new WriteEEPROMForm(currentSpectrometer.modelConfig);
             eepromForm.ShowDialog();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            if (opts.autoStart)
+                buttonInitialize_Click(null, null);
         }
     }
 }

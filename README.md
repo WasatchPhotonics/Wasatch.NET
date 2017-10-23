@@ -9,7 +9,7 @@ Wasatch.NET is expected to work from all .NET-compatible languages, including:
 
 | Platform              | Test status
 | --------------------- | ----------------------------------------
-| C#                    | tested with Visual Studio 2017 Community (see WinFormDemo)
+| C#                    | tested with Visual Studio 2017 Community (see [WinFormDemo](./doc/README-WinFormDemo.md))
 | LabVIEW               | tested with 2017 32-bit (see [Wasatch.LV](https://github.com/WasatchPhotonics/Wasatch.LV/))
 | MATLAB/Simulink       | tested with 2017b 64-bit (see [Wasatch.MATLAB](https://github.com/WasatchPhotonics/Wasatch.MATLAB/))
 | Embarcadero Delphi    | not started
@@ -220,12 +220,13 @@ If you have trouble installing our libusb-win32 drivers, see:
 
 - [ ] test with multiple parallel spectrometers
 - [ ] test on more hardware, including NIR and ARM
-- [ ] consider turning all accessors into Properties
-- [ ] refactor into LaserController, TECController etc
 - [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
+- [ ] consider turning all accessors into Properties?
+- [ ] refactor into LaserController, TECController etc?
 
 # Version History
 
+- 2017-10-11 1.0.6 added cmd-line args to support scripted testing
 - 2017-10-11 1.0.5 fixed temperature read-out in degrees
 - 2017-10-11 1.0.4 fixed and restored ModelConfig.write 
 - 2017-10-11 1.0.3 disabled ModelConfig.write due to corruption
