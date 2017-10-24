@@ -1,3 +1,5 @@
+![Demo](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/demo.png)
+
 # Overview
 
 This is a simple C# GUI application written in Visual Studio (2017 Community) 
@@ -15,3 +17,5 @@ The following optional command-line arguments are supported:
 --saveDir           path to save spectra (must exist and be writable)
 --scanCount         how many spectra to acquire and optionally save before exiting
 --scanIntervalSec   how long to wait between acquisitions
+
+![Multiple](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/multiple.png)

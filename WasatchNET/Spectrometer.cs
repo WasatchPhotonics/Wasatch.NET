@@ -121,7 +121,7 @@ namespace WasatchNET
             get { return scanAveraging_; }
             set { lock(acquisitionLock) scanAveraging_ = value; }
         }
-        uint scanAveraging_;
+        uint scanAveraging_ = 1;
 
         /// <summary>
         /// Perform post-acquisition high-frequency smoothing by averaging
@@ -197,6 +197,18 @@ namespace WasatchNET
 
             // by default, integration time is zero in HW
             setIntegrationTimeMS(modelConfig.minIntegrationTimeMS);
+
+            if (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL && modelConfig.hasLaser)
+            {
+                logger.debug("unlinking laser modulation from integration time");
+                linkLaserModToIntegrationTime(false);
+
+                logger.debug("disabling laser modulation");
+                setLaserModulationEnable(false);
+            }
+
+            if (modelConfig.hasCooling)
+                setCCDTemperatureEnable(true);
 
             return true;
         }
@@ -470,7 +482,7 @@ namespace WasatchNET
         {
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
             {
-                logger.error("trigger delay not supported on {0}", featureIdentification.boardType);
+                logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
                 return;
             }
 
@@ -483,7 +495,7 @@ namespace WasatchNET
         {
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
             {
-                logger.error("laser ramping not supported on {0}", featureIdentification.boardType);
+                logger.debug("laser ramping not supported on {0}", featureIdentification.boardType);
                 return;
             }
             sendCmd(Opcodes.SET_LASER_RAMPING_MODE, (ushort) (flag ? 1 : 0));
@@ -493,7 +505,7 @@ namespace WasatchNET
         {
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
             {
-                logger.error("horizontal binning not supported on {0}", featureIdentification.boardType);
+                logger.debug("horizontal binning not supported on {0}", featureIdentification.boardType);
                 return;
             }
             sendCmd(Opcodes.SELECT_HORIZ_BINNING,           (ushort) mode);
@@ -590,7 +602,7 @@ namespace WasatchNET
         {
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
             {
-                logger.error("horizontal binning not supported on {0}", featureIdentification.boardType);
+                logger.debug("horizontal binning not supported on {0}", featureIdentification.boardType);
                 return HORIZ_BINNING.NONE;
             }
 
@@ -623,7 +635,7 @@ namespace WasatchNET
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2 ||
                 featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.INGAAS_FX2)
             {
-                logger.error("laser ramping not supported on {0}", featureIdentification.boardType);
+                logger.debug("laser ramping not supported on {0}", featureIdentification.boardType);
                 return false;
             }
             return Unpack.toBool(getCmd(Opcodes.GET_LASER_RAMPING_MODE, 1));
@@ -633,7 +645,7 @@ namespace WasatchNET
         { 
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
             {
-                logger.error("trigger delay not supported on {0}", featureIdentification.boardType);
+                logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
                 return 0;
             }
             return Unpack.toUint(getCmd(Opcodes.GET_TRIGGER_DELAY, 3)); // fullLen: 6?
@@ -690,19 +702,19 @@ namespace WasatchNET
         public float getCCDTemperatureDegC()
         {
             ushort raw = getCCDTemperatureRaw();
-            float degC = modelConfig.detectorTempCoeffs[0]
-                       + modelConfig.detectorTempCoeffs[1] * raw
-                       + modelConfig.detectorTempCoeffs[2] * raw * raw;
+            float degC = modelConfig.adcToDegCCoeffs[0]
+                       + modelConfig.adcToDegCCoeffs[1] * raw
+                       + modelConfig.adcToDegCCoeffs[2] * raw * raw;
             return degC; 
         }
 
         public byte getLaserTemperatureSetpoint()
         {
-            // if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.INGAAS_FX2)
-            // {
-            //     logger.error("laser setpoint not readable on {0}", featureIdentification.boardType);
-            //     return 0;
-            // }
+            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            {
+                logger.debug("laser setpoint not readable on {0}", featureIdentification.boardType);
+                return 0;
+            }
             return Unpack.toByte(getCmd(Opcodes.GET_LASER_TEMP_SETPOINT, 1)); // fullLen: 6? unit?
         } 
 
@@ -746,9 +758,9 @@ namespace WasatchNET
         public float getLaserTemperatureDegC()
         {
             ushort raw = getLaserTemperatureRaw();
-            float degC = modelConfig.adcCoeffs[0]
-                       + modelConfig.adcCoeffs[1] * raw
-                       + modelConfig.adcCoeffs[2] * raw * raw;
+            float degC = modelConfig.adcToDegCCoeffs[0]
+                       + modelConfig.adcToDegCCoeffs[1] * raw
+                       + modelConfig.adcToDegCCoeffs[2] * raw * raw;
             return degC;
         }
 
@@ -810,7 +822,7 @@ namespace WasatchNET
                 if (sum == null)
                     return null;
 
-                if (scanAveraging_ > 0)
+                if (scanAveraging_ > 1)
                 {
                     for (uint i = 1; i < scanAveraging_; i++)
                     {
@@ -887,10 +899,7 @@ namespace WasatchNET
                 if (err == ErrorCode.Ok)
                 {
                     if (bytesRead != response.Length)
-                    {
-                        logger.error("getSpectrum: read different number of bytes than expected (pixel {0}, bytesRead {1})", pixel, bytesRead);
-                        return null;
-                    }
+                        logger.debug("getSpectrum: read different number of bytes than expected (pixel {0}, bytesRead {1})", pixel, bytesRead);
 
                     for (uint i = 0; i < bytesRead && pixel < pixels; i += 2)
                     {

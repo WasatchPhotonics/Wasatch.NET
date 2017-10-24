@@ -83,11 +83,19 @@ namespace WasatchNET
         /// <see cref="Util.generateWavelengths(uint, float[])"/>
         public float[] wavecalCoeffs { get; set; }
 
-        // need to get confirmation from engineering on these
-        public float[] detectorTempCoeffs { get; private set; }
+        /// <summary>
+        /// These are used to convert the user's desired setpoint in degrees Celsius to raw 12-bit DAC inputs.
+        /// </summary>
+        /// <remarks>These correspond to the fields "Temp to TEC Cal" in Wasatch Model Configuration GUI</remarks>
+        public float[] degCToDACCoeffs { get; private set; }
         public float detectorTempMin { get; private set; }
         public float detectorTempMax { get; private set; }
-        public float[] adcCoeffs { get; private set; }
+
+        /// <summary>
+        /// These are used to convert 12-bit raw ADC temperature readings into degrees Celsius.
+        /// </summary>
+        /// <remarks>These correspond to the fields "Therm to Temp Cal" in Wasatch Model Configuration GUI</remarks>
+        public float[] adcToDegCCoeffs { get; private set; }
         public short thermistorResistanceAt298K { get; private set; }
         public short thermistorBeta { get; private set; }
 
@@ -285,8 +293,8 @@ namespace WasatchNET
             spectrometer = spec;
 
             wavecalCoeffs = new float[4];
-            detectorTempCoeffs = new float[3];
-            adcCoeffs = new float[3];
+            degCToDACCoeffs = new float[3];
+            adcToDegCCoeffs = new float[3];
             ROIVertRegionStart = new short[3];
             ROIVertRegionEnd = new short[3];
             badPixels = new short[15];
@@ -324,14 +332,14 @@ namespace WasatchNET
                 wavecalCoeffs[1]        = ParseData.toFloat (pages[1],  4);
                 wavecalCoeffs[2]        = ParseData.toFloat (pages[1],  8);
                 wavecalCoeffs[3]        = ParseData.toFloat (pages[1], 12);
-                detectorTempCoeffs[0]   = ParseData.toFloat (pages[1], 16);
-                detectorTempCoeffs[1]   = ParseData.toFloat (pages[1], 20);
-                detectorTempCoeffs[2]   = ParseData.toFloat (pages[1], 24);
+                degCToDACCoeffs[0]      = ParseData.toFloat (pages[1], 16);
+                degCToDACCoeffs[1]      = ParseData.toFloat (pages[1], 20);
+                degCToDACCoeffs[2]      = ParseData.toFloat (pages[1], 24);
                 detectorTempMax         = ParseData.toInt16 (pages[1], 28);
                 detectorTempMin         = ParseData.toInt16 (pages[1], 30);
-                adcCoeffs[0]            = ParseData.toFloat (pages[1], 32); // should these be called laserTempCoeffs?
-                adcCoeffs[1]            = ParseData.toFloat (pages[1], 36);
-                adcCoeffs[2]            = ParseData.toFloat (pages[1], 40);
+                adcToDegCCoeffs[0]      = ParseData.toFloat (pages[1], 32); 
+                adcToDegCCoeffs[1]      = ParseData.toFloat (pages[1], 36);
+                adcToDegCCoeffs[2]      = ParseData.toFloat (pages[1], 40);
              thermistorResistanceAt298K = ParseData.toInt16 (pages[1], 44);
                 thermistorBeta          = ParseData.toInt16 (pages[1], 46);
                 calibrationDate         = ParseData.toString(pages[1], 48, 12);
@@ -395,12 +403,12 @@ namespace WasatchNET
 
             for (int i = 0; i < wavecalCoeffs.Length; i++)
                 logger.debug("wavecalCoeffs[{0}]      = {1}", i, wavecalCoeffs[i]);
-            for (int i = 0; i < detectorTempCoeffs.Length; i++)
-                logger.debug("detectorTempCoeffs[{0}] = {1}", i, detectorTempCoeffs[i]);
+            for (int i = 0; i < degCToDACCoeffs.Length; i++)
+                logger.debug("degCToDACCoeffs[{0}]    = {1}", i, degCToDACCoeffs[i]);
             logger.debug("detectorTempMin       = {0}", detectorTempMin);
             logger.debug("detectorTempMax       = {0}", detectorTempMax);
-            for (int i = 0; i < adcCoeffs.Length; i++)
-                logger.debug("adcCoeffs[{0}]          = {1}", i, detectorTempCoeffs[i]);
+            for (int i = 0; i < adcToDegCCoeffs.Length; i++)
+                logger.debug("adcToDegCCoeffs[{0}]    = {1}", i, adcToDegCCoeffs[i]);
             logger.debug("thermistorResistanceAt298K = {0}", thermistorResistanceAt298K);
             logger.debug("thermistorBeta        = {0}", thermistorBeta);
             logger.debug("calibrationDate       = {0}", calibrationDate);

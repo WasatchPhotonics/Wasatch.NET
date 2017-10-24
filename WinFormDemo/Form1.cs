@@ -102,14 +102,21 @@ namespace WinFormDemo
 
             SpectrometerState state = spectrometerStates[currentSpectrometer];
 
-            // not sure which of these we should do
-            // settings.update(currentSpectrometer);
+            // update tree view
             treeViewSettings_DoubleClick(null, null);
 
+            // update start button
             updateStartButton(spectrometerStates[currentSpectrometer].running);
 
-            checkBoxTakeDark.Enabled = 
-                buttonSave.Enabled = state.spectrum != null;
+            // update basic controls
+            numericUpDownIntegTimeMS.Value = currentSpectrometer.integrationTimeMS;
+            numericUpDownBoxcarHalfWidth.Value = currentSpectrometer.boxcarHalfWidth;
+            numericUpDownScanAveraging.Value = currentSpectrometer.scanAveraging;
+
+            checkBoxLaserEnable.Enabled = currentSpectrometer.modelConfig.hasLaser && currentSpectrometer.fpgaOptions.laserType != FPGA_LASER_TYPE.NONE;
+            checkBoxLaserEnable.Checked = currentSpectrometer.getLaserEnabled();
+
+            checkBoxTakeDark.Enabled = buttonSave.Enabled = state.spectrum != null;
             checkBoxTakeReference.Enabled = state.spectrum != null && currentSpectrometer.dark != null;
 
             if (state.processingMode == SpectrometerState.ProcessingModes.SCOPE)
@@ -207,6 +214,11 @@ namespace WinFormDemo
 
                     if (opts.integrationTimeMS > 0)
                         s.integrationTimeMS = opts.integrationTimeMS;
+
+                    comboBoxSpectrometer.SelectedIndex = comboBoxSpectrometer.Items.Count - 1;
+                    Thread.Sleep(100);
+                    buttonStart_Click(null, null);
+                    Thread.Sleep(100);
                 }
 
                 buttonInitialize.Enabled = false;
@@ -215,10 +227,6 @@ namespace WinFormDemo
                 comboBoxSpectrometer.SelectedIndex = 0;
 
                 AcceptButton = buttonStart;
-
-                // By default, go ahead and start the first spectrometer.
-                Thread.Sleep(200); // helps?
-                buttonStart_Click(null, null);
             }
             else
             {

@@ -66,9 +66,8 @@ namespace WinFormDemo
             stub("wavecalCoeff3",            "Wavecal/Coeff3");
 
             stub("detectorName",             "Detector/Name");
-            stub("detectorTempCoeff0",       "Detector/Temperature Calibration/Coeff0");
-            stub("detectorTempCoeff1",       "Detector/Temperature Calibration/Coeff1");
-            stub("detectorTempCoeff2",       "Detector/Temperature Calibration/Coeff2");
+            for (int i = 0; i < 3; i++)
+                stub("adcToDegCCoeff" + i,   "Detector/ADC to °C Calibration/Coeff" + i);
             stub("detectorTempMin",          "Detector/Temperature Limits/Min");
             stub("detectorTempMax",          "Detector/Temperature Limits/Max");
             stub("pixels",                   "Detector/Pixels/Spectrum Length");
@@ -102,6 +101,8 @@ namespace WinFormDemo
             stub("laserTemperatureRaw",      "Laser/TEC/Temperature (raw)");
             stub("laserTemperatureDegC",     "Laser/TEC/Temperature (°C)");
             stub("laserTemperatureSetpoint", "Laser/TEC/Setpoint"); 
+            for (int i = 0; i < 3; i++)
+                stub("degCToDACCoeff" + i,   "Laser/°C to DAC Setpoint Calibration/Coeff" + i);
             stub("laserModEnabled",          "Laser/Modulation/Enabled");
             stub("laserModDuration",         "Laser/Modulation/Duration");
             stub("laserModPeriod",           "Laser/Modulation/Period");
@@ -111,8 +112,6 @@ namespace WinFormDemo
             stub("laserRampingEnabled",      "Laser/Ramping Enabled");
             stub("laserSelection",           "Laser/Selected");
             stub("interlock",                "Laser/Interlock");
-            for (int i = 0; i < 3; i++)
-                stub("adcCoeff" + i, "Laser/TEC/ADC/Coeff" + i);
 
             stub("ccdTriggerDelay",          "Triggering/Delay (us)");
             stub("ccdTriggerSource",         "Triggering/Source");
@@ -188,10 +187,10 @@ namespace WinFormDemo
             // arrays
             for (int i = 0; i < spec.modelConfig.wavecalCoeffs.Length; i++)
                 update("wavecalCoeff" + i, spec.modelConfig.wavecalCoeffs[i]);
-            for (int i = 0; i < spec.modelConfig.detectorTempCoeffs.Length; i++)
-                update("detectorTempCoeff" + i, spec.modelConfig.detectorTempCoeffs[i]);
-            for (int i = 0; i < spec.modelConfig.adcCoeffs.Length; i++)
-                update("adcCoeff" + i, spec.modelConfig.adcCoeffs[i]);
+            for (int i = 0; i < spec.modelConfig.degCToDACCoeffs.Length; i++)
+                update("degCToDACCoeff" + i, spec.modelConfig.degCToDACCoeffs[i]);
+            for (int i = 0; i < spec.modelConfig.adcToDegCCoeffs.Length; i++)
+                update("adcToDegCCoeff" + i, spec.modelConfig.adcToDegCCoeffs[i]);
             for (int i = 0; i < spec.modelConfig.ROIVertRegionStart.Length; i++)
                 update(String.Format("ROIVertRegion{0}Start", i + 1), spec.modelConfig.ROIVertRegionStart[i]);
             for (int i = 0; i < spec.modelConfig.ROIVertRegionEnd.Length; i++)
