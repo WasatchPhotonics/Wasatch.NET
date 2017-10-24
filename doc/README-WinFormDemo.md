@@ -10,12 +10,12 @@ open-source Wasatch.NET application driver.
 
 The following optional command-line arguments are supported:
 
---autoSave          automatically save every spectrum to the specified location
---autoStart         automatically initialize and open the first Wasatch spectrometer
---help              this page
---integrationTimeMS integration time in milliseconds
---saveDir           path to save spectra (must exist and be writable)
---scanCount         how many spectra to acquire and optionally save before exiting
---scanIntervalSec   how long to wait between acquisitions
+    --autoSave          automatically save every spectrum to the specified location
+    --autoStart         automatically initialize and open the first Wasatch spectrometer
+    --help              this page
+    --integrationTimeMS integration time in milliseconds
+    --saveDir           path to save spectra (must exist and be writable)
+    --scanCount         how many spectra to acquire and optionally save before exiting
+    --scanIntervalSec   how long to wait between acquisitions
 
 ![Multiple](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/multiple.png)
