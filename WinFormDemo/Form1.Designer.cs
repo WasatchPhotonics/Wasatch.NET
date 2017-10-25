@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerGraphVsControls = new System.Windows.Forms.SplitContainer();
@@ -72,6 +72,7 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            this.setDFUModeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -137,18 +138,18 @@
             // 
             // chart1
             // 
-            chartArea1.AxisX.LabelStyle.Format = "F2";
-            chartArea1.CursorX.IsUserEnabled = true;
-            chartArea1.CursorX.IsUserSelectionEnabled = true;
-            chartArea1.CursorY.IsUserEnabled = true;
-            chartArea1.CursorY.IsUserSelectionEnabled = true;
-            chartArea1.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea1);
+            chartArea2.AxisX.LabelStyle.Format = "F2";
+            chartArea2.CursorX.IsUserEnabled = true;
+            chartArea2.CursorX.IsUserSelectionEnabled = true;
+            chartArea2.CursorY.IsUserEnabled = true;
+            chartArea2.CursorY.IsUserSelectionEnabled = true;
+            chartArea2.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea2);
             this.chart1.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend1.Alignment = System.Drawing.StringAlignment.Center;
-            legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
-            legend1.Name = "Legend1";
-            this.chart1.Legends.Add(legend1);
+            legend2.Alignment = System.Drawing.StringAlignment.Center;
+            legend2.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
+            legend2.Name = "Legend1";
+            this.chart1.Legends.Add(legend2);
             this.chart1.Location = new System.Drawing.Point(0, 24);
             this.chart1.Margin = new System.Windows.Forms.Padding(2);
             this.chart1.Name = "chart1";
@@ -169,14 +170,15 @@
             // toolStripMenuItemTest
             // 
             this.toolStripMenuItemTest.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripMenuItemTestWriteEEPROM});
+            this.toolStripMenuItemTestWriteEEPROM,
+            this.setDFUModeToolStripMenuItem});
+            this.toolStripMenuItemTest.Enabled = false;
             this.toolStripMenuItemTest.Name = "toolStripMenuItemTest";
             this.toolStripMenuItemTest.Size = new System.Drawing.Size(40, 20);
             this.toolStripMenuItemTest.Text = "Test";
             // 
             // toolStripMenuItemTestWriteEEPROM
             // 
-            this.toolStripMenuItemTestWriteEEPROM.Enabled = false;
             this.toolStripMenuItemTestWriteEEPROM.Name = "toolStripMenuItemTestWriteEEPROM";
             this.toolStripMenuItemTestWriteEEPROM.Size = new System.Drawing.Size(160, 22);
             this.toolStripMenuItemTestWriteEEPROM.Text = "Write EEPROM...";
@@ -193,7 +195,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(219, 115);
+            this.groupBoxSettings.Size = new System.Drawing.Size(220, 115);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -204,7 +206,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(215, 98);
+            this.treeViewSettings.Size = new System.Drawing.Size(216, 98);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -608,6 +610,14 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
+            // setDFUModeToolStripMenuItem
+            // 
+            this.setDFUModeToolStripMenuItem.Name = "setDFUModeToolStripMenuItem";
+            this.setDFUModeToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.setDFUModeToolStripMenuItem.Text = "Set DFU mode";
+            this.setDFUModeToolStripMenuItem.ToolTipText = "WARNING: used for reflashing ARM firmware!";
+            this.setDFUModeToolStripMenuItem.Click += new System.EventHandler(this.setDFUModeToolStripMenuItem_Click);
+            // 
             // Form1
             // 
             this.AcceptButton = this.buttonInitialize;
@@ -694,6 +704,7 @@
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemTestWriteEEPROM;
         private System.Windows.Forms.Label labelDetTempDegC;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
+        private System.Windows.Forms.ToolStripMenuItem setDFUModeToolStripMenuItem;
     }
 }
 

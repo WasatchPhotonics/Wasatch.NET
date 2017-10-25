@@ -508,7 +508,7 @@ namespace WasatchNET
                 logger.debug("horizontal binning not supported on {0}", featureIdentification.boardType);
                 return;
             }
-            sendCmd(Opcodes.SELECT_HORIZ_BINNING,           (ushort) mode);
+            sendCmd(Opcodes.SELECT_HORIZ_BINNING, (ushort) mode);
         }
 
         public void setCCDTemperatureSetpointDegC(float degC)
@@ -528,6 +528,25 @@ namespace WasatchNET
             logger.debug("setting CCD TEC setpoint to {0:f2} deg C (DAC 0x{1:x4})", degC, word);
 
             sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT, word, 0);
+        }
+
+        public void setDFUMode(bool flag)
+        {
+            if (!flag)
+            {
+                logger.error("Don't know how to exit DFU mode (power-cycle spectrometer)");
+                return;
+            }
+
+            if (featureIdentification.boardType != FeatureIdentification.BOARD_TYPES.STROKER_ARM)
+            {
+                logger.error("This command is believed only applicable to ARM-based spectrometers (called on {0})", 
+                    featureIdentification.boardType);
+                return;
+            }
+
+            logger.info("Setting DFU mode");
+            sendCmd(Opcodes.SET_DFU_MODE);
         }
 
         public void setCCDGain              (float gain)        { sendCmd(Opcodes.SET_CCD_GAIN,                   FunkyFloat.fromFloat(gain)); } 

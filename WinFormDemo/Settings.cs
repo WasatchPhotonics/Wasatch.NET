@@ -53,6 +53,8 @@ namespace WinFormDemo
             stub("hasCooling",               "Features/Has Cooling");
             stub("hasLaser",                 "Features/Has Laser");
             stub("hasBattery",               "Features/Has Battery");
+            stub("featureBoardType",         "Features/Board Type");
+            stub("featureDesc",              "Features/Description");
 
             stub("integrationTimeMS",        "Acquisition/Integration Time (ms)");
             stub("actualIntegrationTimeUS",  "Acquisition/Integration/Actual (µs)");
@@ -161,6 +163,8 @@ namespace WinFormDemo
             update("detectorTempMax", spec.modelConfig.detectorTempMax);
             update("detectorTempMin", spec.modelConfig.detectorTempMin);
             update("excitationNM", spec.modelConfig.excitationNM);
+            update("featureBoardType", spec.featureIdentification.boardType);
+            update("featureDesc", spec.featureIdentification.firmwareDesc);
             update("fpgaDataHeader", spec.fpgaOptions.dataHeader);
             update("fpgaHasActualIntegTime", spec.fpgaOptions.hasActualIntegTime);
             update("fpgaHasAreaScan", spec.fpgaOptions.hasAreaScan);

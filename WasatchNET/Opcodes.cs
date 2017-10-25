@@ -81,6 +81,7 @@ namespace WasatchNET
         SET_CCD_THRESHOLD_SENSING_MODE,
         SET_CCD_TRIGGER_SOURCE,
         SET_DAC,
+        SET_DFU_MODE,
         SET_EXTERNAL_TRIGGER_OUTPUT,
         SET_INTEGRATION_TIME,
         SET_LASER,
@@ -177,6 +178,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_CCD_THRESHOLD_SENSING_MODE         ] = 0xce;
             cmd[Opcodes.SET_CCD_TRIGGER_SOURCE                 ] = 0xd2;
             cmd[Opcodes.SET_DAC                                ] = 0xd8;
+            cmd[Opcodes.SET_DFU_MODE                           ] = 0xfe; // (0x40, 0xFE, 0, 0, [0, 0, 0, 0, 0, 0, 0, 0], 1000)
             cmd[Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT            ] = 0xe0;
             cmd[Opcodes.SET_INTEGRATION_TIME                   ] = 0xb2;
             cmd[Opcodes.SET_LASER                              ] = 0xbe;

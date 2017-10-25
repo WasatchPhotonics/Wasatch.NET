@@ -95,8 +95,8 @@ namespace WinFormDemo
             if (currentSpectrometer == null)
             {
                 groupBoxSettings.Enabled =
-                groupBoxControl.Enabled = 
-                toolStripMenuItemTestWriteEEPROM.Enabled = false;
+                groupBoxControl.Enabled =
+                toolStripMenuItemTest.Enabled = false;
                 return;
             }
 
@@ -128,7 +128,7 @@ namespace WinFormDemo
 
             groupBoxSettings.Enabled = 
             groupBoxControl.Enabled = 
-            toolStripMenuItemTestWriteEEPROM.Enabled = 
+            toolStripMenuItemTest.Enabled = 
             labelDetTempDegC.Visible = true;
         }
 
@@ -569,6 +569,19 @@ namespace WinFormDemo
         {
             if (opts.autoStart)
                 buttonInitialize_Click(null, null);
+        }
+
+        private void setDFUModeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (currentSpectrometer == null)
+                return;
+
+            DialogResult result = MessageBox.Show("Are you sure? This mode is used for reflashing ARM firmware, and could brick your spectrometer.",
+                "Extreme Caution Alert", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+            if (result != DialogResult.Yes)
+                return;
+
+            currentSpectrometer.setDFUMode(true);
         }
     }
 }
