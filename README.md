@@ -225,6 +225,7 @@ If you have trouble installing our libusb-win32 drivers, see:
 
 # Version History
 
+- 2017-10-25 1.0.9 fixed spectrum-save issue
 - 2017-10-24 1.0.8 corrected detector temperature computation;
                    resolved some multi-spectrometer syncronization issues
 - 2017-10-23 1.0.7 tweaks after multi-spectrometer testing with 1064-L

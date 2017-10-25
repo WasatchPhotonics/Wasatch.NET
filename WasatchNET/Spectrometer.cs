@@ -511,10 +511,28 @@ namespace WasatchNET
             sendCmd(Opcodes.SELECT_HORIZ_BINNING,           (ushort) mode);
         }
 
+        public void setCCDTemperatureSetpointDegC(float degC)
+        {
+            if (degC < modelConfig.detectorTempMin || degC > modelConfig.detectorTempMax)
+            {
+                logger.error("Unable to set CCD temperature to {0:f2} deg C (outside bounds ({1:f2}, {2:f2}))",
+                    degC, modelConfig.detectorTempMin, modelConfig.detectorTempMax);
+                return;                    
+            }
+
+            float dac = modelConfig.degCToDACCoeffs[0]
+                      + modelConfig.degCToDACCoeffs[1] * degC
+                      + modelConfig.degCToDACCoeffs[2] * degC * degC;
+            ushort word = (ushort)dac;
+
+            logger.debug("setting CCD TEC setpoint to {0:f2} deg C (DAC 0x{1:x4})", degC, word);
+
+            sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT, word, 0);
+        }
+
         public void setCCDGain              (float gain)        { sendCmd(Opcodes.SET_CCD_GAIN,                   FunkyFloat.fromFloat(gain)); } 
         public void setCCDTriggerSource     (ushort source)     { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE,         source); } 
         public void setCCDTemperatureEnable (bool flag)         { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE,            (ushort) (flag ? 1 : 0)); } 
-        public void setCCDTemperatureSetpoint(ushort word)      { sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT,          word, 0); }
         public void setDAC                  (ushort word)       { sendCmd(Opcodes.SET_DAC,                        word, 1); } // external laser power
         public void setLaserEnable          (bool flag)         { sendCmd(Opcodes.SET_LASER,                      (ushort) (flag ? 1 : 0)); } 
         public void setLaserModulationEnable(bool flag)         { sendCmd(Opcodes.SET_LASER_MOD,                  (ushort) (flag ? 1 : 0)); } 

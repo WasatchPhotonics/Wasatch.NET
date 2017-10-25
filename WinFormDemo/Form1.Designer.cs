@@ -193,7 +193,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(218, 115);
+            this.groupBoxSettings.Size = new System.Drawing.Size(219, 115);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -204,7 +204,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(214, 98);
+            this.treeViewSettings.Size = new System.Drawing.Size(215, 98);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -298,6 +298,7 @@
             this.radioButtonModeAbsorbance.TabIndex = 1;
             this.radioButtonModeAbsorbance.TabStop = true;
             this.radioButtonModeAbsorbance.Text = "absorbance";
+            this.toolTip1.SetToolTip(this.radioButtonModeAbsorbance, "Beer\'s Law (AU)");
             this.radioButtonModeAbsorbance.UseVisualStyleBackColor = true;
             this.radioButtonModeAbsorbance.CheckedChanged += new System.EventHandler(this.radioButtonModeAbsorbance_CheckedChanged);
             // 
@@ -312,6 +313,7 @@
             this.radioButtonModeScope.TabIndex = 0;
             this.radioButtonModeScope.TabStop = true;
             this.radioButtonModeScope.Text = "scope";
+            this.toolTip1.SetToolTip(this.radioButtonModeScope, "Graph raw spectra");
             this.radioButtonModeScope.UseVisualStyleBackColor = true;
             this.radioButtonModeScope.CheckedChanged += new System.EventHandler(this.radioButtonModeScope_CheckedChanged);
             // 

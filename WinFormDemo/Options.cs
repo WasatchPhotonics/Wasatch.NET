@@ -9,7 +9,7 @@ namespace WinFormDemo
 {
     public class Options
     {
-        public string saveDir;
+        public string saveDir = "";
         public uint scanCount;
         public uint scanIntervalSec;
         public bool autoSave;
