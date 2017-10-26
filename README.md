@@ -9,7 +9,7 @@ Wasatch.NET is expected to work from all .NET-compatible languages, including:
 
 | Platform              | Test status
 | --------------------- | ----------------------------------------
-| C#                    | tested with Visual Studio 2017 Community (see [WinFormDemo](https://github.com/WasatchPhotonics/Wasatch.NET/blob/master/doc/README-WinFormDemo.md))
+| C#                    | tested with Visual Studio 2017 Community 
 | LabVIEW               | tested with 2017 32-bit (see [Wasatch.LV](https://github.com/WasatchPhotonics/Wasatch.LV/))
 | MATLAB/Simulink       | tested with 2017b 64-bit (see [Wasatch.MATLAB](https://github.com/WasatchPhotonics/Wasatch.MATLAB/))
 | Embarcadero Delphi    | not started
@@ -42,6 +42,8 @@ Pre-compiled installers are available for 32-bit and 64-bit Windows:
     }
 
 \endcode
+
+For sample calling code, see the included C# [WinFormDemo](./doc/README-WinFormDemo.md).
 
 # Documentation
 
@@ -219,12 +221,14 @@ If you have trouble installing our libusb-win32 drivers, see:
 # Backlog
 
 - [ ] test on more hardware, including ARM
+- [ ] refactor Spectrometer into interface, with SpectrometerFactory 
+      replacing FeatureIdentification and SpectrometerStrokerFX2,
+      SpectrometerStrokerARM etc implementing the interface
 - [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
-- [ ] consider turning all accessors into Properties?
-- [ ] refactor into LaserController, TECController etc?
 
 # Version History
 
+- 2017-10-26 1.0.11 added setLaserPowerPercentage()
 - 2017-10-25 1.0.10 added setDFUMode() for ARM reflash
 - 2017-10-25 1.0.9  fixed spectrum-save issue
 - 2017-10-24 1.0.8  corrected detector temperature computation;

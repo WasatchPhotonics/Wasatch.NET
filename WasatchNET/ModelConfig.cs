@@ -86,7 +86,11 @@ namespace WasatchNET
         /// <summary>
         /// These are used to convert the user's desired setpoint in degrees Celsius to raw 12-bit DAC inputs.
         /// </summary>
-        /// <remarks>These correspond to the fields "Temp to TEC Cal" in Wasatch Model Configuration GUI</remarks>
+        /// <remarks>
+        /// These correspond to the fields "Temp to TEC Cal" in Wasatch Model Configuration GUI.
+        ///
+        /// Use these when setting the TEC setpoint.
+        /// </remarks>
         public float[] degCToDACCoeffs { get; private set; }
         public float detectorTempMin { get; private set; }
         public float detectorTempMax { get; private set; }
@@ -94,7 +98,11 @@ namespace WasatchNET
         /// <summary>
         /// These are used to convert 12-bit raw ADC temperature readings into degrees Celsius.
         /// </summary>
-        /// <remarks>These correspond to the fields "Therm to Temp Cal" in Wasatch Model Configuration GUI</remarks>
+        /// <remarks>
+        /// These correspond to the fields "Therm to Temp Cal" in Wasatch Model Configuration GUI.
+        /// 
+        /// Use these when reading the detector temperature.
+        /// </remarks>
         public float[] adcToDegCCoeffs { get; private set; }
         public short thermistorResistanceAt298K { get; private set; }
         public short thermistorBeta { get; private set; }

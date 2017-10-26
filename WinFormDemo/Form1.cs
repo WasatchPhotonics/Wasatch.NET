@@ -113,6 +113,7 @@ namespace WinFormDemo
             numericUpDownBoxcarHalfWidth.Value = currentSpectrometer.boxcarHalfWidth;
             numericUpDownScanAveraging.Value = currentSpectrometer.scanAveraging;
 
+            numericUpDownLaserPowerPerc.Enabled = 
             checkBoxLaserEnable.Enabled = currentSpectrometer.modelConfig.hasLaser && currentSpectrometer.fpgaOptions.laserType != FPGA_LASER_TYPE.NONE;
             checkBoxLaserEnable.Checked = currentSpectrometer.getLaserEnabled();
 
@@ -582,6 +583,14 @@ namespace WinFormDemo
                 return;
 
             currentSpectrometer.setDFUMode(true);
+        }
+
+        private void numericUpDownLaserPowerPerc_ValueChanged(object sender, EventArgs e)
+        {
+            if (currentSpectrometer == null)
+                return;
+
+            currentSpectrometer.setLaserPowerPercentage((float)numericUpDownLaserPowerPerc.Value / 100.0f);
         }
     }
 }

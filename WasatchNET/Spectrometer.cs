@@ -378,146 +378,68 @@ namespace WasatchNET
                 integrationTimeMS_ = ms;
         }
 
-        public void setExternalTriggerOutput(EXTERNAL_TRIGGER_OUTPUT value)
+        public bool setExternalTriggerOutput(EXTERNAL_TRIGGER_OUTPUT value)
         {
-            if (value != EXTERNAL_TRIGGER_OUTPUT.ERROR)
-                sendCmd(Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT, (ushort) value);
+            if (value == EXTERNAL_TRIGGER_OUTPUT.ERROR)
+                return false;
+            return sendCmd(Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT, (ushort) value);
         }
 
-        /// <summary>
-        /// Sets the laser modulation duration to the given 40-bit value (microseconds).
-        /// </summary>
-        /// <param name="us">duration in microseconds</param>
-        public void setLaserModulationDurationMicrosec(UInt64 us)
-        {
-            try
-            {
-                UInt40 value = new UInt40(us);
-                sendCmd(Opcodes.SET_LASER_MOD_DUR, value.LSW, value.MidW, value.buf);
-            }
-            catch(Exception ex)
-            {
-                logger.error("WasatchNET.setLaserModulationDuration: {0}", ex.Message);
-                return;
-            }
-        }
-
-        /// <summary>
-        /// Sets the laser modulation duration to the given 40-bit value.
-        /// </summary>
-        /// <param name="value">40-bit duration</param>
-        /// <see cref="setLaserModulationDuration(ulong)"/>
-        public void setLaserModulationPulseWidth(UInt64 value)
-        {
-            try
-            {
-                UInt40 val = new UInt40(value);
-                sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, val.LSW, val.MidW, val.buf);
-            }
-            catch(Exception ex)
-            {
-                logger.error("WasatchNET.setLaserModulationPulseWidth: {0}", ex.Message);
-                return;
-            }
-        }
-
-        /// <summary>
-        /// Sets the laser modulation period to the given 40-bit value.
-        /// </summary>
-        /// <param name="value">40-bit period</param>
-        /// <see cref="setLaserModulationDuration(ulong)"/>
-        public void setLaserModulationPeriod(UInt64 value)
-        {
-            try
-            {
-                UInt40 val = new UInt40(value);
-                sendCmd(Opcodes.SET_MOD_PERIOD, val.LSW, val.MidW, val.buf);
-            }
-            catch(Exception ex)
-            {
-                logger.error("WasatchNET.setLaserModulationPeriod: {0}", ex.Message);
-                return;
-            }
-        }
-
-        /// <summary>
-        /// Sets the laser modulation pulse delay to the given 40-bit value.
-        /// </summary>
-        /// <param name="value">40-bit period</param>
-        /// <see cref="setLaserModulationDuration(ulong)"/>
-        public void setLaserModulationPulseDelay(UInt64 value)
-        {
-            try
-            {
-                UInt40 val = new UInt40(value);
-                sendCmd(Opcodes.SET_MOD_PULSE_DELAY, val.LSW, val.MidW, val.buf);
-            }
-            catch(Exception ex)
-            {
-                logger.error("WasatchNET.setLaserModulationPulseDelay: {0}", ex.Message);
-                return;
-            }
-        }
-
-        public void setLaserTemperatureSetpoint(byte value)
-        {
-            const byte MAX = 127;
-            if (value > MAX)
-            {
-                logger.error("WasatchNET.setLaserTemperatureSetpoint: value {0} exceeded max {1}", value, MAX);
-                return;
-            }
-            sendCmd(Opcodes.SET_LASER_TEMP_SETPOINT, value);
-        }
 
         /// <summary>
         /// Set the trigger delay on supported models.
         /// </summary>
         /// <param name="value">24-bit value (0.5us)</param>
+        /// <returns>true on success</returns>
         /// <remarks>
         /// The value is in 0.5 microseconds, and supports a 24-bit unsigned value,
         /// so the total range is 2^23 microseconds (about 8.3 sec).
         /// </remarks>
-        public void setTriggerDelay(uint value)
+        public bool setTriggerDelay(uint value)
         {
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
             {
                 logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
-                return;
+                return false;
             }
 
             ushort lsw = (ushort)(value & 0xffff);
             byte msb = (byte)(value >> 16);
-            sendCmd(Opcodes.SET_TRIGGER_DELAY, lsw, msb);
+            return sendCmd(Opcodes.SET_TRIGGER_DELAY, lsw, msb);
         }
 
-        public void setLaserRampingEnable(bool flag)
+        public bool setLaserRampingEnable(bool flag)
         {
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
             {
                 logger.debug("laser ramping not supported on {0}", featureIdentification.boardType);
-                return;
+                return false;
             }
-            sendCmd(Opcodes.SET_LASER_RAMPING_MODE, (ushort) (flag ? 1 : 0));
+            return sendCmd(Opcodes.SET_LASER_RAMPING_MODE, (ushort) (flag ? 1 : 0));
         } 
 
-        public void setHorizontalBinning(HORIZ_BINNING mode)
+        public bool setHorizontalBinning(HORIZ_BINNING mode)
         {
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
             {
                 logger.debug("horizontal binning not supported on {0}", featureIdentification.boardType);
-                return;
+                return false;
             }
-            sendCmd(Opcodes.SELECT_HORIZ_BINNING, (ushort) mode);
+            return sendCmd(Opcodes.SELECT_HORIZ_BINNING, (ushort) mode);
         }
 
-        public void setCCDTemperatureSetpointDegC(float degC)
+        /// <summary>
+        /// Set the detector's thermoelectric cooler (TEC) to the desired setpoint in degrees Celsius.
+        /// </summary>
+        /// <param name="degC">Desired temperature in Celsius.</param>
+        /// <returns>true on success</returns>
+        public bool setCCDTemperatureSetpointDegC(float degC)
         {
             if (degC < modelConfig.detectorTempMin || degC > modelConfig.detectorTempMax)
             {
                 logger.error("Unable to set CCD temperature to {0:f2} deg C (outside bounds ({1:f2}, {2:f2}))",
                     degC, modelConfig.detectorTempMin, modelConfig.detectorTempMax);
-                return;                    
+                return false;                    
             }
 
             float dac = modelConfig.degCToDACCoeffs[0]
@@ -527,39 +449,35 @@ namespace WasatchNET
 
             logger.debug("setting CCD TEC setpoint to {0:f2} deg C (DAC 0x{1:x4})", degC, word);
 
-            sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT, word, 0);
+            return sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT, word, 0);
         }
 
-        public void setDFUMode(bool flag)
+        public bool setDFUMode(bool flag)
         {
             if (!flag)
             {
-                logger.error("Don't know how to exit DFU mode (power-cycle spectrometer)");
-                return;
+                logger.error("Don't know how to unset / exit DFU mode (power-cycle spectrometer)");
+                return false;
             }
 
             if (featureIdentification.boardType != FeatureIdentification.BOARD_TYPES.STROKER_ARM)
             {
-                logger.error("This command is believed only applicable to ARM-based spectrometers (called on {0})", 
+                logger.error("This command is believed only applicable to ARM-based spectrometers, which doesn't include {0}", 
                     featureIdentification.boardType);
-                return;
+                return false;
             }
 
             logger.info("Setting DFU mode");
-            sendCmd(Opcodes.SET_DFU_MODE);
+            return sendCmd(Opcodes.SET_DFU_MODE);
         }
 
-        public void setCCDGain              (float gain)        { sendCmd(Opcodes.SET_CCD_GAIN,                   FunkyFloat.fromFloat(gain)); } 
-        public void setCCDTriggerSource     (ushort source)     { sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE,         source); } 
-        public void setCCDTemperatureEnable (bool flag)         { sendCmd(Opcodes.SET_CCD_TEMP_ENABLE,            (ushort) (flag ? 1 : 0)); } 
-        public void setDAC                  (ushort word)       { sendCmd(Opcodes.SET_DAC,                        word, 1); } // external laser power
-        public void setLaserEnable          (bool flag)         { sendCmd(Opcodes.SET_LASER,                      (ushort) (flag ? 1 : 0)); } 
-        public void setLaserModulationEnable(bool flag)         { sendCmd(Opcodes.SET_LASER_MOD,                  (ushort) (flag ? 1 : 0)); } 
-        public void setSelectedLaser        (byte id)           { sendCmd(Opcodes.SELECT_LASER,                   id); }
-        public void setCCDOffset            (ushort value)      { sendCmd(Opcodes.SET_CCD_OFFSET,                 value); }
-        public void setCCDSensingThreshold  (ushort value)      { sendCmd(Opcodes.SET_CCD_SENSING_THRESHOLD,      value); }
-        public void setCCDThresholdSensingEnable(bool flag)     { sendCmd(Opcodes.SET_CCD_THRESHOLD_SENSING_MODE, (ushort)(flag ? 1 : 0)); }
-        public void linkLaserModToIntegrationTime(bool flag)    { sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0)); } 
+        public bool setCCDGain              (float gain)        { return sendCmd(Opcodes.SET_CCD_GAIN,                   FunkyFloat.fromFloat(gain)); } 
+        public bool setCCDTriggerSource     (ushort source)     { return sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE,         source); } 
+        public bool setCCDTemperatureEnable (bool flag)         { return sendCmd(Opcodes.SET_CCD_TEMP_ENABLE,            (ushort) (flag ? 1 : 0)); } 
+        public bool setDAC                  (ushort word)       { return sendCmd(Opcodes.SET_DAC,                        word, 1); } // external laser power
+        public bool setCCDOffset            (ushort value)      { return sendCmd(Opcodes.SET_CCD_OFFSET,                 value); }
+        public bool setCCDSensingThreshold  (ushort value)      { return sendCmd(Opcodes.SET_CCD_SENSING_THRESHOLD,      value); }
+        public bool setCCDThresholdSensingEnable(bool flag)     { return sendCmd(Opcodes.SET_CCD_THRESHOLD_SENSING_MODE, (ushort)(flag ? 1 : 0)); }
 
         ////////////////////////////////////////////////////////////////////////
         // Getters
@@ -846,11 +764,177 @@ namespace WasatchNET
         #endregion  
 
         ////////////////////////////////////////////////////////////////////////
+        // laser
+        ////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// Set laser power to the specified percentage.
+        /// </summary>
+        /// <param name="perc">value from 0 to 1.0</param>
+        /// <returns>true on success</returns>
+        /// <remarks>
+        /// The "fake" buffers being send with the commands relate to a legacy
+        /// bug in which some firmware mistakenly checked the "payload length"
+        /// rather than "wValue" for their key parameter.  It would be good to
+        /// document which firmware versions exhibit this behavior, so we do not
+        /// propogate an inefficient and unnecessary patch to newer models which
+        /// do not require it.
+        /// </remarks>
+        public bool setLaserPowerPercentage(float perc)
+        {
+            if (perc < 0 || perc > 1)
+            {
+                logger.error("invalid laser power percentage (should be in range (0, 1)): {0}", perc);
+                return false;
+            }
+
+            ushort century = (ushort) Math.Round(perc * 100);
+
+            // Turn off modulation at full laser power, exit
+            if (century >= 100)
+            {
+                logger.debug("Turning off laser modulation (full power)");
+                return setLaserModulationEnable(false);
+            }
+
+            // Change the pulse period to 100us
+            byte[] fake = new byte[100];
+            if (!sendCmd(Opcodes.SET_MOD_PERIOD, 100, buf: fake))
+            {
+                logger.error("Hardware Failure to send laser mod. pulse period");
+                return false;
+            }
+
+            // Set the pulse width to the 0-100 percentage of power (in microsec)
+            fake = new byte[century];
+            if (!sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, century, buf: fake))
+            {
+                logger.error("Hardware Failure to send pulse width");
+                return false;
+            }
+
+            // Enable modulation
+            fake = new byte[8];
+            if (!sendCmd(Opcodes.SET_LASER_MOD, 1, buf: fake))
+            {
+                logger.error("Hardware Failure to send laser modulation");
+                return false;
+            }
+
+            logger.debug("Laser power set to: {0}%", century);
+            return true;
+        }
+
+        /// <summary>
+        /// Sets the laser modulation duration to the given 40-bit value (microseconds).
+        /// </summary>
+        /// <param name="us">duration in microseconds</param>
+        /// <returns>true on success</returns>
+        public bool setLaserModulationDurationMicrosec(UInt64 us)
+        {
+            try
+            {
+                UInt40 value = new UInt40(us);
+                return sendCmd(Opcodes.SET_LASER_MOD_DUR, value.LSW, value.MidW, value.buf);
+            }
+            catch(Exception ex)
+            {
+                logger.error("WasatchNET.setLaserModulationDuration: {0}", ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sets the laser modulation duration to the given 40-bit value.
+        /// </summary>
+        /// <param name="value">40-bit duration</param>
+        /// <returns>true on success</returns>
+        /// <see cref="setLaserModulationDuration(ulong)"/>
+        public bool setLaserModulationPulseWidth(UInt64 value)
+        {
+            try
+            {
+                UInt40 val = new UInt40(value);
+                return sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, val.LSW, val.MidW, val.buf);
+            }
+            catch(Exception ex)
+            {
+                logger.error("WasatchNET.setLaserModulationPulseWidth: {0}", ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sets the laser modulation period to the given 40-bit value.
+        /// </summary>
+        /// <param name="value">40-bit period</param>
+        /// <returns>true on success</returns>
+        /// <see cref="setLaserModulationDuration(ulong)"/>
+        public bool setLaserModulationPeriod(UInt64 value)
+        {
+            try
+            {
+                UInt40 val = new UInt40(value);
+                return sendCmd(Opcodes.SET_MOD_PERIOD, val.LSW, val.MidW, val.buf);
+            }
+            catch(Exception ex)
+            {
+                logger.error("WasatchNET.setLaserModulationPeriod: {0}", ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Sets the laser modulation pulse delay to the given 40-bit value.
+        /// </summary>
+        /// <param name="value">40-bit period</param>
+        /// <returns>true on success</returns>
+        /// <see cref="setLaserModulationDuration(ulong)"/>
+        public bool setLaserModulationPulseDelay(UInt64 value)
+        {
+            try
+            {
+                UInt40 val = new UInt40(value);
+                return sendCmd(Opcodes.SET_MOD_PULSE_DELAY, val.LSW, val.MidW, val.buf);
+            }
+            catch(Exception ex)
+            {
+                logger.error("WasatchNET.setLaserModulationPulseDelay: {0}", ex.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// This is probably inadvisable.  Unclear when the user would want to do this.
+        /// </summary>
+        /// <param name="value"></param>
+        public bool setLaserTemperatureSetpoint(byte value)
+        {
+            const byte MAX = 127;
+            if (value > MAX)
+            {
+                logger.error("WasatchNET.setLaserTemperatureSetpoint: value {0} exceeded max {1}", value, MAX);
+                return false;
+            }
+            return sendCmd(Opcodes.SET_LASER_TEMP_SETPOINT, value);
+        }
+
+        public bool setLaserEnable          (bool flag)         { return sendCmd(Opcodes.SET_LASER,                      (ushort) (flag ? 1 : 0)); } 
+        public bool setLaserModulationEnable(bool flag)         { return sendCmd(Opcodes.SET_LASER_MOD,                  (ushort) (flag ? 1 : 0)); } 
+        public bool setSelectedLaser        (byte id)           { return sendCmd(Opcodes.SELECT_LASER,                   id); }
+        public bool linkLaserModToIntegrationTime(bool flag)    { return sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0)); } 
+
+        ////////////////////////////////////////////////////////////////////////
         // getSpectrum
         ////////////////////////////////////////////////////////////////////////
 
         #region getspectrum
-        // includes scan averaging, boxcar and dark subtraction
+        
+        /// <summary>
+        /// Take a single complete spectrum, including any configured scan 
+        /// averaging, boxcar and dark subtraction.
+        /// </summary>
+        /// <returns>The acquired spectrum as an array of doubles</returns>
         public double[] getSpectrum()
         {
             lock (acquisitionLock)

@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerGraphVsControls = new System.Windows.Forms.SplitContainer();
@@ -38,11 +38,14 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.toolStripMenuItemTest = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemTestWriteEEPROM = new System.Windows.Forms.ToolStripMenuItem();
+            this.setDFUModeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.groupBoxSettings = new System.Windows.Forms.GroupBox();
             this.treeViewSettings = new System.Windows.Forms.TreeView();
             this.groupBoxSpectrometers = new System.Windows.Forms.GroupBox();
             this.comboBoxSpectrometer = new System.Windows.Forms.ComboBox();
             this.groupBoxControl = new System.Windows.Forms.GroupBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.numericUpDownLaserPowerPerc = new System.Windows.Forms.NumericUpDown();
             this.groupBoxMode = new System.Windows.Forms.GroupBox();
             this.radioButtonModeTransmission = new System.Windows.Forms.RadioButton();
             this.radioButtonModeAbsorbance = new System.Windows.Forms.RadioButton();
@@ -72,7 +75,6 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.setDFUModeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -86,6 +88,7 @@
             this.groupBoxSettings.SuspendLayout();
             this.groupBoxSpectrometers.SuspendLayout();
             this.groupBoxControl.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownLaserPowerPerc)).BeginInit();
             this.groupBoxMode.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegTimeMS)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownScanAveraging)).BeginInit();
@@ -138,18 +141,18 @@
             // 
             // chart1
             // 
-            chartArea2.AxisX.LabelStyle.Format = "F2";
-            chartArea2.CursorX.IsUserEnabled = true;
-            chartArea2.CursorX.IsUserSelectionEnabled = true;
-            chartArea2.CursorY.IsUserEnabled = true;
-            chartArea2.CursorY.IsUserSelectionEnabled = true;
-            chartArea2.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea2);
+            chartArea1.AxisX.LabelStyle.Format = "F2";
+            chartArea1.CursorX.IsUserEnabled = true;
+            chartArea1.CursorX.IsUserSelectionEnabled = true;
+            chartArea1.CursorY.IsUserEnabled = true;
+            chartArea1.CursorY.IsUserSelectionEnabled = true;
+            chartArea1.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea1);
             this.chart1.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend2.Alignment = System.Drawing.StringAlignment.Center;
-            legend2.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
-            legend2.Name = "Legend1";
-            this.chart1.Legends.Add(legend2);
+            legend1.Alignment = System.Drawing.StringAlignment.Center;
+            legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
+            legend1.Name = "Legend1";
+            this.chart1.Legends.Add(legend1);
             this.chart1.Location = new System.Drawing.Point(0, 24);
             this.chart1.Margin = new System.Windows.Forms.Padding(2);
             this.chart1.Name = "chart1";
@@ -185,6 +188,14 @@
             this.toolStripMenuItemTestWriteEEPROM.ToolTipText = "Demonstrate how to write to the EEPROM";
             this.toolStripMenuItemTestWriteEEPROM.Click += new System.EventHandler(this.toolStripMenuItemTestWriteEEPROM_Click);
             // 
+            // setDFUModeToolStripMenuItem
+            // 
+            this.setDFUModeToolStripMenuItem.Name = "setDFUModeToolStripMenuItem";
+            this.setDFUModeToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.setDFUModeToolStripMenuItem.Text = "Set DFU mode";
+            this.setDFUModeToolStripMenuItem.ToolTipText = "WARNING: used for reflashing ARM firmware!";
+            this.setDFUModeToolStripMenuItem.Click += new System.EventHandler(this.setDFUModeToolStripMenuItem_Click);
+            // 
             // groupBoxSettings
             // 
             this.groupBoxSettings.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -195,7 +206,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(220, 115);
+            this.groupBoxSettings.Size = new System.Drawing.Size(222, 115);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -206,7 +217,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(216, 98);
+            this.treeViewSettings.Size = new System.Drawing.Size(218, 98);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -237,6 +248,7 @@
             // 
             // groupBoxControl
             // 
+            this.groupBoxControl.Controls.Add(this.numericUpDownLaserPowerPerc);
             this.groupBoxControl.Controls.Add(this.groupBoxMode);
             this.groupBoxControl.Controls.Add(this.buttonClearTraces);
             this.groupBoxControl.Controls.Add(this.buttonAddTrace);
@@ -251,6 +263,7 @@
             this.groupBoxControl.Controls.Add(this.numericUpDownBoxcarHalfWidth);
             this.groupBoxControl.Controls.Add(this.checkBoxLaserEnable);
             this.groupBoxControl.Controls.Add(this.label3);
+            this.groupBoxControl.Controls.Add(this.label5);
             this.groupBoxControl.Location = new System.Drawing.Point(0, 41);
             this.groupBoxControl.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxControl.Name = "groupBoxControl";
@@ -259,6 +272,30 @@
             this.groupBoxControl.TabIndex = 1;
             this.groupBoxControl.TabStop = false;
             this.groupBoxControl.Text = "Control";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(174, 86);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(15, 13);
+            this.label5.TabIndex = 15;
+            this.label5.Text = "%";
+            // 
+            // numericUpDownLaserPowerPerc
+            // 
+            this.numericUpDownLaserPowerPerc.Enabled = false;
+            this.numericUpDownLaserPowerPerc.Location = new System.Drawing.Point(134, 84);
+            this.numericUpDownLaserPowerPerc.Name = "numericUpDownLaserPowerPerc";
+            this.numericUpDownLaserPowerPerc.Size = new System.Drawing.Size(42, 20);
+            this.numericUpDownLaserPowerPerc.TabIndex = 14;
+            this.numericUpDownLaserPowerPerc.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.numericUpDownLaserPowerPerc.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
+            this.numericUpDownLaserPowerPerc.ValueChanged += new System.EventHandler(this.numericUpDownLaserPowerPerc_ValueChanged);
             // 
             // groupBoxMode
             // 
@@ -610,14 +647,6 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
-            // setDFUModeToolStripMenuItem
-            // 
-            this.setDFUModeToolStripMenuItem.Name = "setDFUModeToolStripMenuItem";
-            this.setDFUModeToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
-            this.setDFUModeToolStripMenuItem.Text = "Set DFU mode";
-            this.setDFUModeToolStripMenuItem.ToolTipText = "WARNING: used for reflashing ARM firmware!";
-            this.setDFUModeToolStripMenuItem.Click += new System.EventHandler(this.setDFUModeToolStripMenuItem_Click);
-            // 
             // Form1
             // 
             this.AcceptButton = this.buttonInitialize;
@@ -649,6 +678,7 @@
             this.groupBoxSpectrometers.ResumeLayout(false);
             this.groupBoxControl.ResumeLayout(false);
             this.groupBoxControl.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownLaserPowerPerc)).EndInit();
             this.groupBoxMode.ResumeLayout(false);
             this.groupBoxMode.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegTimeMS)).EndInit();
@@ -705,6 +735,8 @@
         private System.Windows.Forms.Label labelDetTempDegC;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
         private System.Windows.Forms.ToolStripMenuItem setDFUModeToolStripMenuItem;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.NumericUpDown numericUpDownLaserPowerPerc;
     }
 }
 

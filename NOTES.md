@@ -2,18 +2,11 @@
 
 Maintenance notes for ongoing development of Wasatch.NET.
 
-# Post-Build Event
+# Properties-vs-Functions
 
-Consider something like the following?
+At the moment, I am sticking with functions for most calls because:
 
-<code>
-if "$(Platform)" == "x64" (
-    echo "Exporting 64-bit TLB (assuming host OS is 64-bit)"
-    "$(FrameworkSdkDir)bin\NetFX 4.6.1 Tools\tlbexp.exe" $(TargetDir)$(ProjectName).dll
-) else (
-    echo Exporting 32-bit TLB
-    "$(FrameworkSdkDir)bin\NetFX 4.6.1 Tools\tlbexp.exe" $(TargetDir)$(ProjectName).dll /Win32
-)
-
-copy /Y "$(TargetDir)$(ProjectName).*" "$(SolutionDir)lib\$(Platform)\"
-</code>
+- easier to port / align with other languages that don't have complex
+  property accessors (especially C)
+- allows success/failure result on setters
+- it already is that way
