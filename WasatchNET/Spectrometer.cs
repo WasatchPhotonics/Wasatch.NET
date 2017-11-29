@@ -55,6 +55,8 @@ namespace WasatchNET
         UsbEndpointReader statusReader;
 
         Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
+        HashSet<Opcodes> armInvertedRetvals = OpcodeHelper.getInstance().getArmInvertedRetvals();
+
         Logger logger = Logger.getInstance();
 
         object acquisitionLock = new object();
@@ -187,6 +189,12 @@ namespace WasatchNET
 
             // MustardTree uses 2048-pixel version of the S11510, and all InGaAs are 512
             pixels = (uint) modelConfig.activePixelsHoriz;
+            if (pixels > 2048)
+            {
+                logger.error("Unlikely pixels count found ({0}); defaulting to {1}", 
+                    modelConfig.activePixelsHoriz, featureIdentification.defaultPixels);
+                pixels = featureIdentification.defaultPixels;
+            }
 
             wavelengths = Util.generateWavelengths(pixels, modelConfig.wavecalCoeffs);
             if (modelConfig.excitationNM > 0)
@@ -198,13 +206,16 @@ namespace WasatchNET
             // by default, integration time is zero in HW
             setIntegrationTimeMS(modelConfig.minIntegrationTimeMS);
 
-            if (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL && modelConfig.hasLaser)
+            if (hasLaser())
             {
                 logger.debug("unlinking laser modulation from integration time");
                 linkLaserModToIntegrationTime(false);
 
                 logger.debug("disabling laser modulation");
                 setLaserModulationEnable(false);
+
+                logger.debug("disabling laser");
+                setLaserEnable(false);
             }
 
             if (modelConfig.hasCooling)
@@ -219,7 +230,8 @@ namespace WasatchNET
             {
                 if (usbDevice.IsOpen)
                 {
-                    setLaserEnable(false);
+                    if (hasLaser())
+                        setLaserEnable(false);
 
                     IUsbDevice wholeUsbDevice = usbDevice as IUsbDevice;
                     if (!ReferenceEquals(wholeUsbDevice, null))
@@ -230,6 +242,17 @@ namespace WasatchNET
             }
         }
         #endregion
+
+        ////////////////////////////////////////////////////////////////////////
+        // Convenience Accessors
+        ////////////////////////////////////////////////////////////////////////
+
+        public bool isARM() { return featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.STROKER_ARM; }
+        public bool hasLaser()
+        {
+            return modelConfig.hasLaser 
+                && (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL || fpgaOptions.laserType == FPGA_LASER_TYPE.EXTERNAL);
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // Utilities
@@ -258,12 +281,16 @@ namespace WasatchNET
                 wIndex,         // wIndex
                 bytesToRead);   // wLength
 
+            bool expectedSuccessResult = true;
+            if (isARM())
+                expectedSuccessResult = armInvertedRetvals.Contains(opcode);
+
             // Question: if the device returns 6 bytes on Endpoint 0, but I only
             // need the first so pass byte[1], are the other 5 bytes discarded or
             // queued?
             lock (commsLock)
             {
-                if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < bytesToRead)
+                if (expectedSuccessResult != usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < bytesToRead)
                 {
                     logger.error("getCmd: failed to get {0} (0x{1:x2}) with index 0x{2:x4} via DEVICE_TO_HOST ({3} bytes read)",
                         opcode.ToString(), cmd[opcode], wIndex, bytesRead);
@@ -297,12 +324,17 @@ namespace WasatchNET
                 wIndex,                             // wIndex
                 len);                               // wLength
 
+            bool expectedSuccessResult = true;
+            if (isARM())
+                expectedSuccessResult = armInvertedRetvals.Contains(opcode) ? false : true;
+
             lock (commsLock)
             {
-                if (!usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < len)
+                bool result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
+                if (result != expectedSuccessResult || bytesRead < len)
                 {
-                    logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} bytes read)",
-                        opcode.ToString(), cmd[opcode], bytesRead);
+                    logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} bytes read, expected {3}, got {4})",
+                        opcode.ToString(), cmd[opcode], bytesRead, expectedSuccessResult, result);
                     return null;
                 }
             }
@@ -329,11 +361,15 @@ namespace WasatchNET
                 wIndex,         // wIndex
                 wLength);       // wLength
 
+            bool expectedSuccessResult = true;
+            if (isARM())
+                expectedSuccessResult = armInvertedRetvals.Contains(opcode);
+
             lock (commsLock)
             {
                 if (buf != null)
                     logger.hexdump(buf, String.Format("sendCmd({0}, {1}, {2}, {3}): ", opcode, wValue, wIndex, wLength));
-                if (!usbDevice.ControlTransfer(ref setupPacket, buf, wLength, out int bytesWritten))
+                if (expectedSuccessResult != usbDevice.ControlTransfer(ref setupPacket, buf, wLength, out int bytesWritten))
                 {
                     logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4})",
                         opcode.ToString(), cmd[opcode], wValue, wIndex, wLength);
@@ -374,8 +410,10 @@ namespace WasatchNET
             ushort MSW = (ushort) (ms / 65536);
 
             // cache for performance 
-            if (sendCmd(Opcodes.SET_INTEGRATION_TIME, LSW, MSW))
-                integrationTimeMS_ = ms;
+            sendCmd(Opcodes.SET_INTEGRATION_TIME, LSW, MSW);
+
+            // assume success
+            integrationTimeMS_ = ms;
         }
 
         public bool setExternalTriggerOutput(EXTERNAL_TRIGGER_OUTPUT value)
@@ -460,9 +498,9 @@ namespace WasatchNET
                 return false;
             }
 
-            if (featureIdentification.boardType != FeatureIdentification.BOARD_TYPES.STROKER_ARM)
+            if (!isARM())
             {
-                logger.error("This command is believed only applicable to ARM-based spectrometers, which doesn't include {0}", 
+                logger.error("This command is believed only applicable to ARM-based spectrometers (not {0})", 
                     featureIdentification.boardType);
                 return false;
             }
@@ -498,6 +536,9 @@ namespace WasatchNET
         public string getFPGARev()
         {
             byte[] buf = getCmd(Opcodes.GET_FPGA_REV, 7);
+
+            if (buf == null)
+                return "UNKNOWN";
 
             string s = "";
             for (uint i = 0; i < 7; i++)
@@ -681,9 +722,9 @@ namespace WasatchNET
         public bool   getCCDTempEnabled()               { return Unpack.toBool  (getCmd(Opcodes.GET_CCD_TEMP_ENABLE,            1)); }
         public ushort getDAC()                          { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT,          2, 1)); }
         public bool   getInterlockEnabled()             { return Unpack.toBool  (getCmd(Opcodes.GET_INTERLOCK,                  1)); }
-        public bool   getLaserEnabled()                 { return Unpack.toBool  (getCmd(Opcodes.GET_LASER,                      1)); }
-        public bool   getLaserModulationEnabled()       { return Unpack.toBool  (getCmd(Opcodes.GET_LASER_MOD,                  1)); }
-        public UInt64 getLaserModulationDuration()      { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_DURATION,               5)); }
+        public bool   getLaserEnabled()                 { return Unpack.toBool  (getCmd(Opcodes.GET_LASER_ENABLED,              1)); }
+        public bool   getLaserModulationEnabled()       { return Unpack.toBool  (getCmd(Opcodes.GET_LASER_MOD_ENABLED,          1)); }
+        public UInt64 getLaserModulationDuration()      { return Unpack.toUint64(getCmd(Opcodes.GET_LASER_MOD_DURATION,         5)); }
         public UInt64 getLaserModulationPeriod()        { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PERIOD,                 5)); }
         public UInt64 getLaserModulationPulseDelay()    { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PULSE_DELAY,            5)); }
         public UInt64 getLaserModulationPulseWidth()    { return Unpack.toUint64(getCmd(Opcodes.GET_LASER_MOD_PULSE_WIDTH,      5)); }
@@ -710,13 +751,23 @@ namespace WasatchNET
         /// convert the raw laser temperature reading into degrees centigrade
         /// </summary>
         /// <returns>laser temperature in &deg;C</returns>
+        /// <remarks>
+        /// Note that the adcToDegCCoeffs are NOT used in this method; those
+        /// coefficients ONLY apply to the detector.  At this time, all laser
+        /// temperature math is hardcoded (confirmed with Jason 22-Nov-2017).
+        /// </remarks>
         public float getLaserTemperatureDegC()
         {
-            ushort raw = getLaserTemperatureRaw();
-            float degC = modelConfig.adcToDegCCoeffs[0]
-                       + modelConfig.adcToDegCCoeffs[1] * raw
-                       + modelConfig.adcToDegCCoeffs[2] * raw * raw;
-            return degC;
+            double raw = getLaserTemperatureRaw();
+            double voltage    = 2.5 * raw / 4096;
+            double resistance = 21450.0 * voltage / (2.5 - voltage);
+            double logVal     = Math.Log(resistance / 10000);
+            double insideMain = logVal + 3977.0 / (25 + 273.0);
+            double degC = 3977.0 / insideMain - 273.0;
+            
+            logger.debug("getLaserTemperatureDegC: {0:f2} deg C (raw 0x{1:x4})", degC, raw);
+
+            return (float) degC;
         }
 
         // TODO: something's buggy with this?
@@ -815,7 +866,7 @@ namespace WasatchNET
 
             // Enable modulation
             fake = new byte[8];
-            if (!sendCmd(Opcodes.SET_LASER_MOD, 1, buf: fake))
+            if (!sendCmd(Opcodes.SET_LASER_MOD_ENABLED, 1, buf: fake))
             {
                 logger.error("Hardware Failure to send laser modulation");
                 return false;
@@ -835,7 +886,7 @@ namespace WasatchNET
             try
             {
                 UInt40 value = new UInt40(us);
-                return sendCmd(Opcodes.SET_LASER_MOD_DUR, value.LSW, value.MidW, value.buf);
+                return sendCmd(Opcodes.SET_LASER_MOD_DURATION, value.LSW, value.MidW, value.buf);
             }
             catch(Exception ex)
             {
@@ -919,8 +970,8 @@ namespace WasatchNET
             return sendCmd(Opcodes.SET_LASER_TEMP_SETPOINT, value);
         }
 
-        public bool setLaserEnable          (bool flag)         { return sendCmd(Opcodes.SET_LASER,                      (ushort) (flag ? 1 : 0)); } 
-        public bool setLaserModulationEnable(bool flag)         { return sendCmd(Opcodes.SET_LASER_MOD,                  (ushort) (flag ? 1 : 0)); } 
+        public bool setLaserEnable          (bool flag)         { return sendCmd(Opcodes.SET_LASER_ENABLED,              (ushort) (flag ? 1 : 0)); } 
+        public bool setLaserModulationEnable(bool flag)         { return sendCmd(Opcodes.SET_LASER_MOD_ENABLED,          (ushort) (flag ? 1 : 0)); } 
         public bool setSelectedLaser        (byte id)           { return sendCmd(Opcodes.SELECT_LASER,                   id); }
         public bool linkLaserModToIntegrationTime(bool flag)    { return sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0)); } 
 
@@ -974,6 +1025,7 @@ namespace WasatchNET
         double[] getSpectrumRaw()
         {
             // STEP ONE: request a spectrum
+            logger.debug("requesting spectrum");
             if (!sendCmd(Opcodes.ACQUIRE_CCD))
                 return null;
 
@@ -981,10 +1033,15 @@ namespace WasatchNET
 
             // rather than banging at the control endpoint, sleep for most of it
             if (integrationTimeMS_ > 5)
-                Thread.Sleep((int)(integrationTimeMS_ - 5));
+            {
+                int ms = (int)integrationTimeMS_ - 5;
+                // logger.debug("sleeping {0}ms", ms);
+                Thread.Sleep(ms);
+            }
 
-            if (!blockUntilDataReady())
-                return null;
+            if (!isARM())
+                if (!blockUntilDataReady())
+                    return null;
 
             // STEP THREE: read spectrum
             //
@@ -995,7 +1052,7 @@ namespace WasatchNET
             //       to work well here too.
 
             // note: hardcoded to 16-bit
-            byte[] response = new byte[pixels * 2]; 
+            byte[] response = new byte[featureIdentification.spectraBlockSize]; 
 
             double[] spec = new double[pixels];
             int timeoutMS = (int)100;
@@ -1009,6 +1066,7 @@ namespace WasatchNET
                 ErrorCode err;
                 try
                 {
+                    // logger.debug("reading {0} bytes of spectrum", response.Length);
                     err = spectralReader.Read(response, timeoutMS, out bytesRead);
                 }
                 catch (Exception ex)
@@ -1053,6 +1111,8 @@ namespace WasatchNET
 
         public bool blockUntilDataReady()
         {
+            logger.debug("polling until data ready");
+
             // give it an extra 100ms buffer before we give up
             uint timeoutMS = integrationTimeMS_ + 100;
             DateTime expiration = DateTime.Now.AddMilliseconds(timeoutMS);

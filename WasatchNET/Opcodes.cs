@@ -21,9 +21,6 @@ namespace WasatchNET
     /// labels. 
     /// </summary>
     /// <remarks>
-    /// At this time, I am keeping these aligned with the USB API documentation 
-    /// (mostly) for easy cross-referencing with manuals (e.g. GET_LASER instead 
-    /// of GET_LASER_ENABLED).
     /// </remarks>
     public enum Opcodes
     {
@@ -45,8 +42,9 @@ namespace WasatchNET
         GET_HORIZ_BINNING,
         GET_INTEGRATION_TIME,
         GET_INTERLOCK,
-        GET_LASER,
-        GET_LASER_MOD,
+        GET_LASER_ENABLED,
+        GET_LASER_MOD_DURATION,
+        GET_LASER_MOD_ENABLED,
         GET_LASER_MOD_PULSE_WIDTH,
         GET_LASER_RAMPING_MODE,
         GET_LASER_TEMP,
@@ -54,7 +52,6 @@ namespace WasatchNET
         GET_LINE_LENGTH,
         GET_LINK_LASER_MOD_TO_INTEGRATION_TIME,
         GET_MODEL_CONFIG,
-        GET_MOD_DURATION,
         GET_MOD_PERIOD,
         GET_MOD_PULSE_DELAY,
         GET_SELECTED_LASER,
@@ -84,9 +81,9 @@ namespace WasatchNET
         SET_DFU_MODE,
         SET_EXTERNAL_TRIGGER_OUTPUT,
         SET_INTEGRATION_TIME,
-        SET_LASER,
-        SET_LASER_MOD,
-        SET_LASER_MOD_DUR,
+        SET_LASER_ENABLED,
+        SET_LASER_MOD_DURATION,
+        SET_LASER_MOD_ENABLED,
         SET_LASER_MOD_PULSE_WIDTH,
         SET_LASER_RAMPING_MODE,
         SET_LASER_TEMP_SETPOINT,
@@ -126,10 +123,16 @@ namespace WasatchNET
         }
 
         Dictionary<Opcodes, byte> cmd = new Dictionary<Opcodes, byte>();
+        HashSet<Opcodes> armInvertedRetvals = new HashSet<Opcodes>();
 
         public Dictionary<Opcodes, byte> getDict()
         {
             return cmd;
+        }
+
+        public HashSet<Opcodes> getArmInvertedRetvals()
+        {
+            return armInvertedRetvals;
         }
         
         OpcodeHelper()
@@ -153,14 +156,14 @@ namespace WasatchNET
             cmd[Opcodes.GET_HORIZ_BINNING                      ] = 0xbc;
             cmd[Opcodes.GET_INTEGRATION_TIME                   ] = 0xbf;
             cmd[Opcodes.GET_INTERLOCK                          ] = 0xef;
-            cmd[Opcodes.GET_LASER                              ] = 0xe2;
-            cmd[Opcodes.GET_LASER_MOD                          ] = 0xe3;
+            cmd[Opcodes.GET_LASER_ENABLED                      ] = 0xe2;
+            cmd[Opcodes.GET_LASER_MOD_DURATION                 ] = 0xc3;
+            cmd[Opcodes.GET_LASER_MOD_ENABLED                  ] = 0xe3;
             cmd[Opcodes.GET_LASER_MOD_PULSE_WIDTH              ] = 0xdc;
             cmd[Opcodes.GET_LASER_RAMPING_MODE                 ] = 0xea;
             cmd[Opcodes.GET_LASER_TEMP                         ] = 0xd5;
             cmd[Opcodes.GET_LASER_TEMP_SETPOINT                ] = 0xe8;
             cmd[Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME ] = 0xde;
-            cmd[Opcodes.GET_MOD_DURATION                       ] = 0xc3;
             cmd[Opcodes.GET_MOD_PERIOD                         ] = 0xcb;
             cmd[Opcodes.GET_MOD_PULSE_DELAY                    ] = 0xca;
             cmd[Opcodes.GET_SELECTED_LASER                     ] = 0xee;
@@ -181,9 +184,9 @@ namespace WasatchNET
             cmd[Opcodes.SET_DFU_MODE                           ] = 0xfe; // (0x40, 0xFE, 0, 0, [0, 0, 0, 0, 0, 0, 0, 0], 1000)
             cmd[Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT            ] = 0xe0;
             cmd[Opcodes.SET_INTEGRATION_TIME                   ] = 0xb2;
-            cmd[Opcodes.SET_LASER                              ] = 0xbe;
-            cmd[Opcodes.SET_LASER_MOD                          ] = 0xbd;
-            cmd[Opcodes.SET_LASER_MOD_DUR                      ] = 0xb9;
+            cmd[Opcodes.SET_LASER_ENABLED                      ] = 0xbe;
+            cmd[Opcodes.SET_LASER_MOD_DURATION                 ] = 0xb9;
+            cmd[Opcodes.SET_LASER_MOD_ENABLED                  ] = 0xbd;
             cmd[Opcodes.SET_LASER_MOD_PULSE_WIDTH              ] = 0xdb;
             cmd[Opcodes.SET_LASER_RAMPING_MODE                 ] = 0xe9;
             cmd[Opcodes.SET_LASER_TEMP_SETPOINT                ] = 0xe7;
@@ -216,6 +219,30 @@ namespace WasatchNET
             cmd[Opcodes.OPT_AREA_SCAN                          ] = 0x0a;
             cmd[Opcodes.OPT_ACT_INT_TIME                       ] = 0x0b;
             cmd[Opcodes.OPT_HORIZONTAL_BINNING                 ] = 0x0c;
+
+            armInvertedRetvals.Add(Opcodes.GET_CCD_OFFSET);
+            armInvertedRetvals.Add(Opcodes.READ_COMPILATION_OPTIONS); // MZ: guessing
+            armInvertedRetvals.Add(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME);
+            armInvertedRetvals.Add(Opcodes.SELECT_LASER);
+            armInvertedRetvals.Add(Opcodes.SET_CCD_GAIN);
+            armInvertedRetvals.Add(Opcodes.SET_CCD_OFFSET);
+            armInvertedRetvals.Add(Opcodes.SET_CCD_SENSING_THRESHOLD);
+            armInvertedRetvals.Add(Opcodes.SET_CCD_TEMP_ENABLE);
+            armInvertedRetvals.Add(Opcodes.SET_CCD_TEMP_SETPOINT);
+            armInvertedRetvals.Add(Opcodes.SET_CCD_THRESHOLD_SENSING_MODE);
+            armInvertedRetvals.Add(Opcodes.SET_CCD_TRIGGER_SOURCE);
+            armInvertedRetvals.Add(Opcodes.SET_DAC);
+            armInvertedRetvals.Add(Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT);
+            armInvertedRetvals.Add(Opcodes.SET_INTEGRATION_TIME);
+            armInvertedRetvals.Add(Opcodes.SET_LASER_ENABLED);
+            armInvertedRetvals.Add(Opcodes.SET_LASER_MOD_ENABLED);
+            armInvertedRetvals.Add(Opcodes.SET_LASER_MOD_DURATION);
+            armInvertedRetvals.Add(Opcodes.SET_LASER_MOD_PULSE_WIDTH);
+            armInvertedRetvals.Add(Opcodes.SET_LASER_TEMP_SETPOINT);
+            armInvertedRetvals.Add(Opcodes.SET_MOD_PERIOD);
+            armInvertedRetvals.Add(Opcodes.SET_MOD_PULSE_DELAY);
+            armInvertedRetvals.Add(Opcodes.VR_SET_CONTINUOUS_CCD);
+            armInvertedRetvals.Add(Opcodes.VR_SET_NUM_FRAMES);
         }
     }
 }

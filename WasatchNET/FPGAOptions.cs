@@ -11,11 +11,11 @@ namespace WasatchNET
     public class FPGAOptions
     {
         // public attributes
-        public FPGA_INTEG_TIME_RES integrationTimeResolution { get; private set; }
-        public FPGA_DATA_HEADER dataHeader { get; private set; }
+        public FPGA_INTEG_TIME_RES integrationTimeResolution { get; private set; } = FPGA_INTEG_TIME_RES.ERROR;
+        public FPGA_DATA_HEADER dataHeader { get; private set; } = FPGA_DATA_HEADER.ERROR;
         public bool hasCFSelect { get; private set; }
-        public FPGA_LASER_TYPE laserType { get; private set; }
-        public FPGA_LASER_CONTROL laserControl { get; private set; }
+        public FPGA_LASER_TYPE laserType { get; private set; } = FPGA_LASER_TYPE.NONE;
+        public FPGA_LASER_CONTROL laserControl { get; private set; } = FPGA_LASER_CONTROL.ERROR;
         public bool hasAreaScan { get; private set; }
         public bool hasActualIntegTime { get; private set; }
         public bool hasHorizBinning { get; private set; }
@@ -27,6 +27,12 @@ namespace WasatchNET
         public FPGAOptions(Spectrometer s)
         {
             spectrometer = s;
+            if (s.featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.STROKER_ARM)
+            {
+                // MZ: I think it's supposed to be, though
+                logger.error("FPGAOptions not supported on {0}", s.featureIdentification.boardType);
+                return;
+            }
             load();
         }
 

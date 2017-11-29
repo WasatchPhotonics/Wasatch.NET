@@ -62,7 +62,15 @@ namespace WasatchNET
         /// <param name="path">output path (e.g. "\\tmp\\WasatchNET.log")</param>
         public void setPathname(string path)
         {
-            outfile = new StreamWriter(path);
+            try
+            {
+                outfile = new StreamWriter(path);
+                debug("log path set to {0}", path);
+            }
+            catch (Exception e)
+            {
+                error("Can't set log pathname: {0}", e);
+            }
         }
 
         /// <summary>

@@ -26,6 +26,12 @@ namespace WasatchNET
                 logger.error("generateWavelengths: invalid 4th-order wavecal");
                 return null;
             }
+
+            if (pixels > 2048)
+            {
+                logger.error("generateWavelengths: unlikely pixel count {0}", pixels);
+                return null;
+            }
                 
             double[] wavelengths = new double[pixels];
             for (uint pixel = 0; pixel < pixels; pixel++)

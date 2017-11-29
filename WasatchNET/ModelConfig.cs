@@ -395,8 +395,33 @@ namespace WasatchNET
             if (logger.debugEnabled())
                 dump();
 
+            enforceReasonableDefaults();
+
             return true;
         }
+
+        void enforceReasonableDefaults()
+        {
+            bool defaultWavecal = false;
+            for (int i = 0; i < 4; i++)
+                if (Double.IsNaN(wavecalCoeffs[i]))
+                    defaultWavecal = true;
+            if (defaultWavecal)
+            {
+                logger.error("No wavecal found (pixel space)");
+                wavecalCoeffs[0] = 0;
+                wavecalCoeffs[1] = 1;
+                wavecalCoeffs[2] = 0;
+                wavecalCoeffs[3] = 0;
+            }
+
+            if (minIntegrationTimeMS < 1)
+            {
+                logger.error("invalid minIntegrationTimeMS found ({0}), defaulting to 1", minIntegrationTimeMS);
+                minIntegrationTimeMS = 1;
+            }
+        }
+
 
         void dump()
         {

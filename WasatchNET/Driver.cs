@@ -243,10 +243,32 @@ namespace WasatchNET
             }
         }
 
-        void OnUsbError(object sender, UsbError usbError)
-        {
-            logger.debug("WasatchNET.Driver: UsbError: {0}", usbError.ToString());
-        }
+        void OnUsbError(object sender, UsbError e)
+        {   
+            string prefix = String.Format("OnUsbError: sender {0}", sender.GetType());
+            if (sender is UsbEndpointBase)
+            {   
+                logger.error("{0}: Win32ErrorNumber {1} ({2}): {3}",
+                    prefix, e.Win32ErrorNumber, e.Win32ErrorString, e.Description);
+                if (e.Win32ErrorNumber == 31) 
+                {   
+                    UsbDevice usb = sender as UsbDevice;
+                    if (usb.IsOpen)
+                    {   
+                        UsbEndpointBase baseDevice = sender as UsbEndpointBase;
+                        UsbEndpointInfo uei = baseDevice.EndpointInfo;
+                        LibUsbDotNet.Descriptors.UsbEndpointDescriptor ued = uei.Descriptor;
+                        logger.error("{0}: usb device still open on endpoint {1}", prefix, baseDevice.EpNum);
+
+                        // if (baseDevice.Reset()) { return; }
+                    }   
+                }   
+            }   
+            else
+            {   
+                logger.error("{0}: non-UsbEndpointBase Error: {1}", prefix, e.ToString());
+            }   
+        }   
     }
 
     /// <summary>

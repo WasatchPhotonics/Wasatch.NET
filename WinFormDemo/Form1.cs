@@ -59,6 +59,7 @@ namespace WinFormDemo
         
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            logger.setTextBox(null);
             shutdownPending = true;
         }   
 
@@ -78,11 +79,8 @@ namespace WinFormDemo
 
             chart1.Series.Add(state.series);
 
-            // one or more of these seriously increases laser power
-            s.linkLaserModToIntegrationTime(false);
-            s.setLaserModulationEnable(false);
-            s.setCCDTriggerSource(0);
-            s.setLaserEnable(false);
+            if (!s.isARM())
+                s.setCCDTriggerSource(0);
 
             s.integrationTimeMS = 100;
 
@@ -103,7 +101,8 @@ namespace WinFormDemo
             SpectrometerState state = spectrometerStates[currentSpectrometer];
 
             // update tree view
-            treeViewSettings_DoubleClick(null, null);
+            if (!currentSpectrometer.isARM())
+                treeViewSettings_DoubleClick(null, null);
 
             // update start button
             updateStartButton(spectrometerStates[currentSpectrometer].running);
@@ -113,9 +112,18 @@ namespace WinFormDemo
             numericUpDownBoxcarHalfWidth.Value = currentSpectrometer.boxcarHalfWidth;
             numericUpDownScanAveraging.Value = currentSpectrometer.scanAveraging;
 
-            numericUpDownLaserPowerPerc.Enabled = 
-            checkBoxLaserEnable.Enabled = currentSpectrometer.modelConfig.hasLaser && currentSpectrometer.fpgaOptions.laserType != FPGA_LASER_TYPE.NONE;
-            checkBoxLaserEnable.Checked = currentSpectrometer.getLaserEnabled();
+            if (currentSpectrometer.hasLaser())
+            {
+                numericUpDownLaserPowerPerc.Enabled =
+                checkBoxLaserEnable.Enabled = true;
+                checkBoxLaserEnable.Checked = currentSpectrometer.getLaserEnabled();
+            }
+            else
+            {
+                numericUpDownLaserPowerPerc.Enabled =
+                checkBoxLaserEnable.Enabled =
+                checkBoxLaserEnable.Checked = false;
+            }
 
             checkBoxTakeDark.Enabled = buttonSave.Enabled = state.spectrum != null;
             checkBoxTakeReference.Enabled = state.spectrum != null && currentSpectrometer.dark != null;
@@ -429,6 +437,28 @@ namespace WinFormDemo
                 backgroundWorkerSettings.RunWorkerAsync();
         }
 
+        private void toolStripMenuItemTestWriteEEPROM_Click(object sender, EventArgs e)
+        {
+            if (currentSpectrometer == null)
+                return;
+
+            WriteEEPROMForm eepromForm = new WriteEEPROMForm(currentSpectrometer.modelConfig);
+            eepromForm.ShowDialog();
+        }
+
+        private void setDFUModeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (currentSpectrometer == null)
+                return;
+
+            DialogResult result = MessageBox.Show("Are you sure? This mode is used for reflashing ARM firmware, and could brick your spectrometer.",
+                "Extreme Caution Alert", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+            if (result != DialogResult.Yes)
+                return;
+
+            currentSpectrometer.setDFUMode(true);
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // BackgroundWorker: GUI Updates
         ////////////////////////////////////////////////////////////////////////
@@ -457,8 +487,11 @@ namespace WinFormDemo
                 {
                     foreach (Spectrometer s in spectrometers)
                     {
-                        SpectrometerState state = spectrometerStates[s];
-                        state.detTempDegC = s.getCCDTemperatureDegC();
+                        if (!s.isARM())
+                        {
+                            SpectrometerState state = spectrometerStates[s];
+                            state.detTempDegC = s.getCCDTemperatureDegC();
+                        }
                     }
                     lowFreqOperations = 0;
                 }
@@ -557,32 +590,10 @@ namespace WinFormDemo
             }
         }
 
-        private void toolStripMenuItemTestWriteEEPROM_Click(object sender, EventArgs e)
-        {
-            if (currentSpectrometer == null)
-                return;
-
-            WriteEEPROMForm eepromForm = new WriteEEPROMForm(currentSpectrometer.modelConfig);
-            eepromForm.ShowDialog();
-        }
-
         private void Form1_Load(object sender, EventArgs e)
         {
             if (opts.autoStart)
                 buttonInitialize_Click(null, null);
-        }
-
-        private void setDFUModeToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (currentSpectrometer == null)
-                return;
-
-            DialogResult result = MessageBox.Show("Are you sure? This mode is used for reflashing ARM firmware, and could brick your spectrometer.",
-                "Extreme Caution Alert", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
-            if (result != DialogResult.Yes)
-                return;
-
-            currentSpectrometer.setDFUMode(true);
         }
 
         private void numericUpDownLaserPowerPerc_ValueChanged(object sender, EventArgs e)
