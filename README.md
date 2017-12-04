@@ -89,14 +89,14 @@ USB devices (via VID/PID) with libusb.  This is the process to do so:
 - Plug in a USB Wasatch Photonics spectrometer.
 
 - Windows may prompt you to "locate drivers for this device".  If not, go to the
-   Device Manager (just type "Device Manager" into the Win10 search field on the
-   Start Bar).
+  Device Manager (just type "Device Manager" into the Win10 search field on the
+  Start Bar).
 
-- Your spectrometers should appear as "Stroker FX2" under "Other devices".
+- Your spectrometer(s) should appear as "Stroker FX2" or "Stroker InGaS Camera" under "Other devices".
 
 ![Update Drivers](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/drivers-02-update-drivers.png)
 
-- Right-click on the Stroker FX2 and select "Update Driver".
+- Right-click on the Stroker entry and select "Update Driver".
 
 - Select "Manually browse for drivers" .
 
