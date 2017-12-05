@@ -35,6 +35,7 @@ namespace WasatchNET
         GET_CCD_TEMP_SETPOINT,
         GET_CCD_THRESHOLD_SENSING_MODE,
         GET_CCD_TRIGGER_SOURCE,
+        GET_CF_SELECT,
         GET_CODE_REVISION,
         GET_DAC,
         GET_EXTERNAL_TRIGGER_OUTPUT,
@@ -73,10 +74,11 @@ namespace WasatchNET
         SET_CCD_GAIN,
         SET_CCD_OFFSET,
         SET_CCD_SENSING_THRESHOLD,
-        SET_CCD_TEMP_ENABLE,
+        SET_CCD_TEC_ENABLE,
         SET_CCD_TEMP_SETPOINT,
         SET_CCD_THRESHOLD_SENSING_MODE,
         SET_CCD_TRIGGER_SOURCE,
+        SET_CF_SELECT,
         SET_DAC,
         SET_DFU_MODE,
         SET_EXTERNAL_TRIGGER_OUTPUT,
@@ -150,6 +152,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_DAC                                ] = 0xd9;
             cmd[Opcodes.GET_CCD_THRESHOLD_SENSING_MODE         ] = 0xcf;
             cmd[Opcodes.GET_CCD_TRIGGER_SOURCE                 ] = 0xd3;
+            cmd[Opcodes.GET_CF_SELECT                          ] = 0xec; // per Jason 4-Dec-2017
             cmd[Opcodes.GET_CODE_REVISION                      ] = 0xc0;
             cmd[Opcodes.GET_EXTERNAL_TRIGGER_OUTPUT            ] = 0xe1;
             cmd[Opcodes.GET_FPGA_REV                           ] = 0xb4;
@@ -176,10 +179,11 @@ namespace WasatchNET
             cmd[Opcodes.SET_CCD_GAIN                           ] = 0xb7;
             cmd[Opcodes.SET_CCD_OFFSET                         ] = 0xb6;
             cmd[Opcodes.SET_CCD_SENSING_THRESHOLD              ] = 0xd0;
-            cmd[Opcodes.SET_CCD_TEMP_ENABLE                    ] = 0xd6;
+            cmd[Opcodes.SET_CCD_TEC_ENABLE                     ] = 0xd6;
             cmd[Opcodes.SET_CCD_TEMP_SETPOINT                  ] = 0xd8;
             cmd[Opcodes.SET_CCD_THRESHOLD_SENSING_MODE         ] = 0xce;
             cmd[Opcodes.SET_CCD_TRIGGER_SOURCE                 ] = 0xd2;
+            cmd[Opcodes.SET_CF_SELECT                          ] = 0xeb; // per Jason 4-Dec-2017
             cmd[Opcodes.SET_DAC                                ] = 0xd8;
             cmd[Opcodes.SET_DFU_MODE                           ] = 0xfe; // (0x40, 0xFE, 0, 0, [0, 0, 0, 0, 0, 0, 0, 0], 1000)
             cmd[Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT            ] = 0xe0;
@@ -227,7 +231,7 @@ namespace WasatchNET
             armInvertedRetvals.Add(Opcodes.SET_CCD_GAIN);
             armInvertedRetvals.Add(Opcodes.SET_CCD_OFFSET);
             armInvertedRetvals.Add(Opcodes.SET_CCD_SENSING_THRESHOLD);
-            armInvertedRetvals.Add(Opcodes.SET_CCD_TEMP_ENABLE);
+            armInvertedRetvals.Add(Opcodes.SET_CCD_TEC_ENABLE);
             armInvertedRetvals.Add(Opcodes.SET_CCD_TEMP_SETPOINT);
             armInvertedRetvals.Add(Opcodes.SET_CCD_THRESHOLD_SENSING_MODE);
             armInvertedRetvals.Add(Opcodes.SET_CCD_TRIGGER_SOURCE);

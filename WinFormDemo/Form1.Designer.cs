@@ -44,7 +44,6 @@
             this.groupBoxSpectrometers = new System.Windows.Forms.GroupBox();
             this.comboBoxSpectrometer = new System.Windows.Forms.ComboBox();
             this.groupBoxControl = new System.Windows.Forms.GroupBox();
-            this.label5 = new System.Windows.Forms.Label();
             this.numericUpDownLaserPowerPerc = new System.Windows.Forms.NumericUpDown();
             this.groupBoxMode = new System.Windows.Forms.GroupBox();
             this.radioButtonModeTransmission = new System.Windows.Forms.RadioButton();
@@ -63,6 +62,7 @@
             this.numericUpDownBoxcarHalfWidth = new System.Windows.Forms.NumericUpDown();
             this.checkBoxLaserEnable = new System.Windows.Forms.CheckBox();
             this.label3 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
             this.groupBoxSetup = new System.Windows.Forms.GroupBox();
             this.labelDetTempDegC = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
@@ -206,7 +206,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(222, 115);
+            this.groupBoxSettings.Size = new System.Drawing.Size(223, 115);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -217,7 +217,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(218, 98);
+            this.treeViewSettings.Size = new System.Drawing.Size(219, 98);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -272,15 +272,6 @@
             this.groupBoxControl.TabIndex = 1;
             this.groupBoxControl.TabStop = false;
             this.groupBoxControl.Text = "Control";
-            // 
-            // label5
-            // 
-            this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(174, 86);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(15, 13);
-            this.label5.TabIndex = 15;
-            this.label5.Text = "%";
             // 
             // numericUpDownLaserPowerPerc
             // 
@@ -539,6 +530,15 @@
             this.label3.Size = new System.Drawing.Size(87, 13);
             this.label3.TabIndex = 5;
             this.label3.Text = "boxcar half-width";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(174, 86);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(15, 13);
+            this.label5.TabIndex = 15;
+            this.label5.Text = "%";
             // 
             // groupBoxSetup
             // 

@@ -49,6 +49,8 @@ namespace WasatchNET
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
 
+        float detectorSetpointDegC = 0;
+
         UsbRegistry usbRegistry;
         UsbDevice usbDevice;
         UsbEndpointReader spectralReader;
@@ -206,6 +208,16 @@ namespace WasatchNET
             // by default, integration time is zero in HW
             setIntegrationTimeMS(modelConfig.minIntegrationTimeMS);
 
+            // MZ: base on A/R/C?
+            if (featureIdentification.defaultTECSetpointDegC.HasValue)
+                detectorSetpointDegC = featureIdentification.defaultTECSetpointDegC.Value;
+            else if (modelConfig.detectorName.Contains("S11511"))
+                detectorSetpointDegC = 10;
+            else if (modelConfig.detectorName.Contains("S10141"))
+                detectorSetpointDegC = -15;
+            else if (modelConfig.detectorName.Contains("G9214"))
+                detectorSetpointDegC = -15;
+
             if (hasLaser())
             {
                 logger.debug("unlinking laser modulation from integration time");
@@ -219,7 +231,14 @@ namespace WasatchNET
             }
 
             if (modelConfig.hasCooling)
+            {
+                // MZ: TEC doesn't do anything unless you give it a temperature first
+                logger.debug("setting TEC setpoint to {0} deg C", detectorSetpointDegC);
+                setCCDTemperatureSetpointDegC(detectorSetpointDegC);
+
+                logger.debug("enabling detector TEC");
                 setCCDTemperatureEnable(true);
+            }
 
             return true;
         }
@@ -290,12 +309,21 @@ namespace WasatchNET
             // queued?
             lock (commsLock)
             {
+                if (featureIdentification.usbDelayMS > 0)
+                    Thread.Sleep((int) featureIdentification.usbDelayMS);
+
                 if (expectedSuccessResult != usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < bytesToRead)
                 {
                     logger.error("getCmd: failed to get {0} (0x{1:x2}) with index 0x{2:x4} via DEVICE_TO_HOST ({3} bytes read)",
                         opcode.ToString(), cmd[opcode], wIndex, bytesRead);
                     return null;
                 }
+            }
+
+            if (logger.debugEnabled())
+            {
+                string prefix = String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex);
+                logger.hexdump(buf, prefix);
             }
 
             if (fullLen == 0)
@@ -330,6 +358,9 @@ namespace WasatchNET
 
             lock (commsLock)
             {
+                if (featureIdentification.usbDelayMS > 0)
+                    Thread.Sleep((int) featureIdentification.usbDelayMS);
+
                 bool result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
                 if (result != expectedSuccessResult || bytesRead < len)
                 {
@@ -338,6 +369,13 @@ namespace WasatchNET
                     return null;
                 }
             }
+
+            if (logger.debugEnabled())
+            {
+                string prefix = String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex);
+                logger.hexdump(buf, prefix);
+            }
+
             return buf;
         }
 
@@ -367,6 +405,9 @@ namespace WasatchNET
 
             lock (commsLock)
             {
+                if (featureIdentification.usbDelayMS > 0)
+                    Thread.Sleep((int) featureIdentification.usbDelayMS);
+
                 if (buf != null)
                     logger.hexdump(buf, String.Format("sendCmd({0}, {1}, {2}, {3}): ", opcode, wValue, wIndex, wLength));
                 if (expectedSuccessResult != usbDevice.ControlTransfer(ref setupPacket, buf, wLength, out int bytesWritten))
@@ -423,7 +464,6 @@ namespace WasatchNET
             return sendCmd(Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT, (ushort) value);
         }
 
-
         /// <summary>
         /// Set the trigger delay on supported models.
         /// </summary>
@@ -473,11 +513,15 @@ namespace WasatchNET
         /// <returns>true on success</returns>
         public bool setCCDTemperatureSetpointDegC(float degC)
         {
-            if (degC < modelConfig.detectorTempMin || degC > modelConfig.detectorTempMax)
+            if (degC < modelConfig.detectorTempMin)
             {
-                logger.error("Unable to set CCD temperature to {0:f2} deg C (outside bounds ({1:f2}, {2:f2}))",
-                    degC, modelConfig.detectorTempMin, modelConfig.detectorTempMax);
-                return false;                    
+                logger.info("WARNING: rounding detector setpoint {0} deg C up to configured min {1}", degC, modelConfig.detectorTempMin);
+                degC = modelConfig.detectorTempMin;
+            }
+            else if (degC > modelConfig.detectorTempMax)
+            {
+                logger.info("WARNING: rounding detector setpoint {0} deg C down to configured max {1}", degC, modelConfig.detectorTempMax);
+                degC = modelConfig.detectorTempMax;
             }
 
             float dac = modelConfig.degCToDACCoeffs[0]
@@ -509,9 +553,19 @@ namespace WasatchNET
             return sendCmd(Opcodes.SET_DFU_MODE);
         }
 
+        public bool setHighGainModeEnabled(bool flag)
+        {
+            if (featureIdentification.boardType != FeatureIdentification.BOARD_TYPES.INGAAS_FX2)
+            {
+                logger.debug("high gain mode not supported on {0}", featureIdentification.boardType);
+                return false;
+            }
+            return sendCmd(Opcodes.SET_CF_SELECT, (ushort) (flag ? 1 : 0));
+        }
+
         public bool setCCDGain              (float gain)        { return sendCmd(Opcodes.SET_CCD_GAIN,                   FunkyFloat.fromFloat(gain)); } 
         public bool setCCDTriggerSource     (ushort source)     { return sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE,         source); } 
-        public bool setCCDTemperatureEnable (bool flag)         { return sendCmd(Opcodes.SET_CCD_TEMP_ENABLE,            (ushort) (flag ? 1 : 0)); } 
+        public bool setCCDTemperatureEnable (bool flag)         { return sendCmd(Opcodes.SET_CCD_TEC_ENABLE,             (ushort) (flag ? 1 : 0)); } 
         public bool setDAC                  (ushort word)       { return sendCmd(Opcodes.SET_DAC,                        word, 1); } // external laser power
         public bool setCCDOffset            (ushort value)      { return sendCmd(Opcodes.SET_CCD_OFFSET,                 value); }
         public bool setCCDSensingThreshold  (ushort value)      { return sendCmd(Opcodes.SET_CCD_SENSING_THRESHOLD,      value); }
@@ -637,6 +691,16 @@ namespace WasatchNET
             return Unpack.toBool(getCmd(Opcodes.GET_LASER_RAMPING_MODE, 1));
         }
 
+        public bool getHighGainModeEnabled()
+        {
+            if (featureIdentification.boardType != FeatureIdentification.BOARD_TYPES.INGAAS_FX2)
+            {
+                logger.debug("high gain mode not supported on {0}", featureIdentification.boardType);
+                return false;
+            }
+            return Unpack.toBool(getCmd(Opcodes.GET_CF_SELECT, 1));
+        }
+
         public uint getCCDTriggerDelay()
         { 
             if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
@@ -650,6 +714,7 @@ namespace WasatchNET
         public ushort getCCDTemperatureRaw()
         {
             return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2)));
+            // return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2));
         }
 
         /// <summary>
@@ -701,6 +766,12 @@ namespace WasatchNET
             float degC = modelConfig.adcToDegCCoeffs[0]
                        + modelConfig.adcToDegCCoeffs[1] * raw
                        + modelConfig.adcToDegCCoeffs[2] * raw * raw;
+            logger.debug("getCCDTemperatureDegC: raw 0x{0:x4}, coeff {1:f2}, {2:f2}, {3:f2} = {4:f2}",
+                    raw,
+                    modelConfig.adcToDegCCoeffs[0],
+                    modelConfig.adcToDegCCoeffs[1],
+                    modelConfig.adcToDegCCoeffs[2],
+                    degC);
             return degC; 
         }
 
@@ -771,7 +842,8 @@ namespace WasatchNET
         }
 
         // TODO: something's buggy with this?
-        public ushort getCCDTempSetpoint()
+        // MZ: not sure we can return this in deg C (our adctoDegC coeffs are for the thermistor, not the TEC...I THINK)
+        public ushort getDetectorSetpointRaw()
         {
             return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, wIndex: 0));
         }

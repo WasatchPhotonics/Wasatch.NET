@@ -228,6 +228,8 @@ If you have trouble installing our libusb-win32 drivers, see:
 
 # Version History
 
+- 2017-11-28 1.0.13 set initial detector TEC setpoint; 
+                    added setHighGainModeEnabled
 - 2017-11-28 1.0.12 updated laser temperature readout
 - 2017-10-26 1.0.11 added setLaserPowerPercentage()
 - 2017-10-25 1.0.10 added setDFUMode() for ARM reflash

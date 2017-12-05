@@ -23,6 +23,8 @@
         public bool isSupported = true;
         public uint defaultPixels = 1024;
         public uint spectraBlockSize = 1024 * 2;
+        public uint usbDelayMS = 0;
+        public int? defaultTECSetpointDegC = null;
 
         internal FeatureIdentification(int pid)
         {
@@ -39,6 +41,7 @@
                 firmwareDesc = "Hamamatsu InGaAs USB Board FX2 Code";
                 defaultPixels = 512;
                 spectraBlockSize = defaultPixels * 2;
+                defaultTECSetpointDegC = -15;
             }
             else if (pid == 0x3000)
             {
@@ -54,6 +57,7 @@
                 firmwarePartNum = "170019";
                 firmwareDesc = "Stroker ARM USB Board";
                 spectraBlockSize = 512;
+                usbDelayMS = 10;
             }
             else
             {
