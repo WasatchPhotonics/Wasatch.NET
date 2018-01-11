@@ -276,7 +276,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_25FD289A45BB4BDA822D3080BA1A9AA0"
             {
-            "SourcePath" = "8:..\\..\\..\\enlighten\\scripts\\support_files\\libusb_drivers\\WPLibUsb.inf"
+            "SourcePath" = "8:..\\libusb_drivers\\WPLibUsb.inf"
             "TargetName" = "8:WPLibUsb.inf"
             "Tag" = "8:"
             "Folder" = "8:_89D6CFC462CD4A188D6A50562511DDF3"
@@ -368,7 +368,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A270A2A775B44986A1035502BF78C66B"
             {
-            "SourcePath" = "8:..\\..\\..\\enlighten\\scripts\\support_files\\libusb_drivers\\wplibusb.cat"
+            "SourcePath" = "8:..\\libusb_drivers\\wplibusb.cat"
             "TargetName" = "8:wplibusb.cat"
             "Tag" = "8:"
             "Folder" = "8:_89D6CFC462CD4A188D6A50562511DDF3"

@@ -228,7 +228,8 @@ If you have trouble installing our libusb-win32 drivers, see:
 
 # Version History
 
-- 2018-01-10 1.0.14 added detector TEC setpoint control to WinFormDemo
+- 2018-01-10 1.0.14 added detector TEC setpoint control to WinFormDemo;
+                    fixed dependency path in Setup64
 - 2017-11-28 1.0.13 set initial detector TEC setpoint; 
                     added setHighGainModeEnabled
 - 2017-11-28 1.0.12 updated laser temperature readout
