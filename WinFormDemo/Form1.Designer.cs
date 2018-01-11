@@ -75,6 +75,8 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            this.numericUpDownDetectorSetpointDegC = new System.Windows.Forms.NumericUpDown();
+            this.label6 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -95,6 +97,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBoxcarHalfWidth)).BeginInit();
             this.groupBoxSetup.SuspendLayout();
             this.groupBoxEventLog.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDetectorSetpointDegC)).BeginInit();
             this.SuspendLayout();
             // 
             // splitContainerTopVsLog
@@ -112,8 +115,8 @@
             // splitContainerTopVsLog.Panel2
             // 
             this.splitContainerTopVsLog.Panel2.Controls.Add(this.groupBoxEventLog);
-            this.splitContainerTopVsLog.Size = new System.Drawing.Size(698, 590);
-            this.splitContainerTopVsLog.SplitterDistance = 472;
+            this.splitContainerTopVsLog.Size = new System.Drawing.Size(698, 657);
+            this.splitContainerTopVsLog.SplitterDistance = 588;
             this.splitContainerTopVsLog.SplitterWidth = 3;
             this.splitContainerTopVsLog.TabIndex = 0;
             // 
@@ -134,7 +137,7 @@
             this.splitContainerGraphVsControls.Panel2.Controls.Add(this.groupBoxSettings);
             this.splitContainerGraphVsControls.Panel2.Controls.Add(this.groupBoxSpectrometers);
             this.splitContainerGraphVsControls.Panel2.Controls.Add(this.groupBoxSetup);
-            this.splitContainerGraphVsControls.Size = new System.Drawing.Size(698, 472);
+            this.splitContainerGraphVsControls.Size = new System.Drawing.Size(698, 588);
             this.splitContainerGraphVsControls.SplitterDistance = 479;
             this.splitContainerGraphVsControls.SplitterWidth = 3;
             this.splitContainerGraphVsControls.TabIndex = 6;
@@ -156,7 +159,7 @@
             this.chart1.Location = new System.Drawing.Point(0, 24);
             this.chart1.Margin = new System.Windows.Forms.Padding(2);
             this.chart1.Name = "chart1";
-            this.chart1.Size = new System.Drawing.Size(479, 448);
+            this.chart1.Size = new System.Drawing.Size(479, 564);
             this.chart1.TabIndex = 0;
             this.chart1.Text = "chart1";
             // 
@@ -202,11 +205,11 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBoxSettings.Controls.Add(this.treeViewSettings);
-            this.groupBoxSettings.Location = new System.Drawing.Point(2, 350);
+            this.groupBoxSettings.Location = new System.Drawing.Point(2, 377);
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(223, 115);
+            this.groupBoxSettings.Size = new System.Drawing.Size(210, 204);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -217,7 +220,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(219, 98);
+            this.treeViewSettings.Size = new System.Drawing.Size(206, 187);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -231,7 +234,7 @@
             this.groupBoxSpectrometers.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSpectrometers.Name = "groupBoxSpectrometers";
             this.groupBoxSpectrometers.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSpectrometers.Size = new System.Drawing.Size(210, 272);
+            this.groupBoxSpectrometers.Size = new System.Drawing.Size(210, 300);
             this.groupBoxSpectrometers.TabIndex = 1;
             this.groupBoxSpectrometers.TabStop = false;
             this.groupBoxSpectrometers.Text = "Spectrometers";
@@ -248,6 +251,8 @@
             // 
             // groupBoxControl
             // 
+            this.groupBoxControl.Controls.Add(this.numericUpDownDetectorSetpointDegC);
+            this.groupBoxControl.Controls.Add(this.label6);
             this.groupBoxControl.Controls.Add(this.numericUpDownLaserPowerPerc);
             this.groupBoxControl.Controls.Add(this.groupBoxMode);
             this.groupBoxControl.Controls.Add(this.buttonClearTraces);
@@ -268,7 +273,7 @@
             this.groupBoxControl.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxControl.Name = "groupBoxControl";
             this.groupBoxControl.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxControl.Size = new System.Drawing.Size(205, 227);
+            this.groupBoxControl.Size = new System.Drawing.Size(205, 253);
             this.groupBoxControl.TabIndex = 1;
             this.groupBoxControl.TabStop = false;
             this.groupBoxControl.Text = "Control";
@@ -276,7 +281,7 @@
             // numericUpDownLaserPowerPerc
             // 
             this.numericUpDownLaserPowerPerc.Enabled = false;
-            this.numericUpDownLaserPowerPerc.Location = new System.Drawing.Point(134, 84);
+            this.numericUpDownLaserPowerPerc.Location = new System.Drawing.Point(134, 108);
             this.numericUpDownLaserPowerPerc.Name = "numericUpDownLaserPowerPerc";
             this.numericUpDownLaserPowerPerc.Size = new System.Drawing.Size(42, 20);
             this.numericUpDownLaserPowerPerc.TabIndex = 14;
@@ -293,7 +298,7 @@
             this.groupBoxMode.Controls.Add(this.radioButtonModeTransmission);
             this.groupBoxMode.Controls.Add(this.radioButtonModeAbsorbance);
             this.groupBoxMode.Controls.Add(this.radioButtonModeScope);
-            this.groupBoxMode.Location = new System.Drawing.Point(4, 107);
+            this.groupBoxMode.Location = new System.Drawing.Point(4, 131);
             this.groupBoxMode.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxMode.Name = "groupBoxMode";
             this.groupBoxMode.Padding = new System.Windows.Forms.Padding(2);
@@ -352,7 +357,7 @@
             this.buttonClearTraces.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("buttonClearTraces.BackgroundImage")));
             this.buttonClearTraces.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.buttonClearTraces.Enabled = false;
-            this.buttonClearTraces.Location = new System.Drawing.Point(120, 188);
+            this.buttonClearTraces.Location = new System.Drawing.Point(120, 212);
             this.buttonClearTraces.Margin = new System.Windows.Forms.Padding(2);
             this.buttonClearTraces.Name = "buttonClearTraces";
             this.buttonClearTraces.Size = new System.Drawing.Size(33, 33);
@@ -366,7 +371,7 @@
             this.buttonAddTrace.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("buttonAddTrace.BackgroundImage")));
             this.buttonAddTrace.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.buttonAddTrace.Enabled = false;
-            this.buttonAddTrace.Location = new System.Drawing.Point(82, 188);
+            this.buttonAddTrace.Location = new System.Drawing.Point(82, 212);
             this.buttonAddTrace.Margin = new System.Windows.Forms.Padding(2);
             this.buttonAddTrace.Name = "buttonAddTrace";
             this.buttonAddTrace.Size = new System.Drawing.Size(33, 33);
@@ -405,7 +410,7 @@
             this.buttonSave.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("buttonSave.BackgroundImage")));
             this.buttonSave.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.buttonSave.Enabled = false;
-            this.buttonSave.Location = new System.Drawing.Point(158, 188);
+            this.buttonSave.Location = new System.Drawing.Point(158, 212);
             this.buttonSave.Margin = new System.Windows.Forms.Padding(2);
             this.buttonSave.Name = "buttonSave";
             this.buttonSave.Size = new System.Drawing.Size(28, 33);
@@ -430,7 +435,7 @@
             this.buttonStart.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
             this.buttonStart.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonStart.ForeColor = System.Drawing.Color.White;
-            this.buttonStart.Location = new System.Drawing.Point(4, 152);
+            this.buttonStart.Location = new System.Drawing.Point(4, 176);
             this.buttonStart.Margin = new System.Windows.Forms.Padding(2);
             this.buttonStart.Name = "buttonStart";
             this.buttonStart.Size = new System.Drawing.Size(191, 31);
@@ -465,7 +470,7 @@
             this.checkBoxTakeReference.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("checkBoxTakeReference.BackgroundImage")));
             this.checkBoxTakeReference.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.checkBoxTakeReference.Enabled = false;
-            this.checkBoxTakeReference.Location = new System.Drawing.Point(44, 188);
+            this.checkBoxTakeReference.Location = new System.Drawing.Point(44, 212);
             this.checkBoxTakeReference.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxTakeReference.Name = "checkBoxTakeReference";
             this.checkBoxTakeReference.Size = new System.Drawing.Size(34, 33);
@@ -490,7 +495,7 @@
             this.checkBoxTakeDark.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("checkBoxTakeDark.BackgroundImage")));
             this.checkBoxTakeDark.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.checkBoxTakeDark.Enabled = false;
-            this.checkBoxTakeDark.Location = new System.Drawing.Point(4, 188);
+            this.checkBoxTakeDark.Location = new System.Drawing.Point(4, 212);
             this.checkBoxTakeDark.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxTakeDark.Name = "checkBoxTakeDark";
             this.checkBoxTakeDark.Size = new System.Drawing.Size(34, 33);
@@ -512,7 +517,7 @@
             // checkBoxLaserEnable
             // 
             this.checkBoxLaserEnable.AutoSize = true;
-            this.checkBoxLaserEnable.Location = new System.Drawing.Point(52, 85);
+            this.checkBoxLaserEnable.Location = new System.Drawing.Point(52, 109);
             this.checkBoxLaserEnable.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxLaserEnable.Name = "checkBoxLaserEnable";
             this.checkBoxLaserEnable.Size = new System.Drawing.Size(83, 17);
@@ -534,7 +539,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(174, 86);
+            this.label5.Location = new System.Drawing.Point(174, 110);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(15, 13);
             this.label5.TabIndex = 15;
@@ -621,7 +626,7 @@
             this.groupBoxEventLog.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxEventLog.Name = "groupBoxEventLog";
             this.groupBoxEventLog.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxEventLog.Size = new System.Drawing.Size(698, 115);
+            this.groupBoxEventLog.Size = new System.Drawing.Size(698, 66);
             this.groupBoxEventLog.TabIndex = 0;
             this.groupBoxEventLog.TabStop = false;
             this.groupBoxEventLog.Text = "Event Log";
@@ -635,7 +640,7 @@
             this.textBoxEventLog.Multiline = true;
             this.textBoxEventLog.Name = "textBoxEventLog";
             this.textBoxEventLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBoxEventLog.Size = new System.Drawing.Size(694, 98);
+            this.textBoxEventLog.Size = new System.Drawing.Size(694, 49);
             this.textBoxEventLog.TabIndex = 0;
             // 
             // backgroundWorkerGUIUpdate
@@ -647,13 +652,33 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
+            // numericUpDownDetectorSetpointDegC
+            // 
+            this.numericUpDownDetectorSetpointDegC.Location = new System.Drawing.Point(4, 86);
+            this.numericUpDownDetectorSetpointDegC.Margin = new System.Windows.Forms.Padding(2);
+            this.numericUpDownDetectorSetpointDegC.Name = "numericUpDownDetectorSetpointDegC";
+            this.numericUpDownDetectorSetpointDegC.Size = new System.Drawing.Size(59, 20);
+            this.numericUpDownDetectorSetpointDegC.TabIndex = 16;
+            this.numericUpDownDetectorSetpointDegC.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.numericUpDownDetectorSetpointDegC.ValueChanged += new System.EventHandler(this.numericUpDownDetectorSetpointDegC_ValueChanged);
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(68, 87);
+            this.label6.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(130, 13);
+            this.label6.TabIndex = 17;
+            this.label6.Text = "detector TEC setpoint (°C)";
+            // 
             // Form1
             // 
             this.AcceptButton = this.buttonInitialize;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
-            this.ClientSize = new System.Drawing.Size(698, 590);
+            this.ClientSize = new System.Drawing.Size(698, 657);
             this.Controls.Add(this.splitContainerTopVsLog);
             this.ImeMode = System.Windows.Forms.ImeMode.Off;
             this.MainMenuStrip = this.menuStrip1;
@@ -688,6 +713,7 @@
             this.groupBoxSetup.PerformLayout();
             this.groupBoxEventLog.ResumeLayout(false);
             this.groupBoxEventLog.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDetectorSetpointDegC)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -737,6 +763,8 @@
         private System.Windows.Forms.ToolStripMenuItem setDFUModeToolStripMenuItem;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.NumericUpDown numericUpDownLaserPowerPerc;
+        private System.Windows.Forms.NumericUpDown numericUpDownDetectorSetpointDegC;
+        private System.Windows.Forms.Label label6;
     }
 }
 

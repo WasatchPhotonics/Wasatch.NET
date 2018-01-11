@@ -112,6 +112,12 @@ namespace WinFormDemo
             numericUpDownBoxcarHalfWidth.Value = currentSpectrometer.boxcarHalfWidth;
             numericUpDownScanAveraging.Value = currentSpectrometer.scanAveraging;
 
+            // update TEC controls
+            numericUpDownDetectorSetpointDegC.Minimum = (int)currentSpectrometer.modelConfig.detectorTempMin;
+            numericUpDownDetectorSetpointDegC.Maximum = (int)currentSpectrometer.modelConfig.detectorTempMax;
+            numericUpDownDetectorSetpointDegC.Enabled = currentSpectrometer.modelConfig.hasCooling;
+
+            // update laser controls
             if (currentSpectrometer.hasLaser())
             {
                 numericUpDownLaserPowerPerc.Enabled =
@@ -602,6 +608,14 @@ namespace WinFormDemo
                 return;
 
             currentSpectrometer.setLaserPowerPercentage((float)numericUpDownLaserPowerPerc.Value / 100.0f);
+        }
+
+        private void numericUpDownDetectorSetpointDegC_ValueChanged(object sender, EventArgs e)
+        {
+            if (currentSpectrometer == null)
+                return;
+
+            currentSpectrometer.setCCDTemperatureSetpointDegC((float)numericUpDownDetectorSetpointDegC.Value);
         }
     }
 }
