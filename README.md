@@ -218,6 +218,38 @@ If you have trouble installing our libusb-win32 drivers, see:
 
 - [README-CyUsb3.md](./doc/README-CyUsb3.md)
 
+## No spectrometer found
+
+This can happen when Wasatch Dash or another older Wasatch driver product
+has been installed on the same computer as ENLIGHTEN or one of our newer
+drivers (like Wasatch.NET).
+
+You can tell that this is the problem if you look in the Windows Device
+Manager, and you can see "Wasatch Photonics Device FX2" listed under
+"Universal Serial Bus controllers".
+
+To resolve, first uninstall the older driver, by right-clicking
+"Wasatch Photonics Device FX2" and selecting "Uninstall device":
+
+![Uninstall Device](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/uninstall-01.png)
+
+Make sure you click "Delete the driver software for this device":
+
+![Delete the driver software](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/uninstall-02.png)
+
+From the "Action" menu, select "Scan for hardware changes" to re-enumerate the 
+device under the correct device driver:
+
+![Scan for hardware changes](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/uninstall-03.png)
+
+You should now see your spectrometer listed under the expected libusb-win32
+driver:
+
+![Scan for hardware changes](https://github.com/WasatchPhotonics/Wasatch.NET/raw/master/screenshots/uninstall-04.png)
+
+You should now be able to re-run your Wasatch.NET, Wasatch.PY or ENLIGHTEN
+software and connect to your spectrometer.
+
 # Backlog
 
 - [ ] test on more hardware, including ARM
