@@ -260,6 +260,8 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-03-13 1.0.16 ARM testing
+- 2018-03-06 1.0.15 internal test build
 - 2018-01-10 1.0.14 added detector TEC setpoint control to WinFormDemo;
                     fixed dependency path in Setup64
 - 2017-11-28 1.0.13 set initial detector TEC setpoint; 

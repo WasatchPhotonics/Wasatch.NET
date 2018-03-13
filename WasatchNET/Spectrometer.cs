@@ -63,6 +63,7 @@ namespace WasatchNET
 
         object acquisitionLock = new object();
         object commsLock = new object();
+        DateTime lastUsbTimestamp = DateTime.Now;
 
         #region properties
 
@@ -277,6 +278,22 @@ namespace WasatchNET
         // Utilities
         ////////////////////////////////////////////////////////////////////////
 
+        void waitForUsbAvailable()
+        {
+            if (featureIdentification.usbDelayMS > 0)
+            {
+                DateTime nextUsbTimestamp = lastUsbTimestamp.AddMilliseconds(featureIdentification.usbDelayMS);
+                DateTime now = DateTime.Now;
+                if (now < nextUsbTimestamp)
+                {
+                    int delayMS = (int) (nextUsbTimestamp - now).TotalMilliseconds;
+                    logger.debug("sleeping {0} ms to enforce {1} ms USB interval", delayMS, featureIdentification.usbDelayMS);
+                    Thread.Sleep(delayMS);
+                }
+            }
+            lastUsbTimestamp = DateTime.Now;
+        }
+
         // TODO: refactor this into Bus, UsbBus etc
 
         /// <summary>
@@ -309,9 +326,7 @@ namespace WasatchNET
             // queued?
             lock (commsLock)
             {
-                if (featureIdentification.usbDelayMS > 0)
-                    Thread.Sleep((int) featureIdentification.usbDelayMS);
-
+                waitForUsbAvailable();
                 if (expectedSuccessResult != usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < bytesToRead)
                 {
                     logger.error("getCmd: failed to get {0} (0x{1:x2}) with index 0x{2:x4} via DEVICE_TO_HOST ({3} bytes read)",
@@ -358,8 +373,7 @@ namespace WasatchNET
 
             lock (commsLock)
             {
-                if (featureIdentification.usbDelayMS > 0)
-                    Thread.Sleep((int) featureIdentification.usbDelayMS);
+                waitForUsbAvailable();
 
                 bool result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
                 if (result != expectedSuccessResult || bytesRead < len)
@@ -405,8 +419,7 @@ namespace WasatchNET
 
             lock (commsLock)
             {
-                if (featureIdentification.usbDelayMS > 0)
-                    Thread.Sleep((int) featureIdentification.usbDelayMS);
+                waitForUsbAvailable();
 
                 if (buf != null)
                     logger.hexdump(buf, String.Format("sendCmd({0}, {1}, {2}, {3}): ", opcode, wValue, wIndex, wLength));
@@ -1064,10 +1077,15 @@ namespace WasatchNET
             {
                 double[] sum = getSpectrumRaw();
                 if (sum == null)
+                {
+                    logger.error("getSpectrum: getSpectrumRaw returned null");
                     return null;
+                }
+                logger.debug("getSpectrum: received {0} pixels", sum.Length);
 
                 if (scanAveraging_ > 1)
                 {
+                    // logger.debug("getSpectrum: getting additional spectra for averaging");
                     for (uint i = 1; i < scanAveraging_; i++)
                     {
                         double[] tmp = getSpectrumRaw();
@@ -1087,9 +1105,15 @@ namespace WasatchNET
                         sum[px] -= dark_[px];
 
                 if (boxcarHalfWidth_ > 0)
+                {
+                    // logger.debug("getSpectrum: returning boxcar");
                     return Util.applyBoxcar(boxcarHalfWidth_, sum);
+                }
                 else
+                {
+                    // logger.debug("getSpectrum: returning sum");
                     return sum;
+                }
             }
         }
 
@@ -1112,8 +1136,14 @@ namespace WasatchNET
             }
 
             if (!isARM())
+            {
+                // logger.debug("blocking until data ready");
                 if (!blockUntilDataReady())
+                {
+                    logger.error("blocking failed");
                     return null;
+                }
+            }
 
             // STEP THREE: read spectrum
             //
@@ -1138,7 +1168,7 @@ namespace WasatchNET
                 ErrorCode err;
                 try
                 {
-                    // logger.debug("reading {0} bytes of spectrum", response.Length);
+                    // logger.debug("attempting to read {0} bytes of spectrum", response.Length);
                     err = spectralReader.Read(response, timeoutMS, out bytesRead);
                 }
                 catch (Exception ex)
@@ -1178,12 +1208,13 @@ namespace WasatchNET
             //      logger.error(ex.Message);
             // }
 
+            logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return spec;
         }
 
         public bool blockUntilDataReady()
         {
-            logger.debug("polling until data ready");
+            logger.debug("poll: block until data ready");
 
             // give it an extra 100ms buffer before we give up
             uint timeoutMS = integrationTimeMS_ + 100;
@@ -1194,12 +1225,18 @@ namespace WasatchNET
                 // poll the spectrometer to see if spectral data is waiting to be read
                 byte[] buf = getCmd(Opcodes.POLL_DATA, 4);
                 if (buf == null)
+                {
+                    // logger.debug("poll: failed (no buf)");
                     return false;
+                }
 
                 if (buf[0] != 0)
+                {
+                    // logger.debug("poll: data ready!");
                     return true;
+                }
             }
-            logger.error("blockUntilDataReady timed-out after {0}ms", timeoutMS);
+            logger.error("poll: timed-out after {0}ms", timeoutMS);
             return false;
         }
         #endregion

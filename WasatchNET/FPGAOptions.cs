@@ -27,12 +27,11 @@ namespace WasatchNET
         public FPGAOptions(Spectrometer s)
         {
             spectrometer = s;
-            if (s.featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.STROKER_ARM)
-            {
-                // MZ: I think it's supposed to be, though
-                logger.error("FPGAOptions not supported on {0}", s.featureIdentification.boardType);
-                return;
-            }
+            // if (s.featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.STROKER_ARM)
+            // {
+            //     logger.error("FPGAOptions not supported on {0}", s.featureIdentification.boardType);
+            //     return;
+            // }
             load();
         }
 
