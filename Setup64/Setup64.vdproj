@@ -118,13 +118,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_E1F2580EC8074E01AC816BF55ADB9F98"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_02314DDFF1AFAFE2D854CB9982C9AD90"
+        "OwnerKey" = "8:_7870A161CB1E41B2B7C3B4B23332E190"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -136,7 +130,13 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_7870A161CB1E41B2B7C3B4B23332E190"
+        "OwnerKey" = "8:_02314DDFF1AFAFE2D854CB9982C9AD90"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_E1F2580EC8074E01AC816BF55ADB9F98"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -373,11 +373,6 @@
             "AssemblyAsmDisplayName" = "8:LibUsbDotNet, Version=2.2.9.110, Culture=neutral, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
-                    "_9B62C251638522B611E06357E971DFE0"
-                    {
-                    "Name" = "8:LibUsbDotNet.dll"
-                    "Attributes" = "3:512"
-                    }
                 }
             "SourcePath" = "8:LibUsbDotNet.dll"
             "TargetName" = "8:"
@@ -641,15 +636,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Wasatch.NET"
-        "ProductCode" = "8:{FD4BACBA-505F-49A9-81AC-0EE338D49A2B}"
-        "PackageCode" = "8:{8D0D66EC-1EF3-4F59-9D8D-12DAE620BD1D}"
+        "ProductCode" = "8:{0BC563EF-F5F2-4204-BA11-C4ACD7621BA6}"
+        "PackageCode" = "8:{DD1B8AF7-AB73-4B5A-813D-E751F37828BF}"
         "UpgradeCode" = "8:{F312F3F0-86DD-4C2E-9E98-0648164C24CC}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.16"
+        "ProductVersion" = "8:1.0.17"
         "Manufacturer" = "8:Wasatch Photonics"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://wasatchphotonics.com"

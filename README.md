@@ -260,6 +260,7 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-03-22 1.0.17 Snapshot before testing with MonoLibUsb
 - 2018-03-13 1.0.16 ARM testing
 - 2018-03-06 1.0.15 internal test build
 - 2018-01-10 1.0.14 added detector TEC setpoint control to WinFormDemo;

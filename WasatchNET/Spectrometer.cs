@@ -53,6 +53,7 @@ namespace WasatchNET
 
         UsbRegistry usbRegistry;
         UsbDevice usbDevice;
+        IUsbDevice wholeUsbDevice;
         UsbEndpointReader spectralReader;
         UsbEndpointReader statusReader;
 
@@ -165,9 +166,9 @@ namespace WasatchNET
 
         internal bool open()
         {
-            if (!usbRegistry.Open(out usbDevice))
+            if (!reconnect())
             {
-                logger.error("Spectrometer: failed to open UsbRegistry");
+                logger.error("Spectrometer.open: couldn't reconnect");
                 return false;
             }
 
@@ -177,6 +178,7 @@ namespace WasatchNET
                 return false;
 
             // load EEPROM configuration
+            logger.debug("reading EEPROM");
             modelConfig = new ModelConfig(this);
             if (!modelConfig.read())
             {
@@ -186,9 +188,12 @@ namespace WasatchNET
             }
             model = modelConfig.model;
             serialNumber = modelConfig.serialNumber;
+            logger.debug("back from reading EEPROM");
 
             // see how the FPGA was compiled
+            logger.debug("reading FPGA Options");
             fpgaOptions = new FPGAOptions(this);
+            logger.debug("back from FPGA Options");
 
             // MustardTree uses 2048-pixel version of the S11510, and all InGaAs are 512
             pixels = (uint) modelConfig.activePixelsHoriz;
@@ -202,9 +207,6 @@ namespace WasatchNET
             wavelengths = Util.generateWavelengths(pixels, modelConfig.wavecalCoeffs);
             if (modelConfig.excitationNM > 0)
                 wavenumbers = Util.wavelengthsToWavenumbers(modelConfig.excitationNM, wavelengths);
-
-            spectralReader = usbDevice.OpenEndpointReader(ReadEndpointID.Ep02);
-            statusReader = usbDevice.OpenEndpointReader(ReadEndpointID.Ep06);
 
             // by default, integration time is zero in HW
             setIntegrationTimeMS(modelConfig.minIntegrationTimeMS);
@@ -283,15 +285,72 @@ namespace WasatchNET
             if (featureIdentification.usbDelayMS > 0)
             {
                 DateTime nextUsbTimestamp = lastUsbTimestamp.AddMilliseconds(featureIdentification.usbDelayMS);
-                DateTime now = DateTime.Now;
-                if (now < nextUsbTimestamp)
+                int delayMS = (int) (nextUsbTimestamp - DateTime.Now).TotalMilliseconds;
+                delayMS = (int) featureIdentification.usbDelayMS;
+                logger.debug("per usbDelayMS of {0} ms, should wait {1} ms before next USB call",
+                    featureIdentification.usbDelayMS, delayMS);
+                if (delayMS > 0)
                 {
-                    int delayMS = (int) (nextUsbTimestamp - now).TotalMilliseconds;
-                    logger.debug("sleeping {0} ms to enforce {1} ms USB interval", delayMS, featureIdentification.usbDelayMS);
-                    Thread.Sleep(delayMS);
+                    do
+                    {
+                        logger.debug("sleeping {0} ms to enforce {1} ms USB interval", delayMS, featureIdentification.usbDelayMS);
+                        Thread.Sleep(delayMS);
+                    } while (!usbDevice.IsOpen);
                 }
             }
-            lastUsbTimestamp = DateTime.Now;
+        }
+
+        void resetUsbClock() { lastUsbTimestamp = DateTime.Now; }
+
+        public bool reconnect()
+        {
+            logger.debug("Spectrometer.reconnect: starting");
+
+            // clear the info so far
+            if (usbDevice != null)
+            {
+                logger.debug("Spectrometer.reconnect: clearing");
+                spectralReader.Dispose();
+                statusReader.Dispose();
+                wholeUsbDevice.ReleaseInterface(0);
+                wholeUsbDevice.Close();
+                usbDevice.Close();
+                UsbDevice.Exit();
+
+                usbDevice = null;
+                wholeUsbDevice = null;
+                statusReader = null;
+                spectralReader = null;
+
+                Thread.Sleep(10);
+            }
+
+            // now start over
+            logger.debug("Spectrometer.reconnect: opening");
+            if (!usbRegistry.Open(out usbDevice))
+            {
+                logger.error("Spectrometer: failed to re-open UsbRegistry");
+                return false;
+            }
+
+            wholeUsbDevice = usbDevice as IUsbDevice;
+            if (!ReferenceEquals(wholeUsbDevice, null))
+            {
+                logger.debug("Spectrometer.reconnect: claiming interface");
+                wholeUsbDevice.SetConfiguration(1);
+                wholeUsbDevice.ClaimInterface(0);
+            }
+            else
+            {
+                logger.debug("Spectrometer.reconnect: WinUSB detected");
+            }
+
+            logger.debug("Spectrometer.reconnect: creating readers");
+            spectralReader = usbDevice.OpenEndpointReader(ReadEndpointID.Ep02);
+            statusReader = usbDevice.OpenEndpointReader(ReadEndpointID.Ep06);
+
+            logger.debug("Spectrometer.reconnect: done");
+            return true;
         }
 
         // TODO: refactor this into Bus, UsbBus etc
@@ -327,11 +386,15 @@ namespace WasatchNET
             lock (commsLock)
             {
                 waitForUsbAvailable();
-                if (expectedSuccessResult != usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead) || bytesRead < bytesToRead)
+                logger.debug("getCmd: about to send request {0} (0x{1:x2}) with index 0x{2:x4}", opcode.ToString(), cmd[opcode], wIndex);
+                bool result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
+                resetUsbClock();
+
+                if (expectedSuccessResult != result || bytesRead < bytesToRead)
                 {
                     logger.error("getCmd: failed to get {0} (0x{1:x2}) with index 0x{2:x4} via DEVICE_TO_HOST ({3} bytes read)",
                         opcode.ToString(), cmd[opcode], wIndex, bytesRead);
-                    return null;
+                    // return null;
                 }
             }
 
@@ -371,22 +434,26 @@ namespace WasatchNET
             if (isARM())
                 expectedSuccessResult = armInvertedRetvals.Contains(opcode) ? false : true;
 
+            bool result = false;
             lock (commsLock)
             {
                 waitForUsbAvailable();
+                logger.debug("getCmd2: about to send request {0} (0x{1:x2}) with index 0x{2:x4}", opcode.ToString(), cmd[opcode], wIndex);
+                result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
+                resetUsbClock();
 
-                bool result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
                 if (result != expectedSuccessResult || bytesRead < len)
                 {
                     logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} bytes read, expected {3}, got {4})",
                         opcode.ToString(), cmd[opcode], bytesRead, expectedSuccessResult, result);
-                    return null;
+                    // return null;
                 }
             }
 
             if (logger.debugEnabled())
             {
-                string prefix = String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex);
+                string prefix = String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->", 
+                    opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult);
                 logger.hexdump(buf, prefix);
             }
 
@@ -420,14 +487,16 @@ namespace WasatchNET
             lock (commsLock)
             {
                 waitForUsbAvailable();
-
                 if (buf != null)
                     logger.hexdump(buf, String.Format("sendCmd({0}, {1}, {2}, {3}): ", opcode, wValue, wIndex, wLength));
-                if (expectedSuccessResult != usbDevice.ControlTransfer(ref setupPacket, buf, wLength, out int bytesWritten))
+                bool result = usbDevice.ControlTransfer(ref setupPacket, buf, wLength, out int bytesWritten);
+                resetUsbClock();
+
+                if (expectedSuccessResult != result)
                 {
                     logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4})",
                         opcode.ToString(), cmd[opcode], wValue, wIndex, wLength);
-                    return false;
+                    // return false;
                 }
             }
             return true;
@@ -1157,7 +1226,7 @@ namespace WasatchNET
             byte[] response = new byte[featureIdentification.spectraBlockSize]; 
 
             double[] spec = new double[pixels];
-            int timeoutMS = (int)100;
+            int timeoutMS = generateSpectrumTimeout();
             int bytesRead = 0;
 
             uint pixel = 0;
@@ -1212,12 +1281,18 @@ namespace WasatchNET
             return spec;
         }
 
+        int generateSpectrumTimeout()
+        {
+            return (int) integrationTimeMS_ + 100;
+        }
+
+        // note: Wasatch.PY and ENLIGHTEN (FeatureIdentificationDevice.get_line) don't do this.
         public bool blockUntilDataReady()
         {
             logger.debug("poll: block until data ready");
 
             // give it an extra 100ms buffer before we give up
-            uint timeoutMS = integrationTimeMS_ + 100;
+            int timeoutMS = generateSpectrumTimeout();
             DateTime expiration = DateTime.Now.AddMilliseconds(timeoutMS);
 
             while (DateTime.Now < expiration)

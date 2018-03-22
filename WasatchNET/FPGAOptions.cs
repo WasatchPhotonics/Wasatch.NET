@@ -40,6 +40,7 @@ namespace WasatchNET
         /// </summary>
         void load()
         {
+            logger.debug("FPGAOptions.load: getting compilation options");
             byte[] buf = spectrometer.getCmd2(Opcodes.READ_COMPILATION_OPTIONS, 2);
             if (buf == null)
                 return;

@@ -21,6 +21,8 @@ namespace WasatchNET
         static Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
 
+        bool suppressErrors = false;
+
         public Logger logger = Logger.getInstance();
         public string version { get; }
 
@@ -52,6 +54,16 @@ namespace WasatchNET
         {
             SortedDictionary<string, List<Spectrometer>> sorted = new SortedDictionary<string, List<Spectrometer>>();
 
+            // This requires libusb-1.0.dll in the path, and generates a slew of errors like:
+            // MonoUsbProfileHandle : ReleaseHandle #9
+            // LibUsbDotNet.LudnMonoLibUsb.MonoUsbDevice[non - UsbEndpointBase]: MonoApiError: GetDescriptor Failed
+            // LibUsbDotNet.LudnMonoLibUsb.MonoUsbDevice[non - UsbEndpointBase]: Win32Error: GetLangIDs
+            //
+            // UsbDevice.ForceLibUsbWinBack = true;  
+
+            // This seems to be mainly for Linux
+            UsbDevice.ForceLegacyLibUsb = false;
+
             UsbDevice.UsbErrorEvent += OnUsbError;
 
             UsbRegDeviceList deviceRegistries = UsbDevice.AllDevices;
@@ -82,6 +94,13 @@ namespace WasatchNET
                             sorted.Add(key, new List<Spectrometer>());
                         sorted[key].Add(spectrometer);
                         logger.debug("openAllSpectrometers: found key {0} ({1})", key, desc);
+
+                        // doesn't help
+                        if (false && spectrometer.isARM())
+                        {
+                            logger.debug("suppressing errors on ARM");
+                            suppressErrors = true;
+                        }
                     }
                     else
                     {
@@ -244,31 +263,74 @@ namespace WasatchNET
         }
 
         void OnUsbError(object sender, UsbError e)
-        {   
-            string prefix = String.Format("OnUsbError: sender {0}", sender.GetType());
+        {
+            if (suppressErrors)
+                return;
+
+            string prefix = String.Format("Driver.OnUsbError: sender {0}", sender.GetType());
             if (sender is UsbEndpointBase)
-            {   
-                logger.error("{0}: Win32ErrorNumber {1} ({2}): {3}",
+            {
+                logger.error("{0} [UsbEndPointBase]: Win32ErrorNumber {1} ({2}): {3}",
                     prefix, e.Win32ErrorNumber, e.Win32ErrorString, e.Description);
-                if (e.Win32ErrorNumber == 31) 
-                {   
+
+                // Magic number 31 came from here: http://libusbdotnet.sourceforge.net/V2/html/718df290-f19a-9033-3a26-1e8917adf15d.htm
+                if (e.Win32ErrorNumber == 31)
+                {
                     UsbDevice usb = sender as UsbDevice;
                     if (usb.IsOpen)
-                    {   
+                    {
                         UsbEndpointBase baseDevice = sender as UsbEndpointBase;
-                        UsbEndpointInfo uei = baseDevice.EndpointInfo;
-                        LibUsbDotNet.Descriptors.UsbEndpointDescriptor ued = uei.Descriptor;
-                        logger.error("{0}: usb device still open on endpoint {1}", prefix, baseDevice.EpNum);
+                        // UsbEndpointInfo uei = baseDevice.EndpointInfo;
+                        // LibUsbDotNet.Descriptors.UsbEndpointDescriptor ued = uei.Descriptor;
+                        logger.error("{0} [UsbEndPointBase]: usb device still open on endpoint {1}", prefix, baseDevice.EpNum);
 
-                        // if (baseDevice.Reset()) { return; }
-                    }   
-                }   
-            }   
+                        if (baseDevice.Reset())
+                        {
+                            // docs say to set e.Handled = true here, but UsbError has no such field;
+                            // was commented out here:
+                            // https://github.com/GeorgeHahn/LibUsbDotNet/blob/master/LibWinUsb/UsbDevice.Error.cs#L49
+                            return;
+                        }
+                    }
+                }
+            }
+            else if (sender is UsbTransfer)
+            {
+                logger.error("{0} [UsbTransfer]: Win32ErrorNumber {1} ({2}): {3}",
+                    prefix, e.Win32ErrorNumber, e.Win32ErrorString, e.Description);
+                UsbEndpointBase ep = ((UsbTransfer)sender).EndpointBase;
+                logger.error("{0} [UsbTransfer]: Endpoint = 0x{1:x2}", prefix, ep.EpNum);
+            } 
+            else if (sender is Type)
+            {
+                Type t = sender as Type;
+                logger.error("{0} [Type]: type = {1}", prefix, t.Name);
+            }
             else
             {   
-                logger.error("{0}: non-UsbEndpointBase Error: {1}", prefix, e.ToString());
-            }   
+                logger.error("{0} [other]: {1}", prefix, e.ToString());
+                // is there anything we should DO here, other than logging it?
+            }
         }   
+
+    //  if ((mSender is UsbEndpointBase)|| (mSender is UsbTransfer))
+    //  {
+    //      UsbEndpointBase ep;
+    //      if (mSender is UsbTransfer)
+    //          ep = ((UsbTransfer) mSender).EndpointBase;
+    //      else
+    //          ep = mSender as UsbEndpointBase;
+
+    //      if (ep.mEpNum != 0)
+    //      {
+    //          senderText = senderText+=string.Format(" Ep 0x{0:X2} ", ep.mEpNum);
+    //      }
+    //  }
+    //  else if (mSender is Type)
+    //  {
+    //      Type t = mSender as Type;
+    //      senderText = senderText += string.Format(" {0} ", t.Name);
+    //  }
     }
 
     /// <summary>
