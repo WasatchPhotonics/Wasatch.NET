@@ -57,7 +57,7 @@
                 firmwarePartNum = "170019";
                 firmwareDesc = "Stroker ARM USB Board";
                 spectraBlockSize = 512;
-                usbDelayMS = 10;
+                // usbDelayMS = 50;
             }
             else
             {

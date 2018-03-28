@@ -41,7 +41,10 @@ namespace WasatchNET
         void load()
         {
             logger.debug("FPGAOptions.load: getting compilation options");
-            byte[] buf = spectrometer.getCmd2(Opcodes.READ_COMPILATION_OPTIONS, 2);
+
+            // NOTE: ENG-0001 says this only returns 2 bytes, but empirical testing on ARM
+            // suggests it actually returns more (yet we only use the first two)
+            byte[] buf = spectrometer.getCmd2(Opcodes.READ_COMPILATION_OPTIONS, 3);
             if (buf == null)
                 return;
 

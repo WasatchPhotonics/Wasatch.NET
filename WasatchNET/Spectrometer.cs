@@ -239,8 +239,11 @@ namespace WasatchNET
                 logger.debug("setting TEC setpoint to {0} deg C", detectorSetpointDegC);
                 setCCDTemperatureSetpointDegC(detectorSetpointDegC);
 
-                logger.debug("enabling detector TEC");
-                setCCDTemperatureEnable(true);
+                if (!isARM())
+                {
+                    logger.debug("enabling detector TEC");
+                    setCCDTemperatureEnable(true);
+                }
             }
 
             return true;
@@ -444,8 +447,8 @@ namespace WasatchNET
 
                 if (result != expectedSuccessResult || bytesRead < len)
                 {
-                    logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} bytes read, expected {3}, got {4})",
-                        opcode.ToString(), cmd[opcode], bytesRead, expectedSuccessResult, result);
+                    logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
+                        opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
                     // return null;
                 }
             }
@@ -611,9 +614,16 @@ namespace WasatchNET
                       + modelConfig.degCToDACCoeffs[2] * degC * degC;
             ushort word = (ushort)dac;
 
+            if (word > 0xfff)
+            {
+                logger.error("Converted raw setpoint {0:x4} from temperature {1:f2} degC exceeds 12-bit",
+                    word, degC);
+                return false;
+            }
+
             logger.debug("setting CCD TEC setpoint to {0:f2} deg C (DAC 0x{1:x4})", degC, word);
 
-            return sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT, word, 0);
+            return sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT, word);
         }
 
         public bool setDFUMode(bool flag)
@@ -738,7 +748,7 @@ namespace WasatchNET
                 return HORIZ_BINNING.NONE;
             }
 
-            byte[] buf = getCmd(Opcodes.GET_EXTERNAL_TRIGGER_OUTPUT, 1);
+            byte[] buf = getCmd(Opcodes.GET_HORIZ_BINNING, 1);
             if (buf != null)
             {
                 switch (buf[0])
@@ -869,7 +879,7 @@ namespace WasatchNET
 
         public ushort getActualFrames()                 { return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
         public float  getCCDGain()                      { return FunkyFloat.toFloat(Unpack.toUshort(getCmd(Opcodes.GET_CCD_GAIN,2)));}
-        public short  getCCDOffset()                    { return Unpack.toShort (getCmd(Opcodes.GET_CCD_OFFSET,                 2)); }
+        public ushort getCCDOffset()                    { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_OFFSET,                 2)); }
         public ushort getCCDSensingThreshold()          { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD,      2)); }
         public bool   getCCDThresholdSensingEnabled()   { return Unpack.toBool  (getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
         public bool   getCCDTempEnabled()               { return Unpack.toBool  (getCmd(Opcodes.GET_CCD_TEMP_ENABLE,            1)); }
@@ -945,7 +955,7 @@ namespace WasatchNET
         /// <returns>whether continuous acquisition is enabled</returns>
         public bool getContinuousCCDEnable()
         {
-            return Unpack.toBool(getCmd(Opcodes.VR_SET_CONTINUOUS_CCD, 1));
+            return Unpack.toBool(getCmd(Opcodes.VR_GET_CONTINUOUS_CCD, 1));
         }
 
         /// <summary>
@@ -1125,7 +1135,7 @@ namespace WasatchNET
         }
 
         public bool setLaserEnable          (bool flag)         { return sendCmd(Opcodes.SET_LASER_ENABLED,              (ushort) (flag ? 1 : 0)); } 
-        public bool setLaserModulationEnable(bool flag)         { return sendCmd(Opcodes.SET_LASER_MOD_ENABLED,          (ushort) (flag ? 1 : 0)); } 
+        public bool setLaserModulationEnable(bool flag)         { return sendCmd(Opcodes.SET_LASER_MOD_ENABLED,          (ushort) (flag ? 1 : 0)); } // missing fake 8-byte buf?
         public bool setSelectedLaser        (byte id)           { return sendCmd(Opcodes.SELECT_LASER,                   id); }
         public bool linkLaserModToIntegrationTime(bool flag)    { return sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0)); } 
 

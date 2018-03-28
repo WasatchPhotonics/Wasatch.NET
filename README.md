@@ -260,23 +260,43 @@ software and connect to your spectrometer.
 
 # Version History
 
-- 2018-03-22 1.0.17 Snapshot before testing with MonoLibUsb
-- 2018-03-13 1.0.16 ARM testing
-- 2018-03-06 1.0.15 internal test build
-- 2018-01-10 1.0.14 added detector TEC setpoint control to WinFormDemo;
-                    fixed dependency path in Setup64
+- 2018-03-28 1.0.18
+    - added draft LibUsbTest
+    - added draft MonoTest
+    - added draft APITest
+- 2018-03-22 1.0.17 
+    - Snapshot before testing with MonoLibUsb
+- 2018-03-13 1.0.16 
+    - ARM testing
+- 2018-03-06 1.0.15 
+    - internal test build
+- 2018-01-10 1.0.14 
+    - added detector TEC setpoint control to WinFormDemo
+    - fixed dependency path in Setup64
 - 2017-11-28 1.0.13 set initial detector TEC setpoint; 
-                    added setHighGainModeEnabled
-- 2017-11-28 1.0.12 updated laser temperature readout
-- 2017-10-26 1.0.11 added setLaserPowerPercentage()
-- 2017-10-25 1.0.10 added setDFUMode() for ARM reflash
-- 2017-10-25 1.0.9  fixed spectrum-save issue
-- 2017-10-24 1.0.8  corrected detector temperature computation;
-                    resolved some multi-spectrometer syncronization issues
-- 2017-10-23 1.0.7  tweaks after multi-spectrometer testing with 1064-L
-- 2017-10-22 1.0.6  added cmd-line args to WinFormDemo
-- 2017-10-11 1.0.5  fixed temperature read-out in degrees
-- 2017-10-11 1.0.4  fixed and restored ModelConfig.write 
-- 2017-10-11 1.0.3  disabled ModelConfig.write due to corruption
-- 2017-10-10 1.0.2  separate 32/64-bit installers
-- 2017-09-29 1.0.1  initial GitHub release (alpha)
+    - added setHighGainModeEnabled
+- 2017-11-28 1.0.12 
+    - updated laser temperature readout
+- 2017-10-26 1.0.11 
+    - added setLaserPowerPercentage()
+- 2017-10-25 1.0.10 
+    - added setDFUMode() for ARM reflash
+- 2017-10-25 1.0.9  
+    - fixed spectrum-save issue
+- 2017-10-24 1.0.8  
+    - corrected detector temperature computation
+    - resolved some multi-spectrometer syncronization issues
+- 2017-10-23 1.0.7  
+    - tweaks after multi-spectrometer testing with 1064-L
+- 2017-10-22 1.0.6  
+    - added cmd-line args to WinFormDemo
+- 2017-10-11 1.0.5  
+    - fixed temperature read-out in degrees
+- 2017-10-11 1.0.4  
+    - fixed and restored ModelConfig.write 
+- 2017-10-11 1.0.3  
+    - disabled ModelConfig.write due to corruption
+- 2017-10-10 1.0.2  
+    - separate 32/64-bit installers
+- 2017-09-29 1.0.1  
+    - initial GitHub release (alpha)
