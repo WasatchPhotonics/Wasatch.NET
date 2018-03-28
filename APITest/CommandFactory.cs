@@ -21,7 +21,6 @@ namespace APITest
             public string wValue { get; set; }
             public string wIndex { get; set; }
             public string Units { get; set; }
-            public IList<double> Range { get; set; }
             public IList<string> Uses { get; set; }
             public IList<string> Enum { get; set; }
             public IList<string> Supports { get; set; }
@@ -101,9 +100,6 @@ namespace APITest
             cmd.readEndpoint = jcmd.ReadEndpoint;
             cmd.makeFakeBufferFromValue = jcmd.MakeFakeBufferFromValue;
             cmd.fakeBufferLength = jcmd.FakeBufferLength;
-
-            if (jcmd.Range != null && jcmd.Range.Count == 2)
-                cmd.range = new Tuple<double, double>(jcmd.Range[0], jcmd.Range[1]);
 
             if (jcmd.Supports != null && jcmd.Supports.Count > 0)
             {
