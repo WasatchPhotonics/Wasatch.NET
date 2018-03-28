@@ -205,6 +205,9 @@ namespace APITest
 
         public void hexdump(byte[] buf, string prefix = "")
         {
+            if (buf == null)
+                return;
+
             string line = "";
             for (int i = 0;  i < buf.Length; i++)
             {

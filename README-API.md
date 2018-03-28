@@ -61,6 +61,9 @@ discovery.
     - e.g. GET\_CCD\_TEMP, GET\_CODE\_REVISION
 - Enabled (bool)
     - whether the API command is supported by current firmware
+- BatchTest (bool, default true)
+    - whether the command should be included in batch testing
+    - e.g. SET\_LASER\_ENABLED
 - Units (string)
     - unit of the relevant value
     - e.g. SET\_INTEGRATION\_TIME, GET\_TRIGGER\_DELAY etc

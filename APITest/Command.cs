@@ -53,6 +53,7 @@ namespace APITest
         public bool armInvertedReturn = false;
         public bool reverse = false;
         public bool enabled = true;
+        public bool batchTest = false;
 
         public string notes;
 

@@ -105,14 +105,6 @@ namespace APITest
                 enableAll();
         }
 
-        void enableAll()
-        {
-            groupBoxCommand.Enabled = 
-                groupBoxScript.Enabled =
-                groupBoxParameters.Enabled =
-                groupBoxProperties.Enabled = true;
-        }
-
         private void buttonLoadAPI_Click(object sender, EventArgs e)
         {
             DialogResult result = openFileDialogAPI.ShowDialog();
@@ -183,23 +175,62 @@ namespace APITest
             }
         }
 
+        private void buttonTestAll_Click(object sender, EventArgs e)
+        {
+            // start with accessors
+            List<string> failures = new List<string>();
+            foreach (KeyValuePair<string, Command> pair in commands)
+            {
+                string name = pair.Key;
+                Command cmd = pair.Value;
+
+                if (cmd.direction == Command.Direction.HOST_TO_DEVICE)
+                    continue;
+
+                if (!cmd.batchTest)
+                {
+                    logger.info("not BatchTest: {0}", name);
+                    continue;
+                }
+
+                currentCommand = cmd;
+                bool success = runCmd();
+
+                if (!success)
+                    failures.Add(name);
+            }
+
+            if (failures.Count == 0)
+                logger.info("All tests passed");
+            else
+                logger.error("The following tests failed: {0}", String.Join(", ", failures));
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Methods
         ////////////////////////////////////////////////////////////////////////
 
-        void runCmd()
+        void enableAll()
+        {
+            groupBoxCommand.Enabled = 
+                groupBoxScript.Enabled =
+                groupBoxParameters.Enabled =
+                groupBoxProperties.Enabled = true;
+        }
+
+        bool runCmd()
         {
             if (currentCommand == null)
-                return;
+                return false;
 
             if (!isSupported())
             {
                 logger.error("{0} is not supported on this spectrometer", currentCommand.name);
-                return;
+                return false;
             }
 
             UsbSetupPacket packet = createUsbSetupPacket();
-            logger.info("running: {0}", stringify(packet));
+            logger.debug("running: {0}", stringify(packet));
 
             bool expectedResult = true;
             if (checkBoxUseARM.Checked && currentCommand.armInvertedReturn)
@@ -225,7 +256,7 @@ namespace APITest
                 else if (packet.Length > 0)
                 {
                     logger.error("run not implemented: {0}", currentCommand.name);
-                    return; // not yet setup to handle SET_MODEL_CONFIG_REAL
+                    return false; // not yet setup to handle SET_MODEL_CONFIG_REAL
                 }
             }
             int bufLen = buf == null ? 0 : buf.Length;
@@ -243,6 +274,8 @@ namespace APITest
             // dump received data
             if (currentCommand.direction == Command.Direction.DEVICE_TO_HOST)
                 logger.hexdump(buf, String.Format("{0} << ", currentCommand.name));
+
+            return ok == expectedResult;
         }
 
         string stringify(UsbSetupPacket packet)

@@ -89,6 +89,7 @@
             this.openFileDialogAPI = new System.Windows.Forms.OpenFileDialog();
             this.labelReadEndpoint = new System.Windows.Forms.Label();
             this.label15 = new System.Windows.Forms.Label();
+            this.buttonTestAll = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -646,6 +647,7 @@
             // 
             // groupBoxCommand
             // 
+            this.groupBoxCommand.Controls.Add(this.buttonTestAll);
             this.groupBoxCommand.Controls.Add(this.buttonAddToScript);
             this.groupBoxCommand.Controls.Add(this.buttonRunNow);
             this.groupBoxCommand.Controls.Add(this.comboBoxCommand);
@@ -812,6 +814,16 @@
             this.label15.TabIndex = 39;
             this.label15.Text = "Read Endpoint:";
             // 
+            // buttonTestAll
+            // 
+            this.buttonTestAll.Location = new System.Drawing.Point(179, 46);
+            this.buttonTestAll.Name = "buttonTestAll";
+            this.buttonTestAll.Size = new System.Drawing.Size(75, 23);
+            this.buttonTestAll.TabIndex = 3;
+            this.buttonTestAll.Text = "Test All";
+            this.buttonTestAll.UseVisualStyleBackColor = true;
+            this.buttonTestAll.Click += new System.EventHandler(this.buttonTestAll_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -920,6 +932,7 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label labelReadEndpoint;
         private System.Windows.Forms.Label label15;
+        private System.Windows.Forms.Button buttonTestAll;
     }
 }
 

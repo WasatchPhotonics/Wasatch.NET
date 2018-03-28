@@ -32,7 +32,8 @@ namespace APITest
             public int FakeBufferLength { get; set; }
             public int ReadEndpoint { get; set; }
             public bool Reverse { get; set; }
-            public bool Enabled { get; set; }
+            public bool Enabled { get; set; } = true;
+            public bool BatchTest { get; set; } = true;
             public string Notes { get; set; }
         }
 
@@ -100,6 +101,7 @@ namespace APITest
             cmd.readEndpoint = jcmd.ReadEndpoint;
             cmd.makeFakeBufferFromValue = jcmd.MakeFakeBufferFromValue;
             cmd.fakeBufferLength = jcmd.FakeBufferLength;
+            cmd.batchTest = jcmd.BatchTest;
 
             if (jcmd.Supports != null && jcmd.Supports.Count > 0)
             {
