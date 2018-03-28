@@ -192,6 +192,12 @@ namespace APITest
             if (currentCommand == null)
                 return;
 
+            if (!isSupported())
+            {
+                logger.error("{0} is not supported on this spectrometer", currentCommand.name);
+                return;
+            }
+
             UsbSetupPacket packet = createUsbSetupPacket();
             logger.info("running: {0}", stringify(packet));
 
@@ -308,31 +314,7 @@ namespace APITest
                 labelExpectedResult.Text = true.ToString();
             }
 
-            // This doesn't handle all possible permutations
-            bool supported = true;
-            if (currentCommand.supportsBoards != null)
-            {
-                supported = false;
-
-                // qualify ARM-vs-FX2
-                if (checkBoxUseARM.Checked)
-                {
-                    // qualify if ARM and ARM is supported
-                    if (currentCommand.supportsBoards.Contains("ARM"))
-                        supported = true;
-                }
-                else
-                {
-                    // qualify if not ARM and FX2 is supported
-                    if (currentCommand.supportsBoards.Contains("FX2"))
-                        supported = true;
-                }
-
-                // qualify NIR-vs-silicon
-                if (currentCommand.supportsBoards.Contains("InGaAs"))
-                    supported = isInGaAs;
-            }
-            labelSupported.Text = supported.ToString();
+            labelSupported.Text = isSupported().ToString();
 
             // enums
             if (currentCommand.enumValues != null)
@@ -358,6 +340,26 @@ namespace APITest
 
             // notes
             textBoxNotes.Text = currentCommand.notes;
+        }
+
+        bool isSupported()
+        {
+            if (currentCommand.supportsBoards == null || currentCommand.supportsBoards.Count == 0)
+                return true; // command supported on all platforms
+
+            if (checkBoxUseARM.Checked && currentCommand.supportsBoards.Contains("ARM"))
+                return true; 
+
+            if (!checkBoxUseARM.Checked && currentCommand.supportsBoards.Contains("FX2"))
+                return true;
+
+            if (isInGaAs && currentCommand.supportsBoards.Contains("InGaAs"))
+                return true;
+
+            if (!isInGaAs && currentCommand.supportsBoards.Contains("Silicon"))
+                return true;
+
+            return false;
         }
 
         void OnUsbError(object sender, UsbError e)

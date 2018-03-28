@@ -43,7 +43,17 @@
     "OPT_LASER":                                { "Direction": "DEVICE_TO_HOST", "Opcode": "0xFF", "Type": "Enum",    "Length": 1, "wValue": "0x08", "Enum": [ "NONE", "INTERNAL", "EXTERNAL" ] },
     "OPT_LASER_CONTROL":                        { "Direction": "DEVICE_TO_HOST", "Opcode": "0xFF", "Type": "Enum",    "Length": 1, "wValue": "0x09", "Enum": [ "MODULATION", "TRANSITION_POINTS", "RAMPING" ] },
     "POLL_DATA":                                { "Direction": "DEVICE_TO_HOST", "Opcode": "0xD4", "Type": "Uint32",  "Length": 4 },
-    "READ_COMPILATION_OPTIONS":                 { "Direction": "DEVICE_TO_HOST", "Opcode": "0xFF", "Type": "Uint16",  "Length": 2, "wValue": "0x04", "ReadBackARM": 2 },
+
+    "READ_COMPILATION_OPTIONS": { 
+        "Direction": "DEVICE_TO_HOST", 
+        "Opcode": "0xFF", 
+        "Type": "Uint16",  
+        "Length": 2, 
+        "wValue": "0x04", 
+        "Supports": [ "FX2" ], 
+        "Notes": "TODO: discussing with Jason" 
+    },
+
     "SELECT_HORIZ_BINNING":                     { "Direction": "HOST_TO_DEVICE", "Opcode": "0xB8", "Type": "Enum",    "Supports": [ "ARM" ], "Enum": ["NONE", "TWO_PIXEL", "FOUR_PIXEL" ] },
     "SELECT_LASER":                             { "Direction": "HOST_TO_DEVICE", "Opcode": "0xED", "Type": "Uint16",  "ARMInvertedReturn": true, "Enabled": false },
     "SET_CCD_GAIN":                             { "Direction": "HOST_TO_DEVICE", "Opcode": "0xB7", "Type": "Float16", "ARMInvertedReturn": true, "Notes": "Takes an odd 16-bit half-precision float where MSB is the integral part and LSB is fractional part" },
