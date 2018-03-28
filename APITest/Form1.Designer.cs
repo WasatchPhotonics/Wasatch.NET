@@ -69,13 +69,11 @@
             this.textBoxParam1 = new System.Windows.Forms.TextBox();
             this.numericUpDownDelayMS = new System.Windows.Forms.NumericUpDown();
             this.numericUpDownCount = new System.Windows.Forms.NumericUpDown();
-            this.numericUpDownBufferLength = new System.Windows.Forms.NumericUpDown();
-            this.label9 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.groupBoxCommand = new System.Windows.Forms.GroupBox();
             this.buttonAddToScript = new System.Windows.Forms.Button();
             this.buttonRunNow = new System.Windows.Forms.Button();
             this.comboBoxCommand = new System.Windows.Forms.ComboBox();
@@ -110,8 +108,7 @@
             this.groupBox3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDelayMS)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownCount)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBufferLength)).BeginInit();
-            this.groupBox2.SuspendLayout();
+            this.groupBoxCommand.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerScriptVsControls)).BeginInit();
             this.splitContainerScriptVsControls.Panel1.SuspendLayout();
             this.splitContainerScriptVsControls.Panel2.SuspendLayout();
@@ -184,6 +181,7 @@
             this.checkBoxVerbose.TabIndex = 3;
             this.checkBoxVerbose.Text = "Verbose";
             this.checkBoxVerbose.UseVisualStyleBackColor = true;
+            this.checkBoxVerbose.CheckedChanged += new System.EventHandler(this.checkBoxVerbose_CheckedChanged);
             // 
             // checkBoxUseARM
             // 
@@ -229,7 +227,7 @@
             // 
             this.splitContainerCommandsVsScript.Panel1.Controls.Add(this.groupBoxProperties);
             this.splitContainerCommandsVsScript.Panel1.Controls.Add(this.groupBoxParameters);
-            this.splitContainerCommandsVsScript.Panel1.Controls.Add(this.groupBox2);
+            this.splitContainerCommandsVsScript.Panel1.Controls.Add(this.groupBoxCommand);
             // 
             // splitContainerCommandsVsScript.Panel2
             // 
@@ -266,6 +264,7 @@
             this.groupBoxProperties.Controls.Add(this.label3);
             this.groupBoxProperties.Controls.Add(this.labelDirection);
             this.groupBoxProperties.Controls.Add(this.labelOpcode);
+            this.groupBoxProperties.Enabled = false;
             this.groupBoxProperties.Location = new System.Drawing.Point(3, 213);
             this.groupBoxProperties.Name = "groupBoxProperties";
             this.groupBoxProperties.Size = new System.Drawing.Size(335, 166);
@@ -495,12 +494,11 @@
             this.groupBoxParameters.Controls.Add(this.groupBox3);
             this.groupBoxParameters.Controls.Add(this.numericUpDownDelayMS);
             this.groupBoxParameters.Controls.Add(this.numericUpDownCount);
-            this.groupBoxParameters.Controls.Add(this.numericUpDownBufferLength);
-            this.groupBoxParameters.Controls.Add(this.label9);
             this.groupBoxParameters.Controls.Add(this.label7);
             this.groupBoxParameters.Controls.Add(this.label8);
             this.groupBoxParameters.Controls.Add(this.label4);
             this.groupBoxParameters.Controls.Add(this.label2);
+            this.groupBoxParameters.Enabled = false;
             this.groupBoxParameters.Location = new System.Drawing.Point(3, 85);
             this.groupBoxParameters.Name = "groupBoxParameters";
             this.groupBoxParameters.Size = new System.Drawing.Size(335, 122);
@@ -511,7 +509,7 @@
             // numericUpDownWIndex
             // 
             this.numericUpDownWIndex.Hexadecimal = true;
-            this.numericUpDownWIndex.Location = new System.Drawing.Point(62, 52);
+            this.numericUpDownWIndex.Location = new System.Drawing.Point(69, 53);
             this.numericUpDownWIndex.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -530,7 +528,7 @@
             // numericUpDownWValue
             // 
             this.numericUpDownWValue.Hexadecimal = true;
-            this.numericUpDownWValue.Location = new System.Drawing.Point(63, 26);
+            this.numericUpDownWValue.Location = new System.Drawing.Point(69, 26);
             this.numericUpDownWValue.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -550,7 +548,7 @@
             // 
             this.groupBox3.Controls.Add(this.comboBoxEnum);
             this.groupBox3.Controls.Add(this.textBoxParam1);
-            this.groupBox3.Location = new System.Drawing.Point(115, 7);
+            this.groupBox3.Location = new System.Drawing.Point(120, 7);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(116, 70);
             this.groupBox3.TabIndex = 20;
@@ -576,7 +574,7 @@
             // 
             // numericUpDownDelayMS
             // 
-            this.numericUpDownDelayMS.Location = new System.Drawing.Point(169, 78);
+            this.numericUpDownDelayMS.Location = new System.Drawing.Point(179, 78);
             this.numericUpDownDelayMS.Maximum = new decimal(new int[] {
             1000,
             0,
@@ -589,7 +587,7 @@
             // 
             // numericUpDownCount
             // 
-            this.numericUpDownCount.Location = new System.Drawing.Point(116, 78);
+            this.numericUpDownCount.Location = new System.Drawing.Point(126, 78);
             this.numericUpDownCount.Maximum = new decimal(new int[] {
             5000,
             0,
@@ -610,27 +608,10 @@
             0,
             0});
             // 
-            // numericUpDownBufferLength
-            // 
-            this.numericUpDownBufferLength.Location = new System.Drawing.Point(64, 78);
-            this.numericUpDownBufferLength.Name = "numericUpDownBufferLength";
-            this.numericUpDownBufferLength.Size = new System.Drawing.Size(46, 20);
-            this.numericUpDownBufferLength.TabIndex = 16;
-            this.numericUpDownBufferLength.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(67, 101);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(40, 13);
-            this.label9.TabIndex = 15;
-            this.label9.Text = "bufLen";
-            // 
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(118, 101);
+            this.label7.Location = new System.Drawing.Point(128, 101);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(35, 13);
             this.label7.TabIndex = 13;
@@ -639,7 +620,7 @@
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(165, 101);
+            this.label8.Location = new System.Drawing.Point(175, 101);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(56, 13);
             this.label8.TabIndex = 11;
@@ -648,32 +629,33 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(14, 55);
+            this.label4.Location = new System.Drawing.Point(17, 55);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(41, 13);
+            this.label4.Size = new System.Drawing.Size(55, 13);
             this.label4.TabIndex = 5;
-            this.label4.Text = "wIndex";
+            this.label4.Text = "wIndex 0x";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(14, 29);
+            this.label2.Location = new System.Drawing.Point(16, 29);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(42, 13);
+            this.label2.Size = new System.Drawing.Size(56, 13);
             this.label2.TabIndex = 1;
-            this.label2.Text = "wValue";
+            this.label2.Text = "wValue 0x";
             // 
-            // groupBox2
+            // groupBoxCommand
             // 
-            this.groupBox2.Controls.Add(this.buttonAddToScript);
-            this.groupBox2.Controls.Add(this.buttonRunNow);
-            this.groupBox2.Controls.Add(this.comboBoxCommand);
-            this.groupBox2.Location = new System.Drawing.Point(3, 3);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(335, 76);
-            this.groupBox2.TabIndex = 0;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Command";
+            this.groupBoxCommand.Controls.Add(this.buttonAddToScript);
+            this.groupBoxCommand.Controls.Add(this.buttonRunNow);
+            this.groupBoxCommand.Controls.Add(this.comboBoxCommand);
+            this.groupBoxCommand.Enabled = false;
+            this.groupBoxCommand.Location = new System.Drawing.Point(3, 3);
+            this.groupBoxCommand.Name = "groupBoxCommand";
+            this.groupBoxCommand.Size = new System.Drawing.Size(335, 76);
+            this.groupBoxCommand.TabIndex = 0;
+            this.groupBoxCommand.TabStop = false;
+            this.groupBoxCommand.Text = "Command";
             // 
             // buttonAddToScript
             // 
@@ -693,6 +675,7 @@
             this.buttonRunNow.TabIndex = 1;
             this.buttonRunNow.Text = "Run Now";
             this.buttonRunNow.UseVisualStyleBackColor = true;
+            this.buttonRunNow.Click += new System.EventHandler(this.buttonRunNow_Click);
             // 
             // comboBoxCommand
             // 
@@ -735,6 +718,7 @@
             // textBoxScript
             // 
             this.textBoxScript.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.textBoxScript.Font = new System.Drawing.Font("Lucida Console", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBoxScript.Location = new System.Drawing.Point(3, 16);
             this.textBoxScript.Multiline = true;
             this.textBoxScript.Name = "textBoxScript";
@@ -748,6 +732,7 @@
             this.groupBoxScriptControls.Controls.Add(this.buttonSaveScript);
             this.groupBoxScriptControls.Controls.Add(this.buttonRunScript);
             this.groupBoxScriptControls.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBoxScriptControls.Enabled = false;
             this.groupBoxScriptControls.Location = new System.Drawing.Point(0, 0);
             this.groupBoxScriptControls.Name = "groupBoxScriptControls";
             this.groupBoxScriptControls.Size = new System.Drawing.Size(680, 51);
@@ -796,6 +781,7 @@
             // textBoxEventLog
             // 
             this.textBoxEventLog.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.textBoxEventLog.Font = new System.Drawing.Font("Lucida Console", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBoxEventLog.Location = new System.Drawing.Point(3, 16);
             this.textBoxEventLog.Multiline = true;
             this.textBoxEventLog.Name = "textBoxEventLog";
@@ -857,8 +843,7 @@
             this.groupBox3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDelayMS)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownCount)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBufferLength)).EndInit();
-            this.groupBox2.ResumeLayout(false);
+            this.groupBoxCommand.ResumeLayout(false);
             this.splitContainerScriptVsControls.Panel1.ResumeLayout(false);
             this.splitContainerScriptVsControls.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerScriptVsControls)).EndInit();
@@ -891,7 +876,7 @@
         private System.Windows.Forms.Label labelOpcode;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.GroupBox groupBoxCommand;
         private System.Windows.Forms.Button buttonAddToScript;
         private System.Windows.Forms.Button buttonRunNow;
         private System.Windows.Forms.ComboBox comboBoxCommand;
@@ -900,8 +885,6 @@
         private System.Windows.Forms.GroupBox groupBoxScriptControls;
         private System.Windows.Forms.NumericUpDown numericUpDownDelayMS;
         private System.Windows.Forms.NumericUpDown numericUpDownCount;
-        private System.Windows.Forms.NumericUpDown numericUpDownBufferLength;
-        private System.Windows.Forms.Label label9;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.Label labelUnits;

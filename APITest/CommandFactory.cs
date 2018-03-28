@@ -136,6 +136,7 @@ namespace APITest
             else if (s == "UINT8") return Command.DataType.UINT8;
             else if (s == "UINT12") return Command.DataType.UINT12;
             else if (s == "UINT16") return Command.DataType.UINT16;
+            else if (s == "UINT24") return Command.DataType.UINT24;
             else if (s == "UINT32") return Command.DataType.UINT32;
             else if (s == "UINT40") return Command.DataType.UINT40;
             else if (s == "UINT16[]") return Command.DataType.UINT16_ARRAY;

@@ -14,14 +14,15 @@ namespace APITest
             BOOL,
             BYTE_ARRAY,
             ENUM,
-            FLOAT16,          // "FunkyFloat" with MSB integer and LSB fraction
+            FLOAT16,
             STRING,
             UINT8,
-            UINT12,            // 12-bit DAC/ADC
+            UINT12,
             UINT16,
             UINT16_ARRAY,
+            UINT24,
             UINT32,
-            UINT40,            // 5-byte values
+            UINT40
         };
 
         public enum UsableFields { WVALUE, WINDEX };
@@ -42,7 +43,6 @@ namespace APITest
 
         public HashSet<UsableFields> usesFields;
         public HashSet<string> supportsBoards; // make HashSet of enum?
-        public Tuple<double, double> range;
         public List<string> enumValues;
 
         public UInt16 wValue = 0;

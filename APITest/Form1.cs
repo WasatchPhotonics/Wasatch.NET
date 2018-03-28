@@ -5,7 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 using LibUsbDotNet;
 using LibUsbDotNet.Info;
@@ -41,6 +41,11 @@ namespace APITest
         ////////////////////////////////////////////////////////////////////////
         // Callbacks
         ////////////////////////////////////////////////////////////////////////
+
+        private void checkBoxVerbose_CheckedChanged(object sender, EventArgs e)
+        {
+            logger.level = checkBoxVerbose.Checked ? Logger.LogLevel.DEBUG : Logger.LogLevel.INFO;
+        }
 
         private void buttonInitialize_Click(object sender, EventArgs e)
         {
@@ -95,9 +100,17 @@ namespace APITest
             if (myUsbRegistry.Pid == 0x2000)
                 isInGaAs = true;
 
-            buttonRunNow.Enabled = 
-            buttonRunScript.Enabled = true;
             buttonInitialize.Enabled = false;
+            if (commands != null)
+                enableAll();
+        }
+
+        void enableAll()
+        {
+            groupBoxCommand.Enabled = 
+                groupBoxScript.Enabled =
+                groupBoxParameters.Enabled =
+                groupBoxProperties.Enabled = true;
         }
 
         private void buttonLoadAPI_Click(object sender, EventArgs e)
@@ -114,6 +127,9 @@ namespace APITest
             comboBoxCommand.SelectedIndex = 0;
 
             buttonLoadAPI.Enabled = false;
+
+            if (usbDevice != null)
+                enableAll();
         }
 
         private void comboBoxCommand_SelectedIndexChanged(object sender, EventArgs e)
@@ -145,6 +161,95 @@ namespace APITest
                 logger.error("Param1 unimplemented for {0}", currentCommand.name);
         }
 
+        private void buttonAddToScript_Click(object sender, EventArgs e)
+        {
+            if (currentCommand == null)
+                return;
+
+            UsbSetupPacket packet = createUsbSetupPacket();
+            string line = stringify(packet);
+            textBoxScript.AppendText(String.Format("{0}{1}", line, Environment.NewLine));
+        }
+
+        private void buttonRunNow_Click(object sender, EventArgs e)
+        {
+            int count = (int) numericUpDownCount.Value;
+            int ms = (int) numericUpDownDelayMS.Value;
+            for (int i = 0; i < count; i++)
+            {
+                runCmd();
+                if (i + 1 < count)
+                    Thread.Sleep(ms);
+            }
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Methods
+        ////////////////////////////////////////////////////////////////////////
+
+        void runCmd()
+        {
+            if (currentCommand == null)
+                return;
+
+            UsbSetupPacket packet = createUsbSetupPacket();
+            logger.info("running: {0}", stringify(packet));
+
+            bool expectedResult = true;
+            if (checkBoxUseARM.Checked && currentCommand.armInvertedReturn)
+                expectedResult = false;
+
+            string verb;
+
+            // allocate buffer
+            byte[] buf = null;
+            if (currentCommand.direction == Command.Direction.DEVICE_TO_HOST)
+            {
+                verb = "read";
+                if (currentCommand.length > 0)
+                    buf = new byte[currentCommand.length];
+            }
+            else
+            {
+                verb = "wrote";
+                if (currentCommand.fakeBufferLength > 0)
+                    buf = new byte[currentCommand.fakeBufferLength];
+                else if (currentCommand.makeFakeBufferFromValue)
+                    buf = new byte[currentCommand.wValue];
+                else if (packet.Length > 0)
+                {
+                    logger.error("run not implemented: {0}", currentCommand.name);
+                    return; // not yet setup to handle SET_MODEL_CONFIG_REAL
+                }
+            }
+            int bufLen = buf == null ? 0 : buf.Length;
+
+            // execute transfer
+            bool ok = usbDevice.ControlTransfer(ref packet, buf, bufLen, out int bytesXfer);
+
+            // log result
+            logger.debug("{0} {1} bytes; result = {2} (expected {3})", verb, bytesXfer, ok, expectedResult);
+            if (ok == expectedResult)
+                logger.info("{0} passed", currentCommand.name);
+            else
+                logger.error("{0} failed", currentCommand.name);
+
+            // dump received data
+            if (currentCommand.direction == Command.Direction.DEVICE_TO_HOST)
+                logger.hexdump(buf, String.Format("{0} << ", currentCommand.name));
+        }
+
+        string stringify(UsbSetupPacket packet)
+        {
+            return String.Format("{0}(bRequestType: 0x{1:x2}, bRequest: 0x{2:x4}, wValue: 0x{3:x4}, wIndex: 0x{4:x4}, wLength: 0x{5:x4})",
+                currentCommand.name,
+                packet.RequestType,
+                packet.Request,
+                packet.Value,
+                packet.Index,
+                packet.Length);
+        }
+
         UsbSetupPacket createUsbSetupPacket()
         {
             byte bRequestType = Util.requestType(currentCommand.direction);
@@ -160,28 +265,6 @@ namespace APITest
 
             return new UsbSetupPacket(bRequestType, bRequest, wValue, wIndex, wLength);
         }
-
-        private void buttonAddToScript_Click(object sender, EventArgs e)
-        {
-            if (currentCommand == null)
-                return;
-
-            UsbSetupPacket packet = createUsbSetupPacket();
-
-            string line = String.Format("{0}(bRequestType: 0x{1}, bRequest: 0x{2:x2}, wValue: {3}, wIndex: {4}, wLength: 0x{5:x4})",
-                    currentCommand.name,
-                    packet.RequestType,
-                    packet.Request,
-                    packet.Value,
-                    packet.Index,
-                    packet.Length);
-
-            textBoxScript.AppendText(String.Format("{0}{1}", line, Environment.NewLine));
-        }
-
-        ////////////////////////////////////////////////////////////////////////
-        // Methods
-        ////////////////////////////////////////////////////////////////////////
 
         void clearCommandGUI()
         {

@@ -30,6 +30,8 @@ discovery.
     - only relevant in host-to-device
 - Length (int)
     - size of the buffer to send (pre-filled with nulls) or expect to receive
+    - this should probably be considered required for DEVICE\_TO\_HOST, although
+      ACQUIRE\_CCD is an exception
 - ReadBack (int)
     - how many bytes the host should read back from the device following a 
       device-to-host transfer, if different from Length
@@ -102,6 +104,10 @@ These are the supported datatypes:
     - longer integers used for laser timing which span wValue, wIndex and 
       finally MSB in an extra payload byte
     - e.g. GET\_LASER\_MOD\_DURATION
+
+# Backlog
+
+- currently no way to enter and send buffers like SET\_MODEL\_CONFIG\_REAL
 
 # History
 
