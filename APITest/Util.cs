@@ -10,9 +10,13 @@ namespace APITest
     {
         public static ushort fromHex(string s)
         {
-            if (s != null && s.StartsWith("0x"))
+            if (s == null)
+                return 0;
+
+            if (s.StartsWith("0x"))
                 return ushort.Parse(s.Substring(2), System.Globalization.NumberStyles.HexNumber);
-            return 0;
+
+            return ushort.Parse(s);
         }
 
         public static byte requestType(Command.Direction d)
