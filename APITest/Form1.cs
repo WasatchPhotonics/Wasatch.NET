@@ -230,7 +230,6 @@ namespace APITest
             }
 
             UsbSetupPacket packet = createUsbSetupPacket();
-            logger.debug("running: {0}", stringify(packet));
 
             bool expectedResult = true;
             if (checkBoxUseARM.Checked && currentCommand.armInvertedReturn)
@@ -243,8 +242,8 @@ namespace APITest
             if (currentCommand.direction == Command.Direction.DEVICE_TO_HOST)
             {
                 verb = "read";
-                if (currentCommand.length > 0)
-                    buf = new byte[currentCommand.length];
+                if (packet.Length > 0)
+                    buf = new byte[packet.Length];
             }
             else
             {
@@ -262,6 +261,7 @@ namespace APITest
             int bufLen = buf == null ? 0 : buf.Length;
 
             // execute transfer
+            logger.debug("running: {0} {1} with {2} bufLen", verb, stringify(packet), bufLen);
             bool ok = usbDevice.ControlTransfer(ref packet, buf, bufLen, out int bytesXfer);
 
             // log result
@@ -273,9 +273,43 @@ namespace APITest
 
             // dump received data
             if (currentCommand.direction == Command.Direction.DEVICE_TO_HOST)
+            {
+                // truncate received data to needed length
+                if (currentCommand.length > 0 && bufLen > currentCommand.length)
+                {
+                    byte[] tmp = new byte[currentCommand.length];
+                    Array.Copy(buf, tmp, tmp.Length);
+                    buf = tmp;
+                }
+
+                // if we were returning the response back to the caller, we'd return buf
                 logger.hexdump(buf, String.Format("{0} << ", currentCommand.name));
+            }
 
             return ok == expectedResult;
+        }
+
+        UsbSetupPacket createUsbSetupPacket()
+        {
+            byte bRequestType = Util.requestType(currentCommand.direction);
+            byte bRequest = currentCommand.opcode;
+            int wValue = (int) numericUpDownWValue.Value;
+            int wIndex = (int) numericUpDownWIndex.Value;
+
+            int fakeBufferLength = currentCommand.fakeBufferLength;
+
+            // on ARM, always send at least 8 bytes?
+            // http://www.beyondlogic.org/usbnutshell/usb4.shtml
+            if (checkBoxUseARM.Checked && fakeBufferLength == 0)
+                fakeBufferLength = 8;
+
+            int wLength = 0;
+            if (currentCommand.makeFakeBufferFromValue)
+                wLength = wValue;
+            else if (fakeBufferLength > 0)
+                wLength = fakeBufferLength;
+
+            return new UsbSetupPacket(bRequestType, bRequest, wValue, wIndex, wLength);
         }
 
         string stringify(UsbSetupPacket packet)
@@ -287,22 +321,6 @@ namespace APITest
                 packet.Value,
                 packet.Index,
                 packet.Length);
-        }
-
-        UsbSetupPacket createUsbSetupPacket()
-        {
-            byte bRequestType = Util.requestType(currentCommand.direction);
-            byte bRequest = currentCommand.opcode;
-            int wValue = (int) numericUpDownWValue.Value;
-            int wIndex = (int) numericUpDownWIndex.Value;
-
-            int wLength = 0;
-            if (currentCommand.fakeBufferLength > 0)
-                wLength = currentCommand.fakeBufferLength;
-            else if (currentCommand.makeFakeBufferFromValue)
-                wLength = wValue;
-
-            return new UsbSetupPacket(bRequestType, bRequest, wValue, wIndex, wLength);
         }
 
         void clearCommandGUI()

@@ -43,17 +43,7 @@
     "OPT_LASER":                                { "Direction": "DEVICE_TO_HOST", "Opcode": "0xFF", "Type": "Enum",    "Length": 1, "wValue": "0x08", "Enum": [ "NONE", "INTERNAL", "EXTERNAL" ] },
     "OPT_LASER_CONTROL":                        { "Direction": "DEVICE_TO_HOST", "Opcode": "0xFF", "Type": "Enum",    "Length": 1, "wValue": "0x09", "Enum": [ "MODULATION", "TRANSITION_POINTS", "RAMPING" ] },
     "POLL_DATA":                                { "Direction": "DEVICE_TO_HOST", "Opcode": "0xD4", "Type": "Uint32",  "Length": 4 },
-
-    "READ_COMPILATION_OPTIONS": { 
-        "Direction": "DEVICE_TO_HOST", 
-        "Opcode": "0xFF", 
-        "Type": "Uint16",  
-        "Length": 2, 
-        "wValue": "0x04", 
-        "Supports": [ "FX2" ], 
-        "Notes": "TODO: discussing with Jason" 
-    },
-
+    "READ_COMPILATION_OPTIONS":                 { "Direction": "DEVICE_TO_HOST", "Opcode": "0xFF", "Type": "Uint16",  "Length": 2, "wValue": "0x04" },
     "SELECT_HORIZ_BINNING":                     { "Direction": "HOST_TO_DEVICE", "Opcode": "0xB8", "Type": "Enum",    "Supports": [ "ARM" ], "Enum": ["NONE", "TWO_PIXEL", "FOUR_PIXEL" ] },
     "SELECT_LASER":                             { "Direction": "HOST_TO_DEVICE", "Opcode": "0xED", "Type": "Uint16",  "ARMInvertedReturn": true, "Enabled": false },
     "SET_CCD_GAIN":                             { "Direction": "HOST_TO_DEVICE", "Opcode": "0xB7", "Type": "Float16", "ARMInvertedReturn": true, "Notes": "Takes an odd 16-bit half-precision float where MSB is the integral part and LSB is fractional part" },
@@ -70,7 +60,7 @@
     "SET_INTEGRATION_TIME":                     { "Direction": "HOST_TO_DEVICE", "Opcode": "0xB2", "Type": "Uint32",  "Units" : "ms", "Uses" : [ "wValue", "wIndex" ], "ARMInvertedReturn": true, "Notes": "Integration time in ms or 10ms (see OPT_INT_TIME_RES) sent as 32-bit word: LSW as wValue, MSW as wIndex" },
     "SET_LASER_ENABLED":                        { "Direction": "HOST_TO_DEVICE", "Opcode": "0xBE", "Type": "Bool",    "ARMInvertedReturn": true, "BatchTest": false },
     "SET_LASER_MOD_DURATION":                   { "Direction": "HOST_TO_DEVICE", "Opcode": "0xB9", "Type": "Uint40",  "ARMInvertedReturn": true },
-    "SET_LASER_MOD_ENABLED":                    { "Direction": "HOST_TO_DEVICE", "Opcode": "0xBD", "Type": "Bool",    "FakeBufferLength": 8, "ARMInvertedReturn": true },
+    "SET_LASER_MOD_ENABLED":                    { "Direction": "HOST_TO_DEVICE", "Opcode": "0xBD", "Type": "Bool",    "FakeBufferLength": 8, "ARMInvertedReturn": true, "Notes": "MZ: Can we deprecate FakeBufferLength?" },
     "SET_LASER_MOD_PULSE_WIDTH":                { "Direction": "HOST_TO_DEVICE", "Opcode": "0xDB", "Type": "Uint40",  "ARMInvertedReturn": true, "MakeFakeBufferFromValue": true, "Notes": "API Kludge: sending integral width as length of fake buffer" },
     "SET_LASER_RAMPING_MODE":                   { "Direction": "HOST_TO_DEVICE", "Opcode": "0xE9", "Type": "Bool",    "Supports": [ "ARM" ] },
     "SET_LASER_TEMP_SETPOINT":                  { "Direction": "HOST_TO_DEVICE", "Opcode": "0xE7", "Type": "Uint12",  "ARMInvertedReturn": true, "Notes": "Probably unimplemented in firmware?" },

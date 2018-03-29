@@ -260,10 +260,11 @@ software and connect to your spectrometer.
 
 # Version History
 
-- 2018-03-28 1.0.18
+- 2018-xx-xx 1.0.18
     - added draft LibUsbTest
     - added draft MonoTest
-    - added draft APITest
+    - added APITest
+    - fixed READ\_COMPILATION\_OPTIONS on ARM (APITest)
 - 2018-03-22 1.0.17 
     - Snapshot before testing with MonoLibUsb
 - 2018-03-13 1.0.16 
