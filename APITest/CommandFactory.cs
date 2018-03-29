@@ -26,14 +26,15 @@ namespace APITest
             public IList<string> Supports { get; set; }
             public bool MakeFakeBufferFromValue { get; set; }
             public bool ARMInvertedReturn { get; set; }
+            public int DelayMS { get; set; }
             public int ReadBack { get; set; }
-            public int ReadBackARM { get; set; }
             public int ReadBlockSize { get; set; }
             public int FakeBufferLength { get; set; }
             public int ReadEndpoint { get; set; }
             public bool Reverse { get; set; }
             public bool Enabled { get; set; } = true;
             public bool BatchTest { get; set; } = true;
+            public bool BatchTestARM { get; set; } = true;
             public string Notes { get; set; }
         }
 
@@ -92,8 +93,8 @@ namespace APITest
             cmd.units = jcmd.Units;
             cmd.length = jcmd.Length;
             cmd.readBack = jcmd.ReadBack;
-            cmd.readBackARM = jcmd.ReadBackARM;
             cmd.readBlockSize = jcmd.ReadBlockSize;
+            cmd.delayMS = jcmd.DelayMS;
             cmd.enabled = jcmd.Enabled;
             cmd.notes = jcmd.Notes;
             cmd.armInvertedReturn = jcmd.ARMInvertedReturn;
@@ -102,6 +103,7 @@ namespace APITest
             cmd.makeFakeBufferFromValue = jcmd.MakeFakeBufferFromValue;
             cmd.fakeBufferLength = jcmd.FakeBufferLength;
             cmd.batchTest = jcmd.BatchTest;
+            cmd.batchTestARM = jcmd.BatchTestARM;
 
             if (jcmd.Supports != null && jcmd.Supports.Count > 0)
             {

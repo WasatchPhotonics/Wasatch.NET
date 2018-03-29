@@ -37,6 +37,8 @@
             this.label1 = new System.Windows.Forms.Label();
             this.splitContainerCommandsVsScript = new System.Windows.Forms.SplitContainer();
             this.groupBoxProperties = new System.Windows.Forms.GroupBox();
+            this.labelReadEndpoint = new System.Windows.Forms.Label();
+            this.label15 = new System.Windows.Forms.Label();
             this.labelReverse = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
             this.labelSupported = new System.Windows.Forms.Label();
@@ -75,6 +77,8 @@
             this.label2 = new System.Windows.Forms.Label();
             this.groupBoxCommand = new System.Windows.Forms.GroupBox();
             this.buttonAddToScript = new System.Windows.Forms.Button();
+            this.buttonRunNext = new System.Windows.Forms.Button();
+            this.buttonTestAll = new System.Windows.Forms.Button();
             this.buttonRunNow = new System.Windows.Forms.Button();
             this.comboBoxCommand = new System.Windows.Forms.ComboBox();
             this.splitContainerScriptVsControls = new System.Windows.Forms.SplitContainer();
@@ -87,9 +91,8 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.openFileDialogAPI = new System.Windows.Forms.OpenFileDialog();
-            this.labelReadEndpoint = new System.Windows.Forms.Label();
-            this.label15 = new System.Windows.Forms.Label();
-            this.buttonTestAll = new System.Windows.Forms.Button();
+            this.backgroundWorkerTest = new System.ComponentModel.BackgroundWorker();
+            this.checkBoxThreaded = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -148,6 +151,7 @@
             // 
             // splitContainerTitleVsBody.Panel1
             // 
+            this.splitContainerTitleVsBody.Panel1.Controls.Add(this.checkBoxThreaded);
             this.splitContainerTitleVsBody.Panel1.Controls.Add(this.buttonLoadAPI);
             this.splitContainerTitleVsBody.Panel1.Controls.Add(this.checkBoxVerbose);
             this.splitContainerTitleVsBody.Panel1.Controls.Add(this.checkBoxUseARM);
@@ -164,7 +168,7 @@
             // buttonLoadAPI
             // 
             this.buttonLoadAPI.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonLoadAPI.Location = new System.Drawing.Point(730, 12);
+            this.buttonLoadAPI.Location = new System.Drawing.Point(661, 12);
             this.buttonLoadAPI.Name = "buttonLoadAPI";
             this.buttonLoadAPI.Size = new System.Drawing.Size(75, 23);
             this.buttonLoadAPI.TabIndex = 4;
@@ -176,7 +180,7 @@
             // 
             this.checkBoxVerbose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.checkBoxVerbose.AutoSize = true;
-            this.checkBoxVerbose.Location = new System.Drawing.Point(948, 16);
+            this.checkBoxVerbose.Location = new System.Drawing.Point(879, 16);
             this.checkBoxVerbose.Name = "checkBoxVerbose";
             this.checkBoxVerbose.Size = new System.Drawing.Size(65, 17);
             this.checkBoxVerbose.TabIndex = 3;
@@ -188,7 +192,7 @@
             // 
             this.checkBoxUseARM.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.checkBoxUseARM.AutoSize = true;
-            this.checkBoxUseARM.Location = new System.Drawing.Point(892, 16);
+            this.checkBoxUseARM.Location = new System.Drawing.Point(823, 16);
             this.checkBoxUseARM.Name = "checkBoxUseARM";
             this.checkBoxUseARM.Size = new System.Drawing.Size(50, 17);
             this.checkBoxUseARM.TabIndex = 2;
@@ -198,7 +202,7 @@
             // buttonInitialize
             // 
             this.buttonInitialize.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonInitialize.Location = new System.Drawing.Point(811, 12);
+            this.buttonInitialize.Location = new System.Drawing.Point(742, 12);
             this.buttonInitialize.Name = "buttonInitialize";
             this.buttonInitialize.Size = new System.Drawing.Size(75, 23);
             this.buttonInitialize.TabIndex = 1;
@@ -272,6 +276,24 @@
             this.groupBoxProperties.TabIndex = 2;
             this.groupBoxProperties.TabStop = false;
             this.groupBoxProperties.Text = "Properties";
+            // 
+            // labelReadEndpoint
+            // 
+            this.labelReadEndpoint.AutoSize = true;
+            this.labelReadEndpoint.Location = new System.Drawing.Point(255, 81);
+            this.labelReadEndpoint.Name = "labelReadEndpoint";
+            this.labelReadEndpoint.Size = new System.Drawing.Size(13, 13);
+            this.labelReadEndpoint.TabIndex = 38;
+            this.labelReadEndpoint.Text = "0";
+            // 
+            // label15
+            // 
+            this.label15.AutoSize = true;
+            this.label15.Location = new System.Drawing.Point(162, 81);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(81, 13);
+            this.label15.TabIndex = 39;
+            this.label15.Text = "Read Endpoint:";
             // 
             // labelReverse
             // 
@@ -647,8 +669,9 @@
             // 
             // groupBoxCommand
             // 
-            this.groupBoxCommand.Controls.Add(this.buttonTestAll);
             this.groupBoxCommand.Controls.Add(this.buttonAddToScript);
+            this.groupBoxCommand.Controls.Add(this.buttonRunNext);
+            this.groupBoxCommand.Controls.Add(this.buttonTestAll);
             this.groupBoxCommand.Controls.Add(this.buttonRunNow);
             this.groupBoxCommand.Controls.Add(this.comboBoxCommand);
             this.groupBoxCommand.Enabled = false;
@@ -661,13 +684,33 @@
             // 
             // buttonAddToScript
             // 
-            this.buttonAddToScript.Location = new System.Drawing.Point(88, 46);
+            this.buttonAddToScript.Location = new System.Drawing.Point(249, 46);
             this.buttonAddToScript.Name = "buttonAddToScript";
             this.buttonAddToScript.Size = new System.Drawing.Size(84, 23);
             this.buttonAddToScript.TabIndex = 2;
             this.buttonAddToScript.Text = "Add to Script";
             this.buttonAddToScript.UseVisualStyleBackColor = true;
             this.buttonAddToScript.Click += new System.EventHandler(this.buttonAddToScript_Click);
+            // 
+            // buttonRunNext
+            // 
+            this.buttonRunNext.Location = new System.Drawing.Point(87, 46);
+            this.buttonRunNext.Name = "buttonRunNext";
+            this.buttonRunNext.Size = new System.Drawing.Size(75, 23);
+            this.buttonRunNext.TabIndex = 4;
+            this.buttonRunNext.Text = "Test Next";
+            this.buttonRunNext.UseVisualStyleBackColor = true;
+            this.buttonRunNext.Click += new System.EventHandler(this.buttonRunNext_Click);
+            // 
+            // buttonTestAll
+            // 
+            this.buttonTestAll.Location = new System.Drawing.Point(168, 46);
+            this.buttonTestAll.Name = "buttonTestAll";
+            this.buttonTestAll.Size = new System.Drawing.Size(75, 23);
+            this.buttonTestAll.TabIndex = 3;
+            this.buttonTestAll.Text = "Test All";
+            this.buttonTestAll.UseVisualStyleBackColor = true;
+            this.buttonTestAll.Click += new System.EventHandler(this.buttonTestAll_Click);
             // 
             // buttonRunNow
             // 
@@ -691,6 +734,7 @@
             // splitContainerScriptVsControls
             // 
             this.splitContainerScriptVsControls.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainerScriptVsControls.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.splitContainerScriptVsControls.Location = new System.Drawing.Point(0, 0);
             this.splitContainerScriptVsControls.Name = "splitContainerScriptVsControls";
             this.splitContainerScriptVsControls.Orientation = System.Windows.Forms.Orientation.Horizontal;
@@ -796,33 +840,22 @@
             this.openFileDialogAPI.DefaultExt = "json";
             this.openFileDialogAPI.FileName = "api-fid.json";
             // 
-            // labelReadEndpoint
+            // backgroundWorkerTest
             // 
-            this.labelReadEndpoint.AutoSize = true;
-            this.labelReadEndpoint.Location = new System.Drawing.Point(255, 81);
-            this.labelReadEndpoint.Name = "labelReadEndpoint";
-            this.labelReadEndpoint.Size = new System.Drawing.Size(13, 13);
-            this.labelReadEndpoint.TabIndex = 38;
-            this.labelReadEndpoint.Text = "0";
+            this.backgroundWorkerTest.WorkerReportsProgress = true;
+            this.backgroundWorkerTest.WorkerSupportsCancellation = true;
+            this.backgroundWorkerTest.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerTest_DoWork);
+            this.backgroundWorkerTest.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorkerTest_RunWorkerCompleted);
             // 
-            // label15
+            // checkBoxThreaded
             // 
-            this.label15.AutoSize = true;
-            this.label15.Location = new System.Drawing.Point(162, 81);
-            this.label15.Name = "label15";
-            this.label15.Size = new System.Drawing.Size(81, 13);
-            this.label15.TabIndex = 39;
-            this.label15.Text = "Read Endpoint:";
-            // 
-            // buttonTestAll
-            // 
-            this.buttonTestAll.Location = new System.Drawing.Point(179, 46);
-            this.buttonTestAll.Name = "buttonTestAll";
-            this.buttonTestAll.Size = new System.Drawing.Size(75, 23);
-            this.buttonTestAll.TabIndex = 3;
-            this.buttonTestAll.Text = "Test All";
-            this.buttonTestAll.UseVisualStyleBackColor = true;
-            this.buttonTestAll.Click += new System.EventHandler(this.buttonTestAll_Click);
+            this.checkBoxThreaded.AutoSize = true;
+            this.checkBoxThreaded.Location = new System.Drawing.Point(950, 16);
+            this.checkBoxThreaded.Name = "checkBoxThreaded";
+            this.checkBoxThreaded.Size = new System.Drawing.Size(72, 17);
+            this.checkBoxThreaded.TabIndex = 5;
+            this.checkBoxThreaded.Text = "Threaded";
+            this.checkBoxThreaded.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -933,6 +966,9 @@
         private System.Windows.Forms.Label labelReadEndpoint;
         private System.Windows.Forms.Label label15;
         private System.Windows.Forms.Button buttonTestAll;
+        private System.Windows.Forms.Button buttonRunNext;
+        private System.ComponentModel.BackgroundWorker backgroundWorkerTest;
+        private System.Windows.Forms.CheckBox checkBoxThreaded;
     }
 }
 

@@ -210,5 +210,18 @@ namespace WasatchNET
             return clean;
         }
 
+        public static byte[] truncateArray(byte[] src, int len)
+        {
+            if (src == null)
+                return null;
+
+            if (src.Length <= len)
+                return src;
+
+            byte[] tmp = new byte[len];
+            Array.Copy(src, tmp, len);
+            return tmp;
+        }
+
     }
 }

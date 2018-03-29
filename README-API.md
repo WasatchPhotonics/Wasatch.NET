@@ -36,8 +36,6 @@ discovery.
     - how many bytes the host should read back from the device following a 
       device-to-host transfer, if different from Length
     - e.g. GET\_INTEGRATION\_TIME
-- ReadBackARM (int)
-    - overrides ReadBack on ARM architectures, e.g. READ\_COMPILATION\_OPTIONS
 - Supports ([string, ...])
     - list of board and sensor types, including any or all from ["ARM", "FX2", "InGaAs", "Silicon"])
 - Uses ([string, ...])

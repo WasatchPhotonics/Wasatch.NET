@@ -264,7 +264,6 @@ software and connect to your spectrometer.
     - added draft LibUsbTest
     - added draft MonoTest
     - added APITest
-    - fixed READ\_COMPILATION\_OPTIONS on ARM (APITest)
 - 2018-03-22 1.0.17 
     - Snapshot before testing with MonoLibUsb
 - 2018-03-13 1.0.16 

@@ -369,7 +369,9 @@ namespace WasatchNET
         /// <returns>the array of returned bytes (null on error)</returns>
         internal byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
         {
-            int bytesToRead = fullLen == 0 ? len : fullLen;
+            int bytesToRead = Math.Max(len, fullLen);
+            if (isARM()) // ARM should always read at least 8 bytes
+                bytesToRead = Math.Min(8, bytesToRead);
             byte[] buf = new byte[bytesToRead];
 
             UsbSetupPacket setupPacket = new UsbSetupPacket(
@@ -397,23 +399,15 @@ namespace WasatchNET
                 {
                     logger.error("getCmd: failed to get {0} (0x{1:x2}) with index 0x{2:x4} via DEVICE_TO_HOST ({3} bytes read)",
                         opcode.ToString(), cmd[opcode], wIndex, bytesRead);
-                    // return null;
+                    return null;
                 }
             }
 
             if (logger.debugEnabled())
-            {
-                string prefix = String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex);
-                logger.hexdump(buf, prefix);
-            }
-
-            if (fullLen == 0)
-                return buf;
+                logger.hexdump(buf, String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex));
 
             // extract just the bytes we really needed
-            byte[] tmp = new byte[len];
-            Array.Copy(buf, tmp, len);
-            return tmp;
+            return Util.truncateArray(buf, len);
         }
 
         /// <summary>
@@ -424,7 +418,10 @@ namespace WasatchNET
         /// <returns>array of returned bytes (null on error)</returns>
         internal byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0)
         {
-            byte[] buf = new byte[len];
+            int bytesToRead = len;
+            if (isARM()) // ARM should always read at least 8 bytes
+                bytesToRead = Math.Min(8, bytesToRead);
+            byte[] buf = new byte[bytesToRead];
 
             UsbSetupPacket setupPacket = new UsbSetupPacket(
                 DEVICE_TO_HOST,                     // bRequestType
@@ -449,18 +446,16 @@ namespace WasatchNET
                 {
                     logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
                         opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
-                    // return null;
+                    return null;
                 }
             }
 
             if (logger.debugEnabled())
-            {
-                string prefix = String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->", 
-                    opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult);
-                logger.hexdump(buf, prefix);
-            }
+                logger.hexdump(buf, String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->", 
+                    opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult));
 
-            return buf;
+            // extract just the bytes we really needed
+            return Util.truncateArray(buf, len);
         }
 
         /// <summary>
@@ -800,7 +795,7 @@ namespace WasatchNET
                 logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
                 return 0;
             }
-            return Unpack.toUint(getCmd(Opcodes.GET_TRIGGER_DELAY, 3)); // fullLen: 6?
+            return Unpack.toUint(getCmd(Opcodes.GET_TRIGGER_DELAY, 3)); 
         } 
 
         public ushort getCCDTemperatureRaw()
@@ -874,7 +869,7 @@ namespace WasatchNET
                 logger.debug("laser setpoint not readable on {0}", featureIdentification.boardType);
                 return 0;
             }
-            return Unpack.toByte(getCmd(Opcodes.GET_LASER_TEMP_SETPOINT, 1)); // fullLen: 6? unit?
+            return Unpack.toByte(getCmd(Opcodes.GET_LASER_TEMP_SETPOINT, 1)); 
         } 
 
         public ushort getActualFrames()                 { return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }

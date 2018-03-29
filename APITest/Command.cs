@@ -34,8 +34,8 @@ namespace APITest
         public DataType dataType = DataType.BYTE_ARRAY;
 
         public int length = 0;
+        public int delayMS = 0;
         public int readBack = 0;
-        public int readBackARM = 0;
         public int readEndpoint = 0;
         public int readBlockSize = 0;
         public int fakeBufferLength = 0;
@@ -54,6 +54,7 @@ namespace APITest
         public bool reverse = false;
         public bool enabled = true;
         public bool batchTest = false;
+        public bool batchTestARM = false;
 
         public string notes;
 

@@ -16,6 +16,12 @@ namespace APITest
     public partial class Form1 : Form
     {
         ////////////////////////////////////////////////////////////////////////
+        // DataTypes
+        ////////////////////////////////////////////////////////////////////////
+
+        enum TestResult { PASS, FAIL, SKIP }
+
+        ////////////////////////////////////////////////////////////////////////
         // Attributes
         ////////////////////////////////////////////////////////////////////////
 
@@ -25,6 +31,11 @@ namespace APITest
         UsbDevice usbDevice;
         bool isInGaAs = false;
 
+        bool testing = false;
+        int passCount = 0;
+        int skipCount = 0;
+        List<string> failedTests = new List<string>();
+            
         Logger logger = Logger.getInstance();
 
         ////////////////////////////////////////////////////////////////////////
@@ -175,40 +186,94 @@ namespace APITest
             }
         }
 
+        private void buttonRunNext_Click(object sender, EventArgs e)
+        {
+            if (isTestable())
+                buttonRunNow_Click(null, null);
+            comboBoxCommand.SelectedIndex = (comboBoxCommand.SelectedIndex + 1) % comboBoxCommand.Items.Count;
+        }
+
         private void buttonTestAll_Click(object sender, EventArgs e)
         {
-            // start with accessors
-            List<string> failures = new List<string>();
-            foreach (KeyValuePair<string, Command> pair in commands)
+            if (checkBoxThreaded.Checked)
             {
-                string name = pair.Key;
-                Command cmd = pair.Value;
+                ////////////////////////////////////////////////////////////////
+                // Execute all tests from background thread via delegates
+                ////////////////////////////////////////////////////////////////
 
-                if (cmd.direction == Command.Direction.HOST_TO_DEVICE)
-                    continue;
-
-                if (!cmd.batchTest)
+                if (testing)
                 {
-                    logger.info("not BatchTest: {0}", name);
-                    continue;
+                    testing = false;
+                    backgroundWorkerTest.CancelAsync();
                 }
+                else
+                {
+                    buttonTestAll.Text = "Testing";
+                    groupBoxCommand.Enabled = groupBoxParameters.Enabled = false;
+                    readyForNextTest = true;
+                    testing = true;
 
-                currentCommand = cmd;
-                bool success = runCmd();
+                    failedTests = new List<string>();
+                    passCount = 0;
+                    skipCount = 0;
 
-                if (!success)
-                    failures.Add(name);
+                    backgroundWorkerTest.RunWorkerAsync();
+                }
             }
-
-            if (failures.Count == 0)
-                logger.info("All tests passed");
             else
-                logger.error("The following tests failed: {0}", String.Join(", ", failures));
+            {
+                ////////////////////////////////////////////////////////////////
+                // Execute all tests in foreground thread
+                ////////////////////////////////////////////////////////////////
+
+                // this works fine from FX2, dies on ARM
+                foreach (KeyValuePair<string, Command> pair in commands)
+                {
+                    comboBoxCommand.SelectedText = pair.Key;
+                    currentCommand = pair.Value;
+                    if (isTestable())
+                        runCmd();
+                }
+                logTestSummary();
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////
         // Methods
         ////////////////////////////////////////////////////////////////////////
+
+        bool isTestable()
+        {
+            if (currentCommand.direction != Command.Direction.DEVICE_TO_HOST)
+            {
+                logger.info("Skipping: {0} (not DEVICE_TO_HOST)", currentCommand.name);
+                skipCount++;
+                return false;
+            }
+
+            if (!currentCommand.batchTest || (checkBoxUseARM.Checked && !currentCommand.batchTestARM))
+            {
+                logger.info("Skipping: {0} (not BatchTest)", currentCommand.name);
+                skipCount++;
+                return false;
+            }
+
+            if (!isSupported())
+            {
+                logger.info("Skipping: {0} (not supported)", currentCommand.name);
+                skipCount++;
+                return false;
+            }
+
+            if (!currentCommand.enabled)
+            {
+                logger.info("Skipping: {0} (not enabled)", currentCommand.name);
+                skipCount++;
+                return false;
+            }
+
+            return true;
+        }
 
         void enableAll()
         {
@@ -226,6 +291,12 @@ namespace APITest
             if (!isSupported())
             {
                 logger.error("{0} is not supported on this spectrometer", currentCommand.name);
+                return false;
+            }
+
+            if (!currentCommand.enabled)
+            {
+                logger.error("{0} is not enabled", currentCommand.name);
                 return false;
             }
 
@@ -267,9 +338,15 @@ namespace APITest
             // log result
             logger.debug("{0} {1} bytes; result = {2} (expected {3})", verb, bytesXfer, ok, expectedResult);
             if (ok == expectedResult)
-                logger.info("{0} passed", currentCommand.name);
+            {
+                passCount++;
+                logger.info("Passed: {0}", currentCommand.name);
+            }
             else
-                logger.error("{0} failed", currentCommand.name);
+            {
+                logger.error("FAILED: {0}", currentCommand.name);
+                failedTests.Add(currentCommand.name);
+            }
 
             // dump received data
             if (currentCommand.direction == Command.Direction.DEVICE_TO_HOST)
@@ -296,18 +373,11 @@ namespace APITest
             int wValue = (int) numericUpDownWValue.Value;
             int wIndex = (int) numericUpDownWIndex.Value;
 
-            int fakeBufferLength = currentCommand.fakeBufferLength;
-
-            // on ARM, always send at least 8 bytes?
-            // http://www.beyondlogic.org/usbnutshell/usb4.shtml
-            if (checkBoxUseARM.Checked && fakeBufferLength == 0)
-                fakeBufferLength = 8;
-
-            int wLength = 0;
+            int wLength = Math.Max(currentCommand.length, currentCommand.readBack);
             if (currentCommand.makeFakeBufferFromValue)
                 wLength = wValue;
-            else if (fakeBufferLength > 0)
-                wLength = fakeBufferLength;
+            else if (currentCommand.fakeBufferLength > 0)
+                wLength = currentCommand.fakeBufferLength;
 
             return new UsbSetupPacket(bRequestType, bRequest, wValue, wIndex, wLength);
         }
@@ -348,6 +418,7 @@ namespace APITest
             labelOpcode.Text = String.Format("0x{0:x2}", currentCommand.opcode);
             labelReverse.Text = currentCommand.reverse.ToString();
             labelDataType.Text = currentCommand.dataType.ToString();
+            labelReadback.Text = currentCommand.readBack.ToString();
             labelDirection.Text = currentCommand.direction.ToString();
             labelFakeBufLen.Text = currentCommand.fakeBufferLength.ToString();
             labelMakeFakeBuf.Text = currentCommand.makeFakeBufferFromValue.ToString();
@@ -355,15 +426,9 @@ namespace APITest
 
             // ARM-specific
             if (checkBoxUseARM.Checked)
-            {
-                labelReadback.Text = currentCommand.readBackARM.ToString();
                 labelExpectedResult.Text = (!currentCommand.armInvertedReturn).ToString();
-            }
             else
-            {
-                labelReadback.Text = currentCommand.readBack.ToString();
                 labelExpectedResult.Text = true.ToString();
-            }
 
             labelSupported.Text = isSupported().ToString();
 
@@ -459,6 +524,65 @@ namespace APITest
                 logger.error("{0} [other]: {1}", prefix, e.ToString());
                 // is there anything we should DO here, other than logging it?
             }
+        }
+
+        private void backgroundWorkerTest_DoWork(object sender, DoWorkEventArgs e)
+        {
+            BackgroundWorker worker = sender as BackgroundWorker;
+            while (testing)
+            {
+                if (readyForNextTest)
+                {
+                    readyForNextTest = false;
+                    comboBoxCommand.BeginInvoke(new MethodInvoker(delegate { runBackgroundTest(); }));
+                }
+
+                if (worker.CancellationPending)
+                {
+                    e.Cancel = true;
+                    testing = false;
+                }
+            }
+        }
+
+        object backgroundTestLock = new object();
+        bool readyForNextTest = false;
+        void runBackgroundTest()
+        {
+            lock (backgroundTestLock)
+            {
+                if (isTestable())
+                    runCmd();
+
+                // advance to next
+                comboBoxCommand.SelectedIndex = (comboBoxCommand.SelectedIndex + 1) % comboBoxCommand.Items.Count;
+                if (comboBoxCommand.SelectedIndex == 0)
+                    testing = false;
+                else
+                    readyForNextTest = true;
+            }
+        }
+
+        void logTestSummary()
+        {
+            logger.info("Tests Passed:  {0}", passCount);
+            logger.info("Tests Skipped: {0}", skipCount);
+            logger.info("Tests Failed:  {0}", failedTests.Count);
+            if (failedTests.Count == 0)
+                logger.info("All tests passed");
+            else
+                logger.error("The following tests failed: {0}", String.Join(", ", failedTests));
+
+            passCount = 0;
+            skipCount = 0;
+            failedTests = new List<string>();
+        }
+
+        private void backgroundWorkerTest_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            logTestSummary();
+            groupBoxCommand.Enabled = groupBoxParameters.Enabled = true;
+            buttonTestAll.Text = "Test All";
         }
     }
 }
