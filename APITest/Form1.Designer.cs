@@ -30,6 +30,7 @@
         {
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerTitleVsBody = new System.Windows.Forms.SplitContainer();
+            this.checkBoxThreaded = new System.Windows.Forms.CheckBox();
             this.buttonLoadAPI = new System.Windows.Forms.Button();
             this.checkBoxVerbose = new System.Windows.Forms.CheckBox();
             this.checkBoxUseARM = new System.Windows.Forms.CheckBox();
@@ -92,7 +93,6 @@
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.openFileDialogAPI = new System.Windows.Forms.OpenFileDialog();
             this.backgroundWorkerTest = new System.ComponentModel.BackgroundWorker();
-            this.checkBoxThreaded = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -164,6 +164,17 @@
             this.splitContainerTitleVsBody.Size = new System.Drawing.Size(1025, 473);
             this.splitContainerTitleVsBody.SplitterDistance = 46;
             this.splitContainerTitleVsBody.TabIndex = 0;
+            // 
+            // checkBoxThreaded
+            // 
+            this.checkBoxThreaded.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.checkBoxThreaded.AutoSize = true;
+            this.checkBoxThreaded.Location = new System.Drawing.Point(950, 16);
+            this.checkBoxThreaded.Name = "checkBoxThreaded";
+            this.checkBoxThreaded.Size = new System.Drawing.Size(72, 17);
+            this.checkBoxThreaded.TabIndex = 5;
+            this.checkBoxThreaded.Text = "Threaded";
+            this.checkBoxThreaded.UseVisualStyleBackColor = true;
             // 
             // buttonLoadAPI
             // 
@@ -846,16 +857,6 @@
             this.backgroundWorkerTest.WorkerSupportsCancellation = true;
             this.backgroundWorkerTest.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerTest_DoWork);
             this.backgroundWorkerTest.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorkerTest_RunWorkerCompleted);
-            // 
-            // checkBoxThreaded
-            // 
-            this.checkBoxThreaded.AutoSize = true;
-            this.checkBoxThreaded.Location = new System.Drawing.Point(950, 16);
-            this.checkBoxThreaded.Name = "checkBoxThreaded";
-            this.checkBoxThreaded.Size = new System.Drawing.Size(72, 17);
-            this.checkBoxThreaded.TabIndex = 5;
-            this.checkBoxThreaded.Text = "Threaded";
-            this.checkBoxThreaded.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
