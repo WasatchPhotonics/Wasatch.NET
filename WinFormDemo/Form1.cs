@@ -572,7 +572,7 @@ namespace WinFormDemo
                 if (opts.scanCount > 0 && state.scanCount >= opts.scanCount)
                     break;
 
-                int delayMS = (int) Math.Max(10, opts.scanIntervalSec * 1000);
+                int delayMS = (int) Math.Max(100, opts.scanIntervalSec * 1000);
                 if (delayMS > 0)
                     Thread.Sleep(delayMS);
             }

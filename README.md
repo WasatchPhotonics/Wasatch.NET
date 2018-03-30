@@ -252,7 +252,7 @@ software and connect to your spectrometer.
 
 # Backlog
 
-- [ ] test on more hardware, including ARM
+- [ ] fully test ARM functionality
 - [ ] refactor Spectrometer into interface, with SpectrometerFactory 
       replacing FeatureIdentification and SpectrometerStrokerFX2,
       SpectrometerStrokerARM etc implementing the interface
@@ -260,12 +260,11 @@ software and connect to your spectrometer.
 
 # Version History
 
-- 2018-xx-xx 1.0.18
-    - added draft LibUsbTest
-    - added draft MonoTest
+- 2018-03-30 1.0.18
     - added APITest
+    - improved ARM support for READ\_COMPILATION\_OPTIONS, ACQUIRE\_CCD, others
 - 2018-03-22 1.0.17 
-    - Snapshot before testing with MonoLibUsb
+    - snapshot before testing with MonoLibUsb
 - 2018-03-13 1.0.16 
     - ARM testing
 - 2018-03-06 1.0.15 

@@ -502,8 +502,8 @@ namespace WasatchNET
 
                 if (expectedSuccessResult != result)
                 {
-                    logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4})",
-                        opcode.ToString(), cmd[opcode], wValue, wIndex, wLength);
+                    logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
+                        opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, result, expectedSuccessResult);
                     return false;
                 }
             }

@@ -224,8 +224,8 @@ namespace WasatchNET
             cmd[Opcodes.OPT_ACT_INT_TIME                       ] = 0x0b;
             cmd[Opcodes.OPT_HORIZONTAL_BINNING                 ] = 0x0c;
 
+            armInvertedRetvals.Add(Opcodes.ACQUIRE_CCD);
             armInvertedRetvals.Add(Opcodes.GET_CCD_OFFSET);
-            // armInvertedRetvals.Add(Opcodes.READ_COMPILATION_OPTIONS); // MZ: guessing
             armInvertedRetvals.Add(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME);
             armInvertedRetvals.Add(Opcodes.SELECT_LASER);
             armInvertedRetvals.Add(Opcodes.SET_CCD_GAIN);
