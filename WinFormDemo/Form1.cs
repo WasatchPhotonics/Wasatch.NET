@@ -25,6 +25,7 @@ namespace WinFormDemo
         List<Series> traces = new List<Series>();
         bool graphWavenumbers;
         bool shutdownPending;
+        bool scanning;
 
         Settings settings;
         Options opts;
@@ -254,11 +255,13 @@ namespace WinFormDemo
             SpectrometerState state = spectrometerStates[currentSpectrometer];
             if (!state.running)
             {
+                logger.info("Starting acquisition");
                 updateStartButton(true);
                 state.worker.RunWorkerAsync(currentSpectrometer);
             }
             else
             {
+                logger.info("Stopping acquisition");
                 state.worker.CancelAsync();
             }
         }
@@ -549,8 +552,17 @@ namespace WinFormDemo
             BackgroundWorker worker = sender as BackgroundWorker;
             while (true)
             {
+                // end thread if we've been asked to cancel
+                if (worker.CancellationPending)
+                    break;
+
                 // logger.debug("workerAcquisition: getting spectrum");
                 double[] raw = spectrometer.getSpectrum();
+                if (raw == null)
+                {
+                    Thread.Sleep(100);
+                    continue;
+                }
 
                 // process for graphing
                 lock (spectrometers)
@@ -560,12 +572,9 @@ namespace WinFormDemo
                 if (opts.scanCount > 0 && state.scanCount >= opts.scanCount)
                     break;
 
-                // end thread if we've been asked to cancel
-                if (worker.CancellationPending)
-                    break;
-
-                if (opts.scanIntervalSec > 0)
-                    Thread.Sleep((int) opts.scanIntervalSec * 1000);
+                int delayMS = (int) Math.Max(10, opts.scanIntervalSec * 1000);
+                if (delayMS > 0)
+                    Thread.Sleep(delayMS);
             }
 
             state.running = false;

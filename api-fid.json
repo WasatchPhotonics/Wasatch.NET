@@ -1,5 +1,5 @@
 {
-    "ACQUIRE_CCD":                              { "Direction": "DEVICE_TO_HOST", "Opcode": "0xAD", "Type": "Uint16[]","ReadEndpoint": 2, "ReadBlockSize": 2048, "BatchTest": false },
+    "ACQUIRE_CCD":                              { "Direction": "HOST_TO_DEVICE", "Opcode": "0xAD", "Type": "Uint16[]","ReadEndpoint": 2, "ReadBlockSize": 2048, "BatchTest": false },
     "GET_ACTUAL_FRAMES":                        { "Direction": "DEVICE_TO_HOST", "Opcode": "0xE4", "Type": "Uint16",  "Length": 2 },
     "GET_ACTUAL_INTEGRATION_TIME":              { "Direction": "DEVICE_TO_HOST", "Opcode": "0xDF", "Type": "Uint32",  "Length": 6, "Units": "ms", "Notes": "Response of 0xffffff indicates error" },
     "GET_CCD_GAIN":                             { "Direction": "DEVICE_TO_HOST", "Opcode": "0xC5", "Type": "Float16", "Length": 2, "Notes": "Returns odd 16-bit half-precision float, where MSB is integral part and LSB is fractional" },

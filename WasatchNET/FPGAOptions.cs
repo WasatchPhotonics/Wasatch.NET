@@ -27,11 +27,6 @@ namespace WasatchNET
         public FPGAOptions(Spectrometer s)
         {
             spectrometer = s;
-            // if (s.featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.STROKER_ARM)
-            // {
-            //     logger.error("FPGAOptions not supported on {0}", s.featureIdentification.boardType);
-            //     return;
-            // }
             load();
         }
 
@@ -44,7 +39,7 @@ namespace WasatchNET
 
             // NOTE: ENG-0001 says this only returns 2 bytes, but empirical testing on ARM
             // suggests it actually returns more (yet we only use the first two)
-            byte[] buf = spectrometer.getCmd2(Opcodes.READ_COMPILATION_OPTIONS, 3);
+            byte[] buf = spectrometer.getCmd2(Opcodes.READ_COMPILATION_OPTIONS, 2, fakeBufferLengthARM: 8);
             if (buf == null)
                 return;
 

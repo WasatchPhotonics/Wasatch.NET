@@ -283,6 +283,12 @@ namespace WasatchNET
         // Utilities
         ////////////////////////////////////////////////////////////////////////
 
+        string stringifyPacket(UsbSetupPacket packet)
+        {
+            return String.Format("bRequestType: 0x{0:x2}, bRequest: 0x{1:x4}, wValue: 0x{2:x4}, wIndex: 0x{3:x4}, wLength: 0x{4:x4}",
+                packet.RequestType, packet.Request, packet.Value, packet.Index, packet.Length);
+        }
+
         void waitForUsbAvailable()
         {
             if (featureIdentification.usbDelayMS > 0)
@@ -416,19 +422,20 @@ namespace WasatchNET
         /// <param name="opcode">the wValue to send along with the "second-tier" command</param>
         /// <param name="len">how many bytes of response are expected</param>
         /// <returns>array of returned bytes (null on error)</returns>
-        internal byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0)
+        internal byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0, int fakeBufferLengthARM = 0)
         {
             int bytesToRead = len;
-            if (isARM()) // ARM should always read at least 8 bytes
-                bytesToRead = Math.Min(8, bytesToRead);
-            byte[] buf = new byte[bytesToRead];
+            if (isARM())
+                bytesToRead = Math.Max(bytesToRead, fakeBufferLengthARM);
 
             UsbSetupPacket setupPacket = new UsbSetupPacket(
                 DEVICE_TO_HOST,                     // bRequestType
                 cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest
                 cmd[opcode],                        // wValue
                 wIndex,                             // wIndex
-                len);                               // wLength
+                bytesToRead);                       // wLength
+
+            byte[] buf = new byte[bytesToRead];
 
             bool expectedSuccessResult = true;
             if (isARM())
@@ -438,7 +445,7 @@ namespace WasatchNET
             lock (commsLock)
             {
                 waitForUsbAvailable();
-                logger.debug("getCmd2: about to send request {0} (0x{1:x2}) with index 0x{2:x4}", opcode.ToString(), cmd[opcode], wIndex);
+                logger.debug("getCmd2: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
                 result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
                 resetUsbClock();
 
@@ -451,7 +458,7 @@ namespace WasatchNET
             }
 
             if (logger.debugEnabled())
-                logger.hexdump(buf, String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->", 
+                logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->", 
                     opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult));
 
             // extract just the bytes we really needed
@@ -471,7 +478,7 @@ namespace WasatchNET
         {
             ushort wLength = (ushort)((buf == null) ? 0 : buf.Length);
 
-            UsbSetupPacket setupPacket = new UsbSetupPacket(
+            UsbSetupPacket packet = new UsbSetupPacket(
                 HOST_TO_DEVICE, // bRequestType
                 cmd[opcode],    // bRequest
                 wValue,         // wValue
@@ -485,16 +492,19 @@ namespace WasatchNET
             lock (commsLock)
             {
                 waitForUsbAvailable();
+
+                logger.debug("sendCmd: about to send {0} ({1})", opcode, stringifyPacket(packet));
                 if (buf != null)
-                    logger.hexdump(buf, String.Format("sendCmd({0}, {1}, {2}, {3}): ", opcode, wValue, wIndex, wLength));
-                bool result = usbDevice.ControlTransfer(ref setupPacket, buf, wLength, out int bytesWritten);
+                    logger.hexdump(buf, "sendCmd >> ");
+
+                bool result = usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
                 resetUsbClock();
 
                 if (expectedSuccessResult != result)
                 {
                     logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4})",
                         opcode.ToString(), cmd[opcode], wValue, wIndex, wLength);
-                    // return false;
+                    return false;
                 }
             }
             return true;
@@ -1196,7 +1206,10 @@ namespace WasatchNET
         {
             // STEP ONE: request a spectrum
             logger.debug("requesting spectrum");
-            if (!sendCmd(Opcodes.ACQUIRE_CCD))
+            byte[] buf = null;
+            if (isARM())
+                buf = new byte[8];
+            if (!sendCmd(Opcodes.ACQUIRE_CCD, buf: buf))
                 return null;
 
             // STEP TWO: wait for acquisition to complete

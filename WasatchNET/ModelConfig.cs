@@ -316,7 +316,7 @@ namespace WasatchNET
             format = new List<byte>();
             for (ushort page = 0; page < MAX_PAGES; page++)
             {
-                byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page);
+                byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                 if (buf == null)
                     return false;
                 pages.Add(buf);
