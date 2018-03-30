@@ -25,7 +25,6 @@ namespace WinFormDemo
         List<Series> traces = new List<Series>();
         bool graphWavenumbers;
         bool shutdownPending;
-        bool scanning;
 
         Settings settings;
         Options opts;
@@ -102,7 +101,7 @@ namespace WinFormDemo
             SpectrometerState state = spectrometerStates[currentSpectrometer];
 
             // update tree view
-            if (!currentSpectrometer.isARM())
+            // if (!state.spectrometer.isARM())
                 treeViewSettings_DoubleClick(null, null);
 
             // update start button
@@ -233,6 +232,7 @@ namespace WinFormDemo
 
                     comboBoxSpectrometer.SelectedIndex = comboBoxSpectrometer.Items.Count - 1;
                     Thread.Sleep(100);
+
                     buttonStart_Click(null, null);
                     Thread.Sleep(100);
                 }
@@ -242,7 +242,7 @@ namespace WinFormDemo
 
                 comboBoxSpectrometer.SelectedIndex = 0;
 
-                AcceptButton = buttonStart;
+                // AcceptButton = buttonStart;
             }
             else
             {

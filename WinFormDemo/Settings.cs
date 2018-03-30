@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
 using WasatchNET;
 
@@ -28,6 +28,9 @@ namespace WinFormDemo
         Dictionary<string, Tuple<TreeNode, string>> treeNodes = new Dictionary<string, Tuple<TreeNode, string>>();
         TreeView tv;
         Logger logger = Logger.getInstance();
+
+        public delegate T MyDelegate<T>();
+        AutoResetEvent autoResetEvent = new AutoResetEvent(true);
 
         public Settings(TreeView treeView)
         {
@@ -153,6 +156,9 @@ namespace WinFormDemo
         /// <param name="spec">The spectrometer whose settings to render on the TreeView</param>
         void updateFast(Spectrometer spec)
         {
+            if (spec == null)
+                return;
+
             update("activePixelsHoriz", spec.modelConfig.activePixelsHoriz);
             update("activePixelsVert", spec.modelConfig.activePixelsVert);
             update("actualHoriz", spec.modelConfig.actualHoriz);
@@ -227,48 +233,75 @@ namespace WinFormDemo
             // update("frame", spec.getActualFrames());
             // update("ccdTempSetpoint", spec.getCCDTempSetpoint());
 
+            logger.debug("updateAll: calling updateFast");
             updateFast(spec);
 
-            update("ccdGain", spec.getCCDGain());
-            update("ccdOffset", spec.getCCDOffset());
-            update("ccdSensingThreshold", spec.getCCDSensingThreshold());
-            update("ccdThresholdSensingEnabled", spec.getCCDThresholdSensingEnabled());
-            update("ccdTriggerSource", spec.getCCDTriggerSource());
-            update("dac", spec.getDAC());
-            update("firmwareRev", spec.getFirmwareRev());
-            update("fpgaRev", spec.getFPGARev());
-            update("integrationTimeMS", spec.getIntegrationTimeMS());
-            update("continuousCCDEnabled", spec.getContinuousCCDEnable());
-            update("continuousCCDFrames", spec.getContinuousCCDFrames());
+            logger.debug("updateAll: starting long pull");
+
+            update("ccdGain", spec, spec.getCCDGain);
+            update("ccdOffset", spec, spec.getCCDOffset);
+            update("ccdSensingThreshold", spec, spec.getCCDSensingThreshold);
+            update("ccdThresholdSensingEnabled", spec, spec.getCCDThresholdSensingEnabled);
+            update("ccdTriggerSource", spec, spec.getCCDTriggerSource);
+            update("dac", spec, spec.getDAC);
+            update("firmwareRev", spec, spec.getFirmwareRev);
+            update("fpgaRev", spec, spec.getFPGARev);
+            update("integrationTimeMS", spec, spec.getIntegrationTimeMS);
+            update("continuousCCDEnabled", spec, spec.getContinuousCCDEnable);
+            update("continuousCCDFrames", spec, spec.getContinuousCCDFrames);
 
             if (spec.modelConfig.hasCooling)
             {
-                update("ccdTempEnable", spec.getCCDTempEnabled());
-                update("ccdTempRaw", spec.getCCDTemperatureRaw());
-                update("ccdTempDegC", spec.getCCDTemperatureDegC());
+                update("ccdTempEnable", spec, spec.getCCDTempEnabled);
+                update("ccdTempRaw", spec, spec.getCCDTemperatureRaw);
+                update("ccdTempDegC", spec, spec.getCCDTemperatureDegC);
             }
 
             if (spec.fpgaOptions.hasActualIntegTime)
-                update("actualIntegrationTimeUS", spec.getActualIntegrationTimeUS());
+                update("actualIntegrationTimeUS", spec, spec.getActualIntegrationTimeUS);
 
             if (spec.fpgaOptions.hasHorizBinning)
-                update("horizBinning", spec.getHorizBinning());
+                update("horizBinning", spec, spec.getHorizBinning);
 
             if (spec.modelConfig.hasLaser && spec.fpgaOptions.laserType != FPGA_LASER_TYPE.NONE)
             {
-                update("interlock", spec.getInterlockEnabled());
-                update("laserEnabled", spec.getLaserEnabled());
-                update("laserModDuration", spec.getLaserModulationDuration());
-                update("laserModEnabled", spec.getLaserModulationEnabled());
-                update("laserModLinkedToIntegrationTime", spec.getLaserModulationLinkedToIntegrationTime());
-                update("laserModPeriod", spec.getLaserModulationPeriod());
-                update("laserModPulseDelay", spec.getLaserModulationPulseDelay());
-                update("laserModPulseWidth", spec.getLaserModulationPulseWidth());
-                update("laserRampingEnabled", spec.getLaserRampingEnabled());
-                update("laserSelection", spec.getSelectedLaser());
-                update("laserTemperatureSetpoint", spec.getLaserTemperatureSetpoint());
-                update("laserTemperatureRaw",  spec.getLaserTemperatureRaw());
-                update("laserTemperatureDegC", spec.getLaserTemperatureDegC());
+                update("interlock", spec, spec.getInterlockEnabled);
+                update("laserEnabled", spec, spec.getLaserEnabled);
+                update("laserModDuration", spec, spec.getLaserModulationDuration);
+                update("laserModEnabled", spec, spec.getLaserModulationEnabled);
+                update("laserModLinkedToIntegrationTime", spec, spec.getLaserModulationLinkedToIntegrationTime);
+                update("laserModPeriod", spec, spec.getLaserModulationPeriod);
+                update("laserModPulseDelay", spec, spec.getLaserModulationPulseDelay);
+                update("laserModPulseWidth", spec, spec.getLaserModulationPulseWidth);
+                update("laserRampingEnabled", spec, spec.getLaserRampingEnabled);
+                update("laserSelection", spec, spec.getSelectedLaser);
+                update("laserTemperatureSetpoint", spec, spec.getLaserTemperatureSetpoint);
+                update("laserTemperatureRaw", spec, spec.getLaserTemperatureRaw);
+                update("laserTemperatureDegC", spec, spec.getLaserTemperatureDegC);
+            }
+        }
+
+        void update<T>(string key, Spectrometer spec, MyDelegate<T> func)
+        {
+            if (true) // (!spec.isARM)
+            {
+                logger.debug("update: directly getting {0} from {1}", key, func);
+                T value = func();
+                update(key, value);
+            }
+            else
+            {
+                // Not currently using this code, but retaining if needed.  Basically,
+                // testing with APITest suggested that our ARM comms may have difficulties
+                // when piling lots of USB calls consecutively into a single thread; however,
+                // those same calls succeeded when individually dispatched as separate events.
+                // It may be we don't need to do that here because update(string, object) is
+                // already calling a dispatcher with the RESULT of the USB call, even though
+                // the USB traffic itself isn't in a thread? I really don't know, but keeping
+                // this for posterity.
+                autoResetEvent.WaitOne();
+                logger.debug("update: invoking a delegate for {0}", key);
+                tv.BeginInvoke(new MethodInvoker(delegate { update(key, func()); autoResetEvent.Set(); }));
             }
         }
 

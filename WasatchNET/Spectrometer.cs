@@ -388,8 +388,8 @@ namespace WasatchNET
                 bytesToRead);   // wLength
 
             bool expectedSuccessResult = true;
-            if (isARM())
-                expectedSuccessResult = armInvertedRetvals.Contains(opcode);
+            if (isARM() && armInvertedRetvals.Contains(opcode))
+                expectedSuccessResult = !expectedSuccessResult;
 
             // Question: if the device returns 6 bytes on Endpoint 0, but I only
             // need the first so pass byte[1], are the other 5 bytes discarded or
@@ -397,14 +397,14 @@ namespace WasatchNET
             lock (commsLock)
             {
                 waitForUsbAvailable();
-                logger.debug("getCmd: about to send request {0} (0x{1:x2}) with index 0x{2:x4}", opcode.ToString(), cmd[opcode], wIndex);
+                logger.debug("getCmd: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
                 bool result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
                 resetUsbClock();
 
-                if (expectedSuccessResult != result || bytesRead < bytesToRead)
+                if (result != expectedSuccessResult || bytesRead < len)
                 {
-                    logger.error("getCmd: failed to get {0} (0x{1:x2}) with index 0x{2:x4} via DEVICE_TO_HOST ({3} bytes read)",
-                        opcode.ToString(), cmd[opcode], wIndex, bytesRead);
+                    logger.error("getCmd: failed to get {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
+                        opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
                     return null;
                 }
             }
@@ -438,8 +438,8 @@ namespace WasatchNET
             byte[] buf = new byte[bytesToRead];
 
             bool expectedSuccessResult = true;
-            if (isARM())
-                expectedSuccessResult = armInvertedRetvals.Contains(opcode) ? false : true;
+            if (isARM() && armInvertedRetvals.Contains(opcode))
+                expectedSuccessResult = !expectedSuccessResult;
 
             bool result = false;
             lock (commsLock)
