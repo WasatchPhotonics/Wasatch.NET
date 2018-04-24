@@ -83,6 +83,7 @@
     <Compile Include="AcquisitionStatus.cs" />
     <Compile Include="FeatureIdentification.cs" />
     <Compile Include="FPGAOptions.cs" />
+    <Compile Include="LaserRamp.cs" />
     <Compile Include="ModelConfig.cs" />
     <Compile Include="ParseData.cs" />
     <Compile Include="Unpack.cs" />

@@ -66,6 +66,8 @@ namespace WasatchNET
         object commsLock = new object();
         DateTime lastUsbTimestamp = DateTime.Now;
 
+        // LaserRamp laserRamp = new LaserRamp();
+
         #region properties
 
         ////////////////////////////////////////////////////////////////////////
@@ -97,6 +99,8 @@ namespace WasatchNET
 
         /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
         public ModelConfig modelConfig;
+
+        public bool laserRampingEnabled { get; set; }
 
         ////////////////////////////////////////////////////////////////////////
         // complex properties
@@ -547,6 +551,17 @@ namespace WasatchNET
             integrationTimeMS_ = ms;
         }
 
+        public bool setCCDTriggerSource(ushort source)
+        { 
+            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.STROKER_ARM)
+            {
+                logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
+                return false;
+            }
+            UInt40 val = new UInt40(source);
+            return sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, val.LSW, val.MidW, val.buf);
+        } 
+
         public bool setExternalTriggerOutput(EXTERNAL_TRIGGER_OUTPUT value)
         {
             if (value == EXTERNAL_TRIGGER_OUTPUT.ERROR)
@@ -661,7 +676,6 @@ namespace WasatchNET
         }
 
         public bool setCCDGain              (float gain)        { return sendCmd(Opcodes.SET_CCD_GAIN,                   FunkyFloat.fromFloat(gain)); } 
-        public bool setCCDTriggerSource     (ushort source)     { return sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE,         source); } 
         public bool setCCDTemperatureEnable (bool flag)         { return sendCmd(Opcodes.SET_CCD_TEC_ENABLE,             (ushort) (flag ? 1 : 0)); } 
         public bool setDAC                  (ushort word)       { return sendCmd(Opcodes.SET_DAC,                        word, 1); } // external laser power
         public bool setCCDOffset            (ushort value)      { return sendCmd(Opcodes.SET_CCD_OFFSET,                 value); }
@@ -1139,10 +1153,14 @@ namespace WasatchNET
             return sendCmd(Opcodes.SET_LASER_TEMP_SETPOINT, value);
         }
 
-        public bool setLaserEnable          (bool flag)         { return sendCmd(Opcodes.SET_LASER_ENABLED,              (ushort) (flag ? 1 : 0)); } 
         public bool setLaserModulationEnable(bool flag)         { return sendCmd(Opcodes.SET_LASER_MOD_ENABLED,          (ushort) (flag ? 1 : 0)); } // missing fake 8-byte buf?
         public bool setSelectedLaser        (byte id)           { return sendCmd(Opcodes.SELECT_LASER,                   id); }
         public bool linkLaserModToIntegrationTime(bool flag)    { return sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0)); } 
+
+        public bool setLaserEnable(bool flag)
+        {
+            return sendCmd(Opcodes.SET_LASER_ENABLED, (ushort) (flag ? 1 : 0));
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // getSpectrum
