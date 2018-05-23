@@ -943,6 +943,11 @@ namespace WasatchNET
             double raw = getLaserTemperatureRaw();
             double voltage    = 2.5 * raw / 4096;
             double resistance = 21450.0 * voltage / (2.5 - voltage);
+            if (resistance <= 0)
+            {
+                logger.error("getLaserTemperatureDegC: invalid resistance ({0})", resistance);
+                return 0;
+            }
             double logVal     = Math.Log(resistance / 10000);
             double insideMain = logVal + 3977.0 / (25 + 273.0);
             double degC = 3977.0 / insideMain - 273.0;

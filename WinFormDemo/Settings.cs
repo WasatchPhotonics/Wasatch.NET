@@ -283,26 +283,22 @@ namespace WinFormDemo
 
         void update<T>(string key, Spectrometer spec, MyDelegate<T> func)
         {
-            if (true) // (!spec.isARM)
-            {
-                logger.debug("update: directly getting {0} from {1}", key, func);
-                T value = func();
-                update(key, value);
-            }
-            else
-            {
-                // Not currently using this code, but retaining if needed.  Basically,
-                // testing with APITest suggested that our ARM comms may have difficulties
-                // when piling lots of USB calls consecutively into a single thread; however,
-                // those same calls succeeded when individually dispatched as separate events.
-                // It may be we don't need to do that here because update(string, object) is
-                // already calling a dispatcher with the RESULT of the USB call, even though
-                // the USB traffic itself isn't in a thread? I really don't know, but keeping
-                // this for posterity.
-                autoResetEvent.WaitOne();
-                logger.debug("update: invoking a delegate for {0}", key);
-                tv.BeginInvoke(new MethodInvoker(delegate { update(key, func()); autoResetEvent.Set(); }));
-            }
+            logger.debug("update: directly getting {0} from {1}", key, func);
+            T value = func();
+            update(key, value);
+
+            // Not currently using this code, but retaining if needed.  Basically,
+            // testing with APITest suggested that our ARM comms may have difficulties
+            // when piling lots of USB calls consecutively into a single thread; however,
+            // those same calls succeeded when individually dispatched as separate events.
+            // It may be we don't need to do that here because update(string, object) is
+            // already calling a dispatcher with the RESULT of the USB call, even though
+            // the USB traffic itself isn't in a thread? I really don't know, but keeping
+            // this for posterity.
+            //
+            // autoResetEvent.WaitOne();
+            // logger.debug("update: invoking a delegate for {0}", key);
+            // tv.BeginInvoke(new MethodInvoker(delegate { update(key, func()); autoResetEvent.Set(); }));
         }
 
         void update(string key, object value)

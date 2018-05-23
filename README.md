@@ -260,6 +260,10 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-05-23 1.0.20
+    - split RegisterDLL.bat into RegisterDLL32 and RegisterDLL64
+- 2018-04-24 1.0.19
+    - changed setCCDTriggerSource to Int40
 - 2018-03-30 1.0.18
     - added APITest
     - improved ARM support for READ\_COMPILATION\_OPTIONS, ACQUIRE\_CCD, others
