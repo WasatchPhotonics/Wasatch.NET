@@ -106,7 +106,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_7870A161CB1E41B2B7C3B4B23332E190"
+        "OwnerKey" = "8:_13DD343F25232791ABC28116483D4917"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -118,7 +118,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_13DD343F25232791ABC28116483D4917"
+        "OwnerKey" = "8:_7870A161CB1E41B2B7C3B4B23332E190"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -598,15 +598,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Wasatch.NET"
-        "ProductCode" = "8:{3CA992B7-AB38-49A9-8930-921244E57F33}"
-        "PackageCode" = "8:{38483E0C-5CC7-482B-B533-A84F90CFBC35}"
+        "ProductCode" = "8:{93E0CA89-B4B3-47B1-B30C-C9A8A56B471F}"
+        "PackageCode" = "8:{0039E1FD-4D54-4242-8CC9-79AF5B596049}"
         "UpgradeCode" = "8:{F312F3F0-86DD-4C2E-9E98-0648164C24CC}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.20"
+        "ProductVersion" = "8:1.0.21"
         "Manufacturer" = "8:Wasatch Photonics"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://wasatchphotonics.com"

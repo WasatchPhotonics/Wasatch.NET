@@ -1,14 +1,35 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace WasatchNET
 {
+    [ComVisible(true)]  
+    [Guid("CCF6BA13-ECC7-456C-AAFC-ACB8D5E58BDE")]
+    [InterfaceType(ComInterfaceType.InterfaceIsDual)]
+    public interface IFPGAOptions
+    {
+        FPGA_INTEG_TIME_RES integrationTimeResolution { get; } 
+        FPGA_DATA_HEADER dataHeader { get; } 
+        bool hasCFSelect { get; }
+        FPGA_LASER_TYPE laserType { get; } 
+        FPGA_LASER_CONTROL laserControl { get; }
+        bool hasAreaScan { get; }
+        bool hasActualIntegTime { get; }
+        bool hasHorizBinning { get; }
+
+    }
+
     /// <summary>
     /// The set of options and settings enabled when the FPGA firmware was compiled for this spectrometer.
     /// </summary>
-    public class FPGAOptions
+    [ComVisible(true)]
+    [Guid("9ADF1212-249E-4C73-8FE1-E5A22C7EE3AA")]
+    [ProgId("WasatchNET.FPGAOptions")]
+    [ClassInterface(ClassInterfaceType.None)]
+    public class FPGAOptions : IFPGAOptions
     {
         // public attributes
         public FPGA_INTEG_TIME_RES integrationTimeResolution { get; private set; } = FPGA_INTEG_TIME_RES.ERROR;

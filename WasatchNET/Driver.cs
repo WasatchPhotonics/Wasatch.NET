@@ -16,7 +16,23 @@ namespace WasatchNET
     /// In defiance of Microsoft convention, there are no Hungarian 
     /// prefixes, and camelCase is used throughout. Sorry.
     /// </summary>
-    public class Driver
+    [ComVisible(true)]  
+    [Guid("860AEAC3-6016-47B0-ABB9-88F0194601EB")]
+    [InterfaceType(ComInterfaceType.InterfaceIsDual)]
+    public interface IDriver
+    {
+        string version { get; }
+        int openAllSpectrometers();
+        int getNumberOfSpectrometers();
+        Spectrometer getSpectrometer(int index);
+        void closeAllSpectrometers();
+    }
+
+    [ComVisible(true)]
+    [Guid("E71326C8-C2BC-404F-81E4-394D95541A24")]
+    [ProgId("WasatchNET.Driver")]
+    [ClassInterface(ClassInterfaceType.None)]
+    public class Driver : IDriver
     {
         static Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
@@ -348,7 +364,8 @@ namespace WasatchNET
     /// (instantiate), and then access the Driver Singleton via the single
     /// exposed "instance" property.
     /// </remarks>
-    [ComVisible(true), GuidAttribute("BB20CDE1-E5A3-4649-8161-7B6E8DAD66FE")]
+    [ComVisible(true)]
+    [Guid("BB20CDE1-E5A3-4649-8161-7B6E8DAD66FE")]
     [ProgId("WasatchNET.DriverVBAWrapper")]
     public class DriverVBAWrapper
     {

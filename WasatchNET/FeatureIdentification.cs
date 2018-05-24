@@ -1,5 +1,27 @@
-﻿namespace WasatchNET
+﻿using System.Runtime.InteropServices;
+
+namespace WasatchNET
 {
+    /// <summary>the fundamental electronic board configurations supported by our spectrometers</summary>
+    public enum BOARD_TYPES { RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, STROKER_ARM, ERROR };
+
+    [ComVisible(true)]  
+    [Guid("4CCF3543-73EF-49D5-8234-FC2FDF647127")]
+    [InterfaceType(ComInterfaceType.InterfaceIsDual)]
+    public interface IFeatureIdentification
+    {
+        /// <summary>board configuration</summary>
+        BOARD_TYPES boardType { get; }
+
+        string firmwarePartNum { get; }
+        string firmwareDesc { get; }
+        bool isSupported { get; }
+        uint defaultPixels { get; }
+        uint spectraBlockSize { get; }
+        uint usbDelayMS { get; }
+        int? defaultTECSetpointDegC { get; }
+    }
+
     /// <summary>
     /// Encapsulates metadata inferred by the spectrometer PID
     /// </summary>
@@ -8,23 +30,24 @@
     ///
     /// And yes, this probably implies a need for inheritance in our class model.
     /// </remarks>
-    public class FeatureIdentification
+    [ComVisible(true)]
+    [Guid("64D0A563-D2E6-4267-A496-A82C0F2D75DB")]
+    [ProgId("WasatchNET.FeatureIdentification")]
+    [ClassInterface(ClassInterfaceType.None)]
+    public class FeatureIdentification : IFeatureIdentification
     {
-        /// <summary>the fundamental electronic board configurations supported by our spectrometers</summary>
-        public enum BOARD_TYPES { RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, STROKER_ARM, ERROR };
-
         Logger logger = Logger.getInstance();
 
         /// <summary>board configuration</summary>
-        public BOARD_TYPES boardType;
+        public BOARD_TYPES boardType { get; }
 
-        public string firmwarePartNum;
-        public string firmwareDesc;
-        public bool isSupported = true;
-        public uint defaultPixels = 1024;
-        public uint spectraBlockSize = 1024 * 2;
-        public uint usbDelayMS = 0;
-        public int? defaultTECSetpointDegC = null;
+        public string firmwarePartNum { get; private set; }
+        public string firmwareDesc { get; private set; }
+        public bool isSupported { get; private set; } = true;
+        public uint defaultPixels { get; private set; } = 1024;
+        public uint spectraBlockSize { get; private set; }  = 1024 * 2;
+        public uint usbDelayMS { get; private set; } = 0;
+        public int? defaultTECSetpointDegC { get; private set; } = null;
 
         internal FeatureIdentification(int pid)
         {

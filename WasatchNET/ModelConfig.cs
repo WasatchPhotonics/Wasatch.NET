@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,11 @@ namespace WasatchNET
     /// could lead to subtly malformed or biased spectral readings, which could
     /// taint or invalidate your measurement results.
     /// </remarks>
-    public class ModelConfig
+    [ComVisible(true)]
+    [Guid("1D2A0386-017C-471B-B5DB-534F598F9A54")]
+    [ProgId("WasatchNET.ModelConfig")]
+    [ClassInterface(ClassInterfaceType.None)]
+    public class ModelConfig : IModelConfig
     {
         /////////////////////////////////////////////////////////////////////////       
         // private attributes
@@ -28,7 +33,7 @@ namespace WasatchNET
         Spectrometer spectrometer;
         Logger logger = Logger.getInstance();
 
-        public List<byte[]> pages;
+        public List<byte[]> pages { get; private set; }
         List<byte> format;
         
         /////////////////////////////////////////////////////////////////////////       

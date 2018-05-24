@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
@@ -36,7 +37,11 @@ namespace WasatchNET
     ///
     /// Trying to avoid making this a "God-class", but it's still a bit heavy.
     /// </remarks>
-    public class Spectrometer
+    [ComVisible(true)]
+    [Guid("06DF0AB6-741E-43D8-92EF-E14CB74070D7")]
+    [ProgId("WasatchNET.Spectrometer")]
+    [ClassInterface(ClassInterfaceType.None)]
+    public class Spectrometer : ISpectrometer
     {
         ////////////////////////////////////////////////////////////////////////
         // Constants
@@ -86,19 +91,19 @@ namespace WasatchNET
         public double[] wavenumbers { get; private set; }
 
         /// <summary>spectrometer model</summary>
-        public string model;
+        public string model { get; private set; }
 
         /// <summary>spectrometer serial number</summary>
-        public string serialNumber;
+        public string serialNumber { get; private set; }
 
         /// <summary>metadata inferred from the spectrometer's USB PID</summary>
-        public FeatureIdentification featureIdentification;
+        public FeatureIdentification featureIdentification { get; private set; }
 
         /// <summary>set of compilation options used to compile the FPGA firmware in this spectrometer</summary>
-        public FPGAOptions fpgaOptions;
+        public FPGAOptions fpgaOptions { get; private set; }
 
         /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
-        public ModelConfig modelConfig;
+        public ModelConfig modelConfig { get; private set; }
 
         public bool laserRampingEnabled { get; set; }
 
@@ -276,7 +281,7 @@ namespace WasatchNET
         // Convenience Accessors
         ////////////////////////////////////////////////////////////////////////
 
-        public bool isARM() { return featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.STROKER_ARM; }
+        public bool isARM() { return featureIdentification.boardType == BOARD_TYPES.STROKER_ARM; }
         public bool hasLaser()
         {
             return modelConfig.hasLaser 
@@ -553,7 +558,7 @@ namespace WasatchNET
 
         public bool setCCDTriggerSource(ushort source)
         { 
-            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.STROKER_ARM)
+            if (featureIdentification.boardType == BOARD_TYPES.STROKER_ARM)
             {
                 logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
                 return false;
@@ -580,7 +585,7 @@ namespace WasatchNET
         /// </remarks>
         public bool setTriggerDelay(uint value)
         {
-            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
             {
                 logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
                 return false;
@@ -593,7 +598,7 @@ namespace WasatchNET
 
         public bool setLaserRampingEnable(bool flag)
         {
-            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
             {
                 logger.debug("laser ramping not supported on {0}", featureIdentification.boardType);
                 return false;
@@ -603,7 +608,7 @@ namespace WasatchNET
 
         public bool setHorizontalBinning(HORIZ_BINNING mode)
         {
-            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
             {
                 logger.debug("horizontal binning not supported on {0}", featureIdentification.boardType);
                 return false;
@@ -667,7 +672,7 @@ namespace WasatchNET
 
         public bool setHighGainModeEnabled(bool flag)
         {
-            if (featureIdentification.boardType != FeatureIdentification.BOARD_TYPES.INGAAS_FX2)
+            if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
             {
                 logger.debug("high gain mode not supported on {0}", featureIdentification.boardType);
                 return false;
@@ -761,7 +766,7 @@ namespace WasatchNET
 
         public HORIZ_BINNING getHorizBinning()
         {
-            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
             {
                 logger.debug("horizontal binning not supported on {0}", featureIdentification.boardType);
                 return HORIZ_BINNING.NONE;
@@ -793,8 +798,8 @@ namespace WasatchNET
 
         public bool getLaserRampingEnabled()
         {
-            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2 ||
-                featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.INGAAS_FX2)
+            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2 ||
+                featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2)
             {
                 logger.debug("laser ramping not supported on {0}", featureIdentification.boardType);
                 return false;
@@ -804,7 +809,7 @@ namespace WasatchNET
 
         public bool getHighGainModeEnabled()
         {
-            if (featureIdentification.boardType != FeatureIdentification.BOARD_TYPES.INGAAS_FX2)
+            if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
             {
                 logger.debug("high gain mode not supported on {0}", featureIdentification.boardType);
                 return false;
@@ -814,7 +819,7 @@ namespace WasatchNET
 
         public uint getCCDTriggerDelay()
         { 
-            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
             {
                 logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
                 return 0;
@@ -888,7 +893,7 @@ namespace WasatchNET
 
         public byte getLaserTemperatureSetpoint()
         {
-            if (featureIdentification.boardType == FeatureIdentification.BOARD_TYPES.RAMAN_FX2)
+            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
             {
                 logger.debug("laser setpoint not readable on {0}", featureIdentification.boardType);
                 return 0;
@@ -1245,7 +1250,7 @@ namespace WasatchNET
                 Thread.Sleep(ms);
             }
 
-            if (!isARM())
+            if (false && !isARM())
             {
                 // logger.debug("blocking until data ready");
                 if (!blockUntilDataReady())
@@ -1342,13 +1347,13 @@ namespace WasatchNET
                 byte[] buf = getCmd(Opcodes.POLL_DATA, 4);
                 if (buf == null)
                 {
-                    // logger.debug("poll: failed (no buf)");
+                    logger.debug("poll: failed (no buf)");
                     return false;
                 }
 
                 if (buf[0] != 0)
                 {
-                    // logger.debug("poll: data ready!");
+                    logger.debug("poll: data ready!");
                     return true;
                 }
             }
