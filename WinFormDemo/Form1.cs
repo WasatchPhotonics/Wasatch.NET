@@ -209,7 +209,7 @@ namespace WinFormDemo
 
         private void checkBoxVerbose_CheckedChanged(object sender, EventArgs e)
         {
-            logger.level = checkBoxVerbose.Checked ? Logger.LogLevel.DEBUG : Logger.LogLevel.INFO;
+            logger.level = checkBoxVerbose.Checked ? LogLevel.DEBUG : LogLevel.INFO;
         }
 
         private void buttonInitialize_Click(object sender, EventArgs e)

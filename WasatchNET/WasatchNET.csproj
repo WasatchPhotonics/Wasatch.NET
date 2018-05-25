@@ -86,8 +86,14 @@
     <Compile Include="AcquisitionStatus.cs" />
     <Compile Include="FeatureIdentification.cs" />
     <Compile Include="FPGAOptions.cs" />
+    <Compile Include="IDriver.cs" />
+    <Compile Include="IDriverVBAWrapper.cs" />
+    <Compile Include="IFPGAOptions.cs" />
+    <Compile Include="ILogger.cs" />
     <Compile Include="IModelConfig.cs" />
+    <Compile Include="IOpcodes.cs" />
     <Compile Include="ISpectrometer.cs" />
+    <Compile Include="IUInt40.cs" />
     <Compile Include="ModelConfig.cs" />
     <Compile Include="ParseData.cs" />
     <Compile Include="Unpack.cs" />
@@ -99,6 +105,7 @@
     <Compile Include="Spectrometer.cs" />
     <Compile Include="UInt40.cs" />
     <Compile Include="Util.cs" />
+    <Compile Include="DriverVBAWrapper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

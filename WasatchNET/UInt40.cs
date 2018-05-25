@@ -1,21 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
 
 namespace WasatchNET
 {
     /// <summary>
     /// 40-bit unsigned value, used for many of the laser functions.
     /// </summary>
-    class UInt40
+
+    [ComVisible(true)]
+    [Guid("E78373A6-98A0-4F79-BEFC-60ED44FE5A87")]
+    [ProgId("WasatchNET.UInt40")]
+    [ClassInterface(ClassInterfaceType.None)]
+    class UInt40 : IUInt40
     {
         public ushort LSW { get; private set; }
         public ushort MidW { get; private set; }
         public byte MSB { get; private set; }
         public byte[] buf { get; private set; }
 
-        public UInt40(UInt64 value)
+        public UInt40(UInt64 value) 
         {
             // if we have to do this twice, make a UInt40 class
             const UInt64 max = (((UInt64)1) << 40) - 1;

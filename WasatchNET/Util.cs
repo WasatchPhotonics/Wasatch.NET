@@ -222,6 +222,5 @@ namespace WasatchNET
             Array.Copy(src, tmp, len);
             return tmp;
         }
-
     }
 }

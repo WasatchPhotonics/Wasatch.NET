@@ -260,6 +260,8 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-05-25 1.0.22
+    - More COM Interface classes
 - 2018-05-24 1.0.21
     - COM annotations
 - 2018-05-23 1.0.20

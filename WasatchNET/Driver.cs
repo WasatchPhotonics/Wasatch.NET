@@ -8,26 +8,6 @@ using LibUsbDotNet.Main;
 
 namespace WasatchNET
 {
-    /// <summary>
-    /// Singleton providing access to individual Spectrometer instances,
-    /// while providing high-level support infrastructure like a master
-    /// version string, reusable logger etc.
-    ///
-    /// In defiance of Microsoft convention, there are no Hungarian 
-    /// prefixes, and camelCase is used throughout. Sorry.
-    /// </summary>
-    [ComVisible(true)]  
-    [Guid("860AEAC3-6016-47B0-ABB9-88F0194601EB")]
-    [InterfaceType(ComInterfaceType.InterfaceIsDual)]
-    public interface IDriver
-    {
-        string version { get; }
-        int openAllSpectrometers();
-        int getNumberOfSpectrometers();
-        Spectrometer getSpectrometer(int index);
-        void closeAllSpectrometers();
-    }
-
     [ComVisible(true)]
     [Guid("E71326C8-C2BC-404F-81E4-394D95541A24")]
     [ProgId("WasatchNET.Driver")]
@@ -349,27 +329,4 @@ namespace WasatchNET
     //  }
     }
 
-    /// <summary>
-    /// A way to get to the static Singleton from languages that
-    /// don't support static class methods like Driver.getInstance().
-    /// </summary>
-    /// <remarks>
-    /// Research indicates that at least some versions of Visual Basic (pre-.NET),
-    /// as well as Visual Basic for Applications (VBA) limit .NET classes to
-    /// object creation, instance methods and instance properties. Unfortunately,
-    /// that means they can't call pure static methods like 
-    /// WasatchNET.Driver.getInstance().
-    ///
-    /// This class is provided as something that any caller can easily create
-    /// (instantiate), and then access the Driver Singleton via the single
-    /// exposed "instance" property.
-    /// </remarks>
-    [ComVisible(true)]
-    [Guid("BB20CDE1-E5A3-4649-8161-7B6E8DAD66FE")]
-    [ProgId("WasatchNET.DriverVBAWrapper")]
-    public class DriverVBAWrapper
-    {
-        public Driver instance = Driver.getInstance();
-        public DriverVBAWrapper() { }
-    }
 }

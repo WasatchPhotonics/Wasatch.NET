@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Forms;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace WasatchNET
 {
@@ -14,7 +15,11 @@ namespace WasatchNET
     /// Studio, log messages should be visible at the Console Output, even if no
     /// TextBox or Path has been set.
     /// </remarks>
-    public class Logger
+    [ComVisible(true)]
+    [Guid("5FED8E72-15B1-4ACA-B730-3B3006364D23")]
+    [ProgId("WasatchNET.Logger")]
+    [ClassInterface(ClassInterfaceType.None)]
+    public class Logger : ILogger
     {
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
@@ -33,7 +38,6 @@ namespace WasatchNET
         // Public attributes
         ////////////////////////////////////////////////////////////////////////
 
-        public enum LogLevel { DEBUG, INFO, ERROR, NEVER };
         public LogLevel level { get; set; } = LogLevel.INFO;
 
         /// <summary>

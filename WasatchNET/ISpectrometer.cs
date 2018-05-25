@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace WasatchNET
 {
+    /// <summary>
+    /// This interface is provided for COM clients (Delphi etc) who seem to find it useful.
+    /// I don't know that .NET users would find much benefit in it.
+    /// </summary>
     [ComVisible(true)]  
     [Guid("7F04C891-E0AC-4F47-812E-C757CF2918B7")]
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
