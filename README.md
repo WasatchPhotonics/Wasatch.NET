@@ -260,6 +260,8 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-05-25 1.0.23
+    - added IDriverVBAWrapper.getSingleton()
 - 2018-05-25 1.0.22
     - More COM Interface classes
 - 2018-05-24 1.0.21

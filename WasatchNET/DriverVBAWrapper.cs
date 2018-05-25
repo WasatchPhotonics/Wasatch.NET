@@ -22,14 +22,17 @@ namespace WasatchNET
     /// exposed "instance" property.
     /// </remarks>
     [ComVisible(true)]
-    [Guid("BB20CDE1-E5A3-4649-8161-7B6E8DAD66FE")]
+    [Guid("E253CACE-A702-4A11-B285-D9B9E18886E4")]
     [ProgId("WasatchNET.DriverVBAWrapper")]
     public class DriverVBAWrapper : IDriverVBAWrapper
     {
-        public IDriver instance { get; }
-        public DriverVBAWrapper()
+        public IDriver instance { get; } = Driver.getInstance();
+
+        public DriverVBAWrapper() { }
+
+        public IDriver getSingleton()
         {
-            instance = Driver.getInstance();
+            return instance;
         }
     }
 }
