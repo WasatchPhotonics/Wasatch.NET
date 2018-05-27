@@ -241,5 +241,17 @@ namespace WasatchNET
         bool setSelectedLaser(byte id);
         bool linkLaserModToIntegrationTime(bool flag);
         bool setLaserEnable(bool flag);
+
+        /// <summary>
+        /// Take a single complete spectrum, including any configured scan 
+        /// averaging, boxcar and dark subtraction.
+        /// </summary>
+        /// <returns>The acquired spectrum as an array of doubles</returns>
+        double[] getSpectrum();
+
+        /// <remarks>
+        /// Wasatch.PY and ENLIGHTEN (FeatureIdentificationDevice.get_line) don't do this.
+        /// </remarks>
+        bool blockUntilDataReady();
     }
 }

@@ -260,6 +260,8 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-05-27 1.0.24
+    - added ISpectrometer.getSpectrum()
 - 2018-05-25 1.0.23
     - added IDriverVBAWrapper.getSingleton()
 - 2018-05-25 1.0.22
