@@ -83,7 +83,7 @@ namespace WasatchNET
         /// write TextBox contents to a text file
         /// </summary>
         /// <param name="pathname">path to create</param>
-        /// <remarks>only works if setTextBox() has been called; otherwise, use setPath()</remarks>
+        /// <remarks>only works if setTextBox() has been called; otherwise, use setPathname()</remarks>
         void save(string pathname);
 
         void hexdump(byte[] buf, string prefix = "");

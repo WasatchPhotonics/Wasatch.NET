@@ -17,7 +17,7 @@ namespace WasatchNET
     /// taint or invalidate your measurement results.
     /// </remarks>
     [ComVisible(true)]
-    [Guid("1D2A0386-017C-471B-B5DB-534F598F9A54")]
+    [Guid("A224D5A7-A0E0-4AAC-8489-4BB0CED3171B")]
     [ProgId("WasatchNET.ModelConfig")]
     [ClassInterface(ClassInterfaceType.None)]
     public class ModelConfig : IModelConfig

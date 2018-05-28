@@ -19,6 +19,7 @@ namespace WasatchNET
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
     public interface IDriver
     {
+        Logger logger { get; }
         string version { get; }
 
         /// <summary>

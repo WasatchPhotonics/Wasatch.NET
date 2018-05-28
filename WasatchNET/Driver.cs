@@ -19,7 +19,7 @@ namespace WasatchNET
 
         bool suppressErrors = false;
 
-        public Logger logger = Logger.getInstance();
+        public Logger logger { get; } = Logger.getInstance();
         public string version { get; }
 
         ////////////////////////////////////////////////////////////////////////

@@ -9,7 +9,7 @@ namespace WasatchNET
     /// I don't know that .NET users would find much benefit in it.
     /// </summary>
     [ComVisible(true)]
-    [Guid("14CFCC56-3C0D-4A2C-AA58-3B36E9820618")]
+    [Guid("D6BC706B-4B50-4CFD-AFFC-6A01F56B92B4")]
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
     public interface IModelConfig
     {
