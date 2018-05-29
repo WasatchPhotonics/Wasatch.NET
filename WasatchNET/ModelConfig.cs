@@ -95,8 +95,8 @@ namespace WasatchNET
         /// Use these when setting the TEC setpoint.
         /// </remarks>
         public float[] degCToDACCoeffs { get; private set; }
-        public float detectorTempMin { get; private set; }
-        public float detectorTempMax { get; private set; }
+        public short detectorTempMin { get; private set; }
+        public short detectorTempMax { get; private set; }
 
         /// <summary>
         /// These are used to convert 12-bit raw ADC temperature readings into degrees Celsius.

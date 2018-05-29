@@ -260,6 +260,10 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-05-29 1.0.26
+    - changed ModelConfig.detectorTempMin/Max from float to short
+- 2018-05-28 1.0.25
+    - added IDriver.logger getter
 - 2018-05-28 1.0.25
     - added IDriver.logger getter
 - 2018-05-27 1.0.24
