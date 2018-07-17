@@ -45,3 +45,6 @@ There you go!
 
 You should now be able to run CyConsole and upload your .iic file using the 
 EZ-USB interface and the "lg EEPROM" button.
+
+(Remember that a full power-cycle (12V, not just USB re-enumeration) is required
+following a firmware update.)
