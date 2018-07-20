@@ -221,8 +221,8 @@ namespace WasatchNET
             setIntegrationTimeMS(modelConfig.minIntegrationTimeMS);
 
             // MZ: base on A/R/C?
-            if (featureIdentification.defaultTECSetpointDegC.HasValue)
-                detectorSetpointDegC = featureIdentification.defaultTECSetpointDegC.Value;
+            if (featureIdentification.hasDefaultTECSetpointDegC)
+                detectorSetpointDegC = featureIdentification.defaultTECSetpointDegC;
             else if (modelConfig.detectorName.Contains("S11511"))
                 detectorSetpointDegC = 10;
             else if (modelConfig.detectorName.Contains("S10141"))

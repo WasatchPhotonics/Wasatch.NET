@@ -118,13 +118,19 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_61DB647AC0B7CEBE52CEF2CF3EB80A4A"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_FFDF7E0D9FE095BE083F97C379580834"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_61DB647AC0B7CEBE52CEF2CF3EB80A4A"
+        "OwnerKey" = "8:_536AABD192384650B4C61ED6D3197391"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -143,12 +149,6 @@
         {
         "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_EFC39CDF06D24A5FBCCA8C5D1146F680"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_536AABD192384650B4C61ED6D3197391"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -310,7 +310,7 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=1.0.25.0, Culture=neutral, processorArchitecture=x86"
+            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=1.0.26.0, Culture=neutral, processorArchitecture=x86"
                 "ScatterAssemblies"
                 {
                     "_61DB647AC0B7CEBE52CEF2CF3EB80A4A"
@@ -714,15 +714,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Wasatch.NET"
-        "ProductCode" = "8:{0BE48C47-ECEE-45E2-82F4-F82387687A49}"
-        "PackageCode" = "8:{85722CA1-E5C4-4652-BE50-32065EBC4D7C}"
+        "ProductCode" = "8:{7FA347CE-02B6-43AD-861D-CD21ACB049B0}"
+        "PackageCode" = "8:{3C6C138D-72DF-42C8-B0FC-FB79B901E706}"
         "UpgradeCode" = "8:{F46C8BF0-A35E-4D7F-A611-252DBD4C6D58}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.0.26"
+        "ProductVersion" = "8:1.0.27"
         "Manufacturer" = "8:Wasatch Photonics"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://wasatchphotonics.com"
@@ -1250,7 +1250,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_536AABD192384650B4C61ED6D3197391"
             {
-            "SourcePath" = "8:..\\WasatchNET\\obj\\x64\\Debug\\WasatchNET.dll"
+            "SourcePath" = "8:..\\WasatchNET\\obj\\x86\\Debug\\WasatchNET.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_1F33B1D1D0B947AF9650869C56F5211A"
@@ -1278,7 +1278,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_EFC39CDF06D24A5FBCCA8C5D1146F680"
             {
-            "SourcePath" = "8:..\\WinFormDemo\\obj\\x64\\Debug\\WinFormDemo.exe"
+            "SourcePath" = "8:..\\WinFormDemo\\obj\\x86\\Debug\\WinFormDemo.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"

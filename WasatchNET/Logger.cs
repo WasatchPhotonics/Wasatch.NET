@@ -54,6 +54,7 @@ namespace WasatchNET
         /// for instant visualization!
         /// </summary>
         /// <param name="tb">the TextBox control where you would like log messages to appear</param>
+        /// <remarks>Note this creates a dependency on system_windows_forms_tlb in COM clients :-(</remarks>
         public void setTextBox(TextBox tb)
         {
             textBox = tb;
@@ -112,6 +113,7 @@ namespace WasatchNET
         /// </summary>
         /// <returns>list of queued error strings</returns>
         /// <remarks>clears hasError()</remarks>
+        /// <remarks>returns a generic, hence is inaccessible from COM</remarks>
         public List<string> getErrors()
         {
             lock (instance)

@@ -96,15 +96,15 @@ namespace WasatchNET
     }
 
     /// <summary>
-    /// This interface is provided for COM clients (Delphi etc) who seem to find it useful.
-    /// I don't know that .NET users would find much benefit in it.
+    /// This interface is provided for COM clients (Delphi etc).
     /// </summary>
+    /// <remarks>Note that the only potential methods to expose both use generics, hence are inaccessible from COM :-(</remarks>
     [ComVisible(true)]
     [Guid("DC076FE7-2203-4B6F-867C-287E982D007A")]
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
     public interface IOpcodeHelper
     {
-        Dictionary<Opcodes, byte> getDict();
-        HashSet<Opcodes> getArmInvertedRetvals();
+        // Dictionary<Opcodes, byte> getDict();
+        // HashSet<Opcodes> getArmInvertedRetvals();
     }
 }

@@ -5,6 +5,9 @@ namespace WasatchNET
     /// <summary>the fundamental electronic board configurations supported by our spectrometers</summary>
     public enum BOARD_TYPES { RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, STROKER_ARM, ERROR };
 
+    /// <summary>
+    /// TODO: move to IFeatureIdentification file
+    /// </summary>
     [ComVisible(true)]  
     [Guid("4CCF3543-73EF-49D5-8234-FC2FDF647127")]
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
@@ -19,7 +22,8 @@ namespace WasatchNET
         uint defaultPixels { get; }
         uint spectraBlockSize { get; }
         uint usbDelayMS { get; }
-        int? defaultTECSetpointDegC { get; }
+        bool hasDefaultTECSetpointDegC { get; }
+        int defaultTECSetpointDegC { get; }
     }
 
     /// <summary>
@@ -47,7 +51,8 @@ namespace WasatchNET
         public uint defaultPixels { get; private set; } = 1024;
         public uint spectraBlockSize { get; private set; }  = 1024 * 2;
         public uint usbDelayMS { get; private set; } = 0;
-        public int? defaultTECSetpointDegC { get; private set; } = null;
+        public bool hasDefaultTECSetpointDegC { get; private set; } = false;
+        public int defaultTECSetpointDegC { get; private set; } = 0;
 
         internal FeatureIdentification(int pid)
         {
@@ -64,6 +69,7 @@ namespace WasatchNET
                 firmwareDesc = "Hamamatsu InGaAs USB Board FX2 Code";
                 defaultPixels = 512;
                 spectraBlockSize = defaultPixels * 2;
+                hasDefaultTECSetpointDegC = true;
                 defaultTECSetpointDegC = -15;
             }
             else if (pid == 0x3000)

@@ -13,7 +13,8 @@ namespace WasatchNET
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
     public interface IModelConfig
     {
-        List<byte[]> pages { get; }
+        // Excluded from COM because "generics" cannot be marshalled -- if needed, refactor into basic array
+        // List<byte[]> pages { get; } 
 
         /// <summary>spectrometer model</summary>
         string model { get; }
