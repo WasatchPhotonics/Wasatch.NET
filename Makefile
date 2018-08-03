@@ -5,8 +5,9 @@ help:
 
 doc:
 	@echo "Rendering Doxygen..."
+	@rm -rf doc/doxygen
 	@mkdir -p doc/doxygen
-	@doxygen 1>doxygen.out 2>doxygen.err
+	@(cat Doxyfile ; echo "PROJECT_NUMBER = $$VERSION") | doxygen - 1>doxygen.out 2>doxygen.err
 	@cat doxygen.out
 	@cat doxygen.err
 

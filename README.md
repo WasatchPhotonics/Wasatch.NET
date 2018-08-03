@@ -260,6 +260,8 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-08-03 1.0.28
+    - auto-set integration time limits
 - 2018-07-20 1.0.27
     - removed Generics from COM API for Delphi
 - 2018-05-29 1.0.26

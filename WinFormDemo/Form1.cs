@@ -82,7 +82,10 @@ namespace WinFormDemo
             if (!s.isARM())
                 s.setCCDTriggerSource(0);
 
-            s.integrationTimeMS = 100;
+            s.integrationTimeMS = s.modelConfig.minIntegrationTimeMS;
+            numericUpDownIntegTimeMS.Value = s.modelConfig.minIntegrationTimeMS;
+            numericUpDownIntegTimeMS.Minimum = s.modelConfig.minIntegrationTimeMS;
+            numericUpDownIntegTimeMS.Maximum = s.modelConfig.maxIntegrationTimeMS;
 
             logger.info("Found {0} {1} with {2} pixels from {3:f2} to {4:f2}nm",
                 s.model, s.serialNumber, s.pixels, s.wavelengths[0], s.wavelengths[s.wavelengths.Length-1]);
@@ -223,6 +226,7 @@ namespace WinFormDemo
                 for (int i = 0; i < driver.getNumberOfSpectrometers(); i++)
                 {
                     Spectrometer s = driver.getSpectrometer(i);
+                    currentSpectrometer = s;
                     spectrometers.Add(s);
                     comboBoxSpectrometer.Items.Add(String.Format("{0} ({1})", s.model, s.serialNumber));
                     initializeSpectrometer(s);

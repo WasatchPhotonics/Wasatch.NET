@@ -52,6 +52,7 @@ read -p "Username: " USERNAME
 read -p "Version:  " VERSION 
 
 # render documentation (TODO: incorporate VERSION into rendered docs)
+export VERSION
 make doc
 
 echo

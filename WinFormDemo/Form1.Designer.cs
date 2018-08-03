@@ -44,6 +44,8 @@
             this.groupBoxSpectrometers = new System.Windows.Forms.GroupBox();
             this.comboBoxSpectrometer = new System.Windows.Forms.ComboBox();
             this.groupBoxControl = new System.Windows.Forms.GroupBox();
+            this.numericUpDownDetectorSetpointDegC = new System.Windows.Forms.NumericUpDown();
+            this.label6 = new System.Windows.Forms.Label();
             this.numericUpDownLaserPowerPerc = new System.Windows.Forms.NumericUpDown();
             this.groupBoxMode = new System.Windows.Forms.GroupBox();
             this.radioButtonModeTransmission = new System.Windows.Forms.RadioButton();
@@ -75,8 +77,6 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.numericUpDownDetectorSetpointDegC = new System.Windows.Forms.NumericUpDown();
-            this.label6 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -90,6 +90,7 @@
             this.groupBoxSettings.SuspendLayout();
             this.groupBoxSpectrometers.SuspendLayout();
             this.groupBoxControl.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDetectorSetpointDegC)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownLaserPowerPerc)).BeginInit();
             this.groupBoxMode.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegTimeMS)).BeginInit();
@@ -97,7 +98,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBoxcarHalfWidth)).BeginInit();
             this.groupBoxSetup.SuspendLayout();
             this.groupBoxEventLog.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDetectorSetpointDegC)).BeginInit();
             this.SuspendLayout();
             // 
             // splitContainerTopVsLog
@@ -209,7 +209,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(210, 204);
+            this.groupBoxSettings.Size = new System.Drawing.Size(211, 204);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -220,7 +220,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(206, 187);
+            this.treeViewSettings.Size = new System.Drawing.Size(207, 187);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -277,6 +277,26 @@
             this.groupBoxControl.TabIndex = 1;
             this.groupBoxControl.TabStop = false;
             this.groupBoxControl.Text = "Control";
+            // 
+            // numericUpDownDetectorSetpointDegC
+            // 
+            this.numericUpDownDetectorSetpointDegC.Location = new System.Drawing.Point(4, 86);
+            this.numericUpDownDetectorSetpointDegC.Margin = new System.Windows.Forms.Padding(2);
+            this.numericUpDownDetectorSetpointDegC.Name = "numericUpDownDetectorSetpointDegC";
+            this.numericUpDownDetectorSetpointDegC.Size = new System.Drawing.Size(59, 20);
+            this.numericUpDownDetectorSetpointDegC.TabIndex = 16;
+            this.numericUpDownDetectorSetpointDegC.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.numericUpDownDetectorSetpointDegC.ValueChanged += new System.EventHandler(this.numericUpDownDetectorSetpointDegC_ValueChanged);
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(68, 87);
+            this.label6.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(130, 13);
+            this.label6.TabIndex = 17;
+            this.label6.Text = "detector TEC setpoint (°C)";
             // 
             // numericUpDownLaserPowerPerc
             // 
@@ -385,7 +405,7 @@
             this.numericUpDownIntegTimeMS.Location = new System.Drawing.Point(4, 17);
             this.numericUpDownIntegTimeMS.Margin = new System.Windows.Forms.Padding(2);
             this.numericUpDownIntegTimeMS.Maximum = new decimal(new int[] {
-            30000,
+            60000,
             0,
             0,
             0});
@@ -652,26 +672,6 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
-            // numericUpDownDetectorSetpointDegC
-            // 
-            this.numericUpDownDetectorSetpointDegC.Location = new System.Drawing.Point(4, 86);
-            this.numericUpDownDetectorSetpointDegC.Margin = new System.Windows.Forms.Padding(2);
-            this.numericUpDownDetectorSetpointDegC.Name = "numericUpDownDetectorSetpointDegC";
-            this.numericUpDownDetectorSetpointDegC.Size = new System.Drawing.Size(59, 20);
-            this.numericUpDownDetectorSetpointDegC.TabIndex = 16;
-            this.numericUpDownDetectorSetpointDegC.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.numericUpDownDetectorSetpointDegC.ValueChanged += new System.EventHandler(this.numericUpDownDetectorSetpointDegC_ValueChanged);
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(68, 87);
-            this.label6.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(130, 13);
-            this.label6.TabIndex = 17;
-            this.label6.Text = "detector TEC setpoint (°C)";
-            // 
             // Form1
             // 
             this.AcceptButton = this.buttonInitialize;
@@ -703,6 +703,7 @@
             this.groupBoxSpectrometers.ResumeLayout(false);
             this.groupBoxControl.ResumeLayout(false);
             this.groupBoxControl.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDetectorSetpointDegC)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownLaserPowerPerc)).EndInit();
             this.groupBoxMode.ResumeLayout(false);
             this.groupBoxMode.PerformLayout();
@@ -713,7 +714,6 @@
             this.groupBoxSetup.PerformLayout();
             this.groupBoxEventLog.ResumeLayout(false);
             this.groupBoxEventLog.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDetectorSetpointDegC)).EndInit();
             this.ResumeLayout(false);
 
         }
