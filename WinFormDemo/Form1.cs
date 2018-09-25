@@ -79,8 +79,8 @@ namespace WinFormDemo
 
             chart1.Series.Add(state.series);
 
-            if (!s.isARM())
-                s.setCCDTriggerSource(0);
+            if (!s.isARM)
+                s.triggerSource = TRIGGER_SOURCE.INTERNAL;
 
             s.integrationTimeMS = s.modelConfig.minIntegrationTimeMS;
             numericUpDownIntegTimeMS.Value = s.modelConfig.minIntegrationTimeMS;
@@ -121,11 +121,11 @@ namespace WinFormDemo
             numericUpDownDetectorSetpointDegC.Enabled = currentSpectrometer.modelConfig.hasCooling;
 
             // update laser controls
-            if (currentSpectrometer.hasLaser())
+            if (currentSpectrometer.hasLaser)
             {
                 numericUpDownLaserPowerPerc.Enabled =
                 checkBoxLaserEnable.Enabled = true;
-                checkBoxLaserEnable.Checked = currentSpectrometer.getLaserEnabled();
+                checkBoxLaserEnable.Checked = currentSpectrometer.laserEnabled;
             }
             else
             {
@@ -304,7 +304,7 @@ namespace WinFormDemo
 
         private void checkBoxLaserEnable_CheckedChanged(object sender, EventArgs e)
         {
-            currentSpectrometer.setLaserEnable(checkBoxLaserEnable.Checked);
+            currentSpectrometer.laserEnabled = checkBoxLaserEnable.Checked;
         }
 
         private void checkBoxTakeDark_CheckedChanged(object sender, EventArgs e)
@@ -469,7 +469,7 @@ namespace WinFormDemo
             if (result != DialogResult.Yes)
                 return;
 
-            currentSpectrometer.setDFUMode(true);
+            currentSpectrometer.setDFUMode();
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -500,10 +500,10 @@ namespace WinFormDemo
                 {
                     foreach (Spectrometer s in spectrometers)
                     {
-                        if (!s.isARM())
+                        if (!s.isARM)
                         {
                             SpectrometerState state = spectrometerStates[s];
-                            state.detTempDegC = s.getCCDTemperatureDegC();
+                            state.detTempDegC = s.detectorTemperatureDegC;
                         }
                     }
                     lowFreqOperations = 0;
@@ -617,18 +617,23 @@ namespace WinFormDemo
 
         private void numericUpDownLaserPowerPerc_ValueChanged(object sender, EventArgs e)
         {
-            if (currentSpectrometer == null)
-                return;
-
-            currentSpectrometer.setLaserPowerPercentage((float)numericUpDownLaserPowerPerc.Value / 100.0f);
+            if (currentSpectrometer != null)
+                currentSpectrometer.setLaserPowerPercentage((float)numericUpDownLaserPowerPerc.Value / 100.0f);
         }
 
         private void numericUpDownDetectorSetpointDegC_ValueChanged(object sender, EventArgs e)
         {
+            if (currentSpectrometer != null)
+                currentSpectrometer.detectorTECSetpointDegC = (float)numericUpDownDetectorSetpointDegC.Value;
+        }
+
+        private void checkBoxExternalTriggerSource_CheckedChanged(object sender, EventArgs e)
+        {
             if (currentSpectrometer == null)
                 return;
 
-            currentSpectrometer.setCCDTemperatureSetpointDegC((float)numericUpDownDetectorSetpointDegC.Value);
+            currentSpectrometer.triggerSource = checkBoxExternalTriggerSource.Checked ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
+            logger.debug("GUI: trigger source now {0}", currentSpectrometer.triggerSource);
         }
     }
 }

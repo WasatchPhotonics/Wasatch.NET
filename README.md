@@ -252,14 +252,13 @@ software and connect to your spectrometer.
 
 # Backlog
 
-- [ ] fully test ARM functionality
-- [ ] refactor Spectrometer into interface, with SpectrometerFactory 
-      replacing FeatureIdentification and SpectrometerStrokerFX2,
-      SpectrometerStrokerARM etc implementing the interface
 - [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
 
 # Version History
 
+- 2018-09-25 2.0.0
+    - refactored to better use COM / .NET Properties
+    - tested ARM triggering
 - 2018-08-03 1.0.28
     - auto-set integration time limits
 - 2018-07-20 1.0.27

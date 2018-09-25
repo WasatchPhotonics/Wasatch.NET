@@ -77,6 +77,7 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            this.checkBoxExternalTriggerSource = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -205,11 +206,11 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBoxSettings.Controls.Add(this.treeViewSettings);
-            this.groupBoxSettings.Location = new System.Drawing.Point(2, 377);
+            this.groupBoxSettings.Location = new System.Drawing.Point(0, 394);
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(211, 204);
+            this.groupBoxSettings.Size = new System.Drawing.Size(212, 192);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -220,7 +221,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(207, 187);
+            this.treeViewSettings.Size = new System.Drawing.Size(208, 175);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -234,7 +235,7 @@
             this.groupBoxSpectrometers.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSpectrometers.Name = "groupBoxSpectrometers";
             this.groupBoxSpectrometers.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSpectrometers.Size = new System.Drawing.Size(210, 300);
+            this.groupBoxSpectrometers.Size = new System.Drawing.Size(210, 317);
             this.groupBoxSpectrometers.TabIndex = 1;
             this.groupBoxSpectrometers.TabStop = false;
             this.groupBoxSpectrometers.Text = "Spectrometers";
@@ -251,6 +252,7 @@
             // 
             // groupBoxControl
             // 
+            this.groupBoxControl.Controls.Add(this.checkBoxExternalTriggerSource);
             this.groupBoxControl.Controls.Add(this.numericUpDownDetectorSetpointDegC);
             this.groupBoxControl.Controls.Add(this.label6);
             this.groupBoxControl.Controls.Add(this.numericUpDownLaserPowerPerc);
@@ -273,7 +275,7 @@
             this.groupBoxControl.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxControl.Name = "groupBoxControl";
             this.groupBoxControl.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxControl.Size = new System.Drawing.Size(205, 253);
+            this.groupBoxControl.Size = new System.Drawing.Size(205, 271);
             this.groupBoxControl.TabIndex = 1;
             this.groupBoxControl.TabStop = false;
             this.groupBoxControl.Text = "Control";
@@ -318,7 +320,7 @@
             this.groupBoxMode.Controls.Add(this.radioButtonModeTransmission);
             this.groupBoxMode.Controls.Add(this.radioButtonModeAbsorbance);
             this.groupBoxMode.Controls.Add(this.radioButtonModeScope);
-            this.groupBoxMode.Location = new System.Drawing.Point(4, 131);
+            this.groupBoxMode.Location = new System.Drawing.Point(4, 154);
             this.groupBoxMode.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxMode.Name = "groupBoxMode";
             this.groupBoxMode.Padding = new System.Windows.Forms.Padding(2);
@@ -377,7 +379,7 @@
             this.buttonClearTraces.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("buttonClearTraces.BackgroundImage")));
             this.buttonClearTraces.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.buttonClearTraces.Enabled = false;
-            this.buttonClearTraces.Location = new System.Drawing.Point(120, 212);
+            this.buttonClearTraces.Location = new System.Drawing.Point(123, 233);
             this.buttonClearTraces.Margin = new System.Windows.Forms.Padding(2);
             this.buttonClearTraces.Name = "buttonClearTraces";
             this.buttonClearTraces.Size = new System.Drawing.Size(33, 33);
@@ -391,7 +393,7 @@
             this.buttonAddTrace.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("buttonAddTrace.BackgroundImage")));
             this.buttonAddTrace.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.buttonAddTrace.Enabled = false;
-            this.buttonAddTrace.Location = new System.Drawing.Point(82, 212);
+            this.buttonAddTrace.Location = new System.Drawing.Point(85, 233);
             this.buttonAddTrace.Margin = new System.Windows.Forms.Padding(2);
             this.buttonAddTrace.Name = "buttonAddTrace";
             this.buttonAddTrace.Size = new System.Drawing.Size(33, 33);
@@ -430,7 +432,7 @@
             this.buttonSave.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("buttonSave.BackgroundImage")));
             this.buttonSave.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.buttonSave.Enabled = false;
-            this.buttonSave.Location = new System.Drawing.Point(158, 212);
+            this.buttonSave.Location = new System.Drawing.Point(161, 233);
             this.buttonSave.Margin = new System.Windows.Forms.Padding(2);
             this.buttonSave.Name = "buttonSave";
             this.buttonSave.Size = new System.Drawing.Size(28, 33);
@@ -455,7 +457,7 @@
             this.buttonStart.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
             this.buttonStart.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonStart.ForeColor = System.Drawing.Color.White;
-            this.buttonStart.Location = new System.Drawing.Point(4, 176);
+            this.buttonStart.Location = new System.Drawing.Point(7, 198);
             this.buttonStart.Margin = new System.Windows.Forms.Padding(2);
             this.buttonStart.Name = "buttonStart";
             this.buttonStart.Size = new System.Drawing.Size(191, 31);
@@ -490,7 +492,7 @@
             this.checkBoxTakeReference.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("checkBoxTakeReference.BackgroundImage")));
             this.checkBoxTakeReference.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.checkBoxTakeReference.Enabled = false;
-            this.checkBoxTakeReference.Location = new System.Drawing.Point(44, 212);
+            this.checkBoxTakeReference.Location = new System.Drawing.Point(47, 233);
             this.checkBoxTakeReference.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxTakeReference.Name = "checkBoxTakeReference";
             this.checkBoxTakeReference.Size = new System.Drawing.Size(34, 33);
@@ -515,7 +517,7 @@
             this.checkBoxTakeDark.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("checkBoxTakeDark.BackgroundImage")));
             this.checkBoxTakeDark.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.checkBoxTakeDark.Enabled = false;
-            this.checkBoxTakeDark.Location = new System.Drawing.Point(4, 212);
+            this.checkBoxTakeDark.Location = new System.Drawing.Point(7, 233);
             this.checkBoxTakeDark.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxTakeDark.Name = "checkBoxTakeDark";
             this.checkBoxTakeDark.Size = new System.Drawing.Size(34, 33);
@@ -672,6 +674,17 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
+            // checkBoxExternalTriggerSource
+            // 
+            this.checkBoxExternalTriggerSource.AutoSize = true;
+            this.checkBoxExternalTriggerSource.Location = new System.Drawing.Point(52, 132);
+            this.checkBoxExternalTriggerSource.Name = "checkBoxExternalTriggerSource";
+            this.checkBoxExternalTriggerSource.Size = new System.Drawing.Size(130, 17);
+            this.checkBoxExternalTriggerSource.TabIndex = 18;
+            this.checkBoxExternalTriggerSource.Text = "external trigger source";
+            this.checkBoxExternalTriggerSource.UseVisualStyleBackColor = true;
+            this.checkBoxExternalTriggerSource.CheckedChanged += new System.EventHandler(this.checkBoxExternalTriggerSource_CheckedChanged);
+            // 
             // Form1
             // 
             this.AcceptButton = this.buttonInitialize;
@@ -765,6 +778,7 @@
         private System.Windows.Forms.NumericUpDown numericUpDownLaserPowerPerc;
         private System.Windows.Forms.NumericUpDown numericUpDownDetectorSetpointDegC;
         private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.CheckBox checkBoxExternalTriggerSource;
     }
 }
 

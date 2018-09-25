@@ -144,7 +144,7 @@ namespace WasatchNET
         /// </summary>
         /// <param name="fmt">see String.Format() fmt</param>
         /// <param name="obj">see String.Format() args</param>
-        public void error(string fmt, params Object[] obj)
+        public bool error(string fmt, params Object[] obj)
         {
             lock (instance)
             {
@@ -160,6 +160,8 @@ namespace WasatchNET
 
             if (level <= LogLevel.ERROR)
                 log(LogLevel.ERROR, fmt, obj);
+
+            return false; // convenient for many cases
         }
 
         /// <summary>
@@ -244,7 +246,7 @@ namespace WasatchNET
 
         void log(LogLevel lvl, string fmt, params Object[] obj)
         {
-            string msg = String.Format("{0} {1}: {2}", getTimestamp(), lvl, String.Format(fmt, obj));
+            string msg = getTimestamp() + " " + lvl + ": " + String.Format(fmt, obj);
 
             lock (instance)
             {

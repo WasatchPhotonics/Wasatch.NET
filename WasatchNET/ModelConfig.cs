@@ -8,6 +8,8 @@ namespace WasatchNET
     /// Encapsulates access to the spectrometer's writable but non-volatile EEPROM.
     /// </summary>
     /// <remarks>
+    /// In retrospect, should have been named "EEPROM."
+    /// 
     /// While users are freely encouraged to read and parse EEPROM contents, they
     /// are STRONGLY ADVISED to exercise GREAT CAUTION in changing or writing 
     /// EEPROM values. It is entirely possible that an erroneous or corrupted 
@@ -44,11 +46,11 @@ namespace WasatchNET
         // Page 0 
         /////////////////////////////////////////////////////////////////////////       
 
-        /// <summary>spectrometer model</summary>
-        public string model { get; private set; }
-
         /// <summary>spectrometer serialNumber</summary>
         public string serialNumber { get; private set; }
+
+        /// <summary>spectrometer model</summary>
+        public string model { get; private set; }
 
         /// <summary>baud rate (bits/sec) for serial communications</summary>
         public int baudRate { get; private set; }
@@ -69,6 +71,15 @@ namespace WasatchNET
 
         /// <summary>the slit width in µm</summary>
         public short slitSizeUM { get; private set; }
+
+        // these will come with ENG-0034 Rev 4
+        public ushort startupIntegrationTimeMS { get; set; }
+        public short  startupDetectorTemperatureDegC { get; set; }
+        public byte   startupTriggeringMode { get; set; }
+        public float  detectorGain { get; set; }
+        public short  detectorOffset { get; set; }
+        public float  detectorGainOdd { get; set; }
+        public short  detectorOffsetOdd { get; set; }
 
         /////////////////////////////////////////////////////////////////////////       
         // Page 1

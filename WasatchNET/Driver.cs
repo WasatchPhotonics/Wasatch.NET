@@ -90,13 +90,6 @@ namespace WasatchNET
                             sorted.Add(key, new List<Spectrometer>());
                         sorted[key].Add(spectrometer);
                         logger.debug("openAllSpectrometers: found key {0} ({1})", key, desc);
-
-                        // doesn't help
-                        if (false && spectrometer.isARM())
-                        {
-                            logger.debug("suppressing errors on ARM");
-                            suppressErrors = true;
-                        }
                     }
                     else
                     {

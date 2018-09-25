@@ -49,12 +49,11 @@ namespace WasatchNET
 
         public const byte HOST_TO_DEVICE = 0x40;
         public const byte DEVICE_TO_HOST = 0xc0;
+        public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
 
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
-
-        float detectorSetpointDegC = 0;
 
         UsbRegistry usbRegistry;
         UsbDevice usbDevice;
@@ -70,13 +69,10 @@ namespace WasatchNET
         object acquisitionLock = new object();
         object commsLock = new object();
         DateTime lastUsbTimestamp = DateTime.Now;
-
-        // LaserRamp laserRamp = new LaserRamp();
-
-        #region properties
+        bool shuttingDown = false;
 
         ////////////////////////////////////////////////////////////////////////
-        // Public properties
+        // Convenience lookups
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
@@ -90,11 +86,21 @@ namespace WasatchNET
         /// <remarks>see Util.wavelengthsToWavenumbers</remarks>
         public double[] wavenumbers { get; private set; }
 
-        /// <summary>spectrometer model</summary>
-        public string model { get; private set; }
-
         /// <summary>spectrometer serial number</summary>
-        public string serialNumber { get; private set; }
+        public string serialNumber
+        {
+            get { return modelConfig.serialNumber; }
+        }
+
+        /// <summary>spectrometer model</summary>
+        public string model
+        {
+            get { return modelConfig.model; }
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Purely internal driver attributes (no hardware version)
+        ////////////////////////////////////////////////////////////////////////
 
         /// <summary>metadata inferred from the spectrometer's USB PID</summary>
         public FeatureIdentification featureIdentification { get; private set; }
@@ -105,28 +111,9 @@ namespace WasatchNET
         /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
         public ModelConfig modelConfig { get; private set; }
 
-        public bool laserRampingEnabled { get; set; }
-
         ////////////////////////////////////////////////////////////////////////
-        // complex properties
+        // Purely internal driver attributes (no hardware version)
         ////////////////////////////////////////////////////////////////////////
-
-        // Each of these has to have an explicit private version, because 
-        // synchronization requires an explicit setter and C# doesn't create 
-        // implicit private attibutes if you have an explicit accessor.
-
-        /// <summary>
-        /// Current integration time in milliseconds. Reading this property
-        /// returns a CACHED value for performance reasons; use getIntegrationTimeMS
-        /// to read from spectrometer.
-        /// </summary>
-        /// <see cref="getIntegrationTimeMS"/>
-        public uint integrationTimeMS
-        {
-            get { return integrationTimeMS_; }
-            set { lock (acquisitionLock) setIntegrationTimeMS(value); }
-        }
-        uint integrationTimeMS_;
 
         /// <summary>
         /// How many acquisitions to average together (zero for no averaging)
@@ -134,7 +121,7 @@ namespace WasatchNET
         public uint scanAveraging
         {
             get { return scanAveraging_; }
-            set { lock(acquisitionLock) scanAveraging_ = value; }
+            set { lock (acquisitionLock) scanAveraging_ = value; }
         }
         uint scanAveraging_ = 1;
 
@@ -145,7 +132,7 @@ namespace WasatchNET
         /// </summary>
         public uint boxcarHalfWidth
         {
-            get { return boxcarHalfWidth_;  }
+            get { return boxcarHalfWidth_; }
             set { lock (acquisitionLock) boxcarHalfWidth_ = value; }
         }
         uint boxcarHalfWidth_;
@@ -157,16 +144,771 @@ namespace WasatchNET
         public double[] dark
         {
             get { return dark_; }
-            set { lock(acquisitionLock) dark_ = value; }
+            set { lock (acquisitionLock) dark_ = value; }
         }
         double[] dark_;
-        #endregion
+
+        ////////////////////////////////////////////////////////////////////////
+        // property caching 
+        ////////////////////////////////////////////////////////////////////////
+
+        private HashSet<Opcodes> readOnce = new HashSet<Opcodes>();
+        private HashSet<Opcodes> noCache = new HashSet<Opcodes>();
+
+        public void useCache(Opcodes op) { noCache.Remove(op); }
+        public void dontCache(Opcodes op) { noCache.Add(op); }
+        public bool haveCache(Opcodes op) { return readOnce.Contains(op) && !noCache.Contains(op); }
+
+        ////////////////////////////////////////////////////////////////////////
+        // device properties (maintain in alphabetical order)
+        ////////////////////////////////////////////////////////////////////////
+
+        public ushort actualFrames
+        {
+            get
+            {
+                return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES, 2));
+            }
+        }
+
+        public uint actualIntegrationTimeUS
+        {
+            get
+            {
+                uint value = Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 6));
+                return (value == 0xffffff) ? 0 : value;
+            }
+        }
+
+        public bool continuousAcquisitionEnable
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_CONTINUOUS_ACQUISITION;
+                if (haveCache(op))
+                    return continuousAcquisitionEnable_;
+                readOnce.Add(op);
+                return continuousAcquisitionEnable_ = Unpack.toBool(getCmd(op, 1));
+            }
+            set
+            {
+                sendCmd(Opcodes.SET_CONTINUOUS_ACQUISITION, (ushort)((continuousAcquisitionEnable_ = value) ? 1 : 0));
+                readOnce.Add(Opcodes.GET_CONTINUOUS_ACQUISITION);
+            }
+        }
+        bool continuousAcquisitionEnable_;
+
+        public byte continuousFrames
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_CONTINUOUS_FRAMES;
+                if (haveCache(op))
+                    return continuousFrames_;
+                readOnce.Add(op);
+                return continuousFrames_ = Unpack.toByte(getCmd(op, 1));
+            }
+            set
+            {
+                sendCmd(Opcodes.SET_CONTINUOUS_FRAMES, continuousFrames_ = value);
+                readOnce.Add(Opcodes.GET_CONTINUOUS_FRAMES);
+            }
+        }
+        byte continuousFrames_;
+
+        public float detectorGain
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_DETECTOR_GAIN;
+                if (haveCache(op))
+                    return detectorGain_;
+                readOnce.Add(op);
+                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2)));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_DETECTOR_GAIN);
+                sendCmd(Opcodes.SET_DETECTOR_GAIN, FunkyFloat.fromFloat(detectorGain_ = value));
+            }
+        }
+        float detectorGain_;
+
+        public ushort detectorOffset
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_DETECTOR_OFFSET;
+                if (haveCache(op))
+                    return detectorOffset_;
+                readOnce.Add(op);
+                return detectorOffset_ = Unpack.toUshort(getCmd(op, 2));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_DETECTOR_OFFSET);
+                sendCmd(Opcodes.SET_DETECTOR_OFFSET, detectorOffset_ = value);
+            }
+        }
+        ushort detectorOffset_;
+
+        public bool detectorSensingThresholdEnabled
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE;
+                if (haveCache(op))
+                    return detectorSensingThresholdEnabled_;
+                readOnce.Add(op);
+                return detectorSensingThresholdEnabled_ = Unpack.toBool(getCmd(op, 1));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE);
+                sendCmd(Opcodes.SET_DETECTOR_SENSING_THRESHOLD_ENABLE, (ushort)((detectorSensingThresholdEnabled_ = value) ? 1 : 0));
+            }
+        }
+        bool detectorSensingThresholdEnabled_;
+
+        public ushort detectorSensingThreshold
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD;
+                if (haveCache(op))
+                    return detectorSensingThreshold_;
+                readOnce.Add(op);
+                return detectorSensingThreshold_ = Unpack.toUshort(getCmd(op, 2));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_DETECTOR_SENSING_THRESHOLD);
+                sendCmd(Opcodes.SET_DETECTOR_SENSING_THRESHOLD, detectorSensingThreshold_ = value);
+            }
+        }
+        ushort detectorSensingThreshold_;
+
+        public bool detectorTECEnabled
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_DETECTOR_TEC_ENABLE;
+                if (haveCache(op))
+                    return detectorTECEnabled_;
+                readOnce.Add(op);
+                return detectorTECEnabled_ = Unpack.toBool(getCmd(op, 1));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_DETECTOR_TEC_ENABLE);
+                sendCmd(Opcodes.SET_DETECTOR_TEC_ENABLE, (ushort)((detectorTECEnabled_ = value) ? 1 : 0));
+            }
+        }
+        bool detectorTECEnabled_;
+
+        public float detectorTECSetpointDegC
+        {
+            get
+            {
+                // Normal cache doesn't work, because there is no opcode to read
+                // TEC setpoint in DegC, because that isn't a spectrometer property.
+                return detectorTECSetpointDegC_;
+            }
+            set
+            {
+                // generate and cache the DegC version
+                detectorTECSetpointDegC_ = Math.Max(modelConfig.detectorTempMin, Math.Min(modelConfig.detectorTempMax, value));
+
+                // convert to raw and apply
+                float dac = modelConfig.degCToDACCoeffs[0]
+                          + modelConfig.degCToDACCoeffs[1] * detectorTECSetpointDegC_
+                          + modelConfig.degCToDACCoeffs[2] * detectorTECSetpointDegC_ * detectorTECSetpointDegC_;
+                detectorTECSetpointRaw = Math.Min((ushort)0xfff, (ushort)Math.Round(dac));
+            }
+        }
+        float detectorTECSetpointDegC_ = UNINITIALIZED_TEMPERATURE_DEG_C;
+
+        public ushort detectorTECSetpointRaw
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_DETECTOR_TEC_SETPOINT;
+                if (haveCache(op))
+                    return detectorTECSetpointRaw_;
+                readOnce.Add(op);
+                return detectorTECSetpointRaw_ = Unpack.toUshort(getCmd(op, 2, wIndex: 0));
+            }
+            set
+            {
+                sendCmd(Opcodes.SET_DETECTOR_TEC_SETPOINT, detectorTECSetpointRaw_ = value);
+                readOnce.Add(Opcodes.GET_DETECTOR_TEC_SETPOINT);
+            }
+        }
+        ushort detectorTECSetpointRaw_;
+
+        public float detectorTemperatureDegC
+        {
+            get
+            {
+                ushort raw = detectorTemperatureRaw;
+                float degC = modelConfig.adcToDegCCoeffs[0]
+                           + modelConfig.adcToDegCCoeffs[1] * raw
+                           + modelConfig.adcToDegCCoeffs[2] * raw * raw;
+                logger.debug("getDetectorTemperatureDegC: raw 0x{0:x4}, coeff {1:f2}, {2:f2}, {3:f2} = {4:f2}",
+                        raw,
+                        modelConfig.adcToDegCCoeffs[0],
+                        modelConfig.adcToDegCCoeffs[1],
+                        modelConfig.adcToDegCCoeffs[2],
+                        degC);
+                return degC;
+            }
+        }
+
+        public ushort detectorTemperatureRaw
+        {
+            get { return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2))); }
+        }
+
+        public string firmwareRevision
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_FIRMWARE_REVISION;
+                if (haveCache(op))
+                    return firmwareRevision_;
+                byte[] buf = getCmd(op, 4);
+                if (buf == null)
+                    return "ERROR";
+                string s = "";
+                for (int i = 3; i >= 0; i--)
+                {
+                    s += String.Format("{0}", buf[i]);
+                    if (i > 0)
+                        s += ".";
+                }
+                readOnce.Add(op);
+                return firmwareRevision_ = s;
+            }
+        }
+        string firmwareRevision_;
+
+        public string fpgaRevision
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_FPGA_REVISION;
+                if (haveCache(op))
+                    return fpgaRevision_;
+                byte[] buf = getCmd(op, 7);
+                if (buf == null)
+                    return "UNKNOWN";
+                string s = "";
+                for (uint i = 0; i < 7; i++)
+                    s += (char)buf[i];
+                readOnce.Add(op);
+                return fpgaRevision_ = s.TrimEnd();
+            }
+        }
+        string fpgaRevision_;
+
+        public bool highGainModeEnabled
+        {
+            get
+            {
+                if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
+                    return false;
+                Opcodes op = Opcodes.GET_CF_SELECT;
+                if (haveCache(op))
+                    return highGainModeEnabled_;
+                readOnce.Add(op);
+                return highGainModeEnabled_ = Unpack.toBool(getCmd(op, 1));
+            }
+            set
+            {
+                if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
+                    return;
+                readOnce.Add(Opcodes.GET_CF_SELECT);
+                sendCmd(Opcodes.SET_CF_SELECT, (ushort)((highGainModeEnabled_ = value) ? 1 : 0));
+            }
+        }
+        bool highGainModeEnabled_;
+
+        public HORIZONTAL_BINNING horizontalBinning
+        {
+            get
+            {
+                if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
+                    return HORIZONTAL_BINNING.ERROR;
+
+                Opcodes op = Opcodes.GET_HORIZONTAL_BINNING;
+                if (haveCache(op))
+                    return horizontalBinning_;
+                horizontalBinning_ = HORIZONTAL_BINNING.ERROR;
+                byte[] buf = getCmd(op, 1);
+                if (buf != null)
+                    switch (buf[0])
+                    {
+                        case 0: horizontalBinning_ = HORIZONTAL_BINNING.NONE; break;
+                        case 1: horizontalBinning_ = HORIZONTAL_BINNING.TWO_PIXEL; break;
+                        case 2: horizontalBinning_ = HORIZONTAL_BINNING.FOUR_PIXEL; break;
+                    }
+                if (horizontalBinning_ != HORIZONTAL_BINNING.ERROR)
+                    readOnce.Add(op);
+                return horizontalBinning_;
+            }
+            set
+            {
+                if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2 || value == HORIZONTAL_BINNING.ERROR)
+                    return;
+                sendCmd(Opcodes.SET_HORIZONTAL_BINNING, (ushort)(horizontalBinning_ = value));
+                readOnce.Add(Opcodes.GET_HORIZONTAL_BINNING);
+            }
+        }
+        HORIZONTAL_BINNING horizontalBinning_;
+
+        public uint integrationTimeMS
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_INTEGRATION_TIME;
+                if (haveCache(op))
+                    return integrationTimeMS_;
+                byte[] buf = getCmd(op, 3, fullLen: 6);
+                if (buf == null)
+                    return 0;
+                readOnce.Add(op);
+                return integrationTimeMS_ = Unpack.toUint(buf);
+            }
+            set
+            {
+                lock (acquisitionLock)
+                {
+                    uint ms = Math.Max(modelConfig.minIntegrationTimeMS, Math.Min(modelConfig.maxIntegrationTimeMS, value));
+                    ushort lsw = (ushort)(ms % 65536);
+                    ushort msw = (ushort)(ms / 65536);
+                    sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw);
+                    integrationTimeMS_ = ms;
+                    readOnce.Add(Opcodes.GET_INTEGRATION_TIME);
+                }
+            }
+        }
+        uint integrationTimeMS_;
+
+        public bool laserEnabled // dangerous one to cache...
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_LASER_ENABLE;
+                if (haveCache(op))
+                    return laserEnabled_;
+                readOnce.Add(op);
+                return laserEnabled_ = Unpack.toBool(getCmd(op, 1));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_LASER_ENABLE);
+                sendCmd(Opcodes.SET_LASER_ENABLE, (ushort) ((laserEnabled_ = value) ? 1 : 0));
+            }
+        }
+        bool laserEnabled_;
+
+        public bool laserModulationEnabled
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_LASER_MOD_ENABLE;
+                if (haveCache(op))
+                    return laserModulationEnabled_;
+                readOnce.Add(op);
+                return laserModulationEnabled_ = Unpack.toBool(getCmd(op, 1));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_LASER_MOD_ENABLE);
+                sendCmd(Opcodes.SET_LASER_MOD_ENABLE, (ushort) ((laserModulationEnabled_ = value) ? 1 : 0)); // TODO: missing fake 8-byte buf?
+            }
+        }
+        bool laserModulationEnabled_;
+
+        public bool laserInterlockEnabled { get { return Unpack.toBool(getCmd(Opcodes.GET_LASER_INTERLOCK, 1)); } }
+
+        public bool laserModulationLinkedToIntegrationTime
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME;
+                if (haveCache(op))
+                    return laserModulationLinkedToIntegrationTime_;
+                readOnce.Add(op);
+                return laserModulationLinkedToIntegrationTime_ = Unpack.toBool(getCmd(op, 1));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME);
+                sendCmd(Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) ((laserModulationLinkedToIntegrationTime_ = value) ? 1 : 0));
+            }
+        }
+        bool laserModulationLinkedToIntegrationTime_;
+
+        public UInt64 laserModulationPulseDelay
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_LASER_MOD_PULSE_DELAY;
+                if (haveCache(op))
+                    return laserModulationPulseDelay_;
+                readOnce.Add(op);
+                return Unpack.toUint64(getCmd(op, 5));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_LASER_MOD_PULSE_DELAY);
+                UInt40 val = new UInt40(laserModulationPulseDelay_ = value);
+                sendCmd(Opcodes.SET_LASER_MOD_PULSE_DELAY, val.LSW, val.MidW, val.buf);
+            }
+        }
+        UInt64 laserModulationPulseDelay_;
+
+        public UInt64 laserModulationDuration
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_LASER_MOD_DURATION;
+                if (haveCache(op))
+                    return laserModulationDuration_;
+                readOnce.Add(op);
+                return laserModulationDuration_ = Unpack.toUint64(getCmd(op, 5));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_LASER_MOD_DURATION);
+                UInt40 val = new UInt40(laserModulationDuration_ = value);
+                sendCmd(Opcodes.SET_LASER_MOD_DURATION, val.LSW, val.MidW, val.buf);
+            }
+        }
+        UInt64 laserModulationDuration_;
+
+        public UInt64 laserModulationPeriod
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_LASER_MOD_PERIOD;
+                if (haveCache(op))
+                    return laserModulationPeriod_;
+                readOnce.Add(op);
+                return laserModulationPeriod_ = Unpack.toUint64(getCmd(op, 5));
+            }
+            set
+            {
+                UInt40 val = new UInt40(laserModulationPeriod_ = value);
+                sendCmd(Opcodes.SET_LASER_MOD_PERIOD, val.LSW, val.MidW, val.buf);
+            }
+        }
+        UInt64 laserModulationPeriod_;
+
+        public UInt64 laserModulationPulseWidth
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_LASER_MOD_PULSE_WIDTH;
+                if (haveCache(op))
+                    return laserModulationPulseWidth_;
+                readOnce.Add(op);
+                return laserModulationPulseWidth_ = Unpack.toUint64(getCmd(op, 5)); 
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_LASER_MOD_PULSE_WIDTH);
+                UInt40 val = new UInt40(laserModulationPulseWidth_ = value);
+                sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, val.LSW, val.MidW, val.buf);
+            }
+        }
+        UInt64 laserModulationPulseWidth_;
+
+        public bool laserRampingEnabled
+        {
+            get
+            {
+                if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                    return false;
+                Opcodes op = Opcodes.GET_LASER_RAMPING_MODE;
+                if (haveCache(op))
+                    return laserRampingEnabled_;
+                readOnce.Add(op);
+                return laserRampingEnabled_ = Unpack.toBool(getCmd(op, 1));
+            }
+            set
+            {
+                if (featureIdentification.boardType != BOARD_TYPES.RAMAN_FX2)
+                    return;
+                readOnce.Add(Opcodes.GET_LASER_RAMPING_MODE);
+                sendCmd(Opcodes.SET_LASER_RAMPING_MODE, (ushort)((laserRampingEnabled_ = value) ? 1 : 0));
+            }
+        }
+        bool laserRampingEnabled_;
+
+        public float laserTemperatureDegC
+        {
+            get
+            {
+                double raw = laserTemperatureRaw;
+                double voltage = 2.5 * raw / 4096;
+                double resistance = 21450.0 * voltage / (2.5 - voltage);
+                if (resistance <= 0)
+                {
+                    logger.error("laserTemperatureDegC.get: invalid resistance ({0})", resistance);
+                    return 0;
+                }
+                double logVal = Math.Log(resistance / 10000);
+                double insideMain = logVal + 3977.0 / (25 + 273.0);
+                double degC = 3977.0 / insideMain - 273.0;
+
+                logger.debug("laserTemperatureDegC.get: {0:f2} deg C (raw 0x{1:x4})", degC, raw);
+
+                return (float)degC;
+            }
+        }
+        public ushort laserTemperatureRaw { get { return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMPERATURE, 2))); } } 
+
+        public byte laserTemperatureSetpointRaw
+        {
+            get
+            {
+                if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
+                    return 0;
+                Opcodes op = Opcodes.GET_LASER_TEC_SETPOINT;
+                if (haveCache(op))
+                    return laserTemperatureSetpointRaw_;
+                readOnce.Add(op);
+                return laserTemperatureSetpointRaw_ = Unpack.toByte(getCmd(op, 1));
+            }
+            set
+            {
+                sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ = Math.Max((byte)127, value));
+                readOnce.Add(Opcodes.GET_LASER_TEC_SETPOINT);
+            }
+        }
+        byte laserTemperatureSetpointRaw_;
+
+        public uint lineLength
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_LINE_LENGTH;
+                if (haveCache(op))
+                    return lineLength_;
+                readOnce.Add(op);
+                return lineLength_ = Unpack.toUshort(getCmd2(op, 2));
+            }
+        }
+        uint lineLength_;
+
+        public bool optAreaScan
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_OPT_AREA_SCAN;
+                if (haveCache(op))
+                    return optAreaScan_;
+                readOnce.Add(op);
+                return optAreaScan_ = Unpack.toBool(getCmd2(op, 1));
+            }
+        }
+        bool optAreaScan_;
+    
+        public bool optActualIntegrationTime
+        { 
+            get
+            {
+                Opcodes op = Opcodes.GET_OPT_ACTUAL_INTEGRATION_TIME;
+                if (haveCache(op))
+                    return optActualIntegrationTime_;
+                readOnce.Add(op);
+                return optActualIntegrationTime_ = Unpack.toBool(getCmd2(op, 1));
+            }
+        }
+        bool optActualIntegrationTime_;
+
+        public bool optCFSelect
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_OPT_CF_SELECT;
+                if (haveCache(op))
+                    return optCFSelect_;
+                readOnce.Add(op);
+                return optCFSelect_ = Unpack.toBool(getCmd2(op, 1));
+            }
+        }
+        bool optCFSelect_;
+
+        public FPGA_DATA_HEADER optDataHeaderTag
+        { 
+            get
+            {
+                Opcodes op = Opcodes.GET_OPT_DATA_HEADER_TAG;
+                if (haveCache(op))
+                    return optDataHeaderTag_;
+                readOnce.Add(op);
+                return optDataHeaderTag_ = fpgaOptions.parseDataHeader(Unpack.toInt(getCmd2(op, 1)));
+            }
+        }
+        FPGA_DATA_HEADER optDataHeaderTag_ = FPGA_DATA_HEADER.ERROR;
+
+        public bool optHorizontalBinning
+        {
+            get 
+            {
+                Opcodes op = Opcodes.GET_OPT_HORIZONTAL_BINNING;
+                if (haveCache(op))
+                    return optHorizontalBinning_;
+                readOnce.Add(op);
+                return optHorizontalBinning_ = Unpack.toBool(getCmd2(op, 1));
+            }
+        }
+        bool optHorizontalBinning_;
+
+        public FPGA_INTEG_TIME_RES optIntegrationTimeResolution
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_OPT_INTEGRATION_TIME_RESOLUTION;
+                if (haveCache(op))
+                    return optIntegrationTimeResolution_;
+                readOnce.Add(op);
+                return optIntegrationTimeResolution_ = fpgaOptions.parseResolution(Unpack.toInt(getCmd2(op, 1)));
+            }
+        }
+        FPGA_INTEG_TIME_RES optIntegrationTimeResolution_ = FPGA_INTEG_TIME_RES.ERROR;
+
+        public FPGA_LASER_CONTROL optLaserControl
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_OPT_LASER_CONTROL;
+                if (haveCache(op))
+                    return optLaserControl_;
+                readOnce.Add(op);
+                return optLaserControl_ = fpgaOptions.parseLaserControl(Unpack.toInt(getCmd2(op, 1)));
+            }
+        }
+        FPGA_LASER_CONTROL optLaserControl_ = FPGA_LASER_CONTROL.ERROR;
+    
+        public FPGA_LASER_TYPE optLaserType
+        { 
+            get
+            {
+                Opcodes op = Opcodes.GET_OPT_LASER_TYPE;
+                if (haveCache(op))
+                    return optLaserType_;
+                readOnce.Add(op);
+                return optLaserType_ = fpgaOptions.parseLaserType(Unpack.toInt(getCmd2(op, 1)));
+            }
+        }
+        FPGA_LASER_TYPE optLaserType_ = FPGA_LASER_TYPE.ERROR;
+
+        public byte selectedADC
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_SELECTED_ADC;
+                if (haveCache(op))
+                    return selectedADC_;
+                readOnce.Add(op);
+                return selectedADC_ = Unpack.toByte(getCmd(op, 1));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.SET_SELECTED_ADC);
+                sendCmd(Opcodes.SET_SELECTED_ADC, selectedADC_ = value);
+            }
+        }
+        byte selectedADC_;
+
+        public TRIGGER_SOURCE triggerSource
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_TRIGGER_SOURCE;
+                if (haveCache(op))
+                    return triggerSource_;
+                byte[] buf = getCmd(Opcodes.GET_TRIGGER_SOURCE, 1);
+                if (buf == null || buf[0] > 2)
+                    return TRIGGER_SOURCE.ERROR;
+                readOnce.Add(op);
+                return triggerSource_ = buf[0] == 0 ? TRIGGER_SOURCE.INTERNAL : TRIGGER_SOURCE.EXTERNAL;
+            }
+            set
+            {
+                if (value == TRIGGER_SOURCE.ERROR)
+                    return;
+                UInt40 val = new UInt40((ushort)(triggerSource_ = value));
+                readOnce.Add(Opcodes.GET_TRIGGER_SOURCE);
+                if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                    sendCmd(Opcodes.SET_TRIGGER_SOURCE, val.LSW, val.MidW, val.buf);
+                else
+                    logger.debug("not sending SET_TRIGGER_SOURCE (0x{0:x2}) -> {1} because ARM", cmd[Opcodes.SET_TRIGGER_SOURCE], triggerSource_);
+            }
+        }
+        TRIGGER_SOURCE triggerSource_ = TRIGGER_SOURCE.INTERNAL; // not ERROR
+
+        public EXTERNAL_TRIGGER_OUTPUT triggerOutput
+        {
+            get
+            {
+                Opcodes op = Opcodes.GET_TRIGGER_OUTPUT;
+                if (haveCache(op))
+                    return triggerOutput_;
+                triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.ERROR;
+                byte[] buf = getCmd(Opcodes.GET_TRIGGER_OUTPUT, 1);
+                if (buf != null)
+                    switch (buf[0])
+                    {
+                        case 0: triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.LASER_MODULATION; break;
+                        case 1: triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.INTEGRATION_ACTIVE_PULSE; break;
+                    }
+                if (triggerOutput_ != EXTERNAL_TRIGGER_OUTPUT.ERROR)
+                    readOnce.Add(op);
+                return triggerOutput_;
+            }
+            set
+            {
+                if (value == EXTERNAL_TRIGGER_OUTPUT.ERROR)
+                    return;
+                readOnce.Add(Opcodes.GET_TRIGGER_OUTPUT);
+                sendCmd(Opcodes.SET_TRIGGER_OUTPUT, (ushort)(triggerOutput_ = value));
+            }
+        }
+        EXTERNAL_TRIGGER_OUTPUT triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.ERROR;
+
+        public uint triggerDelay
+        { 
+            get
+            {
+                if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
+                    return 0;
+                Opcodes op = Opcodes.GET_TRIGGER_DELAY;
+                if (haveCache(op))
+                    return triggerDelay_;
+                readOnce.Add(op);
+                return triggerDelay_ = Unpack.toUint(getCmd(op, 3));
+            }
+            set
+            {
+                if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
+                    return;
+                ushort lsw = (ushort)((triggerDelay_ = value) & 0xffff);
+                byte msb = (byte)(value >> 16);
+                sendCmd(Opcodes.SET_TRIGGER_DELAY, lsw, msb);
+                readOnce.Add(Opcodes.GET_TRIGGER_DELAY);
+            }
+        }
+        uint triggerDelay_;
 
         ////////////////////////////////////////////////////////////////////////
         // Lifecycle
         ////////////////////////////////////////////////////////////////////////
 
-        #region lifecycle
         internal Spectrometer(UsbRegistry usbReg)
         {
             usbRegistry = usbReg;
@@ -175,11 +917,11 @@ namespace WasatchNET
 
         internal bool open()
         {
+            // clear cache
+            readOnce.Clear();
+
             if (!reconnect())
-            {
-                logger.error("Spectrometer.open: couldn't reconnect");
-                return false;
-            }
+                return logger.error("Spectrometer.open: couldn't reconnect");
 
             // derive some values from PID
             featureIdentification = new FeatureIdentification(usbRegistry.Pid);
@@ -195,8 +937,6 @@ namespace WasatchNET
                 usbDevice.Close();
                 return false;
             }
-            model = modelConfig.model;
-            serialNumber = modelConfig.serialNumber;
             logger.debug("back from reading EEPROM");
 
             // see how the FPGA was compiled
@@ -205,10 +945,10 @@ namespace WasatchNET
             logger.debug("back from FPGA Options");
 
             // MustardTree uses 2048-pixel version of the S11510, and all InGaAs are 512
-            pixels = (uint) modelConfig.activePixelsHoriz;
+            pixels = (uint)modelConfig.activePixelsHoriz;
             if (pixels > 2048)
             {
-                logger.error("Unlikely pixels count found ({0}); defaulting to {1}", 
+                logger.error("Unlikely pixels count found ({0}); defaulting to {1}",
                     modelConfig.activePixelsHoriz, featureIdentification.defaultPixels);
                 pixels = featureIdentification.defaultPixels;
             }
@@ -218,40 +958,42 @@ namespace WasatchNET
                 wavenumbers = Util.wavelengthsToWavenumbers(modelConfig.excitationNM, wavelengths);
 
             // by default, integration time is zero in HW
-            setIntegrationTimeMS(modelConfig.minIntegrationTimeMS);
+            integrationTimeMS = modelConfig.minIntegrationTimeMS;
 
             // MZ: base on A/R/C?
+            // use cache variable because why not
+            float degC = UNINITIALIZED_TEMPERATURE_DEG_C;
             if (featureIdentification.hasDefaultTECSetpointDegC)
-                detectorSetpointDegC = featureIdentification.defaultTECSetpointDegC;
+                degC = featureIdentification.defaultTECSetpointDegC;
             else if (modelConfig.detectorName.Contains("S11511"))
-                detectorSetpointDegC = 10;
+                degC = 10;
             else if (modelConfig.detectorName.Contains("S10141"))
-                detectorSetpointDegC = -15;
+                degC = -15;
             else if (modelConfig.detectorName.Contains("G9214"))
-                detectorSetpointDegC = -15;
+                degC = -15;
 
-            if (hasLaser())
+            if (hasLaser)
             {
                 logger.debug("unlinking laser modulation from integration time");
-                linkLaserModToIntegrationTime(false);
+                laserModulationLinkedToIntegrationTime = false;
 
                 logger.debug("disabling laser modulation");
-                setLaserModulationEnable(false);
+                laserModulationEnabled = false;
 
                 logger.debug("disabling laser");
-                setLaserEnable(false);
+                laserEnabled = false;
             }
 
-            if (modelConfig.hasCooling)
+            if (modelConfig.hasCooling && degC != UNINITIALIZED_TEMPERATURE_DEG_C)
             {
                 // MZ: TEC doesn't do anything unless you give it a temperature first
-                logger.debug("setting TEC setpoint to {0} deg C", detectorSetpointDegC);
-                setCCDTemperatureSetpointDegC(detectorSetpointDegC);
+                logger.debug("setting TEC setpoint to {0} deg C", degC);
+                detectorTECSetpointDegC = degC;
 
-                if (!isARM())
+                if (!isARM)
                 {
                     logger.debug("enabling detector TEC");
-                    setCCDTemperatureEnable(true);
+                    detectorTECEnabled = true;
                 }
             }
 
@@ -260,12 +1002,14 @@ namespace WasatchNET
 
         public void close()
         {
+            shuttingDown = true;
+
             if (usbDevice != null)
             {
                 if (usbDevice.IsOpen)
                 {
-                    if (hasLaser())
-                        setLaserEnable(false);
+                    if (hasLaser)
+                        laserEnabled = false;
 
                     IUsbDevice wholeUsbDevice = usbDevice as IUsbDevice;
                     if (!ReferenceEquals(wholeUsbDevice, null))
@@ -275,18 +1019,13 @@ namespace WasatchNET
                 usbDevice = null;
             }
         }
-        #endregion
 
         ////////////////////////////////////////////////////////////////////////
         // Convenience Accessors
         ////////////////////////////////////////////////////////////////////////
 
-        public bool isARM() { return featureIdentification.boardType == BOARD_TYPES.STROKER_ARM; }
-        public bool hasLaser()
-        {
-            return modelConfig.hasLaser 
-                && (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL || fpgaOptions.laserType == FPGA_LASER_TYPE.EXTERNAL);
-        }
+        public bool isARM { get { return featureIdentification.boardType == BOARD_TYPES.ARM; } }
+        public bool hasLaser { get { return modelConfig.hasLaser && (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL || fpgaOptions.laserType == FPGA_LASER_TYPE.EXTERNAL); } }
 
         ////////////////////////////////////////////////////////////////////////
         // Utilities
@@ -298,13 +1037,26 @@ namespace WasatchNET
                 packet.RequestType, packet.Request, packet.Value, packet.Index, packet.Length);
         }
 
+        /// <summary>
+        /// Although most values read from the spectrometer are little-endian by
+        /// design, a few are big-endian.
+        /// </summary>
+        /// <param name="raw">input value in one endian</param>
+        /// <returns>same value with the bytes reversed</returns>
+        ushort swapBytes(ushort raw)
+        {
+            byte lsb = (byte)(raw & 0xff);
+            byte msb = (byte)((raw >> 8) & 0xff);
+            return (ushort) ((lsb << 8) | msb);
+        }
+
         void waitForUsbAvailable()
         {
             if (featureIdentification.usbDelayMS > 0)
             {
                 DateTime nextUsbTimestamp = lastUsbTimestamp.AddMilliseconds(featureIdentification.usbDelayMS);
-                int delayMS = (int) (nextUsbTimestamp - DateTime.Now).TotalMilliseconds;
-                delayMS = (int) featureIdentification.usbDelayMS;
+                int delayMS = (int)(nextUsbTimestamp - DateTime.Now).TotalMilliseconds;
+                delayMS = (int)featureIdentification.usbDelayMS;
                 logger.debug("per usbDelayMS of {0} ms, should wait {1} ms before next USB call",
                     featureIdentification.usbDelayMS, delayMS);
                 if (delayMS > 0)
@@ -346,10 +1098,7 @@ namespace WasatchNET
             // now start over
             logger.debug("Spectrometer.reconnect: opening");
             if (!usbRegistry.Open(out usbDevice))
-            {
-                logger.error("Spectrometer: failed to re-open UsbRegistry");
-                return false;
-            }
+                return logger.error("Spectrometer: failed to re-open UsbRegistry");
 
             wholeUsbDevice = usbDevice as IUsbDevice;
             if (!ReferenceEquals(wholeUsbDevice, null))
@@ -385,7 +1134,7 @@ namespace WasatchNET
         internal byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
         {
             int bytesToRead = Math.Max(len, fullLen);
-            if (isARM()) // ARM should always read at least 8 bytes
+            if (isARM) // ARM should always read at least 8 bytes
                 bytesToRead = Math.Min(8, bytesToRead);
             byte[] buf = new byte[bytesToRead];
 
@@ -397,7 +1146,7 @@ namespace WasatchNET
                 bytesToRead);   // wLength
 
             bool expectedSuccessResult = true;
-            if (isARM() && armInvertedRetvals.Contains(opcode))
+            if (isARM && armInvertedRetvals.Contains(opcode))
                 expectedSuccessResult = !expectedSuccessResult;
 
             // Question: if the device returns 6 bytes on Endpoint 0, but I only
@@ -434,7 +1183,7 @@ namespace WasatchNET
         internal byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0, int fakeBufferLengthARM = 0)
         {
             int bytesToRead = len;
-            if (isARM())
+            if (isARM)
                 bytesToRead = Math.Max(bytesToRead, fakeBufferLengthARM);
 
             UsbSetupPacket setupPacket = new UsbSetupPacket(
@@ -447,7 +1196,7 @@ namespace WasatchNET
             byte[] buf = new byte[bytesToRead];
 
             bool expectedSuccessResult = true;
-            if (isARM() && armInvertedRetvals.Contains(opcode))
+            if (isARM && armInvertedRetvals.Contains(opcode))
                 expectedSuccessResult = !expectedSuccessResult;
 
             bool result = false;
@@ -467,7 +1216,7 @@ namespace WasatchNET
             }
 
             if (logger.debugEnabled())
-                logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->", 
+                logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->",
                     opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult));
 
             // extract just the bytes we really needed
@@ -495,7 +1244,7 @@ namespace WasatchNET
                 wLength);       // wLength
 
             bool expectedSuccessResult = true;
-            if (isARM())
+            if (isARM)
                 expectedSuccessResult = armInvertedRetvals.Contains(opcode);
 
             lock (commsLock)
@@ -519,518 +1268,16 @@ namespace WasatchNET
             return true;
         }
 
-        #region spec_comms
-
-        ////////////////////////////////////////////////////////////////////////
-        // Settors
-        ////////////////////////////////////////////////////////////////////////
-
-        /// <summary>
-        /// set the acquisition time in milliseconds
-        /// </summary>
-        /// <param name="ms">integration time in milliseconds</param>        
-        /// <remarks>
-        /// Does not currently support microsecond resolution.
-        /// Method is private because attribute is public.
-        /// </remarks>
-        void setIntegrationTimeMS(uint ms)
-        {
-            if (ms < modelConfig.minIntegrationTimeMS)
-            {
-                logger.error("rounded integration time {0}ms up to min {1}ms", ms, modelConfig.minIntegrationTimeMS);
-                ms = modelConfig.minIntegrationTimeMS;
-            }
-            else if (ms > modelConfig.maxIntegrationTimeMS)
-            {
-                logger.error("rounded integration time {0}ms down to max {1}ms", ms, modelConfig.maxIntegrationTimeMS);
-                ms = modelConfig.maxIntegrationTimeMS;
-            }
-
-            ushort LSW = (ushort) (ms % 65536);
-            ushort MSW = (ushort) (ms / 65536);
-
-            // cache for performance 
-            sendCmd(Opcodes.SET_INTEGRATION_TIME, LSW, MSW);
-
-            // assume success
-            integrationTimeMS_ = ms;
-        }
-
-        public bool setCCDTriggerSource(ushort source)
-        { 
-            if (featureIdentification.boardType == BOARD_TYPES.STROKER_ARM)
-            {
-                logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
-                return false;
-            }
-            UInt40 val = new UInt40(source);
-            return sendCmd(Opcodes.SET_CCD_TRIGGER_SOURCE, val.LSW, val.MidW, val.buf);
-        } 
-
-        public bool setExternalTriggerOutput(EXTERNAL_TRIGGER_OUTPUT value)
-        {
-            if (value == EXTERNAL_TRIGGER_OUTPUT.ERROR)
-                return false;
-            return sendCmd(Opcodes.SET_EXTERNAL_TRIGGER_OUTPUT, (ushort) value);
-        }
-
-        /// <summary>
-        /// Set the trigger delay on supported models.
-        /// </summary>
-        /// <param name="value">24-bit value (0.5us)</param>
-        /// <returns>true on success</returns>
-        /// <remarks>
-        /// The value is in 0.5 microseconds, and supports a 24-bit unsigned value,
-        /// so the total range is 2^23 microseconds (about 8.3 sec).
-        /// </remarks>
-        public bool setTriggerDelay(uint value)
-        {
-            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
-            {
-                logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
-                return false;
-            }
-
-            ushort lsw = (ushort)(value & 0xffff);
-            byte msb = (byte)(value >> 16);
-            return sendCmd(Opcodes.SET_TRIGGER_DELAY, lsw, msb);
-        }
-
-        public bool setLaserRampingEnable(bool flag)
-        {
-            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
-            {
-                logger.debug("laser ramping not supported on {0}", featureIdentification.boardType);
-                return false;
-            }
-            return sendCmd(Opcodes.SET_LASER_RAMPING_MODE, (ushort) (flag ? 1 : 0));
-        } 
-
-        public bool setHorizontalBinning(HORIZ_BINNING mode)
-        {
-            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
-            {
-                logger.debug("horizontal binning not supported on {0}", featureIdentification.boardType);
-                return false;
-            }
-            return sendCmd(Opcodes.SELECT_HORIZ_BINNING, (ushort) mode);
-        }
-
-        /// <summary>
-        /// Set the detector's thermoelectric cooler (TEC) to the desired setpoint in degrees Celsius.
-        /// </summary>
-        /// <param name="degC">Desired temperature in Celsius.</param>
-        /// <returns>true on success</returns>
-        public bool setCCDTemperatureSetpointDegC(float degC)
-        {
-            if (degC < modelConfig.detectorTempMin)
-            {
-                logger.info("WARNING: rounding detector setpoint {0} deg C up to configured min {1}", degC, modelConfig.detectorTempMin);
-                degC = modelConfig.detectorTempMin;
-            }
-            else if (degC > modelConfig.detectorTempMax)
-            {
-                logger.info("WARNING: rounding detector setpoint {0} deg C down to configured max {1}", degC, modelConfig.detectorTempMax);
-                degC = modelConfig.detectorTempMax;
-            }
-
-            float dac = modelConfig.degCToDACCoeffs[0]
-                      + modelConfig.degCToDACCoeffs[1] * degC
-                      + modelConfig.degCToDACCoeffs[2] * degC * degC;
-            ushort word = (ushort)dac;
-
-            if (word > 0xfff)
-            {
-                logger.error("Converted raw setpoint {0:x4} from temperature {1:f2} degC exceeds 12-bit",
-                    word, degC);
-                return false;
-            }
-
-            logger.debug("setting CCD TEC setpoint to {0:f2} deg C (DAC 0x{1:x4})", degC, word);
-
-            return sendCmd(Opcodes.SET_CCD_TEMP_SETPOINT, word);
-        }
-
-        public bool setDFUMode(bool flag)
-        {
-            if (!flag)
-            {
-                logger.error("Don't know how to unset / exit DFU mode (power-cycle spectrometer)");
-                return false;
-            }
-
-            if (!isARM())
-            {
-                logger.error("This command is believed only applicable to ARM-based spectrometers (not {0})", 
-                    featureIdentification.boardType);
-                return false;
-            }
-
-            logger.info("Setting DFU mode");
-            return sendCmd(Opcodes.SET_DFU_MODE);
-        }
-
-        public bool setHighGainModeEnabled(bool flag)
-        {
-            if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
-            {
-                logger.debug("high gain mode not supported on {0}", featureIdentification.boardType);
-                return false;
-            }
-            return sendCmd(Opcodes.SET_CF_SELECT, (ushort) (flag ? 1 : 0));
-        }
-
-        public bool setCCDGain              (float gain)        { return sendCmd(Opcodes.SET_CCD_GAIN,                   FunkyFloat.fromFloat(gain)); } 
-        public bool setCCDTemperatureEnable (bool flag)         { return sendCmd(Opcodes.SET_CCD_TEC_ENABLE,             (ushort) (flag ? 1 : 0)); } 
-        public bool setDAC                  (ushort word)       { return sendCmd(Opcodes.SET_DAC,                        word, 1); } // external laser power
-        public bool setCCDOffset            (ushort value)      { return sendCmd(Opcodes.SET_CCD_OFFSET,                 value); }
-        public bool setCCDSensingThreshold  (ushort value)      { return sendCmd(Opcodes.SET_CCD_SENSING_THRESHOLD,      value); }
-        public bool setCCDThresholdSensingEnable(bool flag)     { return sendCmd(Opcodes.SET_CCD_THRESHOLD_SENSING_MODE, (ushort)(flag ? 1 : 0)); }
-
-        ////////////////////////////////////////////////////////////////////////
-        // Getters
-        ////////////////////////////////////////////////////////////////////////
-
-        /// <summary>
-        /// Actually reads integration time from the spectrometer.
-        /// </summary>
-        /// <returns>integration time in milliseconds</returns>
-        public uint getIntegrationTimeMS()
-        {
-            byte[] buf = getCmd(Opcodes.GET_INTEGRATION_TIME, 3, fullLen:6); // fullLen: 6?
-            if (buf == null)
-                return 0;
-            return integrationTimeMS_ = Unpack.toUint(buf);
-        }
-
-        public string getFPGARev()
-        {
-            byte[] buf = getCmd(Opcodes.GET_FPGA_REV, 7);
-
-            if (buf == null)
-                return "UNKNOWN";
-
-            string s = "";
-            for (uint i = 0; i < 7; i++)
-                s += (char)buf[i];
-
-            return s.TrimEnd();
-        }
-
-        public string getFirmwareRev()
-        {
-            // purportedly non-FID devices return 2 bytes, but we're not supporting those
-            byte[] buf = getCmd(Opcodes.GET_CODE_REVISION, 4);
-            if (buf == null)
-                return "ERROR";
-
-            // iterate backwards (MSB to LSB)
-            string s = "";
-            for (int i = 3; i >= 0; i--)
-            {
-                s += String.Format("{0}", buf[i]);
-                if (i > 0)
-                    s += ".";
-            }
-
-            return s;
-        }
-
-        public CCD_TRIGGER_SOURCE getCCDTriggerSource()
-        {
-            byte[] buf = getCmd(Opcodes.GET_CCD_TRIGGER_SOURCE, 1);
-            if (buf != null)
-            {
-                switch(buf[0])
-                {
-                    case 0: return CCD_TRIGGER_SOURCE.USB;
-                    case 1: return CCD_TRIGGER_SOURCE.EXTERNAL;
-                }
-            }
-            return CCD_TRIGGER_SOURCE.ERROR;
-        }
-
-        public EXTERNAL_TRIGGER_OUTPUT getExternalTriggerOutput()
-        {
-            byte[] buf = getCmd(Opcodes.GET_EXTERNAL_TRIGGER_OUTPUT, 1);
-            if (buf != null)
-            {
-                switch(buf[0])
-                {
-                    case 0: return EXTERNAL_TRIGGER_OUTPUT.LASER_MODULATION;
-                    case 1: return EXTERNAL_TRIGGER_OUTPUT.INTEGRATION_ACTIVE_PULSE;
-                }
-            }
-            return EXTERNAL_TRIGGER_OUTPUT.ERROR;
-        }
-
-        public HORIZ_BINNING getHorizBinning()
-        {
-            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
-            {
-                logger.debug("horizontal binning not supported on {0}", featureIdentification.boardType);
-                return HORIZ_BINNING.NONE;
-            }
-
-            byte[] buf = getCmd(Opcodes.GET_HORIZ_BINNING, 1);
-            if (buf != null)
-            {
-                switch (buf[0])
-                {
-                    case 0: return HORIZ_BINNING.NONE;
-                    case 1: return HORIZ_BINNING.TWO_PIXEL;
-                    case 2: return HORIZ_BINNING.FOUR_PIXEL;
-                }
-            }
-            return HORIZ_BINNING.ERROR;
-        }
-
-        /// <summary>
-        /// Return integration time + clock-out time (and laser pulse time if externally triggered).
-        /// </summary>
-        /// <remarks>buggy? still testing</remarks>
-        /// <returns>actual integration time in microseconds (zero on error)</returns>
-        public uint getActualIntegrationTimeUS()
-        {
-            uint value = Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 6));
-            return (value == 0xffffff) ? 0 : value;
-        }
-
-        public bool getLaserRampingEnabled()
-        {
-            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2 ||
-                featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2)
-            {
-                logger.debug("laser ramping not supported on {0}", featureIdentification.boardType);
-                return false;
-            }
-            return Unpack.toBool(getCmd(Opcodes.GET_LASER_RAMPING_MODE, 1));
-        }
-
-        public bool getHighGainModeEnabled()
-        {
-            if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
-            {
-                logger.debug("high gain mode not supported on {0}", featureIdentification.boardType);
-                return false;
-            }
-            return Unpack.toBool(getCmd(Opcodes.GET_CF_SELECT, 1));
-        }
-
-        public uint getCCDTriggerDelay()
-        { 
-            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
-            {
-                logger.debug("trigger delay not supported on {0}", featureIdentification.boardType);
-                return 0;
-            }
-            return Unpack.toUint(getCmd(Opcodes.GET_TRIGGER_DELAY, 3)); 
-        } 
-
-        public ushort getCCDTemperatureRaw()
-        {
-            return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2)));
-            // return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP, 2));
-        }
-
-        /// <summary>
-        /// Although most values read from the spectrometer are little-endian by
-        /// design, a couple big-endians slipped in there.
-        /// </summary>
-        /// <param name="raw">input value in one endian</param>
-        /// <returns>same value with the bytes reversed</returns>
-        ushort swapBytes(ushort raw)
-        {
-            byte lsb = (byte)(raw & 0xff);
-            byte msb = (byte)((raw >> 8) & 0xff);
-            return (ushort) ((lsb << 8) | msb);
-        }
-
-        /// <summary>
-        /// You generally would not want to use this function (it's better to use
-        /// the EEPROM coefficients), but if your EEPROM is blown this can give 
-        /// you a reasonable approximation.
-        /// </summary>
-        /// <param name="raw">12-bit ADC value (ensure it was read as big-endian, or swap with swapBytes())</param>
-        /// <remarks>
-        /// Borrowed from Enlighten's fid_hardware.get_ccd_temperature(). 
-        ///
-        /// I *think* that the laser version would be this:
-        /// 
-        /// Thermistor_Voltage = (raw/4096)*2.468;
-        /// Thermistor_Resistance = Thermistor_Voltage/((2.468-Thermistor_Voltage)/21450));
-        /// Temp_in_C = 3977/(log(Thermistor_Resistance/10000) + 3977/(25+273) – 273;
-        /// </remarks>
-        /// <returns></returns>
-        float adcToDegC(ushort raw)
-        {
-            // Scale to a voltage level from 0 to 1.5VDC
-            double vdc = 1.5 * raw / 4096.0;
-
-            // Convert to resistance
-            double resistance = 10000 * vdc / (2 - vdc);
-
-            // Find the log of the resistance with a 10kOHM resistor
-            double logVal = Math.Log(resistance / 10000);
-            double insideMain = logVal + (3977.0 / (25 + 273.0));
-            return (float)((3977.0 / insideMain) - 273.0);
-        }
-
-        public float getCCDTemperatureDegC()
-        {
-            ushort raw = getCCDTemperatureRaw();
-            float degC = modelConfig.adcToDegCCoeffs[0]
-                       + modelConfig.adcToDegCCoeffs[1] * raw
-                       + modelConfig.adcToDegCCoeffs[2] * raw * raw;
-            logger.debug("getCCDTemperatureDegC: raw 0x{0:x4}, coeff {1:f2}, {2:f2}, {3:f2} = {4:f2}",
-                    raw,
-                    modelConfig.adcToDegCCoeffs[0],
-                    modelConfig.adcToDegCCoeffs[1],
-                    modelConfig.adcToDegCCoeffs[2],
-                    degC);
-            return degC; 
-        }
-
-        public byte getLaserTemperatureSetpoint()
-        {
-            if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
-            {
-                logger.debug("laser setpoint not readable on {0}", featureIdentification.boardType);
-                return 0;
-            }
-            return Unpack.toByte(getCmd(Opcodes.GET_LASER_TEMP_SETPOINT, 1)); 
-        } 
-
-        public ushort getActualFrames()                 { return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES,              2)); }
-        public float  getCCDGain()                      { return FunkyFloat.toFloat(Unpack.toUshort(getCmd(Opcodes.GET_CCD_GAIN,2)));}
-        public ushort getCCDOffset()                    { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_OFFSET,                 2)); }
-        public ushort getCCDSensingThreshold()          { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_SENSING_THRESHOLD,      2)); }
-        public bool   getCCDThresholdSensingEnabled()   { return Unpack.toBool  (getCmd(Opcodes.GET_CCD_THRESHOLD_SENSING_MODE, 1)); }
-        public bool   getCCDTempEnabled()               { return Unpack.toBool  (getCmd(Opcodes.GET_CCD_TEMP_ENABLE,            1)); }
-        public ushort getDAC()                          { return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT,          2, 1)); }
-        public bool   getInterlockEnabled()             { return Unpack.toBool  (getCmd(Opcodes.GET_INTERLOCK,                  1)); }
-        public bool   getLaserEnabled()                 { return Unpack.toBool  (getCmd(Opcodes.GET_LASER_ENABLED,              1)); }
-        public bool   getLaserModulationEnabled()       { return Unpack.toBool  (getCmd(Opcodes.GET_LASER_MOD_ENABLED,          1)); }
-        public UInt64 getLaserModulationDuration()      { return Unpack.toUint64(getCmd(Opcodes.GET_LASER_MOD_DURATION,         5)); }
-        public UInt64 getLaserModulationPeriod()        { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PERIOD,                 5)); }
-        public UInt64 getLaserModulationPulseDelay()    { return Unpack.toUint64(getCmd(Opcodes.GET_MOD_PULSE_DELAY,            5)); }
-        public UInt64 getLaserModulationPulseWidth()    { return Unpack.toUint64(getCmd(Opcodes.GET_LASER_MOD_PULSE_WIDTH,      5)); }
-        public uint   getLineLength()                   { return Unpack.toUshort(getCmd2(Opcodes.GET_LINE_LENGTH,               2)); }
-        public byte   getSelectedLaser()                { return Unpack.toByte  (getCmd(Opcodes.GET_SELECTED_LASER,             1)); } 
-        public bool   getLaserModulationLinkedToIntegrationTime() { return Unpack.toBool(getCmd(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME, 1)); }
-
-        // These USB opcodes seem to duplicate the parameters of FPGAOptions (perhaps for non-FPGA spectrometers?)
-        public bool   getOptCFSelect()                  { return Unpack.toBool(getCmd2(Opcodes.OPT_CF_SELECT,                   1)); } 
-        public bool   getOptAreaScan()                  { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN,                   1)); } 
-        public bool   getOptActIntTime()                { return Unpack.toBool(getCmd2(Opcodes.OPT_ACT_INT_TIME,                1)); } 
-        public bool   getOptHorizontalBinning()         { return Unpack.toBool(getCmd2(Opcodes.OPT_AREA_SCAN,                   1)); }
-        public FPGA_INTEG_TIME_RES  getOptIntTimeRes()  { return fpgaOptions.parseResolution  (Unpack.toInt(getCmd2(Opcodes.OPT_INT_TIME_RES, 1))); }
-        public FPGA_DATA_HEADER     getOptDataHdrTab()  { return fpgaOptions.parseDataHeader  (Unpack.toInt(getCmd2(Opcodes.OPT_DATA_HDR_TAB, 1))); }
-        public FPGA_LASER_TYPE      getOptLaserType()   { return fpgaOptions.parseLaserType   (Unpack.toInt(getCmd2(Opcodes.OPT_LASER, 1))); }
-        public FPGA_LASER_CONTROL   getOptLaserControl(){ return fpgaOptions.parseLaserControl(Unpack.toInt(getCmd2(Opcodes.OPT_LASER_CONTROL, 1))); } 
-
-        public ushort getLaserTemperatureRaw()
-        {
-            return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMP, 2)));
-        } 
-
-        /// <summary>
-        /// convert the raw laser temperature reading into degrees centigrade
-        /// </summary>
-        /// <returns>laser temperature in &deg;C</returns>
-        /// <remarks>
-        /// Note that the adcToDegCCoeffs are NOT used in this method; those
-        /// coefficients ONLY apply to the detector.  At this time, all laser
-        /// temperature math is hardcoded (confirmed with Jason 22-Nov-2017).
-        /// </remarks>
-        public float getLaserTemperatureDegC()
-        {
-            double raw = getLaserTemperatureRaw();
-            double voltage    = 2.5 * raw / 4096;
-            double resistance = 21450.0 * voltage / (2.5 - voltage);
-            if (resistance <= 0)
-            {
-                logger.error("getLaserTemperatureDegC: invalid resistance ({0})", resistance);
-                return 0;
-            }
-            double logVal     = Math.Log(resistance / 10000);
-            double insideMain = logVal + 3977.0 / (25 + 273.0);
-            double degC = 3977.0 / insideMain - 273.0;
-            
-            logger.debug("getLaserTemperatureDegC: {0:f2} deg C (raw 0x{1:x4})", degC, raw);
-
-            return (float) degC;
-        }
-
-        // TODO: something's buggy with this?
-        // MZ: not sure we can return this in deg C (our adctoDegC coeffs are for the thermistor, not the TEC...I THINK)
-        public ushort getDetectorSetpointRaw()
-        {
-            return Unpack.toUshort(getCmd(Opcodes.GET_CCD_TEMP_SETPOINT, 2, wIndex: 0));
-        }
-
-        /// <summary>
-        /// When using external triggering, perform multiple acquisitions on a single inbound trigger event.
-        /// </summary>
-        /// <param name="flag">whether to acquire multiple spectra per trigger</param>
-        public void setContinuousCCDEnable(bool flag)
-        {
-            sendCmd(Opcodes.VR_SET_CONTINUOUS_CCD, (ushort)(flag ? 1 : 0));
-        }
-
-        /// <summary>
-        /// Determine whether continuous acquisition is enabled
-        /// </summary>
-        /// <returns>whether continuous acquisition is enabled</returns>
-        public bool getContinuousCCDEnable()
-        {
-            return Unpack.toBool(getCmd(Opcodes.VR_GET_CONTINUOUS_CCD, 1));
-        }
-
-        /// <summary>
-        /// When using "continous CCD" acquisitions with external triggers, how many spectra to acquire per trigger event.
-        /// </summary>
-        /// <param name="n">how many spectra to acquire</param>
-        public void setContinuousCCDFrames(byte n)
-        {
-            sendCmd(Opcodes.VR_SET_NUM_FRAMES, n);
-        }
-
-        /// <summary>
-        /// When using "continuous CCD" acquisitions with external triggering, how many spectra are being acquired per trigger event.
-        /// </summary>
-        /// <returns>number of spectra</returns>
-        public byte getContinuousCCDFrames()
-        {
-            return Unpack.toByte(getCmd(Opcodes.VR_GET_NUM_FRAMES, 1));
-        }
-
-        #endregion  
-
         ////////////////////////////////////////////////////////////////////////
         // laser
         ////////////////////////////////////////////////////////////////////////
 
-        /// <summary>
-        /// Set laser power to the specified percentage.
-        /// </summary>
-        /// <param name="perc">value from 0 to 1.0</param>
-        /// <returns>true on success</returns>
-        /// <remarks>
-        /// The "fake" buffers being send with the commands relate to a legacy
-        /// bug in which some firmware mistakenly checked the "payload length"
-        /// rather than "wValue" for their key parameter.  It would be good to
-        /// document which firmware versions exhibit this behavior, so we do not
-        /// propogate an inefficient and unnecessary patch to newer models which
-        /// do not require it.
-        /// </remarks>
+        // Not implemented as a property because it truly isn't; it's a complex 
+        // combination of actual spectrometer properties.
         public bool setLaserPowerPercentage(float perc)
         {
             if (perc < 0 || perc > 1)
-            {
-                logger.error("invalid laser power percentage (should be in range (0, 1)): {0}", perc);
-                return false;
-            }
+                return logger.error("invalid laser power percentage (should be in range (0, 1)): {0}", perc);
 
             ushort century = (ushort) Math.Round(perc * 100);
 
@@ -1038,145 +1285,44 @@ namespace WasatchNET
             if (century >= 100)
             {
                 logger.debug("Turning off laser modulation (full power)");
-                return setLaserModulationEnable(false);
+                laserModulationEnabled = false;
+                return true;
             }
 
             // Change the pulse period to 100us
             byte[] fake = new byte[100];
-            if (!sendCmd(Opcodes.SET_MOD_PERIOD, 100, buf: fake))
-            {
-                logger.error("Hardware Failure to send laser mod. pulse period");
-                return false;
-            }
+            if (!sendCmd(Opcodes.SET_LASER_MOD_PERIOD, 100, buf: fake))
+                return logger.error("Hardware Failure to send laser mod. pulse period");
 
             // Set the pulse width to the 0-100 percentage of power (in microsec)
             fake = new byte[century];
             if (!sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, century, buf: fake))
-            {
-                logger.error("Hardware Failure to send pulse width");
-                return false;
-            }
+                return logger.error("Hardware Failure to send pulse width");
 
             // Enable modulation
             fake = new byte[8];
-            if (!sendCmd(Opcodes.SET_LASER_MOD_ENABLED, 1, buf: fake))
-            {
-                logger.error("Hardware Failure to send laser modulation");
-                return false;
-            }
+            if (!sendCmd(Opcodes.SET_LASER_MOD_ENABLE, 1, buf: fake))
+                return logger.error("Hardware Failure to send laser modulation");
 
             logger.debug("Laser power set to: {0}%", century);
             return true;
         }
 
-        /// <summary>
-        /// Sets the laser modulation duration to the given 40-bit value (microseconds).
-        /// </summary>
-        /// <param name="us">duration in microseconds</param>
-        /// <returns>true on success</returns>
-        public bool setLaserModulationDurationMicrosec(UInt64 us)
-        {
-            try
-            {
-                UInt40 value = new UInt40(us);
-                return sendCmd(Opcodes.SET_LASER_MOD_DURATION, value.LSW, value.MidW, value.buf);
-            }
-            catch(Exception ex)
-            {
-                logger.error("WasatchNET.setLaserModulationDuration: {0}", ex.Message);
-                return false;
-            }
-        }
+        public ushort getDAC_UNUSED()                            { return Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEC_SETPOINT,             2, 1)); }
 
-        /// <summary>
-        /// Sets the laser modulation duration to the given 40-bit value.
-        /// </summary>
-        /// <param name="value">40-bit duration</param>
-        /// <returns>true on success</returns>
-        /// <see cref="setLaserModulationDuration(ulong)"/>
-        public bool setLaserModulationPulseWidth(UInt64 value)
+        // this is not a Property because it has no value and cannot be undone
+        public bool setDFUMode()
         {
-            try
-            {
-                UInt40 val = new UInt40(value);
-                return sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, val.LSW, val.MidW, val.buf);
-            }
-            catch(Exception ex)
-            {
-                logger.error("WasatchNET.setLaserModulationPulseWidth: {0}", ex.Message);
-                return false;
-            }
-        }
+            if (!isARM)
+                return logger.error("setDFUMode only applicable to ARM-based spectrometers (not {0})", featureIdentification.boardType);
 
-        /// <summary>
-        /// Sets the laser modulation period to the given 40-bit value.
-        /// </summary>
-        /// <param name="value">40-bit period</param>
-        /// <returns>true on success</returns>
-        /// <see cref="setLaserModulationDuration(ulong)"/>
-        public bool setLaserModulationPeriod(UInt64 value)
-        {
-            try
-            {
-                UInt40 val = new UInt40(value);
-                return sendCmd(Opcodes.SET_MOD_PERIOD, val.LSW, val.MidW, val.buf);
-            }
-            catch(Exception ex)
-            {
-                logger.error("WasatchNET.setLaserModulationPeriod: {0}", ex.Message);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Sets the laser modulation pulse delay to the given 40-bit value.
-        /// </summary>
-        /// <param name="value">40-bit period</param>
-        /// <returns>true on success</returns>
-        /// <see cref="setLaserModulationDuration(ulong)"/>
-        public bool setLaserModulationPulseDelay(UInt64 value)
-        {
-            try
-            {
-                UInt40 val = new UInt40(value);
-                return sendCmd(Opcodes.SET_MOD_PULSE_DELAY, val.LSW, val.MidW, val.buf);
-            }
-            catch(Exception ex)
-            {
-                logger.error("WasatchNET.setLaserModulationPulseDelay: {0}", ex.Message);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// This is probably inadvisable.  Unclear when the user would want to do this.
-        /// </summary>
-        /// <param name="value"></param>
-        public bool setLaserTemperatureSetpoint(byte value)
-        {
-            const byte MAX = 127;
-            if (value > MAX)
-            {
-                logger.error("WasatchNET.setLaserTemperatureSetpoint: value {0} exceeded max {1}", value, MAX);
-                return false;
-            }
-            return sendCmd(Opcodes.SET_LASER_TEMP_SETPOINT, value);
-        }
-
-        public bool setLaserModulationEnable(bool flag)         { return sendCmd(Opcodes.SET_LASER_MOD_ENABLED,          (ushort) (flag ? 1 : 0)); } // missing fake 8-byte buf?
-        public bool setSelectedLaser        (byte id)           { return sendCmd(Opcodes.SELECT_LASER,                   id); }
-        public bool linkLaserModToIntegrationTime(bool flag)    { return sendCmd(Opcodes.LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) (flag ? 1 : 0)); } 
-
-        public bool setLaserEnable(bool flag)
-        {
-            return sendCmd(Opcodes.SET_LASER_ENABLED, (ushort) (flag ? 1 : 0));
+            logger.info("Setting DFU mode");
+            return sendCmd(Opcodes.SET_DFU_MODE);
         }
 
         ////////////////////////////////////////////////////////////////////////
         // getSpectrum
         ////////////////////////////////////////////////////////////////////////
-
-        #region getspectrum
         
         /// <summary>
         /// Take a single complete spectrum, including any configured scan 
@@ -1232,58 +1378,38 @@ namespace WasatchNET
         // just the bytes, ma'am
         double[] getSpectrumRaw()
         {
-            // STEP ONE: request a spectrum
             logger.debug("requesting spectrum");
             byte[] buf = null;
-            if (isARM())
+            if (isARM)
                 buf = new byte[8];
-            if (!sendCmd(Opcodes.ACQUIRE_CCD, buf: buf))
-                return null;
 
-            // STEP TWO: wait for acquisition to complete
-
-            // rather than banging at the control endpoint, sleep for most of it
-            if (integrationTimeMS_ > 5)
-            {
-                int ms = (int)integrationTimeMS_ - 5;
-                // logger.debug("sleeping {0}ms", ms);
-                Thread.Sleep(ms);
-            }
-
-            if (false && !isARM())
-            {
-                // logger.debug("blocking until data ready");
-                if (!blockUntilDataReady())
-                {
-                    logger.error("blocking failed");
+            // request a spectrum
+            if (triggerSource_ == TRIGGER_SOURCE.INTERNAL)
+                if (!sendCmd(Opcodes.ACQUIRE_SPECTRUM, buf: buf))
                     return null;
-                }
-            }
 
-            // STEP THREE: read spectrum
-            //
-            // NOTE: API recommends reading this in four 512-byte chunks. I got
-            //       occasional timeout errors on the last chunk when following
-            //       that procedure. Checking Enlighten source code, it seemed
-            //       to perform the read in a single 2048-byte block. That seems
-            //       to work well here too.
+            ////////////////////////////////////////////////////////////////////
+            // read spectrum
+            ////////////////////////////////////////////////////////////////////
 
-            // note: hardcoded to 16-bit
-            byte[] response = new byte[featureIdentification.spectraBlockSize]; 
+            // TODO: need to update this to utilize 0x86 / 2048 pixels
 
-            double[] spec = new double[pixels];
-            int timeoutMS = generateSpectrumTimeout();
-            int bytesRead = 0;
+            int bytesRead = 0;                          // how much we read from last chunk
+            double[] spec = new double[pixels];         // what we're going to populate and return
+            byte[] response = new byte[featureIdentification.spectraBlockSize];  // how much we'll read at a chunk
+            uint pixel = 0;                             // where we're at
 
-            uint pixel = 0;
-            ushort sum = 0;
             while (pixel < pixels)
             {
+                // compute this inside the loop, just in case (if doing external
+                // triggering), someone changes integration time during trigger wait
+                int timeoutMS = (int) (2 * integrationTimeMS_ + 100);
+
                 // read the next block of data
                 ErrorCode err;
                 try
                 {
-                    // logger.debug("attempting to read {0} bytes of spectrum", response.Length);
+                    logger.debug("attempting to read {0} bytes of spectrum with timeout {1}ms", response.Length, timeoutMS);
                     err = spectralReader.Read(response, timeoutMS, out bytesRead);
                 }
                 catch (Exception ex)
@@ -1301,65 +1427,28 @@ namespace WasatchNET
                     {
                         ushort value = (ushort)(response[i] + (response[i + 1] << 8));
                         spec[pixel++] = value;
-                        sum += value;
                     }
                 }
                 else
                 {
-                    logger.error("getSpectrum: received ErrorCode {0} while reading spectrum from pixel {1}", err, pixel);
-                    return null;
+                    if (triggerSource_ == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
+                    {
+                        // we're waiting on an external trigger, and we have no idea how long we might
+                        // have to wait, so keep on looping
+                        logger.debug("getSpectrum: still waiting on external trigger");
+                        continue;
+                    }
+                    else
+                    {
+                        // we're not supposed to be waiting on an external trigger, so this is an error condition
+                        logger.error("getSpectrum: received ErrorCode {0} while reading spectrum from pixel {1}", err, pixel);
+                        return null;
+                    }
                 }
             }
-
-            // STEP FOUR: read status
-            // try
-            // {
-            //      AcquisitionStatus status = new AcquisitionStatus(statusReader);
-            //      if (sum != status.checksum)
-            //         logger.error("getSpectrum: sum {0} != checksum {1}", sum, status.checksum);
-            // }
-            // catch (Exception ex)
-            // {
-            //      logger.error(ex.Message);
-            // }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return spec;
         }
-
-        int generateSpectrumTimeout()
-        {
-            return (int) integrationTimeMS_ + 100;
-        }
-
-        // note: Wasatch.PY and ENLIGHTEN (FeatureIdentificationDevice.get_line) don't do this.
-        public bool blockUntilDataReady()
-        {
-            logger.debug("poll: block until data ready");
-
-            // give it an extra 100ms buffer before we give up
-            int timeoutMS = generateSpectrumTimeout();
-            DateTime expiration = DateTime.Now.AddMilliseconds(timeoutMS);
-
-            while (DateTime.Now < expiration)
-            {
-                // poll the spectrometer to see if spectral data is waiting to be read
-                byte[] buf = getCmd(Opcodes.POLL_DATA, 4);
-                if (buf == null)
-                {
-                    logger.debug("poll: failed (no buf)");
-                    return false;
-                }
-
-                if (buf[0] != 0)
-                {
-                    logger.debug("poll: data ready!");
-                    return true;
-                }
-            }
-            logger.error("poll: timed-out after {0}ms", timeoutMS);
-            return false;
-        }
-        #endregion
     }
 }

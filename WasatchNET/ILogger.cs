@@ -63,7 +63,8 @@ namespace WasatchNET
         /// </summary>
         /// <param name="fmt">see String.Format() fmt</param>
         /// <param name="obj">see String.Format() args</param>
-        void error(string fmt, params Object[] obj);
+        /// <returns>false, because that's convenient for many cases</returns>
+        bool error(string fmt, params Object[] obj);
 
         /// <summary>
         /// log an info message

@@ -3,7 +3,7 @@
 namespace WasatchNET
 {
     /// <summary>the fundamental electronic board configurations supported by our spectrometers</summary>
-    public enum BOARD_TYPES { RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, STROKER_ARM, ERROR };
+    public enum BOARD_TYPES { RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, ARM, ERROR };
 
     /// <summary>
     /// TODO: move to IFeatureIdentification file
@@ -60,32 +60,25 @@ namespace WasatchNET
             {
                 boardType = BOARD_TYPES.RAMAN_FX2;
                 firmwarePartNum = "170003";
-                firmwareDesc = "Stroker USB Board FX2 Code";
+                firmwareDesc = "FX2 USB Board";
             }
             else if (pid == 0x2000)
             {
                 boardType = BOARD_TYPES.INGAAS_FX2;
                 firmwarePartNum = "170037";
-                firmwareDesc = "Hamamatsu InGaAs USB Board FX2 Code";
+                firmwareDesc = "FX2 InGaAs USB Board";
                 defaultPixels = 512;
                 spectraBlockSize = defaultPixels * 2;
                 hasDefaultTECSetpointDegC = true;
                 defaultTECSetpointDegC = -15;
             }
-            else if (pid == 0x3000)
-            {
-                // older OCT product
-                boardType = BOARD_TYPES.DRAGSTER_FX3;
-                firmwarePartNum = "170001";
-                firmwareDesc = "Dragster USB Board FX3 Code";
-            }
             else if (pid == 0x4000)
             {
                 // watch this space!
-                boardType = BOARD_TYPES.STROKER_ARM;
+                boardType = BOARD_TYPES.ARM;
                 firmwarePartNum = "170019";
-                firmwareDesc = "Stroker ARM USB Board";
-                spectraBlockSize = 512;
+                firmwareDesc = "ARM USB Board";
+                // spectraBlockSize = 512;
                 // usbDelayMS = 50;
             }
             else

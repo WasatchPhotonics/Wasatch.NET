@@ -43,103 +43,130 @@ namespace WinFormDemo
             // note that while TreeView nodes CAN be sorted, they currently AREN'T,
             // so insertion order is physical display order
 
-            stub("model",                    "Identity/Model");
-            stub("serialNumber",             "Identity/Serial Number");
+            ////////////////////////////////////////////////////////////////////
+            // EEPROM
+            ////////////////////////////////////////////////////////////////////
 
-            stub("firmwareRev",              "Version/Firmware Rev");
-            stub("fpgaRev",                  "Version/FPGA Rev");
+            stub("serialNumber",                "EEPROM/Page 0/Serial Number");
+            stub("model",                       "EEPROM/Page 0/Model");
+            stub("baudRate",                    "EEPROM/Page 0/Baud Rate");
+            stub("hasCooling",                  "EEPROM/Page 0/Features/Cooling");
+            stub("hasBattery",                  "EEPROM/Page 0/Features/Battery");
+            stub("hasLaser",                    "EEPROM/Page 0/Features/Laser");
+            stub("excitationNM",                "EEPROM/Page 0/Excitation (nm)");
+            stub("slitSizeUM",                  "EEPROM/Page 0/Slit Size (µm)");
+            stub("startupIntegrationTimeMS",    "EEPROM/Page 0/Startup/Integration Time (ms)");
+            stub("startupTemperatureDegC",      "EEPROM/Page 0/Startup/Temperature (°C)");
+            stub("startupTriggerScheme",        "EEPROM/Page 0/Startup/Trigger Scheme");
+            stub("detectorGain",                "EEPROM/Page 0/Detector Gain/value (InGaAs even pixels)");
+            stub("detectorGainOdd",             "EEPROM/Page 0/Detector Gain/odd pixels (InGaAs only)");
+            stub("detectorOffset",              "EEPROM/Page 0/Detector Offset/value (InGaAs even pixels)");
+            stub("detectorOffsetOdd",           "EEPROM/Page 0/Detector Offset/odd pixels (InGaAs only)");
 
-            stub("slitSizeUM",               "Optics/Slit Size (µm)");
-
-            stub("baudRate",                 "Comms/Baud Rate");
-
-            stub("hasCooling",               "Features/Has Cooling");
-            stub("hasLaser",                 "Features/Has Laser");
-            stub("hasBattery",               "Features/Has Battery");
-            stub("featureBoardType",         "Features/Board Type");
-            stub("featureDesc",              "Features/Description");
-
-            stub("integrationTimeMS",        "Acquisition/Integration Time (ms)");
-            stub("actualIntegrationTimeUS",  "Acquisition/Integration/Actual (µs)");
-            stub("minIntegrationTimeMS",     "Acquisition/Integration/Min (ms)");
-            stub("maxIntegrationTimeMS",     "Acquisition/Integration/Max (ms)");
-            stub("frame",                    "Acquisition/Frame");
-
-            stub("wavecalCoeff0",            "Wavecal/Coeff0");
-            stub("wavecalCoeff1",            "Wavecal/Coeff1");
-            stub("wavecalCoeff2",            "Wavecal/Coeff2");
-            stub("wavecalCoeff3",            "Wavecal/Coeff3");
-
-            stub("detectorName",             "Detector/Name");
+            for (int i = 0; i < 4; i++)
+                stub("wavecalCoeff" + i,        "EEPROM/Page 1/Wavelength Calibration/Coeff" + i);
             for (int i = 0; i < 3; i++)
-                stub("adcToDegCCoeff" + i,   "Detector/ADC to °C Calibration/Coeff" + i);
-            stub("detectorTempMin",          "Detector/Temperature Limits/Min");
-            stub("detectorTempMax",          "Detector/Temperature Limits/Max");
-            stub("pixels",                   "Detector/Pixels/Spectrum Length");
-            stub("activePixelsHoriz",        "Detector/Pixels/Active/Horizontal");
-            stub("activePixelsVert",         "Detector/Pixels/Active/Vertical");
-            stub("actualHoriz",              "Detector/Pixels/Actual/Horizontal");
-            stub("ccdTempEnable",            "Detector/TEC/Enabled");
-            stub("ccdTempSetpoint",          "Detector/TEC/Setpoint");
-            stub("ccdTempRaw",               "Detector/TEC/Temperature (raw)");
-            stub("ccdTempDegC",              "Detector/TEC/Temperature (°C)");
-            stub("thermistorResistanceAt298K", "Detector/TEC/Thermistor/Resistance at 298K");
-            stub("thermistorBeta",           "Detector/TEC/Thermistor/Beta value");
-            stub("ccdOffset",                "Detector/CCD/Offset");
-            stub("ccdGain",                  "Detector/CCD/Gain");
-            stub("ccdSensingThreshold",      "Detector/CCD/Sensing Threshold");
-            stub("ccdThresholdSensingEnabled", "Detector/CCD/Threshold Sensing Enabled");
-            stub("horizBinning",             "Detector/Horizontal Binning");
-            stub("ROIHorizStart",            "Detector/ROI/Horiz/Start)");
-            stub("ROIHorizEnd",              "Detector/ROI/Horiz/End");
+                stub("degCToDACCoeff" + i,      "EEPROM/Page 1/Detector TEC Calibration (°C->DAC)/Coeff" + i);
+            stub("detectorTempMax",             "EEPROM/Page 1/Detector Temperature (°C)/Max");
+            stub("detectorTempMin",             "EEPROM/Page 1/Detector Temperature (°C)/Min");
+            for (int i = 0; i < 3; i++)
+                stub("adcToDegCCoeff" + i,      "EEPROM/Page 1/Thermistor/Calibration (ADC->°C)/Coeff" + i);
+            stub("thermistorResistanceAt298K",  "EEPROM/Page 1/Thermistor/Ω@298K");
+            stub("thermistorBeta",              "EEPROM/Page 1/Thermistor/β");
+            stub("calibrationDate",             "EEPROM/Page 1/Calibration/Date");
+            stub("calibrationBy",               "EEPROM/Page 1/Calibration/By");
+                                                
+            stub("detector",                    "EEPROM/Page 2/Detector");
+            stub("activePixelsHoriz",           "EEPROM/Page 2/Active Pixels/Horizontal");
+            stub("activePixelsVert",            "EEPROM/Page 2/Active Pixels/Vertical");
+            stub("minIntegrationTimeMS",        "EEPROM/Page 2/Integration Time (ms)/Min");
+            stub("maxIntegrationTimeMS",        "EEPROM/Page 2/Integration Time (ms)/Max");
+            stub("actualHoriz",                 "EEPROM/Page 2/Actual Pixels Horizontal");
+            stub("ROIHorizStart",               "EEPROM/Page 2/ROI Horizontal/Start");
+            stub("ROIHorizEnd",                 "EEPROM/Page 2/ROI Horizontal/End");
             for (int i = 1; i < 4; i++)
             {
-                stub(String.Format("ROIVertRegion{0}Start", i), String.Format("Detector/ROI/Vert/Region{0}/Start", i));
-                stub(String.Format("ROIVertRegion{0}End",   i), String.Format("Detector/ROI/Vert/Region{0}/End", i));
+                stub(String.Format("ROIVertRegion{0}Start", i), String.Format("EEPROM/Page 2/ROI Vertical Region {0}/Start", i));
+                stub(String.Format("ROIVertRegion{0}End",   i), String.Format("EEPROM/Page 2/ROI Vertical Region {0}/End",   i));
             }
-            for (int i = 0; i < 15; i++)
-                stub("badPixels" + i, "Detector/Bad Pixels/Index " + i);
-
-            stub("laserEnabled",             "Laser/Enabled");
-            stub("excitationNM",             "Laser/Excitation (nm)");
-            stub("dac",                      "Laser/DAC"); // MZ: output power?
-            stub("laserTemperatureRaw",      "Laser/TEC/Temperature (raw)");
-            stub("laserTemperatureDegC",     "Laser/TEC/Temperature (°C)");
-            stub("laserTemperatureSetpoint", "Laser/TEC/Setpoint"); 
-            for (int i = 0; i < 3; i++)
-                stub("degCToDACCoeff" + i,   "Laser/°C to DAC Setpoint Calibration/Coeff" + i);
-            stub("laserModEnabled",          "Laser/Modulation/Enabled");
-            stub("laserModDuration",         "Laser/Modulation/Duration");
-            stub("laserModPeriod",           "Laser/Modulation/Period");
-            stub("laserModPulseDelay",       "Laser/Modulation/Pulse Delay");
-            stub("laserModPulseWidth",       "Laser/Modulation/Pulse Width");
-            stub("laserModLinkedToIntegrationTime", "Laser/Modulation/Linked to Integration Time");
-            stub("laserRampingEnabled",      "Laser/Ramping Enabled");
-            stub("laserSelection",           "Laser/Selected");
-            stub("interlock",                "Laser/Interlock");
-
-            stub("ccdTriggerDelay",          "Triggering/Delay (us)");
-            stub("ccdTriggerSource",         "Triggering/Source");
-            stub("externalTriggerOutput",    "Triggering/External Output");
-            stub("continuousCCDEnabled",     "Triggering/Continuous/Enabled");
-            stub("continuousCCDFrames",      "Triggering/Continuous/Frames");
-
-            stub("fpgaIntegrationTimeResolution", "FPGA/Integ Time Resolution (enum)");
-            stub("fpgaDataHeader",           "FPGA/Data Header");
-            stub("fpgaHasCFSelect",          "FPGA/Has CF Select");
-            stub("fpgaLaserType",            "FPGA/Laser Type");
-            stub("fpgaLaserControl",         "FPGA/Laser Control");
-            stub("fpgaHasAreaScan",          "FPGA/Has Area Scan");
-            stub("fpgaHasActualIntegTime",   "FPGA/Has Actual Integration Time");
-            stub("fpgaHasHorizBinning",      "FPGA/Has Horiz Binning");
-
             for (int i = 0; i < 5; i++)
-                stub("linearityCoeff" + i, "Linearity/Coeff" + i);
+                stub("linearityCoeff" + i,      "EEPROM/Page 2/Linearity/Coeff" + i);
 
-            stub("calibrationDate",          "Manufacture/Date");
-            stub("calibrationBy",            "Manufacture/Technician");
+            stub("maxLaserPowerMW",             "EEPROM/Page 3/Laser Power (mW)/Max");
+            stub("minLaserPowerMW",             "EEPROM/Page 3/Laser Power (mW)/Min");
+            for (int i = 0; i < 3; i++)
+                stub("laserPowerCoeff" + i,     "EEPROM/Page 3/Laser Power Calibration (% -> mW)/Coeff" + i);
 
-            stub("userText",                 "User Data/Text");
+            stub("userText",                    "EEPROM/Page 4/User Text");
+
+            for (int i = 0; i < 15; i++)
+                stub("badPixels" + i,           "EEPROM/Page 5/Bad Pixels/Index " + i);
+
+            ////////////////////////////////////////////////////////////////////
+            // FPGA Compilation Options
+            ////////////////////////////////////////////////////////////////////
+
+            stub("fpgaDataHeader",                "FPGA Compilation Options/Data Header");
+            stub("fpgaHasCFSelect",               "FPGA Compilation Options/Has CF Select");
+            stub("fpgaLaserType",                 "FPGA Compilation Options/Laser Type");
+            stub("fpgaLaserControl",              "FPGA Compilation Options/Laser Control");
+            stub("fpgaHasAreaScan",               "FPGA Compilation Options/Has Area Scan");
+            stub("fpgaHasActualIntegTime",        "FPGA Compilation Options/Has Actual Integration Time");
+            stub("fpgaHasHorizBinning",           "FPGA Compilation Options/Has Horiz Binning");
+            stub("fpgaIntegrationTimeResolution", "FPGA Compilation Options/Integ Time Resolution");
+
+            ////////////////////////////////////////////////////////////////////
+            // Miscellaneous
+            ////////////////////////////////////////////////////////////////////
+
+            stub("featureBoardType",            "Features/Board Type");
+            stub("featureDesc",                 "Features/Description");
+
+            ////////////////////////////////////////////////////////////////////
+            // Firmware Versions
+            ////////////////////////////////////////////////////////////////////
+
+            stub("firmwareRev",                 "Firmware/Microcontroller");
+            stub("fpgaRev",                     "Firmware/FPGA");
+
+            ////////////////////////////////////////////////////////////////////
+            // Spectrometer State
+            ////////////////////////////////////////////////////////////////////
+
+            stub("integrationTimeMS",           "Spectrometer State/Acquisition/Integration Time (ms)");
+            stub("actualIntegrationTimeUS",     "Spectrometer State/Acquisition/Integration/Actual (µs)");
+            stub("frame",                       "Spectrometer State/Acquisition/Frame");
+                                                
+            stub("detectorTemperatureDegC",     "Spectrometer State/Detector/TEC/Temperature/°C");
+            stub("detectorTemperatureRaw",      "Spectrometer State/Detector/TEC/Temperature/raw");
+            stub("detectorTECEnabled",          "Spectrometer State/Detector/TEC/Enabled");
+            stub("detectorTECSetpointDegC",     "Spectrometer State/Detector/TEC/Setpoint/°C");
+            stub("detectorTECSetpointraw",      "Spectrometer State/Detector/TEC/Setpoint/raw");
+            stub("detectorSensingThresholdEnabled","Spectrometer State/Detector/Sensing/Enabled");
+            stub("detectorSensingThreshold",    "Spectrometer State/Detector/Sensing/Threshold");
+            stub("horizBinning",                "Spectrometer State/Detector/Horizontal Binning/Mode");
+                                                
+            stub("laserEnabled",                "Spectrometer State/Laser/Enabled");
+            stub("laserTemperatureDegC",        "Spectrometer State/Laser/TEC/Temperature (°C)");
+            stub("laserTemperatureRaw",         "Spectrometer State/Laser/TEC/Temperature (raw)");
+            stub("laserTemperatureSetpointRaw", "Spectrometer State/Laser/TEC/Setpoint (raw)"); 
+            stub("laserModEnabled",             "Spectrometer State/Laser/Modulation/Enabled");
+            stub("laserModDuration",            "Spectrometer State/Laser/Modulation/Duration (µs)");
+            stub("laserModPeriod",              "Spectrometer State/Laser/Modulation/Period (µs)");
+            stub("laserModPulseDelay",          "Spectrometer State/Laser/Modulation/Pulse Delay (µs)");
+            stub("laserModPulseWidth",          "Spectrometer State/Laser/Modulation/Pulse Width (µs)");
+        stub("laserModLinkedToIntegrationTime", "Spectrometer State/Laser/Modulation/Linked to Integration Time");
+            stub("laserRampingEnabled",         "Spectrometer State/Laser/Ramping Enabled");
+            stub("laserInterlock",              "Spectrometer State/Laser/Interlock");
+
+            stub("adcSelection",                "Spectrometer State/Selected ADC");
+                                                
+            stub("triggerSource",               "Spectrometer State/Triggering/Source");
+            stub("triggerOutput",               "Spectrometer State/Triggering/Output");
+            stub("triggerDelay",                "Spectrometer State/Triggering/Delay (us)");
+            stub("continuousAcquisition",       "Spectrometer State/Triggering/Continuous/Enabled");
+            stub("continuousFrames",            "Spectrometer State/Triggering/Continuous/Frames");
+
         }
 
         public void update(Spectrometer spec)
@@ -159,40 +186,39 @@ namespace WinFormDemo
             if (spec == null)
                 return;
 
-            update("activePixelsHoriz", spec.modelConfig.activePixelsHoriz);
-            update("activePixelsVert", spec.modelConfig.activePixelsVert);
-            update("actualHoriz", spec.modelConfig.actualHoriz);
-            update("baudRate", spec.modelConfig.baudRate);
-            update("calibrationBy", spec.modelConfig.calibrationBy);
-            update("calibrationDate", spec.modelConfig.calibrationDate);
-            update("detectorName", spec.modelConfig.detectorName);
-            update("detectorTempMax", spec.modelConfig.detectorTempMax);
-            update("detectorTempMin", spec.modelConfig.detectorTempMin);
-            update("excitationNM", spec.modelConfig.excitationNM);
-            update("featureBoardType", spec.featureIdentification.boardType);
-            update("featureDesc", spec.featureIdentification.firmwareDesc);
-            update("fpgaDataHeader", spec.fpgaOptions.dataHeader);
-            update("fpgaHasActualIntegTime", spec.fpgaOptions.hasActualIntegTime);
-            update("fpgaHasAreaScan", spec.fpgaOptions.hasAreaScan);
-            update("fpgaHasCFSelect", spec.fpgaOptions.hasCFSelect);
-            update("fpgaHasHorizBinning", spec.fpgaOptions.hasHorizBinning);
+            update("activePixelsHoriz",             spec.modelConfig.activePixelsHoriz);
+            update("activePixelsVert",              spec.modelConfig.activePixelsVert);
+            update("actualHoriz",                   spec.modelConfig.actualHoriz);
+            update("baudRate",                      spec.modelConfig.baudRate);
+            update("calibrationBy",                 spec.modelConfig.calibrationBy);
+            update("calibrationDate",               spec.modelConfig.calibrationDate);
+            update("detector",                      spec.modelConfig.detectorName);
+            update("detectorTempMax",               spec.modelConfig.detectorTempMax);
+            update("detectorTempMin",               spec.modelConfig.detectorTempMin);
+            update("excitationNM",                  spec.modelConfig.excitationNM);
+            update("featureBoardType",              spec.featureIdentification.boardType);
+            update("featureDesc",                   spec.featureIdentification.firmwareDesc);
+            update("fpgaDataHeader",                spec.fpgaOptions.dataHeader);
+            update("fpgaHasActualIntegTime",        spec.fpgaOptions.hasActualIntegTime);
+            update("fpgaHasAreaScan",               spec.fpgaOptions.hasAreaScan);
+            update("fpgaHasCFSelect",               spec.fpgaOptions.hasCFSelect);
+            update("fpgaHasHorizBinning",           spec.fpgaOptions.hasHorizBinning);
             update("fpgaIntegrationTimeResolution", spec.fpgaOptions.integrationTimeResolution);
-            update("fpgaLaserControl", spec.fpgaOptions.laserControl);
-            update("fpgaLaserType", spec.fpgaOptions.laserType);
-            update("hasBattery", spec.modelConfig.hasBattery);
-            update("hasCooling", spec.modelConfig.hasCooling);
-            update("hasLaser", spec.modelConfig.hasLaser);
-            update("maxIntegrationTimeMS", spec.modelConfig.maxIntegrationTimeMS);
-            update("minIntegrationTimeMS", spec.modelConfig.minIntegrationTimeMS);
-            update("model", spec.model);
-            update("pixels", spec.pixels);
-            update("ROIHorizEnd", spec.modelConfig.ROIHorizEnd);
-            update("ROIHorizStart", spec.modelConfig.ROIHorizStart);
-            update("serialNumber", spec.serialNumber);
-            update("slitSizeUM", spec.modelConfig.slitSizeUM);
-            update("thermistorBeta", spec.modelConfig.thermistorResistanceAt298K);
-            update("thermistorResistanceAt298K", spec.modelConfig.thermistorResistanceAt298K);
-            update("userText", spec.modelConfig.userText);
+            update("fpgaLaserControl",              spec.fpgaOptions.laserControl);
+            update("fpgaLaserType",                 spec.fpgaOptions.laserType);
+            update("hasBattery",                    spec.modelConfig.hasBattery);
+            update("hasCooling",                    spec.modelConfig.hasCooling);
+            update("hasLaser",                      spec.modelConfig.hasLaser);
+            update("maxIntegrationTimeMS",          spec.modelConfig.maxIntegrationTimeMS);
+            update("minIntegrationTimeMS",          spec.modelConfig.minIntegrationTimeMS);
+            update("model",                         spec.model);
+            update("ROIHorizEnd",                   spec.modelConfig.ROIHorizEnd);
+            update("ROIHorizStart",                 spec.modelConfig.ROIHorizStart);
+            update("serialNumber",                  spec.serialNumber);
+            update("slitSizeUM",                    spec.modelConfig.slitSizeUM);
+            update("thermistorBeta",                spec.modelConfig.thermistorResistanceAt298K);
+            update("thermistorResistanceAt298K",    spec.modelConfig.thermistorResistanceAt298K);
+            update("userText",                      spec.modelConfig.userText);
 
             // arrays
             for (int i = 0; i < spec.modelConfig.wavecalCoeffs.Length; i++)
@@ -224,64 +250,66 @@ namespace WinFormDemo
             // TODO: still figuring out what's wrong with these...
             //
             // 2017-10-03 16:49:57.789:  ERROR: getCmd: failed to get GET_TRIGGER_DELAY (0xab) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
-            // 2017-10-03 16:49:58.790:  ERROR: getCmd: failed to get GET_CCD_TEMP_SETPOINT (0xd9) with index 0x0001 via DEVICE_TO_HOST (0 bytes read)
+            // 2017-10-03 16:49:58.790:  ERROR: getCmd: failed to get GET_DETECTOR_TEMPERATURE_SETPOINT (0xd9) with index 0x0001 via DEVICE_TO_HOST (0 bytes read)
             // 2017-10-03 16:49:59.794:  ERROR: getCmd: failed to get GET_EXTERNAL_TRIGGER_OUTPUT (0xe1) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
             // 2017-10-03 16:50:00.798:  ERROR: getCmd: failed to get GET_ACTUAL_FRAMES (0xe4) with index 0x0000 via DEVICE_TO_HOST (0 bytes read)
             //
-            // update("ccdTriggerDelay", spec.getCCDTriggerDelay());
-            // update("externalTriggerOutput", spec.getExternalTriggerOutput());
-            // update("frame", spec.getActualFrames());
-            // update("ccdTempSetpoint", spec.getCCDTempSetpoint());
+            // update("triggerDelay", spec.triggerDelay);
+            // update("triggerOutput", spec.triggerOutput);
+            // update("frame", spec.actualFrames);
 
             logger.debug("updateAll: calling updateFast");
             updateFast(spec);
 
             logger.debug("updateAll: starting long pull");
 
-            update("ccdGain", spec, spec.getCCDGain);
-            update("ccdOffset", spec, spec.getCCDOffset);
-            update("ccdSensingThreshold", spec, spec.getCCDSensingThreshold);
-            update("ccdThresholdSensingEnabled", spec, spec.getCCDThresholdSensingEnabled);
-            update("ccdTriggerSource", spec, spec.getCCDTriggerSource);
-            update("dac", spec, spec.getDAC);
-            update("firmwareRev", spec, spec.getFirmwareRev);
-            update("fpgaRev", spec, spec.getFPGARev);
-            update("integrationTimeMS", spec, spec.getIntegrationTimeMS);
-            update("continuousCCDEnabled", spec, spec.getContinuousCCDEnable);
-            update("continuousCCDFrames", spec, spec.getContinuousCCDFrames);
+            update("detectorGain",                        spec.detectorGain);   // should this be ModelConfig or opcode?
+            update("detectorOffset",                      spec.detectorOffset); // ModelConfig or opcode?
+            update("detectorGainOdd",                     spec.modelConfig.detectorGainOdd);
+            update("detectorOffsetOdd",                   spec.modelConfig.detectorOffsetOdd);
+            update("detectorSensingThreshold",            spec.detectorSensingThreshold);
+            update("detectorSensingThresholdEnabled",     spec.detectorSensingThresholdEnabled);
+            update("triggerSource",                       spec.triggerSource); 
+            update("firmwareRev",                         spec.firmwareRevision);
+            update("fpgaRev",                             spec.fpgaRevision);
+            update("integrationTimeMS",                   spec.integrationTimeMS);
+            update("continuousAcquisition",               spec.continuousAcquisitionEnable);
+            update("continuousFrames",                    spec.continuousFrames);
 
             if (spec.modelConfig.hasCooling)
             {
-                update("ccdTempEnable", spec, spec.getCCDTempEnabled);
-                update("ccdTempRaw", spec, spec.getCCDTemperatureRaw);
-                update("ccdTempDegC", spec, spec.getCCDTemperatureDegC);
+                update("detectorTemperatureDegC",         spec.detectorTemperatureDegC);
+                update("detectorTemperatureRaw",          spec.detectorTemperatureRaw);
+                update("detectorTECEnabled",              spec.detectorTECEnabled);
+                update("detectorTECSetpointRaw",          spec.detectorTECSetpointRaw);
+                update("detectorTECSetpointDegC",         spec.detectorTECSetpointDegC);
             }
 
             if (spec.fpgaOptions.hasActualIntegTime)
-                update("actualIntegrationTimeUS", spec, spec.getActualIntegrationTimeUS);
+                update("actualIntegrationTimeUS",         spec.actualIntegrationTimeUS);
 
             if (spec.fpgaOptions.hasHorizBinning)
-                update("horizBinning", spec, spec.getHorizBinning);
+                update("horizBinning",                    spec.horizontalBinning);
 
             if (spec.modelConfig.hasLaser && spec.fpgaOptions.laserType != FPGA_LASER_TYPE.NONE)
             {
-                update("interlock", spec, spec.getInterlockEnabled);
-                update("laserEnabled", spec, spec.getLaserEnabled);
-                update("laserModDuration", spec, spec.getLaserModulationDuration);
-                update("laserModEnabled", spec, spec.getLaserModulationEnabled);
-                update("laserModLinkedToIntegrationTime", spec, spec.getLaserModulationLinkedToIntegrationTime);
-                update("laserModPeriod", spec, spec.getLaserModulationPeriod);
-                update("laserModPulseDelay", spec, spec.getLaserModulationPulseDelay);
-                update("laserModPulseWidth", spec, spec.getLaserModulationPulseWidth);
-                update("laserRampingEnabled", spec, spec.getLaserRampingEnabled);
-                update("laserSelection", spec, spec.getSelectedLaser);
-                update("laserTemperatureSetpoint", spec, spec.getLaserTemperatureSetpoint);
-                update("laserTemperatureRaw", spec, spec.getLaserTemperatureRaw);
-                update("laserTemperatureDegC", spec, spec.getLaserTemperatureDegC);
+                update("laserInterlock",                  spec.laserInterlockEnabled);
+                update("laserEnabled",                    spec.laserEnabled);
+                update("laserModDuration",                spec.laserModulationDuration);
+                update("laserModEnabled",                 spec.laserModulationEnabled);
+                update("laserModLinkedToIntegrationTime", spec.laserModulationLinkedToIntegrationTime);
+                update("laserModPeriod",                  spec.laserModulationPeriod);
+                update("laserModPulseDelay",              spec.laserModulationPulseDelay);
+                update("laserModPulseWidth",              spec.laserModulationPulseWidth);
+                update("laserRampingEnabled",             spec.laserRampingEnabled);
+                update("laserTemperatureSetpointRaw",     spec.laserTemperatureSetpointRaw);
+                update("laserTemperatureRaw",             spec.laserTemperatureRaw);
+                update("laserTemperatureDegC",            spec.laserTemperatureDegC);
+                update("adcSelection",                    spec.selectedADC);
             }
         }
 
-        void update<T>(string key, Spectrometer spec, MyDelegate<T> func)
+        void update_NOT_USED<T>(string key, Spectrometer spec, MyDelegate<T> func)
         {
             logger.debug("update: directly getting {0} from {1}", key, func);
             T value = func();
@@ -323,17 +351,10 @@ namespace WinFormDemo
             // create or traverse intervening nodes
             TreeNodeCollection children = tv.Nodes;
             for (int i = 0; i < names.Length - 1; i++)
-            {
-                string name = names[i];
-                if (children.ContainsKey(name))
-                {
-                    children = children[name].Nodes;
-                }
+                if (children.ContainsKey(names[i]))
+                    children = children[names[i]].Nodes;
                 else
-                {
-                    children = children.Add(name, name).Nodes;
-                }
-            }
+                    children = children.Add(names[i], names[i]).Nodes;
 
             // now create the leaf node
             string prefix = names[names.Length - 1];

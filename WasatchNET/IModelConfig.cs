@@ -5,22 +5,18 @@ using System.Runtime.InteropServices;
 namespace WasatchNET
 {
     /// <summary>
-    /// This interface is provided for COM clients (Delphi etc) who seem to find it useful.
-    /// I don't know that .NET users would find much benefit in it.
+    /// In retrospect, should have been called IEEPROM.
     /// </summary>
     [ComVisible(true)]
     [Guid("D6BC706B-4B50-4CFD-AFFC-6A01F56B92B4")]
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
     public interface IModelConfig
     {
-        // Excluded from COM because "generics" cannot be marshalled -- if needed, refactor into basic array
-        // List<byte[]> pages { get; } 
+        /// <summary>spectrometer serialNumber</summary>
+        string serialNumber { get; }
 
         /// <summary>spectrometer model</summary>
         string model { get; }
-
-        /// <summary>spectrometer serialNumber</summary>
-        string serialNumber { get; }
 
         /// <summary>baud rate (bits/sec) for serial communications</summary>
         int baudRate { get; }
@@ -41,6 +37,15 @@ namespace WasatchNET
 
         /// <summary>the slit width in µm</summary>
         short slitSizeUM { get; }
+
+        // These will come with ENG-0034 Rev 4
+        ushort startupIntegrationTimeMS { get; }
+        short startupDetectorTemperatureDegC { get; }
+        byte startupTriggeringMode { get; }
+        float detectorGain { get; }
+        short detectorOffset { get; }
+        float detectorGainOdd { get; }
+        short detectorOffsetOdd { get; }
 
         /////////////////////////////////////////////////////////////////////////       
         // Page 1

@@ -12,6 +12,25 @@ namespace WasatchNET
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
     public interface ISpectrometer
     {
+        ////////////////////////////////////////////////////////////////////////
+        // structures
+        ////////////////////////////////////////////////////////////////////////
+
+        /// <summary>metadata inferred from the spectrometer's USB PID</summary>
+        FeatureIdentification featureIdentification { get; }
+
+        /// <summary>set of compilation options used to compile the FPGA firmware in this spectrometer</summary>
+        FPGAOptions fpgaOptions { get; }
+
+        /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
+        ModelConfig modelConfig { get; }
+
+        ////////////////////////////////////////////////////////////////////////
+        // convenience accessors
+        ////////////////////////////////////////////////////////////////////////
+
+        bool isARM { get; }
+        bool hasLaser { get; }
 
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
         uint pixels { get; }
@@ -30,24 +49,9 @@ namespace WasatchNET
         /// <summary>spectrometer serial number</summary>
         string serialNumber { get; }
 
-        /// <summary>metadata inferred from the spectrometer's USB PID</summary>
-        FeatureIdentification featureIdentification { get; }
-
-        /// <summary>set of compilation options used to compile the FPGA firmware in this spectrometer</summary>
-        FPGAOptions fpgaOptions { get; }
-
-        /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
-        ModelConfig modelConfig { get; }
-
-        bool laserRampingEnabled { get; set; }
-
-        /// <summary>
-        /// Current integration time in milliseconds. Reading this property
-        /// returns a CACHED value for performance reasons; use getIntegrationTimeMS
-        /// to read from spectrometer.
-        /// </summary>
-        /// <see cref="getIntegrationTimeMS"/>
-        uint integrationTimeMS { get; set; }
+        ////////////////////////////////////////////////////////////////////////
+        // Driver state
+        ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// How many acquisitions to average together (zero for no averaging)
@@ -67,85 +71,59 @@ namespace WasatchNET
         /// </summary>
         double[] dark { get; set; }
 
-        void close();
-
-        bool isARM();
-        bool hasLaser();
-        bool reconnect();
-
-        bool setCCDTriggerSource(ushort source);
-        bool setExternalTriggerOutput(EXTERNAL_TRIGGER_OUTPUT value);
-        bool setTriggerDelay(uint value);
-        bool setLaserRampingEnable(bool flag);
-        bool setHorizontalBinning(HORIZ_BINNING mode);
+        ////////////////////////////////////////////////////////////////////////
+        // Properties
+        ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
-        /// Set the detector's thermoelectric cooler (TEC) to the desired setpoint in degrees Celsius.
+        /// How many frames have been read since last power cycle (has overflow)
         /// </summary>
-        /// <param name="degC">Desired temperature in Celsius.</param>
-        /// <returns>true on success</returns>
-        bool setCCDTemperatureSetpointDegC(float degC);
-        bool setDFUMode(bool flag);
-        bool setHighGainModeEnabled(bool flag);
-        bool setCCDGain(float gain);
-        bool setCCDTemperatureEnable(bool flag);
-        bool setDAC(ushort word);
-        bool setCCDOffset(ushort value);
-        bool setCCDSensingThreshold(ushort value);
-        bool setCCDThresholdSensingEnable(bool flag);
-
-        /// <summary>
-        /// Actually reads integration time from the spectrometer.
-        /// </summary>
-        /// <returns>integration time in milliseconds</returns>
-        uint getIntegrationTimeMS();
-        string getFPGARev();
-        string getFirmwareRev();
-        CCD_TRIGGER_SOURCE getCCDTriggerSource();
-        EXTERNAL_TRIGGER_OUTPUT getExternalTriggerOutput();
-        HORIZ_BINNING getHorizBinning();
+        ushort actualFrames { get; }
 
         /// <summary>
         /// Return integration time + clock-out time (and laser pulse time if externally triggered).
         /// </summary>
-        /// <remarks>buggy? still testing</remarks>
         /// <returns>actual integration time in microseconds (zero on error)</returns>
-        uint getActualIntegrationTimeUS();
-        bool getLaserRampingEnabled();
-        bool getHighGainModeEnabled();
-        uint getCCDTriggerDelay();
-        ushort getCCDTemperatureRaw();
+        uint actualIntegrationTimeUS { get; }
 
-        float getCCDTemperatureDegC();
-        byte getLaserTemperatureSetpoint();
+        /// <summary>After the first trigger is received, no further triggers are required; spectrometer will enter free-running mode.</summary>
+        bool continuousAcquisitionEnable { get; set; }
 
-        ushort getActualFrames();
-        float getCCDGain();
-        ushort getCCDOffset();
-        ushort getCCDSensingThreshold();
-        bool getCCDThresholdSensingEnabled();
-        bool getCCDTempEnabled();
-        ushort getDAC();
-        bool getInterlockEnabled();
-        bool getLaserEnabled();
-        bool getLaserModulationEnabled();
-        UInt64 getLaserModulationDuration();
-        UInt64 getLaserModulationPeriod();
-        UInt64 getLaserModulationPulseDelay();
-        UInt64 getLaserModulationPulseWidth();
-        uint getLineLength();
-        byte getSelectedLaser();
-        bool getLaserModulationLinkedToIntegrationTime();
-        bool getOptCFSelect();
-        bool getOptAreaScan();
-        bool getOptActIntTime();
-        bool getOptHorizontalBinning();
-        FPGA_INTEG_TIME_RES getOptIntTimeRes();
-        FPGA_DATA_HEADER getOptDataHdrTab();
-        FPGA_LASER_TYPE getOptLaserType();
-        FPGA_LASER_CONTROL getOptLaserControl();
+        /// <summary>When not using "continous acquisitions" with external triggers, how many spectra to acquire per trigger event.</summary>
+        byte continuousFrames { get; set; }
 
-        ushort getLaserTemperatureRaw();
+        float detectorGain { get; set; }
+        ushort detectorOffset { get; set; }
+
+        ushort detectorSensingThreshold { get; set; }
+        bool detectorSensingThresholdEnabled { get; set; }
+
+        bool detectorTECEnabled { get; set; }
+        float detectorTECSetpointDegC { get; set; }
+        ushort detectorTECSetpointRaw { get; set; }
+
+        float detectorTemperatureDegC { get; }
+        ushort detectorTemperatureRaw { get; }
+
+        string firmwareRevision { get; }
+        string fpgaRevision { get; }
+
+        bool highGainModeEnabled { get; set; }
+
+        /// <summary>
+        /// Current integration time in milliseconds.
+        /// </summary>
+        uint integrationTimeMS { get; set; }
+
+        bool laserEnabled { get; set; }
+        bool laserInterlockEnabled { get; }
+        bool laserModulationEnabled { get; set; }
+        bool laserModulationLinkedToIntegrationTime { get; set; }
+        UInt64 laserModulationPulseDelay { get; set; }
+        UInt64 laserModulationPeriod { get; set; }
+        UInt64 laserModulationDuration { get; set; }
+        UInt64 laserModulationPulseWidth { get; set; }
+        bool laserRampingEnabled { get; set; }
 
         /// <summary>
         /// convert the raw laser temperature reading into degrees centigrade
@@ -156,35 +134,49 @@ namespace WasatchNET
         /// coefficients ONLY apply to the detector.  At this time, all laser
         /// temperature math is hardcoded (confirmed with Jason 22-Nov-2017).
         /// </remarks>
-        float getLaserTemperatureDegC();
+        float laserTemperatureDegC { get; }
+        ushort laserTemperatureRaw { get; }
+        byte laserTemperatureSetpointRaw { get; set; }
 
-        // TODO: something's buggy with this?
-        // MZ: not sure we can return this in deg C (our adctoDegC coeffs are for the thermistor, not the TEC...I THINK)
-        ushort getDetectorSetpointRaw();
+        uint lineLength { get; }
 
-        /// <summary>
-        /// When using external triggering, perform multiple acquisitions on a single inbound trigger event.
-        /// </summary>
-        /// <param name="flag">whether to acquire multiple spectra per trigger</param>
-        void setContinuousCCDEnable(bool flag);
+        bool optCFSelect { get; }
+        bool optAreaScan { get; }
+        bool optActualIntegrationTime { get; }
+        bool optHorizontalBinning { get; }
+        FPGA_INTEG_TIME_RES optIntegrationTimeResolution { get; }
+        FPGA_DATA_HEADER optDataHeaderTag { get; }
+        FPGA_LASER_TYPE optLaserType { get; }
+        FPGA_LASER_CONTROL optLaserControl { get; }
 
-        /// <summary>
-        /// Determine whether continuous acquisition is enabled
-        /// </summary>
-        /// <returns>whether continuous acquisition is enabled</returns>
-        bool getContinuousCCDEnable();
+        byte selectedADC { get; set; }
 
-        /// <summary>
-        /// When using "continous CCD" acquisitions with external triggers, how many spectra to acquire per trigger event.
-        /// </summary>
-        /// <param name="n">how many spectra to acquire</param>
-        void setContinuousCCDFrames(byte n);
+        uint triggerDelay { get; set; }
+        EXTERNAL_TRIGGER_OUTPUT triggerOutput { get; set; }
 
         /// <summary>
-        /// When using "continuous CCD" acquisitions with external triggering, how many spectra are being acquired per trigger event.
+        /// Whether acquisitions are triggered "internally" (via the ACQUIRE opcode
+        /// sent by software) or "externally" (via an electrical signal wired to the
+        /// accessory connector).
         /// </summary>
-        /// <returns>number of spectra</returns>
-        byte getContinuousCCDFrames();
+        TRIGGER_SOURCE triggerSource { get; set; }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Methods
+        ////////////////////////////////////////////////////////////////////////
+
+        void close();
+        bool reconnect();
+
+        /// <summary>
+        /// Put the ARM microcontroller into DFU mode for firmware update.
+        /// </summary>
+        /// <remarks>
+        /// Will not work on FX2.  Cannot be "undone" from software (power-cycle 
+        /// the spectrometer to reset out of DFU mode).  Not recommended for the
+        /// faint of heart.
+        /// </remarks>
+        bool setDFUMode();
 
         /// <summary>
         /// Set laser power to the specified percentage.
@@ -202,56 +194,10 @@ namespace WasatchNET
         bool setLaserPowerPercentage(float perc);
 
         /// <summary>
-        /// Sets the laser modulation duration to the given 40-bit value (microseconds).
-        /// </summary>
-        /// <param name="us">duration in microseconds</param>
-        /// <returns>true on success</returns>
-        bool setLaserModulationDurationMicrosec(UInt64 us);
-
-        /// <summary>
-        /// Sets the laser modulation duration to the given 40-bit value.
-        /// </summary>
-        /// <param name="value">40-bit duration</param>
-        /// <returns>true on success</returns>
-        /// <see cref="setLaserModulationDuration(ulong)"/>
-        bool setLaserModulationPulseWidth(UInt64 value);
-
-        /// <summary>
-        /// Sets the laser modulation period to the given 40-bit value.
-        /// </summary>
-        /// <param name="value">40-bit period</param>
-        /// <returns>true on success</returns>
-        /// <see cref="setLaserModulationDuration(ulong)"/>
-        bool setLaserModulationPeriod(UInt64 value);
-
-        /// <summary>
-        /// Sets the laser modulation pulse delay to the given 40-bit value.
-        /// </summary>
-        /// <param name="value">40-bit period</param>
-        /// <returns>true on success</returns>
-        /// <see cref="setLaserModulationDuration(ulong)"/>
-        bool setLaserModulationPulseDelay(UInt64 value);
-
-        /// <summary>
-        /// This is probably inadvisable.  Unclear when the user would want to do this.
-        /// </summary>
-        /// <param name="value"></param>
-        bool setLaserTemperatureSetpoint(byte value);
-        bool setLaserModulationEnable(bool flag);
-        bool setSelectedLaser(byte id);
-        bool linkLaserModToIntegrationTime(bool flag);
-        bool setLaserEnable(bool flag);
-
-        /// <summary>
         /// Take a single complete spectrum, including any configured scan 
         /// averaging, boxcar and dark subtraction.
         /// </summary>
         /// <returns>The acquired spectrum as an array of doubles</returns>
         double[] getSpectrum();
-
-        /// <remarks>
-        /// Wasatch.PY and ENLIGHTEN (FeatureIdentificationDevice.get_line) don't do this.
-        /// </remarks>
-        bool blockUntilDataReady();
     }
 }
