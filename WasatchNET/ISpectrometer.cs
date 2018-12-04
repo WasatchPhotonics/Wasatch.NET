@@ -168,6 +168,10 @@ namespace WasatchNET
         void close();
         bool reconnect();
 
+        // if ModelConfig.wavecalCoeffs has changed, regenerate wavelengths
+        // (would be nice to automate)
+        void regenerateWavelengths();
+
         /// <summary>
         /// Put the ARM microcontroller into DFU mode for firmware update.
         /// </summary>

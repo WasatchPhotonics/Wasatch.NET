@@ -148,8 +148,8 @@ namespace WasatchNET
         {
             lock (instance)
             {
-                // you'd think there'd be a standard collection that does this
-                errors.AddLast(String.Format(String.Format(fmt, obj)));
+                // you'd think there'd be a standard collection that does this (size-limited queue/buffer)
+                errors.AddLast(String.Format(fmt, obj));
                 errorCount++;
                 while (errorCount > MAX_ERRORS)
                 {

@@ -48,6 +48,11 @@ function postAndRename()
     scp $LOCAL_PATH $USERNAME@wasatchphotonics.com:$REMOTE_PATH
 }
 
+for arch in x86 x64
+do
+    cp -v WasatchNET/bin/$arch/Debug/WasatchNET.{dll,pdb} lib/$arch
+done
+
 read -p "Username: " USERNAME
 read -p "Version:  " VERSION 
 

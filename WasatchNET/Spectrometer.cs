@@ -58,8 +58,11 @@ namespace WasatchNET
         UsbRegistry usbRegistry;
         UsbDevice usbDevice;
         IUsbDevice wholeUsbDevice;
-        UsbEndpointReader spectralReader;
-        UsbEndpointReader statusReader;
+
+        // technically these are Read Endpoints 2 and 6, but keeping naming
+        // consistent with Wasatch.PY
+        UsbEndpointReader spectralReader82;
+        UsbEndpointReader spectralReader86;
 
         Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
         HashSet<Opcodes> armInvertedRetvals = OpcodeHelper.getInstance().getArmInvertedRetvals();
@@ -507,7 +510,7 @@ namespace WasatchNET
             set
             {
                 readOnce.Add(Opcodes.GET_LASER_ENABLE);
-                sendCmd(Opcodes.SET_LASER_ENABLE, (ushort) ((laserEnabled_ = value) ? 1 : 0));
+                sendCmd(Opcodes.SET_LASER_ENABLE, (ushort)((laserEnabled_ = value) ? 1 : 0));
             }
         }
         bool laserEnabled_;
@@ -525,7 +528,7 @@ namespace WasatchNET
             set
             {
                 readOnce.Add(Opcodes.GET_LASER_MOD_ENABLE);
-                sendCmd(Opcodes.SET_LASER_MOD_ENABLE, (ushort) ((laserModulationEnabled_ = value) ? 1 : 0)); // TODO: missing fake 8-byte buf?
+                sendCmd(Opcodes.SET_LASER_MOD_ENABLE, (ushort)((laserModulationEnabled_ = value) ? 1 : 0)); // TODO: missing fake 8-byte buf?
             }
         }
         bool laserModulationEnabled_;
@@ -545,7 +548,7 @@ namespace WasatchNET
             set
             {
                 readOnce.Add(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME);
-                sendCmd(Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort) ((laserModulationLinkedToIntegrationTime_ = value) ? 1 : 0));
+                sendCmd(Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort)((laserModulationLinkedToIntegrationTime_ = value) ? 1 : 0));
             }
         }
         bool laserModulationLinkedToIntegrationTime_;
@@ -614,7 +617,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationPulseWidth_;
                 readOnce.Add(op);
-                return laserModulationPulseWidth_ = Unpack.toUint64(getCmd(op, 5)); 
+                return laserModulationPulseWidth_ = Unpack.toUint64(getCmd(op, 5));
             }
             set
             {
@@ -668,7 +671,7 @@ namespace WasatchNET
                 return (float)degC;
             }
         }
-        public ushort laserTemperatureRaw { get { return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMPERATURE, 2))); } } 
+        public ushort laserTemperatureRaw { get { return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMPERATURE, 2))); } }
 
         public byte laserTemperatureSetpointRaw
         {
@@ -715,9 +718,9 @@ namespace WasatchNET
             }
         }
         bool optAreaScan_;
-    
+
         public bool optActualIntegrationTime
-        { 
+        {
             get
             {
                 Opcodes op = Opcodes.GET_OPT_ACTUAL_INTEGRATION_TIME;
@@ -743,7 +746,7 @@ namespace WasatchNET
         bool optCFSelect_;
 
         public FPGA_DATA_HEADER optDataHeaderTag
-        { 
+        {
             get
             {
                 Opcodes op = Opcodes.GET_OPT_DATA_HEADER_TAG;
@@ -757,7 +760,7 @@ namespace WasatchNET
 
         public bool optHorizontalBinning
         {
-            get 
+            get
             {
                 Opcodes op = Opcodes.GET_OPT_HORIZONTAL_BINNING;
                 if (haveCache(op))
@@ -793,9 +796,9 @@ namespace WasatchNET
             }
         }
         FPGA_LASER_CONTROL optLaserControl_ = FPGA_LASER_CONTROL.ERROR;
-    
+
         public FPGA_LASER_TYPE optLaserType
-        { 
+        {
             get
             {
                 Opcodes op = Opcodes.GET_OPT_LASER_TYPE;
@@ -882,7 +885,7 @@ namespace WasatchNET
         EXTERNAL_TRIGGER_OUTPUT triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.ERROR;
 
         public uint triggerDelay
-        { 
+        {
             get
             {
                 if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
@@ -953,9 +956,7 @@ namespace WasatchNET
                 pixels = featureIdentification.defaultPixels;
             }
 
-            wavelengths = Util.generateWavelengths(pixels, modelConfig.wavecalCoeffs);
-            if (modelConfig.excitationNM > 0)
-                wavenumbers = Util.wavelengthsToWavenumbers(modelConfig.excitationNM, wavelengths);
+            regenerateWavelengths();
 
             // by default, integration time is zero in HW
             integrationTimeMS = modelConfig.minIntegrationTimeMS;
@@ -1031,6 +1032,13 @@ namespace WasatchNET
         // Utilities
         ////////////////////////////////////////////////////////////////////////
 
+        public void regenerateWavelengths()
+        {
+            wavelengths = Util.generateWavelengths(pixels, modelConfig.wavecalCoeffs);
+            if (modelConfig.excitationNM > 0)
+                wavenumbers = Util.wavelengthsToWavenumbers(modelConfig.excitationNM, wavelengths);
+        }
+
         string stringifyPacket(UsbSetupPacket packet)
         {
             return String.Format("bRequestType: 0x{0:x2}, bRequest: 0x{1:x4}, wValue: 0x{2:x4}, wIndex: 0x{3:x4}, wLength: 0x{4:x4}",
@@ -1047,7 +1055,7 @@ namespace WasatchNET
         {
             byte lsb = (byte)(raw & 0xff);
             byte msb = (byte)((raw >> 8) & 0xff);
-            return (ushort) ((lsb << 8) | msb);
+            return (ushort)((lsb << 8) | msb);
         }
 
         void waitForUsbAvailable()
@@ -1080,8 +1088,9 @@ namespace WasatchNET
             if (usbDevice != null)
             {
                 logger.debug("Spectrometer.reconnect: clearing");
-                spectralReader.Dispose();
-                statusReader.Dispose();
+                spectralReader82.Dispose();
+                spectralReader86.Dispose();
+                // statusReader.Dispose();
                 wholeUsbDevice.ReleaseInterface(0);
                 wholeUsbDevice.Close();
                 usbDevice.Close();
@@ -1089,8 +1098,9 @@ namespace WasatchNET
 
                 usbDevice = null;
                 wholeUsbDevice = null;
-                statusReader = null;
-                spectralReader = null;
+                // statusReader = null;
+                spectralReader82 = null;
+                spectralReader86 = null;
 
                 Thread.Sleep(10);
             }
@@ -1113,8 +1123,9 @@ namespace WasatchNET
             }
 
             logger.debug("Spectrometer.reconnect: creating readers");
-            spectralReader = usbDevice.OpenEndpointReader(ReadEndpointID.Ep02);
-            statusReader = usbDevice.OpenEndpointReader(ReadEndpointID.Ep06);
+            spectralReader82 = usbDevice.OpenEndpointReader(ReadEndpointID.Ep02);
+            spectralReader86 = usbDevice.OpenEndpointReader(ReadEndpointID.Ep06);
+            // statusReader = usbDevice.OpenEndpointReader(ReadEndpointID.Ep06);
 
             logger.debug("Spectrometer.reconnect: done");
             return true;
@@ -1279,7 +1290,7 @@ namespace WasatchNET
             if (perc < 0 || perc > 1)
                 return logger.error("invalid laser power percentage (should be in range (0, 1)): {0}", perc);
 
-            ushort century = (ushort) Math.Round(perc * 100);
+            ushort century = (ushort)Math.Round(perc * 100);
 
             // Turn off modulation at full laser power, exit
             if (century >= 100)
@@ -1308,7 +1319,7 @@ namespace WasatchNET
             return true;
         }
 
-        public ushort getDAC_UNUSED()                            { return Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEC_SETPOINT,             2, 1)); }
+        public ushort getDAC_UNUSED() { return Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEC_SETPOINT, 2, 1)); }
 
         // this is not a Property because it has no value and cannot be undone
         public bool setDFUMode()
@@ -1323,7 +1334,7 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
         // getSpectrum
         ////////////////////////////////////////////////////////////////////////
-        
+
         /// <summary>
         /// Take a single complete spectrum, including any configured scan 
         /// averaging, boxcar and dark subtraction.
@@ -1392,63 +1403,122 @@ namespace WasatchNET
             // read spectrum
             ////////////////////////////////////////////////////////////////////
 
-            // TODO: need to update this to utilize 0x86 / 2048 pixels
+            // most of this could be done at open()
+            List<UsbEndpointReader> endpoints = new List<UsbEndpointReader>();
+            endpoints.Add(spectralReader82);
 
-            int bytesRead = 0;                          // how much we read from last chunk
-            double[] spec = new double[pixels];         // what we're going to populate and return
-            byte[] response = new byte[featureIdentification.spectraBlockSize];  // how much we'll read at a chunk
-            uint pixel = 0;                             // where we're at
+            int pixelsPerEndpoint = (int)pixels;
 
-            while (pixel < pixels)
+            if (pixels == 512 || pixels == 1024)
             {
-                // compute this inside the loop, just in case (if doing external
-                // triggering), someone changes integration time during trigger wait
-                int timeoutMS = (int) (2 * integrationTimeMS_ + 100);
+                // defaults fine
+            }
+            else if (pixels == 2048)
+            {
+                endpoints.Add(spectralReader86);
+                pixelsPerEndpoint = 1024;
+            }
+            else
+            {
+                logger.error("unusual number of pixels ({0})...assuming all at endpoint {1}", pixels, spectralReader82);
+            }
 
-                // read the next block of data
-                ErrorCode err;
-                try
+            double[] spec = new double[pixels];         // what we're going to populate and return
+
+            // wait_for_usb_available();
+
+            int pixelsRead = 0;
+            foreach (UsbEndpointReader spectralReader in endpoints)
+            {
+                // read all expected pixels from the endpoint
+                uint[] subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+
+                // verify that exactly the number expected were received
+                if (subspectrum == null || subspectrum.Length != pixelsPerEndpoint)
                 {
-                    logger.debug("attempting to read {0} bytes of spectrum with timeout {1}ms", response.Length, timeoutMS);
-                    err = spectralReader.Read(response, timeoutMS, out bytesRead);
-                }
-                catch (Exception ex)
-                {
-                    logger.error("getSpectrum: {0}", ex.Message);
+                    logger.error("failed when reading subspectrum from {0}", spectralReader);
                     return null;
                 }
 
-                if (err == ErrorCode.Ok)
-                {
-                    if (bytesRead != response.Length)
-                        logger.debug("getSpectrum: read different number of bytes than expected (pixel {0}, bytesRead {1})", pixel, bytesRead);
+                // append while converting to double
+                for (int i = 0; i < pixelsPerEndpoint; i++)
+                    spec[i + pixelsRead] = subspectrum[i];
 
-                    for (uint i = 0; i < bytesRead && pixel < pixels; i += 2)
-                    {
-                        ushort value = (ushort)(response[i] + (response[i + 1] << 8));
-                        spec[pixel++] = value;
-                    }
-                }
-                else
-                {
-                    if (triggerSource_ == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
-                    {
-                        // we're waiting on an external trigger, and we have no idea how long we might
-                        // have to wait, so keep on looping
-                        logger.debug("getSpectrum: still waiting on external trigger");
-                        continue;
-                    }
-                    else
-                    {
-                        // we're not supposed to be waiting on an external trigger, so this is an error condition
-                        logger.error("getSpectrum: received ErrorCode {0} while reading spectrum from pixel {1}", err, pixel);
-                        return null;
-                    }
-                }
+                pixelsRead += pixelsPerEndpoint;
             }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return spec;
+        }
+
+        // Given one endpoint (0x82 or 0x86), read exactly the number of pixels 
+        // expected on the endpoint.  Try to do it in one go, but loop around if
+        // it comes out in chunks.  Log an error and return NULL if anything goes
+        // wrong (timeout in non-triggering context, or reading too many bytes).
+        uint[] readSubspectrum(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
+        {
+            ////////////////////////////////////////////////////////////////////
+            // Read all the expected bytes.  Don't mess with demarshalling into
+            // pixels yet, because we might get them in odd-sized batches.
+            ////////////////////////////////////////////////////////////////////
+
+            int bytesPerEndpoint = pixelsPerEndpoint * 2;
+
+            byte[] subspectrumBytes = new byte[bytesPerEndpoint];
+
+            int bytesReadThisEndpoint = 0;
+            int bytesRemainingToRead = bytesPerEndpoint;
+            while (bytesReadThisEndpoint < bytesPerEndpoint)
+            {
+                // compute this inside the loop, just in case (if doing external
+                // triggering), someone changes integration time during trigger wait
+                int timeoutMS = (int)(2 * integrationTimeMS_ + 100);
+
+                // read the next block of data
+                ErrorCode err = new ErrorCode();
+                int bytesRead = 0;
+                try
+                {
+                    int bytesToRead = bytesPerEndpoint - bytesReadThisEndpoint;
+                    logger.debug("attempting to read {0} bytes of spectrum from endpoint {1} with timeout {2}ms", bytesToRead, spectralReader, timeoutMS);
+                    err = spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, bytesPerEndpoint - bytesReadThisEndpoint, timeoutMS, out bytesRead);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
+                    {
+                        // we don't know how long we'll have to wait for the trigger, so just loop and hope
+                        // (should probably only catch Timeout exceptions...)
+                        logger.debug("still waiting for external trigger");
+                    }
+                    else
+                    {
+                        logger.error("caught exception reading endpoint: {0}", ex.Message);
+                        return null;
+                    }
+                }
+
+                logger.debug("read {0} bytes of spectrum from endpoint {1} (ErrorCode {2})", bytesRead, spectralReader, err.ToString());
+                bytesReadThisEndpoint += bytesRead;
+
+                if (bytesReadThisEndpoint > bytesPerEndpoint)
+                {
+                    logger.error("read too many bytes on endpoint {0} (read {1} of expected {2})", spectralReader, bytesReadThisEndpoint, bytesPerEndpoint);
+                    return null;
+                }
+            }
+
+            ////////////////////////////////////////////////////////////////////
+            // To get here, we should have exactly the expected number of bytes
+            ////////////////////////////////////////////////////////////////////
+
+            // demarshall into pixels
+            uint[] subspectrum = new uint[pixelsPerEndpoint];
+            for (int i = 0; i < pixelsPerEndpoint; i++)
+                subspectrum[i] = (uint)(subspectrumBytes[i * 2] | (subspectrumBytes[i * 2 + 1] << 8));  // LSB-MSB
+
+            return subspectrum;
         }
     }
 }
