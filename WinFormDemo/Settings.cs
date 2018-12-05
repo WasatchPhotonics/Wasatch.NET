@@ -141,7 +141,7 @@ namespace WinFormDemo
             stub("detectorTemperatureRaw",      "Spectrometer State/Detector/TEC/Temperature/raw");
             stub("detectorTECEnabled",          "Spectrometer State/Detector/TEC/Enabled");
             stub("detectorTECSetpointDegC",     "Spectrometer State/Detector/TEC/Setpoint/°C");
-            stub("detectorTECSetpointraw",      "Spectrometer State/Detector/TEC/Setpoint/raw");
+            stub("detectorTECSetpointRaw",      "Spectrometer State/Detector/TEC/Setpoint/raw");
             stub("detectorSensingThresholdEnabled","Spectrometer State/Detector/Sensing/Enabled");
             stub("detectorSensingThreshold",    "Spectrometer State/Detector/Sensing/Threshold");
             stub("horizBinning",                "Spectrometer State/Detector/Horizontal Binning/Mode");
