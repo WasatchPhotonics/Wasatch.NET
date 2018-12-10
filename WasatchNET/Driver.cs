@@ -48,6 +48,8 @@ namespace WasatchNET
         /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
         public int openAllSpectrometers()
         {
+            logger.debug("Wasatch.NET v{0}", Assembly.GetExecutingAssembly().GetName().Version.ToString());
+
             SortedDictionary<string, List<Spectrometer>> sorted = new SortedDictionary<string, List<Spectrometer>>();
 
             // This requires libusb-1.0.dll in the path, and generates a slew of errors like:

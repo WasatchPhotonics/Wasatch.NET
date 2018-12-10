@@ -256,6 +256,8 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-12-10 2.0.3
+    - improved logging
 - 2018-12-04 2.0.2
     - adding support for 2048-pixel detectors
 - 2018-09-25 2.0.0
