@@ -256,6 +256,8 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-12-14 2.0.4
+    - added min/maxLaserPowerMW, laserPowerCoeffs
 - 2018-12-10 2.0.3
     - improved logging
 - 2018-12-04 2.0.2

@@ -94,7 +94,7 @@ namespace WinFormDemo
 
             stub("maxLaserPowerMW",             "EEPROM/Page 3/Laser Power (mW)/Max");
             stub("minLaserPowerMW",             "EEPROM/Page 3/Laser Power (mW)/Min");
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
                 stub("laserPowerCoeff" + i,     "EEPROM/Page 3/Laser Power Calibration (% -> mW)/Coeff" + i);
 
             stub("userText",                    "EEPROM/Page 4/User Text");
@@ -219,6 +219,8 @@ namespace WinFormDemo
             update("thermistorBeta",                spec.modelConfig.thermistorResistanceAt298K);
             update("thermistorResistanceAt298K",    spec.modelConfig.thermistorResistanceAt298K);
             update("userText",                      spec.modelConfig.userText);
+            update("maxLaserPowerMW",               spec.modelConfig.maxLaserPowerMW);
+            update("minLaserPowerMW",               spec.modelConfig.minLaserPowerMW);
 
             // arrays
             for (int i = 0; i < spec.modelConfig.wavecalCoeffs.Length; i++)
@@ -235,6 +237,8 @@ namespace WinFormDemo
                 update("linearityCoeff" + i, spec.modelConfig.linearityCoeffs[i]);
             for (int i = 0; i < spec.modelConfig.badPixels.Length; i++)
                 update("badPixels" + i, spec.modelConfig.badPixels[i] == -1 ? "" : spec.modelConfig.badPixels[i].ToString());
+            for (int i = 0; i < spec.modelConfig.laserPowerCoeffs.Length; i++)
+                update("laserPowerCoeff" + i, spec.modelConfig.laserPowerCoeffs[i]);
         }
 
         /// <summary>

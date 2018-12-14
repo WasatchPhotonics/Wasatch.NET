@@ -161,6 +161,9 @@ namespace WasatchNET
         // public int laserLifetimeOperationMinutes { get; private set; }
         // public short laserTemperatureMax { get; private set; }
         // public short laserTemperatureMin { get; private set; }
+        public float[] laserPowerCoeffs { get; set; }
+        public float maxLaserPowerMW { get; set; }
+        public float minLaserPowerMW { get; set; }
 
         /////////////////////////////////////////////////////////////////////////       
         // Page 4
@@ -277,6 +280,12 @@ namespace WasatchNET
             if (!ParseData.writeFloat(linearityCoeffs[3],    pages[2], 55)) return false;
             if (!ParseData.writeFloat(linearityCoeffs[4],    pages[2], 59)) return false;
 
+            if (!ParseData.writeFloat(laserPowerCoeffs[0], pages[3], 12)) return false;
+            if (!ParseData.writeFloat(laserPowerCoeffs[1], pages[3], 16)) return false;
+            if (!ParseData.writeFloat(laserPowerCoeffs[2], pages[3], 20)) return false;
+            if (!ParseData.writeFloat(laserPowerCoeffs[3], pages[3], 24)) return false;
+
+
             Array.Copy(userData, pages[4], userData.Length);
 
             for (int i = 0; i < badPixels.Length; i++)
@@ -321,6 +330,7 @@ namespace WasatchNET
             ROIVertRegionEnd = new short[3];
             badPixels = new short[15];
             linearityCoeffs = new float[5];
+            laserPowerCoeffs = new float[4];
         }
 
         internal bool read()
@@ -393,6 +403,13 @@ namespace WasatchNET
                 // laserTemperatureMin  = ParseData.toInt16(pages[3], 10);
                 // laserTemperatureMax  = ParseData.toInt16(pages[3], 12); // dupe
                 // laserTemperatureMin  = ParseData.toInt16(pages[3], 14); // dupe
+
+                laserPowerCoeffs[0] = ParseData.toFloat(pages[3], 12);
+                laserPowerCoeffs[1] = ParseData.toFloat(pages[3], 16);
+                laserPowerCoeffs[2] = ParseData.toFloat(pages[3], 20);
+                laserPowerCoeffs[3] = ParseData.toFloat(pages[3], 24);
+                minLaserPowerMW = ParseData.toFloat(pages[3], 28);
+                maxLaserPowerMW = ParseData.toFloat(pages[3], 32);
 
                 userData = new byte[63];
                 Array.Copy(pages[4], userData, userData.Length);
@@ -475,6 +492,11 @@ namespace WasatchNET
                 logger.debug("ROIVertRegionEnd[{0}]   = {1}", i, ROIVertRegionEnd[i]);
             for (int i = 0; i < linearityCoeffs.Length; i++)
                 logger.debug("linearityCoeffs[{0}]    = {1}", i, linearityCoeffs[i]);
+
+            for (int i = 0; i < laserPowerCoeffs.Length; i++)
+                logger.debug("laserPowerCoeffs[{0}]   = {1}", i, laserPowerCoeffs[i]);
+            logger.debug("minLaserPowerMW       = {0}", minLaserPowerMW);
+            logger.debug("maxLaserPowerMW       = {0}", maxLaserPowerMW);
 
             logger.debug("userText              = {0}", userText);
 
