@@ -11,6 +11,9 @@ using WasatchNET;
 
 namespace WinFormDemo
 {
+    /// <summary>
+    /// This form is deprecated by the new EEPROMEditor in RamanSpecCal.
+    /// </summary>
     public partial class WriteEEPROMForm : Form
     {
         EEPROM config;

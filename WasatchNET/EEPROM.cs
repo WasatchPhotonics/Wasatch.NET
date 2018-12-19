@@ -286,11 +286,13 @@ namespace WasatchNET
             if (!ParseData.writeString(calibrationDate,      pages[1], 48, 12)) return false;
             if (!ParseData.writeString(calibrationBy,        pages[1], 60,  3)) return false;
 
-            if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
-            if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 19)) return false;
-            if (!ParseData.writeUInt16(activePixelsVert, pages[2], 21)) return false;
-            if (!ParseData.writeUInt16(minIntegrationTimeMS, pages[2], 23)) return false;
-            if (!ParseData.writeUInt16(maxIntegrationTimeMS, pages[2], 25)) return false;
+            if (!ParseData.writeString(detectorName,         pages[2], 0, 16)) return false;
+            if (!ParseData.writeUInt16(activePixelsHoriz,    pages[2], 16)) return false;
+            // skip 18
+            if (!ParseData.writeUInt16(activePixelsVert,     pages[2], 19)) return false;
+            if (!ParseData.writeUInt16(minIntegrationTimeMS, pages[2], 21)) return false;
+            if (!ParseData.writeUInt16(maxIntegrationTimeMS, pages[2], 23)) return false;
+            if (!ParseData.writeUInt16(actualPixelsHoriz,    pages[2], 25)) return false;
             if (!ParseData.writeUInt16(ROIHorizStart,        pages[2], 27)) return false;
             if (!ParseData.writeUInt16(ROIHorizEnd,          pages[2], 29)) return false;
             if (!ParseData.writeUInt16(ROIVertRegionStart[0],pages[2], 31)) return false;
@@ -475,7 +477,6 @@ namespace WasatchNET
                 minIntegrationTimeMS = 1;
             }
         }
-
 
         void dump()
         {
