@@ -82,10 +82,10 @@ namespace WinFormDemo
             if (!s.isARM)
                 s.triggerSource = TRIGGER_SOURCE.INTERNAL;
 
-            s.integrationTimeMS = s.modelConfig.minIntegrationTimeMS;
-            numericUpDownIntegTimeMS.Value = s.modelConfig.minIntegrationTimeMS;
-            numericUpDownIntegTimeMS.Minimum = s.modelConfig.minIntegrationTimeMS;
-            numericUpDownIntegTimeMS.Maximum = s.modelConfig.maxIntegrationTimeMS;
+            s.integrationTimeMS = s.eeprom.minIntegrationTimeMS;
+            numericUpDownIntegTimeMS.Value = s.eeprom.minIntegrationTimeMS;
+            numericUpDownIntegTimeMS.Minimum = s.eeprom.minIntegrationTimeMS;
+            numericUpDownIntegTimeMS.Maximum = s.eeprom.maxIntegrationTimeMS;
 
             logger.info("Found {0} {1} with {2} pixels from {3:f2} to {4:f2}nm",
                 s.model, s.serialNumber, s.pixels, s.wavelengths[0], s.wavelengths[s.wavelengths.Length-1]);
@@ -116,9 +116,9 @@ namespace WinFormDemo
             numericUpDownScanAveraging.Value = currentSpectrometer.scanAveraging;
 
             // update TEC controls
-            numericUpDownDetectorSetpointDegC.Minimum = (int)currentSpectrometer.modelConfig.detectorTempMin;
-            numericUpDownDetectorSetpointDegC.Maximum = (int)currentSpectrometer.modelConfig.detectorTempMax;
-            numericUpDownDetectorSetpointDegC.Enabled = currentSpectrometer.modelConfig.hasCooling;
+            numericUpDownDetectorSetpointDegC.Minimum = (int)currentSpectrometer.eeprom.detectorTempMin;
+            numericUpDownDetectorSetpointDegC.Maximum = (int)currentSpectrometer.eeprom.detectorTempMax;
+            numericUpDownDetectorSetpointDegC.Enabled = currentSpectrometer.eeprom.hasCooling;
 
             // update laser controls
             if (currentSpectrometer.hasLaser)
@@ -455,7 +455,7 @@ namespace WinFormDemo
             if (currentSpectrometer == null)
                 return;
 
-            WriteEEPROMForm eepromForm = new WriteEEPROMForm(currentSpectrometer.modelConfig);
+            WriteEEPROMForm eepromForm = new WriteEEPROMForm(currentSpectrometer.eeprom);
             eepromForm.ShowDialog();
         }
 

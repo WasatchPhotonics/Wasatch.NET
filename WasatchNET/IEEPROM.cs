@@ -10,42 +10,44 @@ namespace WasatchNET
     [ComVisible(true)]
     [Guid("D6BC706B-4B50-4CFD-AFFC-6A01F56B92B4")]
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
-    public interface IModelConfig
+    public interface IEEPROM
     {
+        byte format { get; set; }
+
         /// <summary>spectrometer serialNumber</summary>
-        string serialNumber { get; }
+        string serialNumber { get; set; }
 
         /// <summary>spectrometer model</summary>
-        string model { get; }
+        string model { get; set;  }
 
         /// <summary>baud rate (bits/sec) for serial communications</summary>
-        int baudRate { get; }
+        uint baudRate { get; set;  }
 
         /// <summary>whether the spectrometer has an on-board TEC for cooling the detector</summary>
-        bool hasCooling { get; }
+        bool hasCooling { get; set; }
 
         /// <summary>whether the spectrometer has an on-board battery</summary>
-        bool hasBattery { get; }
+        bool hasBattery { get; set; }
 
         /// <summary>whether the spectrometer has an integrated laser</summary>
-        bool hasLaser { get; }
+        bool hasLaser { get; set; }
 
         /// <summary>the integral center wavelength of the laser in nanometers, if present</summary>
         /// <remarks>user-writable</remarks>
         /// <see cref="Util.wavelengthsToWavenumbers(double, double[])"/>
-        short excitationNM { get; }
+        ushort excitationNM { get; set; }
 
         /// <summary>the slit width in µm</summary>
-        short slitSizeUM { get; }
+        ushort slitSizeUM { get; set;  }
 
         // These will come with ENG-0034 Rev 4
-        ushort startupIntegrationTimeMS { get; }
-        short startupDetectorTemperatureDegC { get; }
-        byte startupTriggeringMode { get; }
-        float detectorGain { get; }
-        short detectorOffset { get; }
-        float detectorGainOdd { get; }
-        short detectorOffsetOdd { get; }
+        ushort startupIntegrationTimeMS { get; set; }
+        short startupDetectorTemperatureDegC { get; set; }
+        byte startupTriggeringMode { get; set; }
+        float detectorGain { get; set; }
+        short detectorOffset { get; set; }
+        float detectorGainOdd { get; set; }
+        short detectorOffsetOdd { get; set; }
 
         /////////////////////////////////////////////////////////////////////////       
         // Page 1
@@ -71,9 +73,9 @@ namespace WasatchNET
         ///
         /// Use these when setting the TEC setpoint.
         /// </remarks>
-        float[] degCToDACCoeffs { get; }
-        short detectorTempMin { get; }
-        short detectorTempMax { get; }
+        float[] degCToDACCoeffs { get; set; }
+        short detectorTempMin { get; set; }
+        short detectorTempMax { get; set; }
 
         /// <summary>
         /// These are used to convert 12-bit raw ADC temperature readings into degrees Celsius.
@@ -83,9 +85,9 @@ namespace WasatchNET
         /// 
         /// Use these when reading the detector temperature.
         /// </remarks>
-        float[] adcToDegCCoeffs { get; }
-        short thermistorResistanceAt298K { get; }
-        short thermistorBeta { get; }
+        float[] adcToDegCCoeffs { get; set; }
+        short thermistorResistanceAt298K { get; set; }
+        short thermistorBeta { get; set; }
 
         /// <summary>when the unit was last calibrated (unstructured 12-char field)</summary>
         /// <remarks>user-writable</remarks>
@@ -99,18 +101,18 @@ namespace WasatchNET
         // Page 2
         /////////////////////////////////////////////////////////////////////////       
 
-        string detectorName { get; }
-        short activePixelsHoriz { get; }
-        short activePixelsVert { get; }
-        ushort minIntegrationTimeMS { get; }
-        ushort maxIntegrationTimeMS { get; }
-        short actualHoriz { get; }
+        string detectorName { get; set; }
+        ushort activePixelsHoriz { get; set; }
+        ushort activePixelsVert { get; set; }
+        ushort minIntegrationTimeMS { get; set; }
+        ushort maxIntegrationTimeMS { get; set; }
+        ushort actualPixelsHoriz { get; set; }
 
         // writable
-        short ROIHorizStart { get; set; }
-        short ROIHorizEnd { get; set; }
-        short[] ROIVertRegionStart { get; }
-        short[] ROIVertRegionEnd { get; }
+        ushort ROIHorizStart { get; set; }
+        ushort ROIHorizEnd { get; set; }
+        ushort[] ROIVertRegionStart { get; set; }
+        ushort[] ROIVertRegionEnd { get; set; }
 
         /// <summary>
         /// These are reserved for a non-linearity calibration,
@@ -127,6 +129,10 @@ namespace WasatchNET
         // public int laserLifetimeOperationMinutes { get; private set; }
         // public short laserTemperatureMax { get; private set; }
         // public short laserTemperatureMin { get; private set; }
+        float maxLaserPowerMW { get; set; }
+        float minLaserPowerMW { get; set; }
+        float laserExcitationWavelengthNMFloat { get; set; }
+        float[] laserPowerCoeffs { get; set; }
 
         /////////////////////////////////////////////////////////////////////////       
         // Page 4
@@ -143,7 +149,7 @@ namespace WasatchNET
         /// Unfortunately, the 64th byte (you knew there had to be one) is used
         /// internally to represent EEPROM page format version.
         /// </remarks>
-        byte[] userData { get; }
+        byte[] userData { get; set; }
 
         /// <summary>
         /// a stringified version of the 63-byte raw data block provided by userData
@@ -160,7 +166,7 @@ namespace WasatchNET
         /// to skip or "average over" during spectral post-processing.
         /// </summary>
         /// <remarks>bad pixels are identified by pixel number; empty slots are indicated by -1</remarks>
-        short[] badPixels { get; }
+        short[] badPixels { get; set; }
 
         /////////////////////////////////////////////////////////////////////////       
         // Pages 6-7 unallocated

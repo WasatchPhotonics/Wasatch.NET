@@ -23,7 +23,7 @@ namespace WasatchNET
         FPGAOptions fpgaOptions { get; }
 
         /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
-        ModelConfig modelConfig { get; }
+        EEPROM eeprom { get; }
 
         ////////////////////////////////////////////////////////////////////////
         // convenience accessors
@@ -35,7 +35,7 @@ namespace WasatchNET
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
         uint pixels { get; }
 
-        /// <summary>pre-populated array of wavelengths (nm) by pixel, generated from ModelConfig.wavecalCoeffs</summary>
+        /// <summary>pre-populated array of wavelengths (nm) by pixel, generated from eeprom.wavecalCoeffs</summary>
         /// <remarks>see Util.generateWavelengths</remarks>
         double[] wavelengths { get; }
 
@@ -168,7 +168,7 @@ namespace WasatchNET
         void close();
         bool reconnect();
 
-        // if ModelConfig.wavecalCoeffs has changed, regenerate wavelengths
+        // if eeprom.wavecalCoeffs has changed, regenerate wavelengths
         // (would be nice to automate)
         void regenerateWavelengths();
 

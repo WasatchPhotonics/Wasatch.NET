@@ -22,7 +22,7 @@ namespace WasatchNET
     [Guid("A224D5A7-A0E0-4AAC-8489-4BB0CED3171B")]
     [ProgId("WasatchNET.ModelConfig")]
     [ClassInterface(ClassInterfaceType.None)]
-    public class ModelConfig : IModelConfig
+    public class EEPROM : IEEPROM
     {
         /////////////////////////////////////////////////////////////////////////       
         // private attributes
@@ -34,7 +34,6 @@ namespace WasatchNET
         Logger logger = Logger.getInstance();
 
         public List<byte[]> pages { get; private set; }
-        List<byte> format;
         
         /////////////////////////////////////////////////////////////////////////       
         //
@@ -46,31 +45,33 @@ namespace WasatchNET
         // Page 0 
         /////////////////////////////////////////////////////////////////////////       
 
+        public byte format { get; set; }
+
         /// <summary>spectrometer serialNumber</summary>
-        public string serialNumber { get; private set; }
+        public string serialNumber { get; set; }
 
         /// <summary>spectrometer model</summary>
-        public string model { get; private set; }
+        public string model { get; set; }
 
         /// <summary>baud rate (bits/sec) for serial communications</summary>
-        public int baudRate { get; private set; }
+        public uint baudRate { get; set; }
 
         /// <summary>whether the spectrometer has an on-board TEC for cooling the detector</summary>
-        public bool hasCooling { get; private set; }
+        public bool hasCooling { get; set; }
 
         /// <summary>whether the spectrometer has an on-board battery</summary>
-        public bool hasBattery { get; private set; }
+        public bool hasBattery { get; set; }
 
         /// <summary>whether the spectrometer has an integrated laser</summary>
-        public bool hasLaser { get; private set; }
+        public bool hasLaser { get; set; }
 
         /// <summary>the integral center wavelength of the laser in nanometers, if present</summary>
         /// <remarks>user-writable</remarks>
         /// <see cref="Util.wavelengthsToWavenumbers(double, double[])"/>
-        public short excitationNM { get; set; }
+        public ushort excitationNM { get; set; }
 
         /// <summary>the slit width in µm</summary>
-        public short slitSizeUM { get; private set; }
+        public ushort slitSizeUM { get; set; }
 
         // these will come with ENG-0034 Rev 4
         public ushort startupIntegrationTimeMS { get; set; }
@@ -105,9 +106,9 @@ namespace WasatchNET
         ///
         /// Use these when setting the TEC setpoint.
         /// </remarks>
-        public float[] degCToDACCoeffs { get; private set; }
-        public short detectorTempMin { get; private set; }
-        public short detectorTempMax { get; private set; }
+        public float[] degCToDACCoeffs { get; set; }
+        public short detectorTempMin { get; set; }
+        public short detectorTempMax { get; set; }
 
         /// <summary>
         /// These are used to convert 12-bit raw ADC temperature readings into degrees Celsius.
@@ -117,9 +118,9 @@ namespace WasatchNET
         /// 
         /// Use these when reading the detector temperature.
         /// </remarks>
-        public float[] adcToDegCCoeffs { get; private set; }
-        public short thermistorResistanceAt298K { get; private set; }
-        public short thermistorBeta { get; private set; }
+        public float[] adcToDegCCoeffs { get; set; }
+        public short thermistorResistanceAt298K { get; set; }
+        public short thermistorBeta { get; set; }
 
         /// <summary>when the unit was last calibrated (unstructured 12-char field)</summary>
         /// <remarks>user-writable</remarks>
@@ -133,18 +134,18 @@ namespace WasatchNET
         // Page 2
         /////////////////////////////////////////////////////////////////////////       
 
-        public string detectorName { get; private set; }
-        public short activePixelsHoriz { get; private set; }
-        public short activePixelsVert { get; private set; }
-        public ushort minIntegrationTimeMS { get; private set; }
-        public ushort maxIntegrationTimeMS { get; private set; }
-        public short actualHoriz { get; private set; }
+        public string detectorName { get; set; }
+        public ushort activePixelsHoriz { get; set; }
+        public ushort activePixelsVert { get; set; }
+        public ushort minIntegrationTimeMS { get; set; }
+        public ushort maxIntegrationTimeMS { get; set; }
+        public ushort actualPixelsHoriz { get; set; }
 
         // writable
-        public short ROIHorizStart { get; set; }
-        public short ROIHorizEnd { get; set; }
-        public short[] ROIVertRegionStart { get; private set; }
-        public short[] ROIVertRegionEnd { get; private set; }
+        public ushort ROIHorizStart { get; set; }
+        public ushort ROIHorizEnd { get; set; }
+        public ushort[] ROIVertRegionStart { get; set; }
+        public ushort[] ROIVertRegionEnd { get; set; }
 
         /// <summary>
         /// These are reserved for a non-linearity calibration,
@@ -161,29 +162,29 @@ namespace WasatchNET
         // public int laserLifetimeOperationMinutes { get; private set; }
         // public short laserTemperatureMax { get; private set; }
         // public short laserTemperatureMin { get; private set; }
-        public float[] laserPowerCoeffs { get; set; }
         public float maxLaserPowerMW { get; set; }
         public float minLaserPowerMW { get; set; }
+        public float laserExcitationWavelengthNMFloat { get; set; }
+        public float[] laserPowerCoeffs { get; set; }
 
         /////////////////////////////////////////////////////////////////////////       
         // Page 4
         /////////////////////////////////////////////////////////////////////////       
 
         /// <summary>
-        /// 63 bytes of unstructured space which the user is free to use however
+        /// 64 bytes of unstructured space which the user is free to use however
         /// they see fit.
         /// </summary>
         /// <remarks>
         /// For convenience, the same raw storage space is also accessible as a 
         /// null-terminated string via userText. 
         ///
-        /// Unfortunately, the 64th byte (you knew there had to be one) is used
-        /// internally to represent EEPROM page format version.
+        /// EEPROM versions prior to 4 only had 63 bytes of user data.
         /// </remarks>
-        public byte[] userData { get; private set; } 
+        public byte[] userData { get; set; } 
 
         /// <summary>
-        /// a stringified version of the 63-byte raw data block provided by userData
+        /// a stringified version of the 64-byte raw data block provided by userData
         /// </summary>
         /// <remarks>accessible as a null-terminated string via userText</remarks>
         public string userText
@@ -212,7 +213,7 @@ namespace WasatchNET
         /// to skip or "average over" during spectral post-processing.
         /// </summary>
         /// <remarks>bad pixels are identified by pixel number; empty slots are indicated by -1</remarks>
-        public short[] badPixels { get; private set; }
+        public short[] badPixels { get; set; }
 
         /////////////////////////////////////////////////////////////////////////       
         // Pages 6-7 unallocated
@@ -259,21 +260,45 @@ namespace WasatchNET
                 return false;
             }
 
-            if (!ParseData.writeInt16(excitationNM,          pages[0], 39)) return false;
+            if (!ParseData.writeString(model,                pages[0],  0, 16)) return false;
+            if (!ParseData.writeString(serialNumber,         pages[0], 16, 16)) return false;
+            if (!ParseData.writeUInt32(baudRate,             pages[0], 32)) return false;
+            if (!ParseData.writeBool  (hasCooling,           pages[0], 36)) return false;
+            if (!ParseData.writeBool  (hasBattery,           pages[0], 37)) return false;
+            if (!ParseData.writeBool  (hasLaser,             pages[0], 38)) return false;
+            if (!ParseData.writeUInt16(excitationNM,         pages[0], 39)) return false;
+            if (!ParseData.writeUInt16(slitSizeUM,           pages[0], 41)) return false;
+
             if (!ParseData.writeFloat(wavecalCoeffs[0],      pages[1],  0)) return false;
             if (!ParseData.writeFloat(wavecalCoeffs[1],      pages[1],  4)) return false;
             if (!ParseData.writeFloat(wavecalCoeffs[2],      pages[1],  8)) return false;
             if (!ParseData.writeFloat(wavecalCoeffs[3],      pages[1], 12)) return false;
+            if (!ParseData.writeFloat(degCToDACCoeffs[0],    pages[1], 16)) return false;
+            if (!ParseData.writeFloat(degCToDACCoeffs[1],    pages[1], 20)) return false;
+            if (!ParseData.writeFloat(degCToDACCoeffs[2],    pages[1], 24)) return false;
+            if (!ParseData.writeInt16(detectorTempMax,       pages[1], 28)) return false;
+            if (!ParseData.writeInt16(detectorTempMin,       pages[1], 30)) return false;
+            if (!ParseData.writeFloat(adcToDegCCoeffs[0],    pages[1], 32)) return false;
+            if (!ParseData.writeFloat(adcToDegCCoeffs[1],    pages[1], 36)) return false;
+            if (!ParseData.writeFloat(adcToDegCCoeffs[2],    pages[1], 40)) return false;
+            if (!ParseData.writeInt16(thermistorResistanceAt298K, pages[1], 44)) return false;
+            if (!ParseData.writeInt16(thermistorBeta,        pages[1], 46)) return false;
             if (!ParseData.writeString(calibrationDate,      pages[1], 48, 12)) return false;
             if (!ParseData.writeString(calibrationBy,        pages[1], 60,  3)) return false;
-            if (!ParseData.writeInt16(ROIHorizStart,         pages[2], 27)) return false;
-            if (!ParseData.writeInt16(ROIHorizEnd,           pages[2], 29)) return false;
-            if (!ParseData.writeInt16(ROIVertRegionStart[0], pages[2], 31)) return false;
-            if (!ParseData.writeInt16(ROIVertRegionEnd  [0], pages[2], 33)) return false;
-            if (!ParseData.writeInt16(ROIVertRegionStart[1], pages[2], 35)) return false;
-            if (!ParseData.writeInt16(ROIVertRegionEnd  [1], pages[2], 37)) return false;
-            if (!ParseData.writeInt16(ROIVertRegionStart[2], pages[2], 39)) return false;
-            if (!ParseData.writeInt16(ROIVertRegionEnd  [2], pages[2], 41)) return false;
+
+            if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
+            if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 19)) return false;
+            if (!ParseData.writeUInt16(activePixelsVert, pages[2], 21)) return false;
+            if (!ParseData.writeUInt16(minIntegrationTimeMS, pages[2], 23)) return false;
+            if (!ParseData.writeUInt16(maxIntegrationTimeMS, pages[2], 25)) return false;
+            if (!ParseData.writeUInt16(ROIHorizStart,        pages[2], 27)) return false;
+            if (!ParseData.writeUInt16(ROIHorizEnd,          pages[2], 29)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionStart[0],pages[2], 31)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionEnd  [0],pages[2], 33)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionStart[1],pages[2], 35)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionEnd  [1],pages[2], 37)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionStart[2],pages[2], 39)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionEnd  [2],pages[2], 41)) return false;
             if (!ParseData.writeFloat(linearityCoeffs[0],    pages[2], 43)) return false;
             if (!ParseData.writeFloat(linearityCoeffs[1],    pages[2], 47)) return false;
             if (!ParseData.writeFloat(linearityCoeffs[2],    pages[2], 51)) return false;
@@ -284,7 +309,8 @@ namespace WasatchNET
             if (!ParseData.writeFloat(laserPowerCoeffs[1], pages[3], 16)) return false;
             if (!ParseData.writeFloat(laserPowerCoeffs[2], pages[3], 20)) return false;
             if (!ParseData.writeFloat(laserPowerCoeffs[3], pages[3], 24)) return false;
-
+            if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 28)) return false;
+            if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 32)) return false;
 
             Array.Copy(userData, pages[4], userData.Length);
 
@@ -319,15 +345,15 @@ namespace WasatchNET
         // private methods
         /////////////////////////////////////////////////////////////////////////       
 
-        internal ModelConfig(Spectrometer spec)
+        internal EEPROM(Spectrometer spec)
         {
             spectrometer = spec;
 
             wavecalCoeffs = new float[4];
             degCToDACCoeffs = new float[3];
             adcToDegCCoeffs = new float[3];
-            ROIVertRegionStart = new short[3];
-            ROIVertRegionEnd = new short[3];
+            ROIVertRegionStart = new ushort[3];
+            ROIVertRegionEnd = new ushort[3];
             badPixels = new short[15];
             linearityCoeffs = new float[5];
             laserPowerCoeffs = new float[4];
@@ -337,28 +363,27 @@ namespace WasatchNET
         {
             // read all pages into cache
             pages = new List<byte[]>();
-            format = new List<byte>();
             for (ushort page = 0; page < MAX_PAGES; page++)
             {
                 byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                 if (buf == null)
                     return false;
                 pages.Add(buf);
-                format.Add(buf[63]); // page format is always last byte
-
                 logger.hexdump(buf, String.Format("read page {0}: ", page));
             }
+
+            format = pages[0][63];
 
             try 
             {
                 model                   = ParseData.toString(pages[0],  0, 16);
                 serialNumber            = ParseData.toString(pages[0], 16, 16);
-                baudRate                = ParseData.toInt32 (pages[0], 32); 
+                baudRate                = ParseData.toUInt32(pages[0], 32); 
                 hasCooling              = ParseData.toBool  (pages[0], 36);
                 hasBattery              = ParseData.toBool  (pages[0], 37);
                 hasLaser                = ParseData.toBool  (pages[0], 38);
-                excitationNM            = ParseData.toInt16 (pages[0], 39);
-                slitSizeUM              = ParseData.toInt16 (pages[0], 41);
+                excitationNM            = ParseData.toUInt16(pages[0], 39);
+                slitSizeUM              = ParseData.toUInt16(pages[0], 41);
 
                 wavecalCoeffs[0]        = ParseData.toFloat (pages[1],  0);
                 wavecalCoeffs[1]        = ParseData.toFloat (pages[1],  4);
@@ -378,19 +403,19 @@ namespace WasatchNET
                 calibrationBy           = ParseData.toString(pages[1], 60, 3);
 
                 detectorName            = ParseData.toString(pages[2],  0, 16);
-                activePixelsHoriz       = ParseData.toInt16 (pages[2], 16); // note: byte 18 apparently unused
-                activePixelsVert        = ParseData.toInt16 (pages[2], 19);
+                activePixelsHoriz       = ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
+                activePixelsVert        = ParseData.toUInt16(pages[2], 19);
                 minIntegrationTimeMS    = ParseData.toUInt16(pages[2], 21);
                 maxIntegrationTimeMS    = ParseData.toUInt16(pages[2], 23);
-                actualHoriz             = ParseData.toInt16 (pages[2], 25);
-                ROIHorizStart           = ParseData.toInt16 (pages[2], 27);
-                ROIHorizEnd             = ParseData.toInt16 (pages[2], 29);
-                ROIVertRegionStart[0]   = ParseData.toInt16 (pages[2], 31);
-                ROIVertRegionEnd[0]     = ParseData.toInt16 (pages[2], 33);
-                ROIVertRegionStart[1]   = ParseData.toInt16 (pages[2], 35);
-                ROIVertRegionEnd[1]     = ParseData.toInt16 (pages[2], 37);
-                ROIVertRegionStart[2]   = ParseData.toInt16 (pages[2], 39);
-                ROIVertRegionEnd[2]     = ParseData.toInt16 (pages[2], 41);
+                actualPixelsHoriz       = ParseData.toUInt16(pages[2], 25);
+                ROIHorizStart           = ParseData.toUInt16(pages[2], 27);
+                ROIHorizEnd             = ParseData.toUInt16(pages[2], 29);
+                ROIVertRegionStart[0]   = ParseData.toUInt16(pages[2], 31);
+                ROIVertRegionEnd[0]     = ParseData.toUInt16(pages[2], 33);
+                ROIVertRegionStart[1]   = ParseData.toUInt16(pages[2], 35);
+                ROIVertRegionEnd[1]     = ParseData.toUInt16(pages[2], 37);
+                ROIVertRegionStart[2]   = ParseData.toUInt16(pages[2], 39);
+                ROIVertRegionEnd[2]     = ParseData.toUInt16(pages[2], 41);
                 linearityCoeffs[0]      = ParseData.toFloat (pages[2], 43);
                 linearityCoeffs[1]      = ParseData.toFloat (pages[2], 47);
                 linearityCoeffs[2]      = ParseData.toFloat (pages[2], 51);
@@ -401,8 +426,6 @@ namespace WasatchNET
                 // laserLifetimeOperationMinutes = ParseData.toInt32(pages[3], 4);
                 // laserTemperatureMax  = ParseData.toInt16(pages[3], 8);
                 // laserTemperatureMin  = ParseData.toInt16(pages[3], 10);
-                // laserTemperatureMax  = ParseData.toInt16(pages[3], 12); // dupe
-                // laserTemperatureMin  = ParseData.toInt16(pages[3], 14); // dupe
 
                 laserPowerCoeffs[0] = ParseData.toFloat(pages[3], 12);
                 laserPowerCoeffs[1] = ParseData.toFloat(pages[3], 16);
@@ -411,7 +434,7 @@ namespace WasatchNET
                 minLaserPowerMW = ParseData.toFloat(pages[3], 28);
                 maxLaserPowerMW = ParseData.toFloat(pages[3], 32);
 
-                userData = new byte[63];
+                userData = format < 4 ? new byte[63] : new byte[64];
                 Array.Copy(pages[4], userData, userData.Length);
 
                 for (int i = 0; i < 15; i++)
@@ -483,7 +506,7 @@ namespace WasatchNET
             logger.debug("activePixelsVert      = {0}", activePixelsVert);
             logger.debug("minIntegrationTimeMS  = {0}", minIntegrationTimeMS);
             logger.debug("maxIntegrationTimeMS  = {0}", maxIntegrationTimeMS);
-            logger.debug("actualHoriz           = {0}", actualHoriz);
+            logger.debug("actualPixelsHoriz     = {0}", actualPixelsHoriz);
             logger.debug("ROIHorizStart         = {0}", ROIHorizStart);
             logger.debug("ROIHorizEnd           = {0}", ROIHorizEnd);
             for (int i = 0; i < ROIVertRegionStart.Length; i++)

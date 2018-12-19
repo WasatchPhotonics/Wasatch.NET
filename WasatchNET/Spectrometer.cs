@@ -21,21 +21,6 @@ namespace WasatchNET
     /// relatively few accesses to the raw USB objects in this implementation, 
     /// so it should be fairly easy to refactor to support Bluetooth, Ethernet 
     /// etc when I get test units.
-    ///
-    /// Most features are provided as methods, with only a few acquisition-related
-    /// features provided as properties. I don't have a strong reason for this,
-    /// and may change things. Basically, I wanted to distinguish between 
-    /// properties that I knew would be accessed frequently from application code
-    /// (e.g. pixels, wavelengths, integrationTime) and should therefore be cached in
-    /// the driver, versus settings that should always be communicated 
-    /// explicitly with the spectrometer (e.g. laser enable status). Also, it 
-    /// seemed efficient to unpack ModelConfig and FPGAOptions into cached 
-    /// properties rather than making each into duplicate API calls.
-    ///
-    /// Nevertheless...it seems more ".NET"-ish to expose most get/set pairs as
-    /// properties.  This clay remains soft.
-    ///
-    /// Trying to avoid making this a "God-class", but it's still a bit heavy.
     /// </remarks>
     [ComVisible(true)]
     [Guid("06DF0AB6-741E-43D8-92EF-E14CB74070D7")]
@@ -81,7 +66,7 @@ namespace WasatchNET
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
         public uint pixels { get; private set; }
 
-        /// <summary>pre-populated array of wavelengths (nm) by pixel, generated from ModelConfig.wavecalCoeffs</summary>
+        /// <summary>pre-populated array of wavelengths (nm) by pixel, generated from eeprom.wavecalCoeffs</summary>
         /// <remarks>see Util.generateWavelengths</remarks>
         public double[] wavelengths { get; private set; }
 
@@ -92,13 +77,13 @@ namespace WasatchNET
         /// <summary>spectrometer serial number</summary>
         public string serialNumber
         {
-            get { return modelConfig.serialNumber; }
+            get { return eeprom.serialNumber; }
         }
 
         /// <summary>spectrometer model</summary>
         public string model
         {
-            get { return modelConfig.model; }
+            get { return eeprom.model; }
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -112,7 +97,7 @@ namespace WasatchNET
         public FPGAOptions fpgaOptions { get; private set; }
 
         /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
-        public ModelConfig modelConfig { get; private set; }
+        public EEPROM eeprom { get; private set; }
 
         ////////////////////////////////////////////////////////////////////////
         // Purely internal driver attributes (no hardware version)
@@ -320,12 +305,12 @@ namespace WasatchNET
             set
             {
                 // generate and cache the DegC version
-                detectorTECSetpointDegC_ = Math.Max(modelConfig.detectorTempMin, Math.Min(modelConfig.detectorTempMax, value));
+                detectorTECSetpointDegC_ = Math.Max(eeprom.detectorTempMin, Math.Min(eeprom.detectorTempMax, value));
 
                 // convert to raw and apply
-                float dac = modelConfig.degCToDACCoeffs[0]
-                          + modelConfig.degCToDACCoeffs[1] * detectorTECSetpointDegC_
-                          + modelConfig.degCToDACCoeffs[2] * detectorTECSetpointDegC_ * detectorTECSetpointDegC_;
+                float dac = eeprom.degCToDACCoeffs[0]
+                          + eeprom.degCToDACCoeffs[1] * detectorTECSetpointDegC_
+                          + eeprom.degCToDACCoeffs[2] * detectorTECSetpointDegC_ * detectorTECSetpointDegC_;
                 detectorTECSetpointRaw = Math.Min((ushort)0xfff, (ushort)Math.Round(dac));
             }
         }
@@ -354,14 +339,14 @@ namespace WasatchNET
             get
             {
                 ushort raw = detectorTemperatureRaw;
-                float degC = modelConfig.adcToDegCCoeffs[0]
-                           + modelConfig.adcToDegCCoeffs[1] * raw
-                           + modelConfig.adcToDegCCoeffs[2] * raw * raw;
+                float degC = eeprom.adcToDegCCoeffs[0]
+                           + eeprom.adcToDegCCoeffs[1] * raw
+                           + eeprom.adcToDegCCoeffs[2] * raw * raw;
                 logger.debug("getDetectorTemperatureDegC: raw 0x{0:x4}, coeff {1:f2}, {2:f2}, {3:f2} = {4:f2}",
                         raw,
-                        modelConfig.adcToDegCCoeffs[0],
-                        modelConfig.adcToDegCCoeffs[1],
-                        modelConfig.adcToDegCCoeffs[2],
+                        eeprom.adcToDegCCoeffs[0],
+                        eeprom.adcToDegCCoeffs[1],
+                        eeprom.adcToDegCCoeffs[2],
                         degC);
                 return degC;
             }
@@ -486,7 +471,7 @@ namespace WasatchNET
             {
                 lock (acquisitionLock)
                 {
-                    uint ms = Math.Max(modelConfig.minIntegrationTimeMS, Math.Min(modelConfig.maxIntegrationTimeMS, value));
+                    uint ms = Math.Max(eeprom.minIntegrationTimeMS, Math.Min(eeprom.maxIntegrationTimeMS, value));
                     ushort lsw = (ushort)(ms % 65536);
                     ushort msw = (ushort)(ms / 65536);
                     sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw);
@@ -933,8 +918,8 @@ namespace WasatchNET
 
             // load EEPROM configuration
             logger.debug("reading EEPROM");
-            modelConfig = new ModelConfig(this);
-            if (!modelConfig.read())
+            eeprom = new EEPROM(this);
+            if (!eeprom.read())
             {
                 logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                 usbDevice.Close();
@@ -948,29 +933,29 @@ namespace WasatchNET
             logger.debug("back from FPGA Options");
 
             // MustardTree uses 2048-pixel version of the S11510, and all InGaAs are 512
-            pixels = (uint)modelConfig.activePixelsHoriz;
+            pixels = (uint)eeprom.activePixelsHoriz;
             if (pixels > 2048)
             {
                 logger.error("Unlikely pixels count found ({0}); defaulting to {1}",
-                    modelConfig.activePixelsHoriz, featureIdentification.defaultPixels);
+                    eeprom.activePixelsHoriz, featureIdentification.defaultPixels);
                 pixels = featureIdentification.defaultPixels;
             }
 
             regenerateWavelengths();
 
             // by default, integration time is zero in HW
-            integrationTimeMS = modelConfig.minIntegrationTimeMS;
+            integrationTimeMS = eeprom.minIntegrationTimeMS;
 
             // MZ: base on A/R/C?
             // use cache variable because why not
             float degC = UNINITIALIZED_TEMPERATURE_DEG_C;
             if (featureIdentification.hasDefaultTECSetpointDegC)
                 degC = featureIdentification.defaultTECSetpointDegC;
-            else if (modelConfig.detectorName.Contains("S11511"))
+            else if (eeprom.detectorName.Contains("S11511"))
                 degC = 10;
-            else if (modelConfig.detectorName.Contains("S10141"))
+            else if (eeprom.detectorName.Contains("S10141"))
                 degC = -15;
-            else if (modelConfig.detectorName.Contains("G9214"))
+            else if (eeprom.detectorName.Contains("G9214"))
                 degC = -15;
 
             if (hasLaser)
@@ -985,7 +970,7 @@ namespace WasatchNET
                 laserEnabled = false;
             }
 
-            if (modelConfig.hasCooling && degC != UNINITIALIZED_TEMPERATURE_DEG_C)
+            if (eeprom.hasCooling && degC != UNINITIALIZED_TEMPERATURE_DEG_C)
             {
                 // MZ: TEC doesn't do anything unless you give it a temperature first
                 logger.debug("setting TEC setpoint to {0} deg C", degC);
@@ -1026,7 +1011,15 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         public bool isARM { get { return featureIdentification.boardType == BOARD_TYPES.ARM; } }
-        public bool hasLaser { get { return modelConfig.hasLaser && (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL || fpgaOptions.laserType == FPGA_LASER_TYPE.EXTERNAL); } }
+        public bool hasLaser { get { return eeprom.hasLaser && (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL || fpgaOptions.laserType == FPGA_LASER_TYPE.EXTERNAL); } }
+
+        public float excitationWavelengthNM()
+        {
+            if (eeprom.format >= 4)
+                return eeprom.laserExcitationWavelengthNMFloat;
+            else
+                return (float)eeprom.excitationNM;
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // Utilities
@@ -1034,9 +1027,9 @@ namespace WasatchNET
 
         public void regenerateWavelengths()
         {
-            wavelengths = Util.generateWavelengths(pixels, modelConfig.wavecalCoeffs);
-            if (modelConfig.excitationNM > 0)
-                wavenumbers = Util.wavelengthsToWavenumbers(modelConfig.excitationNM, wavelengths);
+            wavelengths = Util.generateWavelengths(pixels, eeprom.wavecalCoeffs);
+            if (excitationWavelengthNM() > 0)
+                wavenumbers = Util.wavelengthsToWavenumbers(excitationWavelengthNM(), wavelengths);
         }
 
         string stringifyPacket(UsbSetupPacket packet)
@@ -1283,8 +1276,11 @@ namespace WasatchNET
         // laser
         ////////////////////////////////////////////////////////////////////////
 
-        // Not implemented as a property because it truly isn't; it's a complex 
-        // combination of actual spectrometer properties.
+        /// <param name="perc">a normalized floating-point percentage from 0.0 to 1.0 (100%)</param>
+        /// <remarks>
+        /// Not implemented as a property because it truly isn't; it's a complex 
+        /// combination of actual spectrometer properties.
+        /// </remarks>
         public bool setLaserPowerPercentage(float perc)
         {
             if (perc < 0 || perc > 1)

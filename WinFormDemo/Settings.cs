@@ -18,7 +18,7 @@ namespace WinFormDemo
     /// that reason that the enumeration WasatchNET.Opcodes was created.
     ///
     /// However, a significant number of settings aren't associated with a
-    /// unique Opcode, but rather come from parsed ModelConfig, 
+    /// unique Opcode, but rather come from parsed EEPROM, 
     /// FPGACompilationOptions etc. Maybe we'll make those into their own
     /// classes someday and we can add a little rigor here, but for now you
     /// get strings :-/
@@ -81,7 +81,7 @@ namespace WinFormDemo
             stub("activePixelsVert",            "EEPROM/Page 2/Active Pixels/Vertical");
             stub("minIntegrationTimeMS",        "EEPROM/Page 2/Integration Time (ms)/Min");
             stub("maxIntegrationTimeMS",        "EEPROM/Page 2/Integration Time (ms)/Max");
-            stub("actualHoriz",                 "EEPROM/Page 2/Actual Pixels Horizontal");
+            stub("actualPixelsHoriz",           "EEPROM/Page 2/Actual Pixels Horizontal");
             stub("ROIHorizStart",               "EEPROM/Page 2/ROI Horizontal/Start");
             stub("ROIHorizEnd",                 "EEPROM/Page 2/ROI Horizontal/End");
             for (int i = 1; i < 4; i++)
@@ -186,16 +186,16 @@ namespace WinFormDemo
             if (spec == null)
                 return;
 
-            update("activePixelsHoriz",             spec.modelConfig.activePixelsHoriz);
-            update("activePixelsVert",              spec.modelConfig.activePixelsVert);
-            update("actualHoriz",                   spec.modelConfig.actualHoriz);
-            update("baudRate",                      spec.modelConfig.baudRate);
-            update("calibrationBy",                 spec.modelConfig.calibrationBy);
-            update("calibrationDate",               spec.modelConfig.calibrationDate);
-            update("detector",                      spec.modelConfig.detectorName);
-            update("detectorTempMax",               spec.modelConfig.detectorTempMax);
-            update("detectorTempMin",               spec.modelConfig.detectorTempMin);
-            update("excitationNM",                  spec.modelConfig.excitationNM);
+            update("activePixelsHoriz",             spec.eeprom.activePixelsHoriz);
+            update("activePixelsVert",              spec.eeprom.activePixelsVert);
+            update("actualPixelsHoriz",             spec.eeprom.actualPixelsHoriz);
+            update("baudRate",                      spec.eeprom.baudRate);
+            update("calibrationBy",                 spec.eeprom.calibrationBy);
+            update("calibrationDate",               spec.eeprom.calibrationDate);
+            update("detector",                      spec.eeprom.detectorName);
+            update("detectorTempMax",               spec.eeprom.detectorTempMax);
+            update("detectorTempMin",               spec.eeprom.detectorTempMin);
+            update("excitationNM",                  spec.excitationWavelengthNM());
             update("featureBoardType",              spec.featureIdentification.boardType);
             update("featureDesc",                   spec.featureIdentification.firmwareDesc);
             update("fpgaDataHeader",                spec.fpgaOptions.dataHeader);
@@ -206,39 +206,39 @@ namespace WinFormDemo
             update("fpgaIntegrationTimeResolution", spec.fpgaOptions.integrationTimeResolution);
             update("fpgaLaserControl",              spec.fpgaOptions.laserControl);
             update("fpgaLaserType",                 spec.fpgaOptions.laserType);
-            update("hasBattery",                    spec.modelConfig.hasBattery);
-            update("hasCooling",                    spec.modelConfig.hasCooling);
-            update("hasLaser",                      spec.modelConfig.hasLaser);
-            update("maxIntegrationTimeMS",          spec.modelConfig.maxIntegrationTimeMS);
-            update("minIntegrationTimeMS",          spec.modelConfig.minIntegrationTimeMS);
+            update("hasBattery",                    spec.eeprom.hasBattery);
+            update("hasCooling",                    spec.eeprom.hasCooling);
+            update("hasLaser",                      spec.eeprom.hasLaser);
+            update("maxIntegrationTimeMS",          spec.eeprom.maxIntegrationTimeMS);
+            update("minIntegrationTimeMS",          spec.eeprom.minIntegrationTimeMS);
             update("model",                         spec.model);
-            update("ROIHorizEnd",                   spec.modelConfig.ROIHorizEnd);
-            update("ROIHorizStart",                 spec.modelConfig.ROIHorizStart);
+            update("ROIHorizEnd",                   spec.eeprom.ROIHorizEnd);
+            update("ROIHorizStart",                 spec.eeprom.ROIHorizStart);
             update("serialNumber",                  spec.serialNumber);
-            update("slitSizeUM",                    spec.modelConfig.slitSizeUM);
-            update("thermistorBeta",                spec.modelConfig.thermistorResistanceAt298K);
-            update("thermistorResistanceAt298K",    spec.modelConfig.thermistorResistanceAt298K);
-            update("userText",                      spec.modelConfig.userText);
-            update("maxLaserPowerMW",               spec.modelConfig.maxLaserPowerMW);
-            update("minLaserPowerMW",               spec.modelConfig.minLaserPowerMW);
+            update("slitSizeUM",                    spec.eeprom.slitSizeUM);
+            update("thermistorBeta",                spec.eeprom.thermistorResistanceAt298K);
+            update("thermistorResistanceAt298K",    spec.eeprom.thermistorResistanceAt298K);
+            update("userText",                      spec.eeprom.userText);
+            update("maxLaserPowerMW",               spec.eeprom.maxLaserPowerMW);
+            update("minLaserPowerMW",               spec.eeprom.minLaserPowerMW);
 
             // arrays
-            for (int i = 0; i < spec.modelConfig.wavecalCoeffs.Length; i++)
-                update("wavecalCoeff" + i, spec.modelConfig.wavecalCoeffs[i]);
-            for (int i = 0; i < spec.modelConfig.degCToDACCoeffs.Length; i++)
-                update("degCToDACCoeff" + i, spec.modelConfig.degCToDACCoeffs[i]);
-            for (int i = 0; i < spec.modelConfig.adcToDegCCoeffs.Length; i++)
-                update("adcToDegCCoeff" + i, spec.modelConfig.adcToDegCCoeffs[i]);
-            for (int i = 0; i < spec.modelConfig.ROIVertRegionStart.Length; i++)
-                update(String.Format("ROIVertRegion{0}Start", i + 1), spec.modelConfig.ROIVertRegionStart[i]);
-            for (int i = 0; i < spec.modelConfig.ROIVertRegionEnd.Length; i++)
-                update(String.Format("ROIVertRegion{0}End", i + 1), spec.modelConfig.ROIVertRegionEnd[i]);
-            for (int i = 0; i < spec.modelConfig.linearityCoeffs.Length; i++)
-                update("linearityCoeff" + i, spec.modelConfig.linearityCoeffs[i]);
-            for (int i = 0; i < spec.modelConfig.badPixels.Length; i++)
-                update("badPixels" + i, spec.modelConfig.badPixels[i] == -1 ? "" : spec.modelConfig.badPixels[i].ToString());
-            for (int i = 0; i < spec.modelConfig.laserPowerCoeffs.Length; i++)
-                update("laserPowerCoeff" + i, spec.modelConfig.laserPowerCoeffs[i]);
+            for (int i = 0; i < spec.eeprom.wavecalCoeffs.Length; i++)
+                update("wavecalCoeff" + i, spec.eeprom.wavecalCoeffs[i]);
+            for (int i = 0; i < spec.eeprom.degCToDACCoeffs.Length; i++)
+                update("degCToDACCoeff" + i, spec.eeprom.degCToDACCoeffs[i]);
+            for (int i = 0; i < spec.eeprom.adcToDegCCoeffs.Length; i++)
+                update("adcToDegCCoeff" + i, spec.eeprom.adcToDegCCoeffs[i]);
+            for (int i = 0; i < spec.eeprom.ROIVertRegionStart.Length; i++)
+                update(String.Format("ROIVertRegion{0}Start", i + 1), spec.eeprom.ROIVertRegionStart[i]);
+            for (int i = 0; i < spec.eeprom.ROIVertRegionEnd.Length; i++)
+                update(String.Format("ROIVertRegion{0}End", i + 1), spec.eeprom.ROIVertRegionEnd[i]);
+            for (int i = 0; i < spec.eeprom.linearityCoeffs.Length; i++)
+                update("linearityCoeff" + i, spec.eeprom.linearityCoeffs[i]);
+            for (int i = 0; i < spec.eeprom.badPixels.Length; i++)
+                update("badPixels" + i, spec.eeprom.badPixels[i] == -1 ? "" : spec.eeprom.badPixels[i].ToString());
+            for (int i = 0; i < spec.eeprom.laserPowerCoeffs.Length; i++)
+                update("laserPowerCoeff" + i, spec.eeprom.laserPowerCoeffs[i]);
         }
 
         /// <summary>
@@ -267,10 +267,10 @@ namespace WinFormDemo
 
             logger.debug("updateAll: starting long pull");
 
-            update("detectorGain",                        spec.detectorGain);   // should this be ModelConfig or opcode?
-            update("detectorOffset",                      spec.detectorOffset); // ModelConfig or opcode?
-            update("detectorGainOdd",                     spec.modelConfig.detectorGainOdd);
-            update("detectorOffsetOdd",                   spec.modelConfig.detectorOffsetOdd);
+            update("detectorGain",                        spec.detectorGain);   // should this be eeprom or opcode?
+            update("detectorOffset",                      spec.detectorOffset); // eeprom or opcode?
+            update("detectorGainOdd",                     spec.eeprom.detectorGainOdd);
+            update("detectorOffsetOdd",                   spec.eeprom.detectorOffsetOdd);
             update("detectorSensingThreshold",            spec.detectorSensingThreshold);
             update("detectorSensingThresholdEnabled",     spec.detectorSensingThresholdEnabled);
             update("triggerSource",                       spec.triggerSource); 
@@ -280,7 +280,7 @@ namespace WinFormDemo
             update("continuousAcquisition",               spec.continuousAcquisitionEnable);
             update("continuousFrames",                    spec.continuousFrames);
 
-            if (spec.modelConfig.hasCooling)
+            if (spec.eeprom.hasCooling)
             {
                 update("detectorTemperatureDegC",         spec.detectorTemperatureDegC);
                 update("detectorTemperatureRaw",          spec.detectorTemperatureRaw);
@@ -295,7 +295,7 @@ namespace WinFormDemo
             if (spec.fpgaOptions.hasHorizBinning)
                 update("horizBinning",                    spec.horizontalBinning);
 
-            if (spec.modelConfig.hasLaser && spec.fpgaOptions.laserType != FPGA_LASER_TYPE.NONE)
+            if (spec.eeprom.hasLaser && spec.fpgaOptions.laserType != FPGA_LASER_TYPE.NONE)
             {
                 update("laserInterlock",                  spec.laserInterlockEnabled);
                 update("laserEnabled",                    spec.laserEnabled);

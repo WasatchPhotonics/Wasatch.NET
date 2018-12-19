@@ -87,7 +87,7 @@ namespace WasatchNET
                         // sort them by model, serial (allow duplicates for unconfigured)
                         // TODO: is there any way to deterministically sort between units
                         //       without a configured unique serial number?
-                        string key = String.Format("{0}-{1}", spectrometer.modelConfig.model, spectrometer.modelConfig.serialNumber);
+                        string key = String.Format("{0}-{1}", spectrometer.eeprom.model, spectrometer.eeprom.serialNumber);
                         if (!sorted.ContainsKey(key))
                             sorted.Add(key, new List<Spectrometer>());
                         sorted[key].Add(spectrometer);

@@ -69,6 +69,21 @@ namespace WasatchNET
             return true;
         }
 
+        public static bool writeUInt16(UInt16 value, byte[] buf, int index)
+        {
+            Logger logger = Logger.getInstance();
+            byte[] tmp = BitConverter.GetBytes(value);
+            if (tmp == null || tmp.Length != 2)
+            {
+                Logger.getInstance().error("ParseData.writeUInt16: can't serialize {0}", value);
+                return false;
+            }
+            Array.Copy(tmp, 0, buf, index, tmp.Length);
+            logger.debug("writeUInt16: wrote {0} as 0x{1:x2} 0x{2:x2} to index {3} of {4}-byte buf",
+                value, tmp[0], tmp[1], index, buf.Length);
+            return true;
+        }
+
         public static bool writeInt16(Int16 value, byte[] buf, int index)
         {
             Logger logger = Logger.getInstance();
@@ -81,6 +96,27 @@ namespace WasatchNET
             Array.Copy(tmp, 0, buf, index, tmp.Length);
             logger.debug("writeInt16: wrote {0} as 0x{1:x2} 0x{2:x2} to index {3} of {4}-byte buf",
                 value, tmp[0], tmp[1], index, buf.Length);
+            return true;
+        }
+
+        public static bool writeUInt32(UInt32 value, byte[] buf, int index)
+        {
+            Logger logger = Logger.getInstance();
+            byte[] tmp = BitConverter.GetBytes(value);
+            if (tmp == null || tmp.Length != 4)
+            {
+                Logger.getInstance().error("ParseData.writeUInt32: can't serialize {0}", value);
+                return false;
+            }
+            Array.Copy(tmp, 0, buf, index, tmp.Length);
+            logger.debug("writeUInt32: wrote {0} as 0x{1:x2} 0x{2:x2} 0x{3:x2} 0x{4:x2} to index {5} of {6}-byte buf",
+                value, tmp[0], tmp[1], tmp[2], tmp[3], index, buf.Length);
+            return true;
+        }
+
+        public static bool writeBool(bool value, byte[] buf, int index)
+        {
+            buf[index] = (byte) (value ? 1 : 0);
             return true;
         }
     }

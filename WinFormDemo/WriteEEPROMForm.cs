@@ -13,10 +13,10 @@ namespace WinFormDemo
 {
     public partial class WriteEEPROMForm : Form
     {
-        ModelConfig config;
+        EEPROM config;
         Logger logger = Logger.getInstance();
 
-        public WriteEEPROMForm(ModelConfig mc)
+        public WriteEEPROMForm(EEPROM mc)
         {
             InitializeComponent();
             config = mc;
@@ -104,7 +104,7 @@ namespace WinFormDemo
             }
         }
 
-        private void numericUpDownExcitationNM_ValueChanged(object sender, EventArgs e) { config.excitationNM = (short) numericUpDownExcitationNM.Value; }
+        private void numericUpDownExcitationNM_ValueChanged(object sender, EventArgs e) { config.excitationNM = (ushort) numericUpDownExcitationNM.Value; }
         private void textBoxCalibrationDate_TextChanged(object sender, EventArgs e) { config.calibrationDate = textBoxCalibrationDate.Text; } 
         private void textBoxCalibratedBy_TextChanged(object sender, EventArgs e) { config.calibrationBy = textBoxCalibratedBy.Text; } 
         private void textBoxUserText_TextChanged(object sender, EventArgs e) { config.userText = textBoxUserText.Text; }
@@ -120,15 +120,15 @@ namespace WinFormDemo
         private void textBoxLinearityCoeff3_TextChanged(object sender, EventArgs e) { updateFloat(sender as TextBox, ref config.linearityCoeffs[3]); }
         private void textBoxLinearityCoeff4_TextChanged(object sender, EventArgs e) { updateFloat(sender as TextBox, ref config.linearityCoeffs[4]); }
 
-        private void numericUpDownROIHorizStart_ValueChanged(object sender, EventArgs e) { config.ROIHorizStart = (short) numericUpDownROIHorizStart.Value; }
-        private void numericUpDownROIHorizEnd_ValueChanged(object sender, EventArgs e) { config.ROIHorizEnd = (short) numericUpDownROIHorizEnd.Value; }
+        private void numericUpDownROIHorizStart_ValueChanged(object sender, EventArgs e) { config.ROIHorizStart = (ushort) numericUpDownROIHorizStart.Value; }
+        private void numericUpDownROIHorizEnd_ValueChanged(object sender, EventArgs e) { config.ROIHorizEnd = (ushort) numericUpDownROIHorizEnd.Value; }
 
-        private void numericUpDownROIVertStart0_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionStart[0] = (short)numericUpDownROIVertStart0.Value; }
-        private void numericUpDownROIVertStart1_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionStart[1] = (short)numericUpDownROIVertStart1.Value; }
-        private void numericUpDownROIVertStart2_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionStart[2] = (short)numericUpDownROIVertStart2.Value; }
-        private void numericUpDownROIVertEnd0_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionEnd[0] = (short)numericUpDownROIVertEnd0.Value; }
-        private void numericUpDownROIVertEnd1_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionEnd[1] = (short)numericUpDownROIVertEnd1.Value; }
-        private void numericUpDownROIVertEnd2_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionEnd[2] = (short)numericUpDownROIVertEnd2.Value; }
+        private void numericUpDownROIVertStart0_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionStart[0] = (ushort)numericUpDownROIVertStart0.Value; }
+        private void numericUpDownROIVertStart1_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionStart[1] = (ushort)numericUpDownROIVertStart1.Value; }
+        private void numericUpDownROIVertStart2_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionStart[2] = (ushort)numericUpDownROIVertStart2.Value; }
+        private void numericUpDownROIVertEnd0_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionEnd[0] = (ushort)numericUpDownROIVertEnd0.Value; }
+        private void numericUpDownROIVertEnd1_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionEnd[1] = (ushort)numericUpDownROIVertEnd1.Value; }
+        private void numericUpDownROIVertEnd2_ValueChanged(object sender, EventArgs e) { config.ROIVertRegionEnd[2] = (ushort)numericUpDownROIVertEnd2.Value; }
 
         private void numericUpDownBadPixel0_ValueChanged(object sender, EventArgs e)  { config.badPixels[ 0] = (short)numericUpDownBadPixel0.Value; } 
         private void numericUpDownBadPixel1_ValueChanged(object sender, EventArgs e)  { config.badPixels[ 1] = (short)numericUpDownBadPixel1.Value; } 

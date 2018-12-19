@@ -90,11 +90,11 @@
     <Compile Include="IDriverVBAWrapper.cs" />
     <Compile Include="IFPGAOptions.cs" />
     <Compile Include="ILogger.cs" />
-    <Compile Include="IModelConfig.cs" />
+    <Compile Include="IEEPROM.cs" />
     <Compile Include="IOpcodes.cs" />
     <Compile Include="ISpectrometer.cs" />
     <Compile Include="IUInt40.cs" />
-    <Compile Include="ModelConfig.cs" />
+    <Compile Include="EEPROM.cs" />
     <Compile Include="ParseData.cs" />
     <Compile Include="Unpack.cs" />
     <Compile Include="FunkyFloat.cs" />

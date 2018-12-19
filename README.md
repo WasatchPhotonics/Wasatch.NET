@@ -256,6 +256,10 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2018-12-19 2.0.5
+    - updated to latest draft Rev 4 of ENG-0034
+    - renamed ModelConfig to EEPROM
+    - extended full EEPROM write privileges
 - 2018-12-14 2.0.4
     - added min/maxLaserPowerMW, laserPowerCoeffs
 - 2018-12-10 2.0.3
