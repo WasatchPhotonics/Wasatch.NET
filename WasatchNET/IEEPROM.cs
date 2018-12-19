@@ -14,11 +14,11 @@ namespace WasatchNET
     {
         byte format { get; set; }
 
-        /// <summary>spectrometer serialNumber</summary>
-        string serialNumber { get; set; }
-
         /// <summary>spectrometer model</summary>
         string model { get; set;  }
+
+        /// <summary>spectrometer serialNumber</summary>
+        string serialNumber { get; set; }
 
         /// <summary>baud rate (bits/sec) for serial communications</summary>
         uint baudRate { get; set;  }
