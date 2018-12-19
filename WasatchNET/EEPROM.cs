@@ -29,6 +29,7 @@ namespace WasatchNET
         /////////////////////////////////////////////////////////////////////////       
 
         const int MAX_PAGES = 6; // really 8, but last 2 are unallocated
+        const byte FORMAT = 4;
 
         Spectrometer spectrometer;
         Logger logger = Logger.getInstance();
@@ -319,6 +320,9 @@ namespace WasatchNET
             for (int i = 0; i < badPixels.Length; i++)
                 if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
                     return false;
+
+            // store the current format
+            pages[0][63] = FORMAT;
 
             // we'll need this to send commands
             Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
