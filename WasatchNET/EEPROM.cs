@@ -460,6 +460,21 @@ namespace WasatchNET
             return true;
         }
 
+        public bool hasLaserPowerCalibration()
+        {
+            if (maxLaserPowerMW <= 0)
+                return false;
+
+            if (laserPowerCoeffs == null || laserPowerCoeffs.Length < 4)
+                return false;
+
+            foreach (double d in laserPowerCoeffs)
+                if (Double.IsNaN(d))
+                    return false;
+
+            return true;
+        }
+
         void enforceReasonableDefaults()
         {
             bool defaultWavecal = false;
