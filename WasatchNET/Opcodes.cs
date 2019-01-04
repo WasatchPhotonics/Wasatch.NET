@@ -41,6 +41,7 @@ namespace WasatchNET
             cmd[Opcodes.ACQUIRE_SPECTRUM                       ] = 0xad;
             cmd[Opcodes.GET_ACTUAL_FRAMES                      ] = 0xe4;
             cmd[Opcodes.GET_ACTUAL_INTEGRATION_TIME            ] = 0xdf;
+            cmd[Opcodes.GET_ADC_RAW                            ] = 0xd5;
             cmd[Opcodes.GET_DETECTOR_GAIN                      ] = 0xc5;
             cmd[Opcodes.GET_DETECTOR_OFFSET                    ] = 0xc4;
             cmd[Opcodes.GET_DETECTOR_SENSING_THRESHOLD         ] = 0xd1;
@@ -61,7 +62,6 @@ namespace WasatchNET
             cmd[Opcodes.GET_LASER_MOD_ENABLE                   ] = 0xe3;
             cmd[Opcodes.GET_LASER_MOD_PULSE_WIDTH              ] = 0xdc;
             cmd[Opcodes.GET_LASER_RAMPING_MODE                 ] = 0xea;
-            cmd[Opcodes.GET_LASER_TEMPERATURE                  ] = 0xd5;
             cmd[Opcodes.GET_LASER_TEC_SETPOINT                 ] = 0xe8;
             cmd[Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME ] = 0xde;
             cmd[Opcodes.GET_LASER_MOD_PERIOD                   ] = 0xcb;
@@ -113,6 +113,16 @@ namespace WasatchNET
             cmd[Opcodes.GET_OPT_AREA_SCAN                      ] = 0x0a;
             cmd[Opcodes.GET_OPT_ACTUAL_INTEGRATION_TIME        ] = 0x0b;
             cmd[Opcodes.GET_OPT_HORIZONTAL_BINNING             ] = 0x0c;
+            cmd[Opcodes.GET_BATTERY_STATE                      ] = 0x13;
+
+            // TODO: implement, test and document these 2nd-tier commands (see vend_ax.h)
+            //
+            // 0x0d = clear error codes
+            // 0x0e = retrieve error code list
+            // 0x0f = set external laser power
+            // 0x10 = get external laser power
+            // 0x11 = I2C sensor write (IMX)
+            // 0x12 = I2C sensor read  (IMX)
 
             // this list has not been double-checked; ENLIGHTEN ignores return values :-(
             armInvertedRetvals.Add(Opcodes.ACQUIRE_SPECTRUM);

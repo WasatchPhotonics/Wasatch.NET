@@ -87,8 +87,11 @@ namespace WinFormDemo
             numericUpDownIntegTimeMS.Minimum = s.eeprom.minIntegrationTimeMS;
             numericUpDownIntegTimeMS.Maximum = s.eeprom.maxIntegrationTimeMS;
 
-            logger.info("Found {0} {1} with {2} pixels from {3:f2} to {4:f2}nm",
-                s.model, s.serialNumber, s.pixels, s.wavelengths[0], s.wavelengths[s.wavelengths.Length-1]);
+            if (s.pixels > 0)
+                logger.info("Found {0} {1} with {2} pixels from {3:f2} to {4:f2}nm",
+                    s.model, s.serialNumber, s.pixels, s.wavelengths[0], s.wavelengths[s.wavelengths.Length - 1]);
+            else
+                logger.error("Found [model: {0}] [serial: {1}] with {2} pixels", s.model, s.serialNumber, s.pixels);
         }
 
         void updateCurrentSpectrometer()

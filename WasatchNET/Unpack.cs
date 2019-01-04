@@ -47,6 +47,12 @@ namespace WasatchNET
                 return BitConverter.ToInt16(buf, 0);
         }
 
+        /// <summary>
+        /// This assumes input bytes are little-endian ([aa bb cc] = 0xccbbaa)
+        /// </summary>
+        /// <param name="buf"></param>
+        /// <returns></returns>
+        /// <todo>add msb:Bool flag to reverse order</todo>
         public static uint toUint(byte[] buf)
         {
             if (buf == null)

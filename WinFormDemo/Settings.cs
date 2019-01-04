@@ -167,6 +167,8 @@ namespace WinFormDemo
             stub("continuousAcquisition",       "Spectrometer State/Triggering/Continuous/Enabled");
             stub("continuousFrames",            "Spectrometer State/Triggering/Continuous/Frames");
 
+            stub("batteryPercentage",           "Spectrometer State/Battery/Charge Level (%)");
+            stub("batteryCharging",             "Spectrometer State/Battery/Currently Charging");
         }
 
         public void update(Spectrometer spec)
@@ -310,6 +312,12 @@ namespace WinFormDemo
                 update("laserTemperatureRaw",             spec.laserTemperatureRaw);
                 update("laserTemperatureDegC",            spec.laserTemperatureDegC);
                 update("adcSelection",                    spec.selectedADC);
+            }
+
+            if (spec.eeprom.hasBattery)
+            {
+                update("batteryPercentage", spec.batteryPercentage);
+                update("batteryCharging", spec.batteryCharging);
             }
         }
 

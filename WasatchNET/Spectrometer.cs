@@ -103,6 +103,8 @@ namespace WasatchNET
         // Purely internal driver attributes (no hardware version)
         ////////////////////////////////////////////////////////////////////////
 
+        public bool throwawayADCRead { get; set; } = true;
+
         /// <summary>
         /// How many acquisitions to average together (zero for no averaging)
         /// </summary>
@@ -168,11 +170,62 @@ namespace WasatchNET
             }
         }
 
+        public ushort adcRaw
+        {
+            get
+            {
+                return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2)));
+            }
+        }
+
+        public uint batteryStateRaw
+        {
+            get
+            {
+                DateTime now = DateTime.Now;
+                DateTime nextCheck = batteryStateTimestamp_.AddSeconds(1);
+                if (batteryStateRaw_ != 0 && now < nextCheck)
+                    return batteryStateRaw_;
+
+                // Unpack.toUint assumes little-endian order, but this is a custom 
+                // register, so let's re-order the received bytes to match the ICD
+                uint tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, 3));
+                uint lsb = (byte)(tmp & 0xff);
+                uint msb = (byte)((tmp >> 8) & 0xff);
+                uint chg = (byte)((tmp >> 16) & 0xff);
+                batteryStateRaw_ = (lsb << 16) | (msb << 8) | chg;
+
+                batteryStateTimestamp_ = now;
+                return batteryStateRaw_;
+            }
+        }
+        DateTime batteryStateTimestamp_ = DateTime.Now;
+        uint batteryStateRaw_ = 0;
+
+        public float batteryPercentage
+        {
+            get
+            {
+                uint raw = batteryStateRaw;
+                byte lsb = (byte)((batteryStateRaw >> 16) & 0xff);
+                byte msb = (byte)((batteryStateRaw >>  8) & 0xff);
+                return ((float)(1.0 * msb)) + ((float)(1.0 * lsb / 256.0));
+            }
+        }
+
+        public bool batteryCharging
+        {
+            get
+            {
+                return 0 != (batteryStateRaw & 0xff);
+            }
+        }
+
         public bool continuousAcquisitionEnable
         {
             get
             {
-                Opcodes op = Opcodes.GET_CONTINUOUS_ACQUISITION;
+                const Opcodes op = Opcodes.GET_CONTINUOUS_ACQUISITION;
                 if (haveCache(op))
                     return continuousAcquisitionEnable_;
                 readOnce.Add(op);
@@ -190,7 +243,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_CONTINUOUS_FRAMES;
+                const Opcodes op = Opcodes.GET_CONTINUOUS_FRAMES;
                 if (haveCache(op))
                     return continuousFrames_;
                 readOnce.Add(op);
@@ -208,7 +261,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_DETECTOR_GAIN;
+                const Opcodes op = Opcodes.GET_DETECTOR_GAIN;
                 if (haveCache(op))
                     return detectorGain_;
                 readOnce.Add(op);
@@ -226,7 +279,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_DETECTOR_OFFSET;
+                const Opcodes op = Opcodes.GET_DETECTOR_OFFSET;
                 if (haveCache(op))
                     return detectorOffset_;
                 readOnce.Add(op);
@@ -244,7 +297,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE;
+                const Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE;
                 if (haveCache(op))
                     return detectorSensingThresholdEnabled_;
                 readOnce.Add(op);
@@ -262,7 +315,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD;
+                const Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD;
                 if (haveCache(op))
                     return detectorSensingThreshold_;
                 readOnce.Add(op);
@@ -280,7 +333,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_DETECTOR_TEC_ENABLE;
+                const Opcodes op = Opcodes.GET_DETECTOR_TEC_ENABLE;
                 if (haveCache(op))
                     return detectorTECEnabled_;
                 readOnce.Add(op);
@@ -320,7 +373,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_DETECTOR_TEC_SETPOINT;
+                const Opcodes op = Opcodes.GET_DETECTOR_TEC_SETPOINT;
                 if (haveCache(op))
                     return detectorTECSetpointRaw_;
                 readOnce.Add(op);
@@ -361,7 +414,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_FIRMWARE_REVISION;
+                const Opcodes op = Opcodes.GET_FIRMWARE_REVISION;
                 if (haveCache(op))
                     return firmwareRevision_;
                 byte[] buf = getCmd(op, 4);
@@ -384,7 +437,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_FPGA_REVISION;
+                const Opcodes op = Opcodes.GET_FPGA_REVISION;
                 if (haveCache(op))
                     return fpgaRevision_;
                 byte[] buf = getCmd(op, 7);
@@ -405,7 +458,7 @@ namespace WasatchNET
             {
                 if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
                     return false;
-                Opcodes op = Opcodes.GET_CF_SELECT;
+                const Opcodes op = Opcodes.GET_CF_SELECT;
                 if (haveCache(op))
                     return highGainModeEnabled_;
                 readOnce.Add(op);
@@ -428,7 +481,7 @@ namespace WasatchNET
                 if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return HORIZONTAL_BINNING.ERROR;
 
-                Opcodes op = Opcodes.GET_HORIZONTAL_BINNING;
+                const Opcodes op = Opcodes.GET_HORIZONTAL_BINNING;
                 if (haveCache(op))
                     return horizontalBinning_;
                 horizontalBinning_ = HORIZONTAL_BINNING.ERROR;
@@ -458,7 +511,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_INTEGRATION_TIME;
+                const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
                 if (haveCache(op))
                     return integrationTimeMS_;
                 byte[] buf = getCmd(op, 3, fullLen: 6);
@@ -486,7 +539,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_LASER_ENABLE;
+                const Opcodes op = Opcodes.GET_LASER_ENABLE;
                 if (haveCache(op))
                     return laserEnabled_;
                 readOnce.Add(op);
@@ -504,7 +557,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_LASER_MOD_ENABLE;
+                const Opcodes op = Opcodes.GET_LASER_MOD_ENABLE;
                 if (haveCache(op))
                     return laserModulationEnabled_;
                 readOnce.Add(op);
@@ -524,7 +577,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME;
+                const Opcodes op = Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME;
                 if (haveCache(op))
                     return laserModulationLinkedToIntegrationTime_;
                 readOnce.Add(op);
@@ -542,7 +595,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_LASER_MOD_PULSE_DELAY;
+                const Opcodes op = Opcodes.GET_LASER_MOD_PULSE_DELAY;
                 if (haveCache(op))
                     return laserModulationPulseDelay_;
                 readOnce.Add(op);
@@ -561,7 +614,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_LASER_MOD_DURATION;
+                const Opcodes op = Opcodes.GET_LASER_MOD_DURATION;
                 if (haveCache(op))
                     return laserModulationDuration_;
                 readOnce.Add(op);
@@ -580,7 +633,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_LASER_MOD_PERIOD;
+                const Opcodes op = Opcodes.GET_LASER_MOD_PERIOD;
                 if (haveCache(op))
                     return laserModulationPeriod_;
                 readOnce.Add(op);
@@ -598,7 +651,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_LASER_MOD_PULSE_WIDTH;
+                const Opcodes op = Opcodes.GET_LASER_MOD_PULSE_WIDTH;
                 if (haveCache(op))
                     return laserModulationPulseWidth_;
                 readOnce.Add(op);
@@ -619,7 +672,7 @@ namespace WasatchNET
             {
                 if (featureIdentification.boardType != BOARD_TYPES.ARM)
                     return false;
-                Opcodes op = Opcodes.GET_LASER_RAMPING_MODE;
+                const Opcodes op = Opcodes.GET_LASER_RAMPING_MODE;
                 if (haveCache(op))
                     return laserRampingEnabled_;
                 readOnce.Add(op);
@@ -656,7 +709,8 @@ namespace WasatchNET
                 return (float)degC;
             }
         }
-        public ushort laserTemperatureRaw { get { return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_LASER_TEMPERATURE, 2))); } }
+
+        public ushort laserTemperatureRaw => primaryADC;
 
         public byte laserTemperatureSetpointRaw
         {
@@ -664,7 +718,7 @@ namespace WasatchNET
             {
                 if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return 0;
-                Opcodes op = Opcodes.GET_LASER_TEC_SETPOINT;
+                const Opcodes op = Opcodes.GET_LASER_TEC_SETPOINT;
                 if (haveCache(op))
                     return laserTemperatureSetpointRaw_;
                 readOnce.Add(op);
@@ -682,7 +736,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_LINE_LENGTH;
+                const Opcodes op = Opcodes.GET_LINE_LENGTH;
                 if (haveCache(op))
                     return lineLength_;
                 readOnce.Add(op);
@@ -695,7 +749,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_OPT_AREA_SCAN;
+                const Opcodes op = Opcodes.GET_OPT_AREA_SCAN;
                 if (haveCache(op))
                     return optAreaScan_;
                 readOnce.Add(op);
@@ -708,7 +762,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_OPT_ACTUAL_INTEGRATION_TIME;
+                const Opcodes op = Opcodes.GET_OPT_ACTUAL_INTEGRATION_TIME;
                 if (haveCache(op))
                     return optActualIntegrationTime_;
                 readOnce.Add(op);
@@ -721,7 +775,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_OPT_CF_SELECT;
+                const Opcodes op = Opcodes.GET_OPT_CF_SELECT;
                 if (haveCache(op))
                     return optCFSelect_;
                 readOnce.Add(op);
@@ -734,7 +788,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_OPT_DATA_HEADER_TAG;
+                const Opcodes op = Opcodes.GET_OPT_DATA_HEADER_TAG;
                 if (haveCache(op))
                     return optDataHeaderTag_;
                 readOnce.Add(op);
@@ -747,7 +801,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_OPT_HORIZONTAL_BINNING;
+                const Opcodes op = Opcodes.GET_OPT_HORIZONTAL_BINNING;
                 if (haveCache(op))
                     return optHorizontalBinning_;
                 readOnce.Add(op);
@@ -760,7 +814,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_OPT_INTEGRATION_TIME_RESOLUTION;
+                const Opcodes op = Opcodes.GET_OPT_INTEGRATION_TIME_RESOLUTION;
                 if (haveCache(op))
                     return optIntegrationTimeResolution_;
                 readOnce.Add(op);
@@ -773,7 +827,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_OPT_LASER_CONTROL;
+                const Opcodes op = Opcodes.GET_OPT_LASER_CONTROL;
                 if (haveCache(op))
                     return optLaserControl_;
                 readOnce.Add(op);
@@ -786,7 +840,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_OPT_LASER_TYPE;
+                const Opcodes op = Opcodes.GET_OPT_LASER_TYPE;
                 if (haveCache(op))
                     return optLaserType_;
                 readOnce.Add(op);
@@ -795,11 +849,31 @@ namespace WasatchNET
         }
         FPGA_LASER_TYPE optLaserType_ = FPGA_LASER_TYPE.ERROR;
 
+        public ushort primaryADC
+        {
+            get
+            {
+                if (selectedADC != 0)
+                    selectedADC = 0;
+                return adcRaw;
+            }
+        }
+
+        public ushort secondaryADC
+        {
+            get
+            {
+                if (selectedADC != 1)
+                    selectedADC = 1;
+                return adcRaw;
+            }
+        }
+
         public byte selectedADC
         {
             get
             {
-                Opcodes op = Opcodes.GET_SELECTED_ADC;
+                const Opcodes op = Opcodes.GET_SELECTED_ADC;
                 if (haveCache(op))
                     return selectedADC_;
                 readOnce.Add(op);
@@ -809,6 +883,10 @@ namespace WasatchNET
             {
                 readOnce.Add(Opcodes.SET_SELECTED_ADC);
                 sendCmd(Opcodes.SET_SELECTED_ADC, selectedADC_ = value);
+                if (throwawayADCRead)
+                {
+                    var throwaway = adcRaw; // note braces required
+                }
             }
         }
         byte selectedADC_;
@@ -817,7 +895,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_TRIGGER_SOURCE;
+                const Opcodes op = Opcodes.GET_TRIGGER_SOURCE;
                 if (haveCache(op))
                     return triggerSource_;
                 byte[] buf = getCmd(Opcodes.GET_TRIGGER_SOURCE, 1);
@@ -844,7 +922,7 @@ namespace WasatchNET
         {
             get
             {
-                Opcodes op = Opcodes.GET_TRIGGER_OUTPUT;
+                const Opcodes op = Opcodes.GET_TRIGGER_OUTPUT;
                 if (haveCache(op))
                     return triggerOutput_;
                 triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.ERROR;
@@ -875,7 +953,7 @@ namespace WasatchNET
             {
                 if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return 0;
-                Opcodes op = Opcodes.GET_TRIGGER_DELAY;
+                const Opcodes op = Opcodes.GET_TRIGGER_DELAY;
                 if (haveCache(op))
                     return triggerDelay_;
                 readOnce.Add(op);
@@ -1416,7 +1494,7 @@ namespace WasatchNET
             }
             else
             {
-                logger.error("unusual number of pixels ({0})...assuming all at endpoint {1}", pixels, spectralReader82);
+                logger.debug("unusual number of pixels ({0})...assuming all at endpoint {1}", pixels, spectralReader82);
             }
 
             double[] spec = new double[pixels];         // what we're going to populate and return

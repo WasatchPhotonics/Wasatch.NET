@@ -86,6 +86,16 @@ namespace WasatchNET
         /// <returns>actual integration time in microseconds (zero on error)</returns>
         uint actualIntegrationTimeUS { get; }
 
+        /// <summary>
+        /// Reads the currently selected ADC.
+        /// <see cref="selectedADC"/>
+        /// </summary>
+        ushort adcRaw { get; }
+
+        uint batteryStateRaw { get; }
+        float batteryPercentage { get; }
+        bool batteryCharging { get; }
+
         /// <summary>After the first trigger is received, no further triggers are required; spectrometer will enter free-running mode.</summary>
         bool continuousAcquisitionEnable { get; set; }
 
@@ -135,6 +145,12 @@ namespace WasatchNET
         /// temperature math is hardcoded (confirmed with Jason 22-Nov-2017).
         /// </remarks>
         float laserTemperatureDegC { get; }
+
+        /// <summary>
+        /// Synonym for primaryADC
+        /// </summary>
+        /// <see cref="selectedADC"/>
+        /// <see cref="primaryADC"/>
         ushort laserTemperatureRaw { get; }
         byte laserTemperatureSetpointRaw { get; set; }
 
@@ -149,7 +165,28 @@ namespace WasatchNET
         FPGA_LASER_TYPE optLaserType { get; }
         FPGA_LASER_CONTROL optLaserControl { get; }
 
+        ushort primaryADC { get; }
+
+        /// <summary>
+        /// Used to toggle between the primary ADC (index 0, used to read laser temperature)
+        /// and secondary ADC (index 1, used for optional OEM accessories like a photodiode).
+        /// </summary>
+        /// <remarks>
+        /// Not all units will have a secondary ADC.
+        ///
+        /// Due to the way the ADC internally collects multiple analog readings over time, 
+        /// between digital readouts, and the fact that "clearing" the ADCs internal 
+        /// register is essentially done by reading it, it is advised to perform a 
+        /// "throwaway read" after switching the selected ADC, to ensure that the next
+        /// intentional read will only contain signal from the new ADC, and not the previous
+        /// one.  
+        /// 
+        /// Therefore, an option has been provided to automatically perform a throwaway read
+        /// when the ADC selection is changed.
+        /// </remarks>
         byte selectedADC { get; set; }
+
+        ushort secondaryADC { get; }
 
         uint triggerDelay { get; set; }
         EXTERNAL_TRIGGER_OUTPUT triggerOutput { get; set; }

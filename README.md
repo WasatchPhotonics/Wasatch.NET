@@ -256,6 +256,10 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2019-01-04 2.0.6
+    - added batteryPercentage and batteryCharging
+    - secondaryADC cleanup
+    - added "make cloc"
 - 2018-12-19 2.0.5
     - updated to latest draft Rev 4 of ENG-0034
     - renamed ModelConfig to EEPROM
