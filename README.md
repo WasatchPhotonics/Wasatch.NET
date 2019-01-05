@@ -256,6 +256,11 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2019-01-04 2.0.7
+    - added isSiG
+    - disable laser and detector temperature readouts on SiG
+    - disable TEC enable and TEC setpoint unless eeprom.hasCooling
+    - fixed setIntegrationTime on ARM
 - 2019-01-04 2.0.6
     - added batteryPercentage and batteryCharging
     - secondaryADC cleanup

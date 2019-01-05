@@ -174,6 +174,8 @@ namespace WasatchNET
         {
             get
             {
+                if (isSiG)
+                    return 0;
                 return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2)));
             }
         }
@@ -334,6 +336,8 @@ namespace WasatchNET
             get
             {
                 const Opcodes op = Opcodes.GET_DETECTOR_TEC_ENABLE;
+                if (!eeprom.hasCooling)
+                    return false;
                 if (haveCache(op))
                     return detectorTECEnabled_;
                 readOnce.Add(op);
@@ -341,8 +345,11 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_DETECTOR_TEC_ENABLE);
-                sendCmd(Opcodes.SET_DETECTOR_TEC_ENABLE, (ushort)((detectorTECEnabled_ = value) ? 1 : 0));
+                if (eeprom.hasCooling)
+                {
+                    readOnce.Add(Opcodes.GET_DETECTOR_TEC_ENABLE);
+                    sendCmd(Opcodes.SET_DETECTOR_TEC_ENABLE, (ushort)((detectorTECEnabled_ = value) ? 1 : 0));
+                }
             }
         }
         bool detectorTECEnabled_;
@@ -374,6 +381,8 @@ namespace WasatchNET
             get
             {
                 const Opcodes op = Opcodes.GET_DETECTOR_TEC_SETPOINT;
+                if (!eeprom.hasCooling)
+                    return 0;
                 if (haveCache(op))
                     return detectorTECSetpointRaw_;
                 readOnce.Add(op);
@@ -381,8 +390,11 @@ namespace WasatchNET
             }
             set
             {
-                sendCmd(Opcodes.SET_DETECTOR_TEC_SETPOINT, detectorTECSetpointRaw_ = value);
-                readOnce.Add(Opcodes.GET_DETECTOR_TEC_SETPOINT);
+                if (eeprom.hasCooling)
+                {
+                    sendCmd(Opcodes.SET_DETECTOR_TEC_SETPOINT, detectorTECSetpointRaw_ = value);
+                    readOnce.Add(Opcodes.GET_DETECTOR_TEC_SETPOINT);
+                }
             }
         }
         ushort detectorTECSetpointRaw_;
@@ -407,7 +419,12 @@ namespace WasatchNET
 
         public ushort detectorTemperatureRaw
         {
-            get { return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2))); }
+            get
+            {
+                if (isSiG)
+                    return 0;
+                return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
+            }
         }
 
         public string firmwareRevision
@@ -527,7 +544,10 @@ namespace WasatchNET
                     uint ms = Math.Max(eeprom.minIntegrationTimeMS, Math.Min(eeprom.maxIntegrationTimeMS, value));
                     ushort lsw = (ushort)(ms % 65536);
                     ushort msw = (ushort)(ms / 65536);
-                    sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw);
+                    byte[] buf = null;
+                    if (isARM)
+                        buf = new byte[8];
+                    sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf);
                     integrationTimeMS_ = ms;
                     readOnce.Add(Opcodes.GET_INTEGRATION_TIME);
                 }
@@ -547,8 +567,9 @@ namespace WasatchNET
             }
             set
             {
+                var buf = isARM ? new byte[8] : new byte[0];
                 readOnce.Add(Opcodes.GET_LASER_ENABLE);
-                sendCmd(Opcodes.SET_LASER_ENABLE, (ushort)((laserEnabled_ = value) ? 1 : 0));
+                sendCmd(Opcodes.SET_LASER_ENABLE, (ushort)((laserEnabled_ = value) ? 1 : 0), buf: buf);
             }
         }
         bool laserEnabled_;
@@ -1089,7 +1110,18 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         public bool isARM { get { return featureIdentification.boardType == BOARD_TYPES.ARM; } }
-        public bool hasLaser { get { return eeprom.hasLaser && (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL || fpgaOptions.laserType == FPGA_LASER_TYPE.EXTERNAL); } }
+        public bool isSiG { get { return eeprom.model.ToLower().Contains("sig") || eeprom.serialNumber.ToLower().Contains("sig"); } }
+
+        public bool hasLaser
+        {
+            get
+            {
+                if (isSiG)
+                    return eeprom.hasLaser;
+                else
+                    return eeprom.hasLaser && (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL || fpgaOptions.laserType == FPGA_LASER_TYPE.EXTERNAL);
+            }
+        }
 
         public float excitationWavelengthNM()
         {
@@ -1316,6 +1348,9 @@ namespace WasatchNET
         /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
         internal bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
+            if (isARM && buf == null)
+                buf = new byte[8];
+
             ushort wLength = (ushort)((buf == null) ? 0 : buf.Length);
 
             UsbSetupPacket packet = new UsbSetupPacket(

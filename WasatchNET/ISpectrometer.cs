@@ -30,6 +30,7 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         bool isARM { get; }
+        bool isSiG { get; }
         bool hasLaser { get; }
 
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
