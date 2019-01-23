@@ -256,6 +256,12 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2019-01-22 2.0.9
+    - precompute endpoints / bulk sizes
+    - triggering fixes for LabVIEW
+- 2019-01-22 2.0.8
+    - interlock fix on ARM
+    - detector offset fix on ARM
 - 2019-01-04 2.0.7
     - added isSiG
     - disable laser and detector temperature readouts on SiG

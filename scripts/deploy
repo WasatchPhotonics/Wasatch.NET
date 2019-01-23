@@ -75,12 +75,15 @@ postAndRename "Setup64"
 rsync --archive doc/doxygen/html/ ${USERNAME}@wasatchphotonics.com:www/api/Wasatch.NET/
 
 # update local 32-bit clients
-for CLIENT32 in "
-    $HOME/work/code/RamanSpecCal/dist
-"
-do 
-    if [ -d $CLIENT32 ]
-    then
-        cp -v lib/x86/WasatchNET.dll $CLIENT32
-    fi
+#    $HOME/work/code/Wasatch.LV/dist/x86
+for CLIENT32 in \
+    $HOME/work/code/RamanSpecCal/dist 
+do
+    cp -v lib/x86/WasatchNET.dll $CLIENT32
 done
+
+# for CLIENT64 in \
+#     $HOME/work/code/Wasatch.LV/dist/x64
+# do
+#     cp -v lib/x64/WasatchNET.dll $CLIENT64
+# done

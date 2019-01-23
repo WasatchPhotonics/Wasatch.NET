@@ -126,7 +126,6 @@ namespace WasatchNET
 
             // this list has not been double-checked; ENLIGHTEN ignores return values :-(
             armInvertedRetvals.Add(Opcodes.ACQUIRE_SPECTRUM);
-            armInvertedRetvals.Add(Opcodes.GET_DETECTOR_OFFSET);
             armInvertedRetvals.Add(Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME);
             armInvertedRetvals.Add(Opcodes.SET_SELECTED_ADC);
             armInvertedRetvals.Add(Opcodes.SET_DETECTOR_GAIN);
