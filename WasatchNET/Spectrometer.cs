@@ -179,7 +179,8 @@ namespace WasatchNET
             {
                 if (isSiG)
                     return 0;
-                return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2)));
+                ushort raw = swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2)));
+                return (ushort)(raw & 0xfff);
             }
         }
 
@@ -727,12 +728,20 @@ namespace WasatchNET
         {
             get
             {
-                double raw = laserTemperatureRaw;
-                double voltage = 2.5 * raw / 4096;
+                ushort raw = laserTemperatureRaw;
+                if (raw == 0)
+                {
+                    logger.error("laserTemperatureDegC.get: can't take log of zero");
+                    return 0;
+                }
+
+                double rawD = raw;
+                double voltage = 2.5 * rawD / 4096;
                 double resistance = 21450.0 * voltage / (2.5 - voltage);
                 if (resistance <= 0)
                 {
-                    logger.error("laserTemperatureDegC.get: invalid resistance ({0})", resistance);
+                    logger.error("laserTemperatureDegC.get: invalid resistance (raw {0}, voltage {1}, resistance {2})", 
+                        raw, voltage, resistance);
                     return 0;
                 }
                 double logVal = Math.Log(resistance / 10000);
@@ -751,17 +760,17 @@ namespace WasatchNET
         {
             get
             {
-                if (isSiG || featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
-                    return 0;
                 const Opcodes op = Opcodes.GET_LASER_TEC_SETPOINT;
                 if (haveCache(op))
                     return laserTemperatureSetpointRaw_;
+                if (isSiG) // || featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
+                    return 0;
                 readOnce.Add(op);
                 return laserTemperatureSetpointRaw_ = Unpack.toByte(getCmd(op, 1));
             }
             set
             {
-                sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ = Math.Max((byte)127, value));
+                sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ = Math.Min((byte)127, value));
                 readOnce.Add(Opcodes.GET_LASER_TEC_SETPOINT);
             }
         }
@@ -1024,8 +1033,8 @@ namespace WasatchNET
             if (!reconnect())
                 return logger.error("Spectrometer.open: couldn't reconnect");
 
-            // derive some values from PID
-            featureIdentification = new FeatureIdentification(usbRegistry.Pid);
+            // derive some values from VID/PID
+            featureIdentification = new FeatureIdentification(usbRegistry.Vid, usbRegistry.Pid);
             if (!featureIdentification.isSupported)
                 return false;
 
@@ -1156,10 +1165,19 @@ namespace WasatchNET
 
         public float excitationWavelengthNM()
         {
-            if (eeprom.format >= 4)
-                return eeprom.laserExcitationWavelengthNMFloat;
-            else
-                return (float)eeprom.excitationNM;
+            float old = eeprom.excitationNM;
+            float newer = eeprom.laserExcitationWavelengthNMFloat;
+
+            // if float is corrupt or zero, return original EEPROM field
+            if (Double.IsNaN(newer) || newer == 0.0)
+                return old;
+
+            // if float looks valid, use it
+            if (200 <= newer && newer <= 2500)
+                return newer;
+
+            // default to old value
+            return old;
         }
 
         ////////////////////////////////////////////////////////////////////////

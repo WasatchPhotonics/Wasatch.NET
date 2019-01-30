@@ -14,6 +14,9 @@ doc:
 	@cat doxygen.out
 	@cat doxygen.err
 
+deploy:
+	@cp -v lib/x86/WasatchNET.dll $(HOME)/work/code/RamanSpecCal/dist
+
 clean:
 	@rm -rf WasatchNET/bin      \
 	        WasatchNET/obj      \

@@ -256,6 +256,10 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2019-01-22 2.0.10
+    - fixes for reading/setting laserTemperatureSetpoint
+    - exposed VID/PID through API
+    - improved support for floating-point excitation wavelength
 - 2019-01-22 2.0.9
     - precompute endpoints / bulk sizes
     - triggering fixes for LabVIEW

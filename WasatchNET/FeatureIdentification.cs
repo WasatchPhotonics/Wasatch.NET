@@ -45,6 +45,8 @@ namespace WasatchNET
         /// <summary>board configuration</summary>
         public BOARD_TYPES boardType { get; }
 
+        public int vid { get; private set; }
+        public int pid { get; private set; }
         public string firmwarePartNum { get; private set; }
         public string firmwareDesc { get; private set; }
         public bool isSupported { get; private set; } = true;
@@ -54,8 +56,11 @@ namespace WasatchNET
         public bool hasDefaultTECSetpointDegC { get; private set; } = false;
         public int defaultTECSetpointDegC { get; private set; } = 0;
 
-        internal FeatureIdentification(int pid)
+        internal FeatureIdentification(int vid, int pid)
         {
+            this.vid = vid;
+            this.pid = pid;
+
             if (pid == 0x1000)
             {
                 boardType = BOARD_TYPES.RAMAN_FX2;
@@ -74,12 +79,9 @@ namespace WasatchNET
             }
             else if (pid == 0x4000)
             {
-                // watch this space!
                 boardType = BOARD_TYPES.ARM;
                 firmwarePartNum = "170019";
                 firmwareDesc = "ARM USB Board";
-                // spectraBlockSize = 512;
-                // usbDelayMS = 50;
             }
             else
             {

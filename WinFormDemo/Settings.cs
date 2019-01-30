@@ -119,8 +119,10 @@ namespace WinFormDemo
             // Miscellaneous
             ////////////////////////////////////////////////////////////////////
 
-            stub("featureBoardType",            "Features/Board Type");
-            stub("featureDesc",                 "Features/Description");
+            stub("featureBoardType",            "Hardware/Board Type");
+            stub("featureDesc",                 "Hardware/Description");
+            stub("VID",                         "Hardware/USB/VID");
+            stub("PID",                         "Hardware/USB/PID");
 
             ////////////////////////////////////////////////////////////////////
             // Firmware Versions
@@ -200,6 +202,8 @@ namespace WinFormDemo
             update("excitationNM",                  spec.excitationWavelengthNM());
             update("featureBoardType",              spec.featureIdentification.boardType);
             update("featureDesc",                   spec.featureIdentification.firmwareDesc);
+            update("VID",                           string.Format("0x{0:x4}", spec.featureIdentification.vid));
+            update("PID",                           string.Format("0x{0:x4}", spec.featureIdentification.pid));
             update("fpgaDataHeader",                spec.fpgaOptions.dataHeader);
             update("fpgaHasActualIntegTime",        spec.fpgaOptions.hasActualIntegTime);
             update("fpgaHasAreaScan",               spec.fpgaOptions.hasAreaScan);

@@ -7,7 +7,7 @@ namespace WasatchNET
     /// This interface is provided for COM clients (Delphi etc) who seem to find it useful.
     /// I don't know that .NET users would find much benefit in it.
     /// </summary>
-    [ComVisible(true)]  
+    [ComVisible(true)]
     [Guid("7F04C891-E0AC-4F47-812E-C757CF2918B7")]
     [InterfaceType(ComInterfaceType.InterfaceIsDual)]
     public interface ISpectrometer
@@ -35,6 +35,8 @@ namespace WasatchNET
 
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
         uint pixels { get; }
+
+        float excitationWavelengthNM();
 
         /// <summary>pre-populated array of wavelengths (nm) by pixel, generated from eeprom.wavecalCoeffs</summary>
         /// <remarks>see Util.generateWavelengths</remarks>
@@ -88,8 +90,10 @@ namespace WasatchNET
         uint actualIntegrationTimeUS { get; }
 
         /// <summary>
-        /// Reads the currently selected ADC.
+        /// Reads the currently selected 12-bit ADC.
         /// <see cref="selectedADC"/>
+        /// <see cref="primaryADC"/>
+        /// <see cref="secondaryADC"/>
         /// </summary>
         ushort adcRaw { get; }
 
@@ -153,6 +157,38 @@ namespace WasatchNET
         /// <see cref="selectedADC"/>
         /// <see cref="primaryADC"/>
         ushort laserTemperatureRaw { get; }
+
+        /// <summary>
+        /// FACTORY ONLY
+        /// </summary>
+        ///
+        /// <remarks>
+        /// WARNING: raising this value above 63 will "increase temperature AND volatility",
+        /// while lowering this value below 63 will "decrease temperature WHILE increasing 
+        /// volatility".
+        ///
+        /// During factory turning of the potentiometer on the laser driver 
+        /// controller board, this function is used to temporarily offset
+        /// the TEC DAC setpoint from its default power-up value of 63.
+        /// 
+        /// End-users should not adjust this value at runtime, as the potentiometer
+        /// has already been locked-down at a point optimized for laser power 
+        /// stability over temperature; any changes to this value from the default
+        /// value of 63 will only increase the chances of power instability,
+        /// including mode-hopping and hysteresis effects.
+        /// 
+        /// See RamanSpecCal's LaserTemperatureTest documentation for additional
+        /// information.
+        ///
+        /// Note that input values will automatically be capped at 7-bit (0, 127),
+        /// the operative range of the laser TEC DAC.
+        ///
+        /// Also note that although this property includes the word "temperature"
+        /// because the setpoint relates to and will change the laser's central
+        /// temperature, you cannot set a specific temperature setpoint in degC,
+        /// as the final temperature is generated in hardware as a combination of
+        /// the DAC setpoint value and the physical potentiometer.
+        /// </remarks>
         byte laserTemperatureSetpointRaw { get; set; }
 
         uint lineLength { get; }
