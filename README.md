@@ -256,6 +256,8 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2019-02-?? 2.0.11
+    - updated laser temperature degC formula from datasheet
 - 2019-01-22 2.0.10
     - fixes for reading/setting laserTemperatureSetpoint
     - exposed VID/PID through API

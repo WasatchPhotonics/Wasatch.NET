@@ -736,19 +736,33 @@ namespace WasatchNET
                 }
 
                 double rawD = raw;
+
+                // should this be 2.468? (see Dash3/WasatchDevices/Stroker785L_LaserTempSetpoint.py)
                 double voltage = 2.5 * rawD / 4096;
                 double resistance = 21450.0 * voltage / (2.5 - voltage);
                 if (resistance <= 0)
                 {
-                    logger.error("laserTemperatureDegC.get: invalid resistance (raw {0}, voltage {1}, resistance {2})", 
+                    logger.error("laserTemperatureDegC.get: invalid resistance (raw {0:x4}, voltage {1}, resistance {2:f2} ohms)", 
                         raw, voltage, resistance);
                     return 0;
                 }
-                double logVal = Math.Log(resistance / 10000);
-                double insideMain = logVal + 3977.0 / (25 + 273.0);
-                double degC = 3977.0 / insideMain - 273.0;
 
-                logger.debug("laserTemperatureDegC.get: {0:f2} deg C (raw 0x{1:x4})", degC, raw);
+                // Original Dash / ENLIGHTEN math:
+                //
+                // double logVal = Math.Log(resistance / 10000);
+                // double insideMain = logVal + 3977.0 / (25 + 273.0);
+                // double degC = 3977.0 / insideMain - 273.0;
+
+                double C1 = 0.00113;
+                double C2 = 0.000234;
+                double C3 = 8.78e-8;
+                double lnOhms = Math.Log(resistance);
+                double degC = 1.0 / (  C1
+                                     + C2 * lnOhms
+                                     + C3 * Math.Pow(lnOhms, 3)
+                                    ) - 273.15;
+
+                logger.debug("laserTemperatureDegC.get: {0:f2} deg C (raw 0x{1:x4}, resistance {2:f2} ohms)", degC, raw, resistance);
 
                 return (float)degC;
             }

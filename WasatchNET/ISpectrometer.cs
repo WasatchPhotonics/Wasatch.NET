@@ -144,10 +144,26 @@ namespace WasatchNET
         /// convert the raw laser temperature reading into degrees centigrade
         /// </summary>
         /// <returns>laser temperature in &deg;C</returns>
+        /// <see cref="https://www.ipslasers.com/data-sheets/SM-TO-56-Data-Sheet-IPS.pdf"/>
         /// <remarks>
-        /// Note that the adcToDegCCoeffs are NOT used in this method; those
-        /// coefficients ONLY apply to the detector.  At this time, all laser
-        /// temperature math is hardcoded (confirmed with Jason 22-Nov-2017).
+        /// Laser temperature conversion doesn't use EEPROM coeffs at all.
+        /// Most Wasatch Raman systems use an IPS Wavelength-Stabilized TO-56
+        /// laser, which internally uses a Betatherm 10K3CG3 thermistor.
+        ///    
+        /// The official conversion from thermistor resistance (in ohms) to degC is:
+        ///    
+        /// 1 / (   C1 
+        ///       + C2 * ln(ohms) 
+        ///       + C3 * pow(ln(ohms), 3)
+        ///     ) 
+        /// - 273.15
+        ///    
+        /// Where: C1 = 0.00113
+        ///        C2 = 0.000234
+        ///        C3 = 8.78e-8
+        ///
+        /// Early Dash / ENLIGHTEN implementations used a simpler curve-fit which yielded 
+        /// nearly identical performance.
         /// </remarks>
         float laserTemperatureDegC { get; }
 
