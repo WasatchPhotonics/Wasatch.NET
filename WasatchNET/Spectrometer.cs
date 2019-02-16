@@ -545,9 +545,16 @@ namespace WasatchNET
             {
                 lock (acquisitionLock)
                 {
-                    uint ms = Math.Max(eeprom.minIntegrationTimeMS, Math.Min(eeprom.maxIntegrationTimeMS, value));
-                    ushort lsw = (ushort)(ms % 65536);
-                    ushort msw = (ushort)(ms / 65536);
+                    // temporarily disabled EEPROM range-checking by customer 
+                    // request; range limits in EEPROM are defined as 16-bit 
+                    // values, while integration time is actually a 24-bit value,
+                    // such that the EEPROM is artificially limiting our range.
+                    //
+                    // uint ms = Math.Max(eeprom.minIntegrationTimeMS, Math.Min(eeprom.maxIntegrationTimeMS, value));
+
+                    uint ms = value;
+                    ushort lsw = (ushort)(ms & 0xffff);
+                    ushort msw = (ushort)((ms >> 16) & 0x00ff;
                     byte[] buf = null;
                     if (isARM)
                         buf = new byte[8];
