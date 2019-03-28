@@ -216,6 +216,10 @@ namespace WasatchNET
         /// <remarks>bad pixels are identified by pixel number; empty slots are indicated by -1</remarks>
         public short[] badPixels { get; set; }
 
+        // read-only containers for expedited processing
+        public List<short> badPixelList { get; private set; }
+        public SortedSet<short> badPixelSet { get; private set; }
+
         /////////////////////////////////////////////////////////////////////////       
         // Pages 6-7 unallocated
         /////////////////////////////////////////////////////////////////////////       
@@ -317,6 +321,8 @@ namespace WasatchNET
 
             Array.Copy(userData, pages[4], userData.Length);
 
+            // note that we write the positional, error-prone array (which is 
+            // user -writable), not the List or SortedSet caches
             for (int i = 0; i < badPixels.Length; i++)
                 if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
                     return false;
@@ -363,6 +369,9 @@ namespace WasatchNET
             badPixels = new short[15];
             linearityCoeffs = new float[5];
             laserPowerCoeffs = new float[4];
+
+            badPixelList = new List<short>();
+            badPixelSet = new SortedSet<short>();
         }
 
         internal bool read()
@@ -443,8 +452,15 @@ namespace WasatchNET
                 userData = format < 4 ? new byte[63] : new byte[64];
                 Array.Copy(pages[4], userData, userData.Length);
 
+                badPixelSet = new SortedSet<short>();
                 for (int i = 0; i < 15; i++)
-                    badPixels[i] = ParseData.toInt16(pages[5], i * 2);
+                {
+                    short pixel = ParseData.toInt16(pages[5], i * 2);
+                    badPixels[i] = pixel;
+                    if (pixel >= 0)
+                        badPixelSet.Add(pixel); // does not throw
+                }
+                badPixelList = new List<short>(badPixelSet);
             }
             catch (Exception ex)
             {

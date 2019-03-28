@@ -205,7 +205,11 @@ namespace WinFormDemo
 
                         labelDetTempDegC.Text = String.Format("{0:f1}°C", state.detTempDegC);
                     }
+
                 }
+
+                chart1.ChartAreas[0].AxisY.IsStartedFromZero = false;
+                chart1.ChartAreas[0].RecalculateAxesScale();
             }
         }
 

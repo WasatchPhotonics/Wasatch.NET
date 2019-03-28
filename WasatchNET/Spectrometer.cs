@@ -554,7 +554,7 @@ namespace WasatchNET
 
                     uint ms = value;
                     ushort lsw = (ushort)(ms & 0xffff);
-                    ushort msw = (ushort)((ms >> 16) & 0x00ff;
+                    ushort msw = (ushort)((ms >> 16) & 0x00ff);
                     byte[] buf = null;
                     if (isARM)
                         buf = new byte[8];
@@ -1512,6 +1512,89 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
+        /// If a spectrometer has bad_pixels configured in the EEPROM, then average 
+        /// over them in the driver.
+        /// </summary> 
+        void correctBadPixels(ref double[] spectrum)
+        {
+            if (eeprom.badPixelList.Count == 0)
+                return;
+
+            if (spectrum == null || spectrum.Length == 0)
+                return;
+
+            // iterate over each bad pixel
+            int i = 0;
+            while (i < eeprom.badPixelList.Count)
+            {
+                short badPix = eeprom.badPixelList[i];
+
+                if (badPix == 0)
+                {
+                    // handle the left edge
+                    short nextGood = (short)(badPix + 1);
+                    while (eeprom.badPixelSet.Contains(nextGood) && nextGood < spectrum.Length)
+                    {
+                        nextGood++;
+                        i++;
+                    }
+                    if (nextGood < spectrum.Length)
+                        for (int j = 0; j < nextGood; j++)
+                            spectrum[j] = spectrum[nextGood];
+                }
+                else
+                {
+                    // find previous good pixel
+                    short prevGood = (short)(badPix - 1);
+                    while (eeprom.badPixelSet.Contains(prevGood) && prevGood >= 0)
+                        prevGood -= 1;
+
+                    if (prevGood >= 0)
+                    {
+                        // find next good pixel
+                        short nextGood = (short)(badPix + 1);
+                        while (eeprom.badPixelSet.Contains(nextGood) && nextGood < spectrum.Length)
+                        {
+                            nextGood += 1;
+                            i += 1;
+                        }
+
+                        if (nextGood < spectrum.Length)
+                        {
+                            // For now, draw a line between previous and next good pixels.
+                            //
+                            // Note that obviously this is in pixel-space, and not non-linear
+                            // wavelength or wavenumber space.  It is debateable as to which
+                            // would be more accurate...but the difference would only matter
+                            // if we had multiple consecutative bad pixels which didn't fall
+                            // on an edge of the spectrum, which should not be a common 
+                            // allowed circumstance.
+                            //
+                            // TODO: consider some kind of curve-fit instead of this linear
+                            //       interpolation (THAT could matter in non-linear space).
+                            //       Note that if chosen, we'd still want that to be done
+                            //       BEFORE boxcar etc.
+                            double delta = spectrum[nextGood] - spectrum[prevGood];
+                            int rng = nextGood - prevGood;
+                            double step = delta / rng;
+                            for (int j = 0; j < rng - 1; j++)
+                                spectrum[prevGood + j + 1] = spectrum[prevGood] + step * (j + 1);
+                        }
+                        else
+                        {
+                            // we ran off the high end, so copy-right
+                            for (short j = badPix; j < spectrum.Length; j++)
+                                spectrum[j] = spectrum[prevGood];
+                        }
+                    }
+
+                    // advance to next bad pixel
+                    i++;
+                }
+            }
+        }
+
+        /// <summary>
         /// Take a single complete spectrum, including any configured scan 
         /// averaging, boxcar and dark subtraction.
         /// </summary>
@@ -1544,6 +1627,8 @@ namespace WasatchNET
                     for (int px = 0; px < pixels; px++)
                         sum[px] /= scanAveraging_;
                 }
+
+                correctBadPixels(ref sum);
 
                 if (dark != null && dark.Length == sum.Length)
                     for (int px = 0; px < pixels; px++)

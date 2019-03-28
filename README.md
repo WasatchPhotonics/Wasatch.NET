@@ -256,7 +256,10 @@ software and connect to your spectrometer.
 
 # Version History
 
-- 2019-02-?? 2.0.11
+- 2019-03-28 2.0.12
+    - removed enforcement of EEPROM maxIntegrationTimeMS to allow longer at-risk integrations
+    - added correctBadPixels
+- 2019-02-01 2.0.11 (internal)
     - updated laser temperature degC formula from datasheet
 - 2019-01-22 2.0.10
     - fixes for reading/setting laserTemperatureSetpoint
