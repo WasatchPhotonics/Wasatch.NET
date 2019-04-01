@@ -273,6 +273,13 @@ namespace WasatchNET
             if (!ParseData.writeBool  (hasLaser,             pages[0], 38)) return false;
             if (!ParseData.writeUInt16(excitationNM,         pages[0], 39)) return false;
             if (!ParseData.writeUInt16(slitSizeUM,           pages[0], 41)) return false;
+            if (!ParseData.writeUInt16(startupIntegrationTimeMS, pages[0], 43)) return false;
+            if (!ParseData.writeInt16 (startupDetectorTemperatureDegC, pages[0], 45)) return false;
+            if (!ParseData.writeByte  (startupTriggeringMode,pages[0], 47)) return false;
+            if (!ParseData.writeFloat (detectorGain,         pages[0], 48)) return false;
+            if (!ParseData.writeInt16 (detectorOffset,       pages[0], 52)) return false;
+            if (!ParseData.writeFloat (detectorGainOdd,      pages[0], 54)) return false;
+            if (!ParseData.writeInt16 (detectorOffsetOdd,    pages[0], 58)) return false;
 
             if (!ParseData.writeFloat(wavecalCoeffs[0],      pages[1],  0)) return false;
             if (!ParseData.writeFloat(wavecalCoeffs[1],      pages[1],  4)) return false;
@@ -316,8 +323,9 @@ namespace WasatchNET
             if (!ParseData.writeFloat(laserPowerCoeffs[1], pages[3], 16)) return false;
             if (!ParseData.writeFloat(laserPowerCoeffs[2], pages[3], 20)) return false;
             if (!ParseData.writeFloat(laserPowerCoeffs[3], pages[3], 24)) return false;
-            if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 28)) return false;
-            if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 32)) return false;
+            if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 28)) return false;
+            if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 32)) return false;
+            if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
 
             Array.Copy(userData, pages[4], userData.Length);
 
@@ -400,6 +408,14 @@ namespace WasatchNET
                 excitationNM            = ParseData.toUInt16(pages[0], 39);
                 slitSizeUM              = ParseData.toUInt16(pages[0], 41);
 
+               startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
+         startupDetectorTemperatureDegC = ParseData.toInt16 (pages[0], 45);
+                startupTriggeringMode   = ParseData.toUInt8 (pages[0], 47);
+                detectorGain            = ParseData.toFloat (pages[0], 48); // "even pixels" for InGaAs
+                detectorOffset          = ParseData.toInt16 (pages[0], 52); // "even pixels" for InGaAs
+                detectorGainOdd         = ParseData.toFloat (pages[0], 54); // InGaAs-only
+                detectorOffsetOdd       = ParseData.toInt16 (pages[0], 58); // InGaAs-only
+
                 wavecalCoeffs[0]        = ParseData.toFloat (pages[1],  0);
                 wavecalCoeffs[1]        = ParseData.toFloat (pages[1],  4);
                 wavecalCoeffs[2]        = ParseData.toFloat (pages[1],  8);
@@ -446,8 +462,9 @@ namespace WasatchNET
                 laserPowerCoeffs[1] = ParseData.toFloat(pages[3], 16);
                 laserPowerCoeffs[2] = ParseData.toFloat(pages[3], 20);
                 laserPowerCoeffs[3] = ParseData.toFloat(pages[3], 24);
-                minLaserPowerMW = ParseData.toFloat(pages[3], 28);
-                maxLaserPowerMW = ParseData.toFloat(pages[3], 32);
+                maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
+                minLaserPowerMW = ParseData.toFloat(pages[3], 32);
+                laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
 
                 userData = format < 4 ? new byte[63] : new byte[64];
                 Array.Copy(pages[4], userData, userData.Length);
@@ -524,6 +541,14 @@ namespace WasatchNET
             logger.debug("excitationNM          = {0}", excitationNM);
             logger.debug("slitSizeUM            = {0}", slitSizeUM);
 
+            logger.debug("startupIntegrationTimeMS = {0}", startupIntegrationTimeMS);
+            logger.debug("startupDetectorTempDegC = {0}", startupDetectorTemperatureDegC);
+            logger.debug("startupTriggeringMode = {0}", startupTriggeringMode);
+            logger.debug("detectorGain          = {0:f2}", detectorGain);
+            logger.debug("detectorOffset        = {0}", detectorOffset);
+            logger.debug("detectorGainOdd       = {0:f2}", detectorGainOdd);
+            logger.debug("detectorOffsetOdd     = {0}", detectorOffsetOdd);
+
             for (int i = 0; i < wavecalCoeffs.Length; i++)
                 logger.debug("wavecalCoeffs[{0}]      = {1}", i, wavecalCoeffs[i]);
             for (int i = 0; i < degCToDACCoeffs.Length; i++)
@@ -554,8 +579,9 @@ namespace WasatchNET
 
             for (int i = 0; i < laserPowerCoeffs.Length; i++)
                 logger.debug("laserPowerCoeffs[{0}]   = {1}", i, laserPowerCoeffs[i]);
-            logger.debug("minLaserPowerMW       = {0}", minLaserPowerMW);
             logger.debug("maxLaserPowerMW       = {0}", maxLaserPowerMW);
+            logger.debug("minLaserPowerMW       = {0}", minLaserPowerMW);
+            logger.debug("laserExcitationNMFloat= {0}", laserExcitationWavelengthNMFloat);
 
             logger.debug("userText              = {0}", userText);
 

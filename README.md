@@ -256,6 +256,9 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2019-04-01 2.0.13
+    - added new ENG-0034 Rev 4 fields to EEPROM.read() and .write().
+    - TODO: add new -odd opcode implementations
 - 2019-03-28 2.0.12
     - removed enforcement of EEPROM maxIntegrationTimeMS to allow longer at-risk integrations
     - added correctBadPixels

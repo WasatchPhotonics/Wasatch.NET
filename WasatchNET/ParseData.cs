@@ -33,6 +33,7 @@ namespace WasatchNET
         }
 
         // don't add a lot of value, do they?
+        public static byte   toUInt8 (byte[] buf, int index) { return buf[index]; } 
         public static bool   toBool  (byte[] buf, int index) { return buf[index] != 0; } 
         public static float  toFloat (byte[] buf, int index) { return BitConverter.ToSingle(buf, index); } 
         public static short  toInt16 (byte[] buf, int index) { return BitConverter.ToInt16 (buf, index); } 
@@ -117,6 +118,12 @@ namespace WasatchNET
         public static bool writeBool(bool value, byte[] buf, int index)
         {
             buf[index] = (byte) (value ? 1 : 0);
+            return true;
+        }
+
+        public static bool writeByte(byte value, byte[] buf, int index)
+        {
+            buf[index] = value;
             return true;
         }
     }

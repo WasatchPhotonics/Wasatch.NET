@@ -43,7 +43,9 @@ namespace WasatchNET
             cmd[Opcodes.GET_ACTUAL_INTEGRATION_TIME            ] = 0xdf;
             cmd[Opcodes.GET_ADC_RAW                            ] = 0xd5;
             cmd[Opcodes.GET_DETECTOR_GAIN                      ] = 0xc5;
+            cmd[Opcodes.GET_DETECTOR_GAIN_ODD                  ] = 0x9f;
             cmd[Opcodes.GET_DETECTOR_OFFSET                    ] = 0xc4;
+            cmd[Opcodes.GET_DETECTOR_OFFSET_ODD                ] = 0x9e;
             cmd[Opcodes.GET_DETECTOR_SENSING_THRESHOLD         ] = 0xd1;
             cmd[Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE  ] = 0xcf;
             cmd[Opcodes.GET_DETECTOR_TEMPERATURE               ] = 0xd7;
@@ -75,7 +77,9 @@ namespace WasatchNET
             cmd[Opcodes.SET_HORIZONTAL_BINNING                 ] = 0xb8;
             cmd[Opcodes.SET_SELECTED_ADC                       ] = 0xed;
             cmd[Opcodes.SET_DETECTOR_GAIN                      ] = 0xb7;
+            cmd[Opcodes.SET_DETECTOR_GAIN_ODD                  ] = 0x9d;
             cmd[Opcodes.SET_DETECTOR_OFFSET                    ] = 0xb6;
+            cmd[Opcodes.SET_DETECTOR_OFFSET_ODD                ] = 0x9c;
             cmd[Opcodes.SET_DETECTOR_SENSING_THRESHOLD         ] = 0xd0;
             cmd[Opcodes.SET_DETECTOR_SENSING_THRESHOLD_ENABLE  ] = 0xce;
             cmd[Opcodes.SET_DETECTOR_TEC_ENABLE                ] = 0xd6;
