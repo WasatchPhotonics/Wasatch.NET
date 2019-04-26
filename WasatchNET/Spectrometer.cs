@@ -281,7 +281,25 @@ namespace WasatchNET
         }
         float detectorGain_;
 
-        public ushort detectorOffset
+        public float detectorGainOdd
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_GAIN_ODD;
+                if (haveCache(op))
+                    return detectorGainOdd_;
+                readOnce.Add(op);
+                return detectorGainOdd_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2)));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_DETECTOR_GAIN_ODD);
+                sendCmd(Opcodes.SET_DETECTOR_GAIN_ODD, FunkyFloat.fromFloat(detectorGainOdd_ = value));
+            }
+        }
+        float detectorGainOdd_;
+
+        public short detectorOffset
         {
             get
             {
@@ -289,15 +307,33 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorOffset_;
                 readOnce.Add(op);
-                return detectorOffset_ = Unpack.toUshort(getCmd(op, 2));
+                return detectorOffset_ = Unpack.toShort(getCmd(op, 2));
             }
             set
             {
                 readOnce.Add(Opcodes.GET_DETECTOR_OFFSET);
-                sendCmd(Opcodes.SET_DETECTOR_OFFSET, detectorOffset_ = value);
+                sendCmd(Opcodes.SET_DETECTOR_OFFSET, ParseData.shortAsUshort(detectorOffset_ = value));
             }
         }
-        ushort detectorOffset_;
+        short detectorOffset_;
+
+        public short detectorOffsetOdd
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_OFFSET_ODD;
+                if (haveCache(op))
+                    return detectorOffsetOdd_;
+                readOnce.Add(op);
+                return detectorOffsetOdd_ = Unpack.toShort(getCmd(op, 2));
+            }
+            set
+            {
+                readOnce.Add(Opcodes.GET_DETECTOR_OFFSET_ODD);
+                sendCmd(Opcodes.SET_DETECTOR_OFFSET_ODD, ParseData.shortAsUshort(detectorOffsetOdd_ = value));
+            }
+        }
+        short detectorOffsetOdd_;
 
         public bool detectorSensingThresholdEnabled
         {
@@ -709,10 +745,14 @@ namespace WasatchNET
         }
         UInt64 laserModulationPulseWidth_;
 
+        /// <summary>disabled to deconflict area scan</summary>
         public bool laserRampingEnabled
         {
             get
             {
+                logger.debug("laserRampingEnabled feature currently disabled");
+                return false; // disabled
+
                 if (featureIdentification.boardType != BOARD_TYPES.ARM)
                     return false;
                 const Opcodes op = Opcodes.GET_LASER_RAMPING_MODE;
@@ -723,13 +763,22 @@ namespace WasatchNET
             }
             set
             {
+                logger.error("laserRampingEnabled feature currently disabled");
+                return; // disabled
+
                 if (featureIdentification.boardType != BOARD_TYPES.RAMAN_FX2)
                     return;
+
+                // should we check for fpgaOptions.laserControl == FPGA_LASER_CONTROL.RAMPING here?
+
                 readOnce.Add(Opcodes.GET_LASER_RAMPING_MODE);
-                sendCmd(Opcodes.SET_LASER_RAMPING_MODE, (ushort)((laserRampingEnabled_ = value) ? 1 : 0));
+
+                // sendCmd(Opcodes.SET_LASER_RAMPING_MODE, (ushort)((laserRampingEnabled_ = value) ? 1 : 0));
             }
         }
         bool laserRampingEnabled_;
+
+        public bool areaScanEnabled { get; set; }
 
         public float laserTemperatureDegC
         {
@@ -1016,6 +1065,7 @@ namespace WasatchNET
         {
             get
             {
+                // triggering not currently supported on FX2
                 if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return 0;
                 const Opcodes op = Opcodes.GET_TRIGGER_DELAY;

@@ -147,6 +147,7 @@ namespace WinFormDemo
             stub("detectorSensingThresholdEnabled","Spectrometer State/Detector/Sensing/Enabled");
             stub("detectorSensingThreshold",    "Spectrometer State/Detector/Sensing/Threshold");
             stub("horizBinning",                "Spectrometer State/Detector/Horizontal Binning/Mode");
+            stub("areaScanEnabled",             "Spectrometer State/Detector/Area Scan Enabled");
                                                 
             stub("laserEnabled",                "Spectrometer State/Laser/Enabled");
             stub("laserTemperatureDegC",        "Spectrometer State/Laser/TEC/Temperature (°C)");
@@ -300,6 +301,9 @@ namespace WinFormDemo
 
             if (spec.fpgaOptions.hasHorizBinning)
                 update("horizBinning",                    spec.horizontalBinning);
+
+            if (spec.fpgaOptions.hasAreaScan)
+                update("areaScanEnabled",                 spec.areaScanEnabled);
 
             if (spec.eeprom.hasLaser && spec.fpgaOptions.laserType != FPGA_LASER_TYPE.NONE)
             {

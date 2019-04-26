@@ -335,7 +335,7 @@ namespace WasatchNET
                 if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
                     return false;
 
-            // store the current format
+            // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
             pages[0][63] = FORMAT;
 
             // we'll need this to send commands

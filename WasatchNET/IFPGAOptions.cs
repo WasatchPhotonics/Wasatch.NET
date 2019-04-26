@@ -9,6 +9,8 @@ namespace WasatchNET
     public enum FPGA_INTEG_TIME_RES { ONE_MS, TEN_MS, SWITCHABLE, ERROR };
     public enum FPGA_DATA_HEADER { NONE, OCEAN_OPTICS, WASATCH, ERROR };
     public enum FPGA_LASER_TYPE { NONE, INTERNAL, EXTERNAL, ERROR };
+
+    /// <summary>Firmware support for laser control modes other than modulation (rare)</summary>
     public enum FPGA_LASER_CONTROL { MODULATION, TRANSITION_POINTS, RAMPING, ERROR };
 
     [ComVisible(true)]  

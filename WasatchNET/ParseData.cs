@@ -126,5 +126,22 @@ namespace WasatchNET
             buf[index] = value;
             return true;
         }
+
+        /// <summary>
+        /// Return the UInt16 with the same internal bit-structure as a given Int16.
+        /// </summary>
+        /// <remarks>
+        /// Spectrometer.sendCmd() takes a ushort argument, because most spectrometer commands
+        /// pass ushort values.  However, setting detector offset is a signed short.  I think 
+        /// the easiest solution (rather than overloading sendCmd) is to just pass the ushort
+        /// which would be deserialized to the desired short.  We don't want to cast directly
+        /// from short to ushort or it'll probably truncate negative values.  These things are 
+        /// easier in C.
+        /// </remarks>
+        public static ushort shortAsUshort(short n)
+        {
+            byte[] tmp = BitConverter.GetBytes(n);
+            return BitConverter.ToUInt16(tmp, 0);
+        }
     }
 }

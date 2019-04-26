@@ -107,8 +107,27 @@ namespace WasatchNET
         /// <summary>When not using "continous acquisitions" with external triggers, how many spectra to acquire per trigger event.</summary>
         byte continuousFrames { get; set; }
 
+        /// <summary>Maps to an FPGA register inside the spectrometer used to scale pixels read from the ADC to optimize dynamic range.</summary>
+        /// <remarks>Not normally changed by customer code.  Values are normally read from the EEPROM and written back to the spectrometer's FPGA
+        ///          by the driver at initialization.
+        ///
+        ///          Altering this value may degrade spectrometer performance.
+        /// </remarks>
         float detectorGain { get; set; }
-        ushort detectorOffset { get; set; }
+
+        /// <summary>Maps to an FPGA register inside the spectrometer used to offset the pixels (dark baseline) read from the ADC to optimize dynamic range.</summary>
+        /// <remarks>Not normally changed by customer code.  Values are normally read from the EEPROM and written back to the spectrometer's FPGA
+        ///          by the driver at initialization.
+        ///
+        ///          Altering this value may degrade spectrometer performance.
+        /// </remarks>
+        short detectorOffset { get; set; }
+
+        /// <summary>(InGaAs-only) Companion property to detectorGain, which on InGaAs detectors applies only to even-numbered pixels.</summary>
+        float detectorGainOdd { get; set; }
+
+        /// <summary>(InGaAs-only) Companion property to detectorOffset, which on InGaAs detectors applies only to even-numbered pixels.</summary>
+        short detectorOffsetOdd { get; set; }
 
         ushort detectorSensingThreshold { get; set; }
         bool detectorSensingThresholdEnabled { get; set; }
@@ -134,11 +153,58 @@ namespace WasatchNET
         bool laserInterlockEnabled { get; }
         bool laserModulationEnabled { get; set; }
         bool laserModulationLinkedToIntegrationTime { get; set; }
+
+        /// <summary>If you want the laser modulation to start part-way through an acquisition, this defines the delay in microseconds from the beginning of the
+        ///          integration until laser modulation begins.</summary>
+        /// <remarks>Warning: Laser modulation commands are normally internally set by the function setLaserPowerPercentage().
+        ///
+        ///          Value is in microseconds, range 40bit.
+        ///
+        ///          It is unclear from documentation whether MODULATION starts after the given delay, or the LASER is enabled after the delay.
+        /// </remarks>
         UInt64 laserModulationPulseDelay { get; set; }
+
+        /// <summary>When defining the laser modulation duty cycle, the length (period) of the duty cycle in microsec.</summary>
+        /// <remarks>Warning: Laser modulation commands are normally internally set by the function setLaserPowerPercentage().
+        ///
+        ///          Value is in microseconds, range 40bit.</remarks>
         UInt64 laserModulationPeriod { get; set; }
+
+        /// <summary>If you only want the laser to be modulated for a portion of each acquisition (rare), how long in microseconds should the laser be modulated during each integration.</summary>
+        /// <remarks>Value is in microseconds, range 40bit.
+        /// 
+        ///          It is unclear from documentation if, at the end of this duration, the LASER turns off (zero power), or MODULATION turns off (i.e. reverts to full power).
+        /// </remarks>
         UInt64 laserModulationDuration { get; set; }
+
+        /// <summary>When defining the laser modulation duty cycle, the length (width) of the period during which the laser is enabled.</summary>
+        /// <remarks>Warning: Laser modulation commands are normally internally set by the function setLaserPowerPercentage().
+        ///
+        ///          Value is in microseconds, range 40bit.
+        ///
+        ///          Example: if period was 100us, and pulseWidth was 20us, then the laser would fire 1/5 of the time and therefore operating
+        ///          at 20% power.
+        /// </remarks>
         UInt64 laserModulationPulseWidth { get; set; }
+
+        /// <remarks>
+        /// Not supported on all spectrometers.  Firmware status uncertain.
+        ///
+        /// It is unclear how this relates to FPGA_LASER_CONTROL.RAMPING.  
+        /// </remarks>
         bool laserRampingEnabled { get; set; }
+
+        /// <summary>Configure detector for 2D image mode</summary>
+        /// <remarks>
+        /// Not supported on all spectrometers.
+        ///
+        /// Wasatch spectrometers normally "vertically bins" pixel columns on the detector, outputting the spectrum as a one-dimensional array of intensities by pixel.
+        ///
+        /// For production alignment, an "area scan" imaging mode is provided to output each row on the detector as a separate line, so client software can reconstruct
+        /// a 2D image of the light patterns spread across the detector.  In this mode, the intensity value of the first pixel of each line is overwritten by the row
+        /// index, to ensure the 2D image is received and displayed correctly.
+        /// </remarks>
+        bool areaScanEnabled { get; set; }
 
         /// <summary>
         /// convert the raw laser temperature reading into degrees centigrade
@@ -209,7 +275,10 @@ namespace WasatchNET
 
         uint lineLength { get; }
 
+        /// <summary>Internal firmware name for the highGainModeEnabled feature available on InGaAs detectors</summary>
         bool optCFSelect { get; }
+
+        /// <summary>Whether area scan mode is supported</summary>
         bool optAreaScan { get; }
         bool optActualIntegrationTime { get; }
         bool optHorizontalBinning { get; }
@@ -241,6 +310,17 @@ namespace WasatchNET
 
         ushort secondaryADC { get; }
 
+        /// <summary>A configurable delay from when an inbound trigger signal is
+        /// received by the spectrometer, until the triggered acquisition actually starts.</summary>
+        /// <remarks>
+        /// Default value is 0us.
+        ///
+        /// Unit is in 0.5 microseconds (500ns), so value of 25 would represent 12.5us.
+        ///
+        /// Value is 24bit, so max value is 16777216 (8.388608 sec).
+        ///
+        /// As part of triggering, only currently supported on ARM.
+        /// </remarks>
         uint triggerDelay { get; set; }
         EXTERNAL_TRIGGER_OUTPUT triggerOutput { get; set; }
 
