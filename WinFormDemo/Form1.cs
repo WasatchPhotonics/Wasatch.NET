@@ -85,7 +85,7 @@ namespace WinFormDemo
             s.integrationTimeMS = s.eeprom.minIntegrationTimeMS;
             numericUpDownIntegTimeMS.Value = s.eeprom.minIntegrationTimeMS;
             numericUpDownIntegTimeMS.Minimum = s.eeprom.minIntegrationTimeMS;
-            numericUpDownIntegTimeMS.Maximum = s.eeprom.maxIntegrationTimeMS;
+            // numericUpDownIntegTimeMS.Maximum = s.eeprom.maxIntegrationTimeMS; // disabled to allow long integration times
 
             if (s.pixels > 0)
                 logger.info("Found {0} {1} with {2} pixels from {3:f2} to {4:f2}nm",

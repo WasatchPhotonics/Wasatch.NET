@@ -200,7 +200,7 @@ namespace WinFormDemo
             update("detector",                      spec.eeprom.detectorName);
             update("detectorTempMax",               spec.eeprom.detectorTempMax);
             update("detectorTempMin",               spec.eeprom.detectorTempMin);
-            update("excitationNM",                  spec.excitationWavelengthNM());
+            update("excitationNM",                  spec.excitationWavelengthNM);
             update("featureBoardType",              spec.featureIdentification.boardType);
             update("featureDesc",                   spec.featureIdentification.firmwareDesc);
             update("VID",                           string.Format("0x{0:x4}", spec.featureIdentification.vid));

@@ -256,6 +256,12 @@ software and connect to your spectrometer.
 
 # Version History
 
+- TODO: add cancelAcquisition()!
+
+- 2019-05-10 2.0.15
+    - changed laserWavelengthNM() to writable property
+    - changed hasLaser to only rely on EEPROM
+    - changed WinFormDemo's numericUpDownIntegTimeMS.Maximum to 5min
 - 2019-04-26 2.0.14
     - added (get/set)Detector(Gain/Offset)Odd
     - initial test support for areaScanEnable

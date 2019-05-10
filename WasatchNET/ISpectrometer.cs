@@ -36,7 +36,7 @@ namespace WasatchNET
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
         uint pixels { get; }
 
-        float excitationWavelengthNM();
+        float excitationWavelengthNM { get; set; }
 
         /// <summary>pre-populated array of wavelengths (nm) by pixel, generated from eeprom.wavecalCoeffs</summary>
         /// <remarks>see Util.generateWavelengths</remarks>

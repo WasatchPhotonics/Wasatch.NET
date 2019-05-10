@@ -44,6 +44,7 @@
             this.groupBoxSpectrometers = new System.Windows.Forms.GroupBox();
             this.comboBoxSpectrometer = new System.Windows.Forms.ComboBox();
             this.groupBoxControl = new System.Windows.Forms.GroupBox();
+            this.checkBoxExternalTriggerSource = new System.Windows.Forms.CheckBox();
             this.numericUpDownDetectorSetpointDegC = new System.Windows.Forms.NumericUpDown();
             this.label6 = new System.Windows.Forms.Label();
             this.numericUpDownLaserPowerPerc = new System.Windows.Forms.NumericUpDown();
@@ -77,7 +78,6 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.checkBoxExternalTriggerSource = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -210,7 +210,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(212, 192);
+            this.groupBoxSettings.Size = new System.Drawing.Size(213, 192);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -221,7 +221,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(208, 175);
+            this.treeViewSettings.Size = new System.Drawing.Size(209, 175);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -279,6 +279,17 @@
             this.groupBoxControl.TabIndex = 1;
             this.groupBoxControl.TabStop = false;
             this.groupBoxControl.Text = "Control";
+            // 
+            // checkBoxExternalTriggerSource
+            // 
+            this.checkBoxExternalTriggerSource.AutoSize = true;
+            this.checkBoxExternalTriggerSource.Location = new System.Drawing.Point(52, 132);
+            this.checkBoxExternalTriggerSource.Name = "checkBoxExternalTriggerSource";
+            this.checkBoxExternalTriggerSource.Size = new System.Drawing.Size(130, 17);
+            this.checkBoxExternalTriggerSource.TabIndex = 18;
+            this.checkBoxExternalTriggerSource.Text = "external trigger source";
+            this.checkBoxExternalTriggerSource.UseVisualStyleBackColor = true;
+            this.checkBoxExternalTriggerSource.CheckedChanged += new System.EventHandler(this.checkBoxExternalTriggerSource_CheckedChanged);
             // 
             // numericUpDownDetectorSetpointDegC
             // 
@@ -407,7 +418,7 @@
             this.numericUpDownIntegTimeMS.Location = new System.Drawing.Point(4, 17);
             this.numericUpDownIntegTimeMS.Margin = new System.Windows.Forms.Padding(2);
             this.numericUpDownIntegTimeMS.Maximum = new decimal(new int[] {
-            60000,
+            300000,
             0,
             0,
             0});
@@ -673,17 +684,6 @@
             // backgroundWorkerSettings
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
-            // 
-            // checkBoxExternalTriggerSource
-            // 
-            this.checkBoxExternalTriggerSource.AutoSize = true;
-            this.checkBoxExternalTriggerSource.Location = new System.Drawing.Point(52, 132);
-            this.checkBoxExternalTriggerSource.Name = "checkBoxExternalTriggerSource";
-            this.checkBoxExternalTriggerSource.Size = new System.Drawing.Size(130, 17);
-            this.checkBoxExternalTriggerSource.TabIndex = 18;
-            this.checkBoxExternalTriggerSource.Text = "external trigger source";
-            this.checkBoxExternalTriggerSource.UseVisualStyleBackColor = true;
-            this.checkBoxExternalTriggerSource.CheckedChanged += new System.EventHandler(this.checkBoxExternalTriggerSource_CheckedChanged);
             // 
             // Form1
             // 

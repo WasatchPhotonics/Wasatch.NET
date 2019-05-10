@@ -591,6 +591,8 @@ namespace WasatchNET
                     uint ms = value;
                     ushort lsw = (ushort)(ms & 0xffff);
                     ushort msw = (ushort)((ms >> 16) & 0x00ff);
+
+                    // logger.debug("setIntegrationTimeMS: {0} ms = lsw {1:x4} msw {2:x4}", ms, lsw, msw);
                     byte[] buf = null;
                     if (isARM)
                         buf = new byte[8];
@@ -752,7 +754,7 @@ namespace WasatchNET
             {
                 logger.debug("laserRampingEnabled feature currently disabled");
                 return false; // disabled
-
+                /*
                 if (featureIdentification.boardType != BOARD_TYPES.ARM)
                     return false;
                 const Opcodes op = Opcodes.GET_LASER_RAMPING_MODE;
@@ -760,12 +762,12 @@ namespace WasatchNET
                     return laserRampingEnabled_;
                 readOnce.Add(op);
                 return laserRampingEnabled_ = Unpack.toBool(getCmd(op, 1));
+                */
             }
             set
             {
                 logger.error("laserRampingEnabled feature currently disabled");
-                return; // disabled
-
+                /*
                 if (featureIdentification.boardType != BOARD_TYPES.RAMAN_FX2)
                     return;
 
@@ -774,9 +776,10 @@ namespace WasatchNET
                 readOnce.Add(Opcodes.GET_LASER_RAMPING_MODE);
 
                 // sendCmd(Opcodes.SET_LASER_RAMPING_MODE, (ushort)((laserRampingEnabled_ = value) ? 1 : 0));
+                */
             }
         }
-        bool laserRampingEnabled_;
+        // bool laserRampingEnabled_;
 
         public bool areaScanEnabled { get; set; }
 
@@ -1227,28 +1230,35 @@ namespace WasatchNET
         {
             get
             {
-                if (isSiG)
-                    return eeprom.hasLaser;
-                else
-                    return eeprom.hasLaser && (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL || fpgaOptions.laserType == FPGA_LASER_TYPE.EXTERNAL);
+                return eeprom.hasLaser;
+                // return eeprom.hasLaser && (fpgaOptions.laserType == FPGA_LASER_TYPE.INTERNAL || fpgaOptions.laserType == FPGA_LASER_TYPE.EXTERNAL);
             }
         }
 
-        public float excitationWavelengthNM()
+        public float excitationWavelengthNM
         {
-            float old = eeprom.excitationNM;
-            float newer = eeprom.laserExcitationWavelengthNMFloat;
+            get
+            {
+                float old = eeprom.excitationNM;
+                float newer = eeprom.laserExcitationWavelengthNMFloat;
 
-            // if float is corrupt or zero, return original EEPROM field
-            if (Double.IsNaN(newer) || newer == 0.0)
+                // if float is corrupt or zero, return original EEPROM field
+                if (Double.IsNaN(newer) || newer == 0.0)
+                    return old;
+
+                // if float looks valid, use it
+                if (200 <= newer && newer <= 2500)
+                    return newer;
+
+                // default to old value
                 return old;
+            }
 
-            // if float looks valid, use it
-            if (200 <= newer && newer <= 2500)
-                return newer;
-
-            // default to old value
-            return old;
+            set
+            {
+                eeprom.excitationNM = (ushort) value;
+                eeprom.laserExcitationWavelengthNMFloat = value;
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -1258,8 +1268,8 @@ namespace WasatchNET
         public void regenerateWavelengths()
         {
             wavelengths = Util.generateWavelengths(pixels, eeprom.wavecalCoeffs);
-            if (excitationWavelengthNM() > 0)
-                wavenumbers = Util.wavelengthsToWavenumbers(excitationWavelengthNM(), wavelengths);
+            if (excitationWavelengthNM > 0)
+                wavenumbers = Util.wavelengthsToWavenumbers(excitationWavelengthNM, wavelengths);
         }
 
         string stringifyPacket(UsbSetupPacket packet)
