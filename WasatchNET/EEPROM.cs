@@ -29,7 +29,7 @@ namespace WasatchNET
         /////////////////////////////////////////////////////////////////////////       
 
         const int MAX_PAGES = 6; // really 8, but last 2 are unallocated
-        const byte FORMAT = 4;
+        const byte FORMAT = 5;
 
         Spectrometer spectrometer;
         Logger logger = Logger.getInstance();
@@ -138,8 +138,8 @@ namespace WasatchNET
         public string detectorName { get; set; }
         public ushort activePixelsHoriz { get; set; }
         public ushort activePixelsVert { get; set; }
-        public ushort minIntegrationTimeMS { get; set; }
-        public ushort maxIntegrationTimeMS { get; set; }
+        public uint minIntegrationTimeMS { get; set; }
+        public uint maxIntegrationTimeMS { get; set; }
         public ushort actualPixelsHoriz { get; set; }
 
         // writable
@@ -219,6 +219,8 @@ namespace WasatchNET
         // read-only containers for expedited processing
         public List<short> badPixelList { get; private set; }
         public SortedSet<short> badPixelSet { get; private set; }
+
+        public string productConfiguration { get; set; }
 
         /////////////////////////////////////////////////////////////////////////       
         // Pages 6-7 unallocated
@@ -302,8 +304,8 @@ namespace WasatchNET
             if (!ParseData.writeUInt16(activePixelsHoriz,    pages[2], 16)) return false;
             // skip 18
             if (!ParseData.writeUInt16(activePixelsVert,     pages[2], 19)) return false;
-            if (!ParseData.writeUInt16(minIntegrationTimeMS, pages[2], 21)) return false;
-            if (!ParseData.writeUInt16(maxIntegrationTimeMS, pages[2], 23)) return false;
+            if (!ParseData.writeUInt16((ushort)minIntegrationTimeMS, pages[2], 21)) return false; // for now
+            if (!ParseData.writeUInt16((ushort)maxIntegrationTimeMS, pages[2], 23)) return false; // for now
             if (!ParseData.writeUInt16(actualPixelsHoriz,    pages[2], 25)) return false;
             if (!ParseData.writeUInt16(ROIHorizStart,        pages[2], 27)) return false;
             if (!ParseData.writeUInt16(ROIHorizEnd,          pages[2], 29)) return false;
@@ -326,6 +328,8 @@ namespace WasatchNET
             if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 28)) return false;
             if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 32)) return false;
             if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
+            if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
+            if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
 
             Array.Copy(userData, pages[4], userData.Length);
 
@@ -334,6 +338,8 @@ namespace WasatchNET
             for (int i = 0; i < badPixels.Length; i++)
                 if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
                     return false;
+
+            if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
 
             // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
             pages[0][63] = FORMAT;
@@ -436,8 +442,8 @@ namespace WasatchNET
                 detectorName            = ParseData.toString(pages[2],  0, 16);
                 activePixelsHoriz       = ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
                 activePixelsVert        = ParseData.toUInt16(pages[2], 19);
-                minIntegrationTimeMS    = ParseData.toUInt16(pages[2], 21);
-                maxIntegrationTimeMS    = ParseData.toUInt16(pages[2], 23);
+                minIntegrationTimeMS    = ParseData.toUInt16(pages[2], 21); // will overwrite if 
+                maxIntegrationTimeMS    = ParseData.toUInt16(pages[2], 23); //   format >= 5
                 actualPixelsHoriz       = ParseData.toUInt16(pages[2], 25);
                 ROIHorizStart           = ParseData.toUInt16(pages[2], 27);
                 ROIHorizEnd             = ParseData.toUInt16(pages[2], 29);
@@ -465,6 +471,11 @@ namespace WasatchNET
                 maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
                 minLaserPowerMW = ParseData.toFloat(pages[3], 32);
                 laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
+                if (format >= 5)
+                {
+                    minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
+                    maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
+                }
 
                 userData = format < 4 ? new byte[63] : new byte[64];
                 Array.Copy(pages[4], userData, userData.Length);
@@ -478,6 +489,8 @@ namespace WasatchNET
                         badPixelSet.Add(pixel); // does not throw
                 }
                 badPixelList = new List<short>(badPixelSet);
+
+                productConfiguration    = ParseData.toString(pages[5], 30, 16);
             }
             catch (Exception ex)
             {
@@ -587,6 +600,8 @@ namespace WasatchNET
 
             for (int i = 0; i < badPixels.Length; i++)
                 logger.debug("badPixels[{0,2}]         = {1}", i, badPixels[i]);
+
+            logger.debug("productConfiguration  = {0}", productConfiguration);
         }
     }
 }

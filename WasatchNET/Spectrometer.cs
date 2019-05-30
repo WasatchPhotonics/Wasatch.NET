@@ -61,6 +61,7 @@ namespace WasatchNET
 
         List<UsbEndpointReader> endpoints = new List<UsbEndpointReader>();
         int pixelsPerEndpoint = 0;
+        ulong throwawaySum = 0;
 
         ////////////////////////////////////////////////////////////////////////
         // Convenience lookups
@@ -173,14 +174,22 @@ namespace WasatchNET
             }
         }
 
+        /// <warning>
+        /// The photodiode (calling this as secondary ADC) should NOT swap the byte order!
+        /// Does laserTemperatureRaw require the byte order to be swapped?!?
+        /// </warning>
         public ushort adcRaw
         {
             get
             {
                 if (isSiG)
                     return 0;
-                ushort raw = swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2)));
-                return (ushort)(raw & 0xfff);
+                ushort orig = Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2));
+                // ushort corrected = swapBytes(orig);
+                ushort retval = (ushort)(orig & 0xfff);
+                logger.debug("adcRaw: raw 0x{0:x4} ({0,4})  retval 0x{1:x4} ({1,4})",
+                       orig, retval);
+                return retval;
             }
         }
 
@@ -1001,9 +1010,7 @@ namespace WasatchNET
                 readOnce.Add(Opcodes.SET_SELECTED_ADC);
                 sendCmd(Opcodes.SET_SELECTED_ADC, selectedADC_ = value);
                 if (throwawayADCRead)
-                {
-                    var throwaway = adcRaw; // note braces required
-                }
+                    throwawaySum += adcRaw;
             }
         }
         byte selectedADC_;
@@ -1202,6 +1209,7 @@ namespace WasatchNET
         public void close()
         {
             shuttingDown = true;
+            logger.debug("throwawaySum = {0}", throwawaySum); // just make sure it gets used
 
             if (usbDevice != null)
             {

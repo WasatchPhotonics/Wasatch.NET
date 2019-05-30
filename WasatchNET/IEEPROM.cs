@@ -104,8 +104,8 @@ namespace WasatchNET
         string detectorName { get; set; }
         ushort activePixelsHoriz { get; set; }
         ushort activePixelsVert { get; set; }
-        ushort minIntegrationTimeMS { get; set; }
-        ushort maxIntegrationTimeMS { get; set; }
+        uint minIntegrationTimeMS { get; set; }
+        uint maxIntegrationTimeMS { get; set; }
         ushort actualPixelsHoriz { get; set; }
 
         // writable
@@ -167,6 +167,10 @@ namespace WasatchNET
         /// </summary>
         /// <remarks>bad pixels are identified by pixel number; empty slots are indicated by -1</remarks>
         short[] badPixels { get; set; }
+
+        /// <summary>additional information to tailor the specs inferred from "model"</summary>
+        string productConfiguration { get; set;  }
+
 
         /////////////////////////////////////////////////////////////////////////       
         // Pages 6-7 unallocated

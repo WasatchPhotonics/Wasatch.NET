@@ -256,8 +256,11 @@ software and connect to your spectrometer.
 
 # Version History
 
-- TODO: add cancelAcquisition()!
+- TODO: add cancelAcquisition()?
 
+- 2019-05-29 2.0.16
+    - added productConfiguration to EEPROM
+    - moved min/maxIntegrationTimeMS from ushort to uint
 - 2019-05-10 2.0.15
     - changed laserWavelengthNM() to writable property
     - changed hasLaser to only rely on EEPROM

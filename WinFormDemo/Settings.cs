@@ -79,8 +79,6 @@ namespace WinFormDemo
             stub("detector",                    "EEPROM/Page 2/Detector");
             stub("activePixelsHoriz",           "EEPROM/Page 2/Active Pixels/Horizontal");
             stub("activePixelsVert",            "EEPROM/Page 2/Active Pixels/Vertical");
-            stub("minIntegrationTimeMS",        "EEPROM/Page 2/Integration Time (ms)/Min");
-            stub("maxIntegrationTimeMS",        "EEPROM/Page 2/Integration Time (ms)/Max");
             stub("actualPixelsHoriz",           "EEPROM/Page 2/Actual Pixels Horizontal");
             stub("ROIHorizStart",               "EEPROM/Page 2/ROI Horizontal/Start");
             stub("ROIHorizEnd",                 "EEPROM/Page 2/ROI Horizontal/End");
@@ -96,11 +94,14 @@ namespace WinFormDemo
             stub("minLaserPowerMW",             "EEPROM/Page 3/Laser Power (mW)/Min");
             for (int i = 0; i < 4; i++)
                 stub("laserPowerCoeff" + i,     "EEPROM/Page 3/Laser Power Calibration (% -> mW)/Coeff" + i);
+            stub("minIntegrationTimeMS",        "EEPROM/Page 3/Integration Time (ms)/Min");
+            stub("maxIntegrationTimeMS",        "EEPROM/Page 3/Integration Time (ms)/Max");
 
             stub("userText",                    "EEPROM/Page 4/User Text");
 
             for (int i = 0; i < 15; i++)
                 stub("badPixels" + i,           "EEPROM/Page 5/Bad Pixels/Index " + i);
+            stub("productConfiguration",        "EEPROM/Page 5/Product Configuration");
 
             ////////////////////////////////////////////////////////////////////
             // FPGA Compilation Options
@@ -228,6 +229,7 @@ namespace WinFormDemo
             update("userText",                      spec.eeprom.userText);
             update("maxLaserPowerMW",               spec.eeprom.maxLaserPowerMW);
             update("minLaserPowerMW",               spec.eeprom.minLaserPowerMW);
+            update("productConfiguration",          spec.eeprom.productConfiguration);
 
             // arrays
             for (int i = 0; i < spec.eeprom.wavecalCoeffs.Length; i++)
