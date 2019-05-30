@@ -490,7 +490,8 @@ namespace WasatchNET
                 }
                 badPixelList = new List<short>(badPixelSet);
 
-                productConfiguration    = ParseData.toString(pages[5], 30, 16);
+                if (format >= 5)
+                    productConfiguration = ParseData.toString(pages[5], 30, 16);
             }
             catch (Exception ex)
             {
