@@ -344,20 +344,30 @@ namespace WasatchNET
             // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
             pages[0][63] = FORMAT;
 
-            // we'll need this to send commands
-            Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
-
-            // Deliberately write pages in reverse order (least important to most),
-            // so if there are any errors, hopefully we won't completely brick 
-            // the unit.
-            for (short page = (short)(pages.Count - 1); page >= 0; page--)
+            for (short page = 0; page < pages.Count; page++)
             {
-                const uint DATA_START = 0x3c00; // from Wasatch Stroker Console's EnhancedStroker.setModelInformation()
-                ushort pageOffset = (ushort) (DATA_START + page * 64);
-
-                logger.hexdump(pages[page], String.Format("writing page {0} at offset {1:x4}: ", page, pageOffset));
-
-                if (!spectrometer.sendCmd(Opcodes.SET_MODEL_CONFIG_REAL, pageOffset, 0, pages[page]))
+                bool ok = false;
+                if (spectrometer.isARM)
+                {
+                    logger.hexdump(pages[page], String.Format("writing page {0} [ARM]: ", page));
+                    ok = spectrometer.sendCmd(
+                        opcode: Opcodes.SECOND_TIER_COMMAND,
+                        wValue: (ushort)Opcodes.SET_MODEL_CONFIG_ARM,
+                        wIndex: (ushort)page,
+                        buf: pages[page]);
+                }
+                else
+                {
+                    const uint DATA_START = 0x3c00; // from Wasatch Stroker Console's EnhancedStroker.SetModelInformation()
+                    ushort pageOffset = (ushort) (DATA_START + page * 64);
+                    logger.hexdump(pages[page], String.Format("writing page {0} to offset {1} [FX2]: ", page, pageOffset));
+                    ok = spectrometer.sendCmd(
+                        opcode: Opcodes.SET_MODEL_CONFIG_FX2, 
+                        wValue: pageOffset,
+                        wIndex: 0,
+                        buf: pages[page]);
+                }
+                if (!ok)
                 {
                     logger.error("ModelConfig.write: failed to save page {0}", page);
                     return false;

@@ -258,6 +258,8 @@ software and connect to your spectrometer.
 
 - TODO: add cancelAcquisition()?
 
+- 2019-06-14 2.0.17
+    - changed SET\_MODEL\_CONFIG to 2nd-tier command
 - 2019-05-29 2.0.16
     - added productConfiguration to EEPROM
     - moved min/maxIntegrationTimeMS from ushort to uint

@@ -1478,7 +1478,7 @@ namespace WasatchNET
         /// send a single control transfer command (response not checked)
         /// </summary>
         /// <param name="opcode">the desired command</param>
-        /// <param name="wValue">an optional secondary argument used by some commands</param>
+        /// <param name="wValue">an optional secondary argument used by most commands</param>
         /// <param name="wIndex">an optional tertiary argument used by some commands</param>
         /// <param name="buf">a data buffer used by some commands</param>
         /// <returns>true on success, false on error</returns>

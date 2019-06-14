@@ -98,7 +98,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_LASER_TEC_SETPOINT                 ] = 0xe7;
             cmd[Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME ] = 0xdd;
             cmd[Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME ] = 0xde;
-            cmd[Opcodes.SET_MODEL_CONFIG_REAL                  ] = 0xa2; 
+            cmd[Opcodes.SET_MODEL_CONFIG_FX2                   ] = 0xa2; // legacy, used for FX2
             cmd[Opcodes.SET_SELECTED_ADC                       ] = 0xed;
             cmd[Opcodes.SET_TRIGGER_DELAY                      ] = 0xaa;
             cmd[Opcodes.SET_TRIGGER_OUTPUT                     ] = 0xe0;
@@ -106,7 +106,7 @@ namespace WasatchNET
 
             // wValue for SECOND_TIER_COMMAND
             cmd[Opcodes.GET_MODEL_CONFIG                       ] = 0x01;
-            cmd[Opcodes.SET_MODEL_CONFIG_DO_NOT_USE            ] = 0x02; // DO NOT USE (rdickerson reported works)
+            cmd[Opcodes.SET_MODEL_CONFIG_ARM                   ] = 0x02; // rdickerson reported works, using for ARM onwards
             cmd[Opcodes.GET_LINE_LENGTH                        ] = 0x03;
             cmd[Opcodes.GET_COMPILATION_OPTIONS                ] = 0x04;
             cmd[Opcodes.GET_OPT_INTEGRATION_TIME_RESOLUTION    ] = 0x05;
