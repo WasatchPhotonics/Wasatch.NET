@@ -294,6 +294,11 @@ namespace WasatchNET
         {
             get
             {
+                if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
+                {
+                    logger.debug("detectorGainOdd not supported on non-InGaAs detectors");
+                    return 0;
+                }
                 const Opcodes op = Opcodes.GET_DETECTOR_GAIN_ODD;
                 if (haveCache(op))
                     return detectorGainOdd_;
@@ -302,6 +307,11 @@ namespace WasatchNET
             }
             set
             {
+                if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
+                {
+                    logger.debug("detectorGainOdd not supported on non-InGaAs detectors");
+                    return;
+                }
                 readOnce.Add(Opcodes.GET_DETECTOR_GAIN_ODD);
                 sendCmd(Opcodes.SET_DETECTOR_GAIN_ODD, FunkyFloat.fromFloat(detectorGainOdd_ = value));
             }
@@ -330,6 +340,11 @@ namespace WasatchNET
         {
             get
             {
+                if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
+                {
+                    logger.debug("detectorOffsetOdd not supported on non-InGaAs detectors");
+                    return 0;
+                }
                 const Opcodes op = Opcodes.GET_DETECTOR_OFFSET_ODD;
                 if (haveCache(op))
                     return detectorOffsetOdd_;
@@ -338,6 +353,11 @@ namespace WasatchNET
             }
             set
             {
+                if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
+                {
+                    logger.debug("detectorOffsetOdd not supported on non-InGaAs detectors");
+                    return;
+                }
                 readOnce.Add(Opcodes.GET_DETECTOR_OFFSET_ODD);
                 sendCmd(Opcodes.SET_DETECTOR_OFFSET_ODD, ParseData.shortAsUshort(detectorOffsetOdd_ = value));
             }
@@ -1200,6 +1220,18 @@ namespace WasatchNET
                 {
                     logger.debug("enabling detector TEC");
                     detectorTECEnabled = true;
+                }
+            }
+
+            // if we're using a modern EEPROM format, automatically apply the stored gain/offset values
+            if (eeprom.format >= 4)
+            {
+                detectorGain = eeprom.detectorGain;
+                detectorOffset = eeprom.detectorOffset;
+                if (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2)
+                {
+                    detectorGainOdd = eeprom.detectorGainOdd;
+                    detectorOffsetOdd = eeprom.detectorOffsetOdd;
                 }
             }
 
