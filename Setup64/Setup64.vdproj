@@ -238,9 +238,14 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=2.0.13.0, Culture=neutral, processorArchitecture=AMD64"
+            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=2.0.18.0, Culture=neutral, processorArchitecture=AMD64"
                 "ScatterAssemblies"
                 {
+                    "_02314DDFF1AFAFE2D854CB9982C9AD90"
+                    {
+                    "Name" = "8:WasatchNET.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:WasatchNET.dll"
             "TargetName" = "8:"
@@ -287,6 +292,11 @@
             "AssemblyAsmDisplayName" = "8:LibUsbDotNet, Version=2.2.9.110, Culture=neutral, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_13DD343F25232791ABC28116483D4917"
+                    {
+                    "Name" = "8:LibUsbDotNet.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:LibUsbDotNet.dll"
             "TargetName" = "8:"
@@ -353,6 +363,11 @@
             "AssemblyAsmDisplayName" = "8:LibUsbDotNet, Version=2.2.9.110, Culture=neutral, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_9B62C251638522B611E06357E971DFE0"
+                    {
+                    "Name" = "8:LibUsbDotNet.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:LibUsbDotNet.dll"
             "TargetName" = "8:"
@@ -459,6 +474,11 @@
             "AssemblyAsmDisplayName" = "8:Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_DDBDFEA8FC223DDC1D2DCE1B78286797"
+                    {
+                    "Name" = "8:Newtonsoft.Json.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:Newtonsoft.Json.dll"
             "TargetName" = "8:"
@@ -642,15 +662,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Wasatch.NET"
-        "ProductCode" = "8:{6547C01F-F24F-4D2F-935C-F8732981BCAC}"
-        "PackageCode" = "8:{F3F4950C-B580-4926-A818-D4963EFF08BA}"
+        "ProductCode" = "8:{7708F248-DFE3-4590-B8ED-4E41B5799E41}"
+        "PackageCode" = "8:{432E3916-A65C-40CC-A85A-7F1F67165C7E}"
         "UpgradeCode" = "8:{F312F3F0-86DD-4C2E-9E98-0648164C24CC}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:2.0.18"
+        "ProductVersion" = "8:2.0.19"
         "Manufacturer" = "8:Wasatch Photonics"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://wasatchphotonics.com"
@@ -1178,7 +1198,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_7870A161CB1E41B2B7C3B4B23332E190"
             {
-            "SourcePath" = "8:..\\WinFormDemo\\obj\\x86\\Debug\\WinFormDemo.exe"
+            "SourcePath" = "8:..\\WinFormDemo\\obj\\x64\\Debug\\WinFormDemo.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_6646C110E914486EA00871FD2D0AAC2E"
@@ -1206,7 +1226,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_E1F2580EC8074E01AC816BF55ADB9F98"
             {
-            "SourcePath" = "8:..\\WasatchNET\\obj\\x86\\Debug\\WasatchNET.dll"
+            "SourcePath" = "8:..\\WasatchNET\\obj\\x64\\Debug\\WasatchNET.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_A35CBBE5781F485EBC28659A8EE6F7C3"

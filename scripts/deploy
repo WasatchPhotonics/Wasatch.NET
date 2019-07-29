@@ -67,6 +67,15 @@ read -p "Press return to continue..." FOO
 validateAssemblyVersion "WasatchNET"
 validateAssemblyVersion "WinFormDemo"
 
+# verify version number is tagged
+if git tag | egrep -q $VERSION
+then
+    echo "Git tag found"
+else
+    echo "Git tag not found: $VERSION"
+    exit 1
+fi
+
 # upload installers
 postAndRename "Setup32"
 postAndRename "Setup64"

@@ -153,6 +153,7 @@ namespace WasatchNET
         bool laserInterlockEnabled { get; }
         bool laserModulationEnabled { get; set; }
         bool laserModulationLinkedToIntegrationTime { get; set; }
+        Spectrometer.LaserPowerResolution laserPowerResolution { get; set; }
 
         /// <summary>If you want the laser modulation to start part-way through an acquisition, this defines the delay in microseconds from the beginning of the
         ///          integration until laser modulation begins.</summary>

@@ -258,6 +258,8 @@ software and connect to your spectrometer.
 
 - TODO: add cancelAcquisition()?
 
+- 2019-07-29 2.0.19
+    - added laserPowerResolution
 - 2019-07-16 2.0.18
     - automatically apply gain and offset from EEPROM if configured
     - ignore "odd" gain/offset for non-InGaAs
