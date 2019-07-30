@@ -60,8 +60,8 @@ read -p "Version:  " VERSION
 export VERSION
 make doc
 
-echo
-read -p "Press return to continue..." FOO
+# echo
+# read -p "Press return to continue..." FOO
 
 # verify version number is consistent (postAndRename handles for MSI)
 validateAssemblyVersion "WasatchNET"

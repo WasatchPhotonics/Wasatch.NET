@@ -1586,7 +1586,7 @@ namespace WasatchNET
                 return true;
             }
 
-            if (isARM)
+            if (true || isARM)
             {
                 // apply the selected laser pulse period
                 if (!sendCmd(Opcodes.SET_LASER_MOD_PERIOD, periodUS))

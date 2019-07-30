@@ -258,6 +258,8 @@ software and connect to your spectrometer.
 
 - TODO: add cancelAcquisition()?
 
+- 2019-07-29 2.0.20
+    - remove fakeBuf from laser pulse width/period on FX2
 - 2019-07-29 2.0.19
     - added laserPowerResolution
 - 2019-07-16 2.0.18
