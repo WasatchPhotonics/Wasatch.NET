@@ -92,6 +92,9 @@ namespace WinFormDemo
                     s.model, s.serialNumber, s.pixels, s.wavelengths[0], s.wavelengths[s.wavelengths.Length - 1]);
             else
                 logger.error("Found [model: {0}] [serial: {1}] with {2} pixels", s.model, s.serialNumber, s.pixels);
+
+            // default to high-resolution laser power
+            s.laserPowerResolution = Spectrometer.LaserPowerResolution.LASER_POWER_RESOLUTION_1000;
         }
 
         void updateCurrentSpectrometer()
@@ -625,7 +628,7 @@ namespace WinFormDemo
         private void numericUpDownLaserPowerPerc_ValueChanged(object sender, EventArgs e)
         {
             if (currentSpectrometer != null)
-                currentSpectrometer.setLaserPowerPercentage((float)numericUpDownLaserPowerPerc.Value / 100.0f);
+                currentSpectrometer.setLaserPowerPercentage(((float)numericUpDownLaserPowerPerc.Value) / 100.0f);
         }
 
         private void numericUpDownDetectorSetpointDegC_ValueChanged(object sender, EventArgs e)

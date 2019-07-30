@@ -1574,9 +1574,8 @@ namespace WasatchNET
             if (perc < 0 || perc > 1)
                 return logger.error("invalid laser power percentage (should be in range (0, 1)): {0}", perc);
 
-            ushort periodUS = (ushort)((laserPowerResolution == LaserPowerResolution.LASER_POWER_RESOLUTION_100) ? 100 : 1000);
-
-            ushort widthUS = (ushort)Math.Round(perc * periodUS);
+            UInt64 periodUS = (UInt64)((laserPowerResolution == LaserPowerResolution.LASER_POWER_RESOLUTION_100) ? 100 : 1000);
+            UInt64 widthUS = (UInt64)Math.Round(perc * periodUS);
 
             // Turn off modulation at full laser power, exit
             if (widthUS >= periodUS)
@@ -1586,39 +1585,14 @@ namespace WasatchNET
                 return true;
             }
 
-            if (true || isARM)
-            {
-                // apply the selected laser pulse period
-                if (!sendCmd(Opcodes.SET_LASER_MOD_PERIOD, periodUS))
-                    return logger.error("Hardware Failure to send laser mod. pulse period (w/o fake buffer)");
+            if (laserModulationPeriod != periodUS)
+                laserModulationPeriod = periodUS;
+            if (laserModulationPulseWidth != widthUS)
+                laserModulationPulseWidth = widthUS;
+            if (!laserModulationEnabled)
+                laserModulationEnabled = true;
 
-                // Set the pulse width to the 0-100 percentage of power (in microsec)
-                if (!sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, widthUS))
-                    return logger.error("Hardware Failure to send pulse width (w/o fake buffer)");
-
-                // Enable modulation
-                if (!sendCmd(Opcodes.SET_LASER_MOD_ENABLE, 1))
-                    return logger.error("Hardware Failure to send laser modulation (w/o fake buffer)");
-            }
-            else
-            {
-                // apply the selected laser pulse period
-                byte[] fake = new byte[periodUS];
-                if (!sendCmd(Opcodes.SET_LASER_MOD_PERIOD, periodUS, buf: fake))
-                    return logger.error("Hardware Failure to send laser mod. pulse period (w/fake buffer)");
-
-                // Set the pulse width to the 0-100 percentage of power (in microsec)
-                fake = new byte[widthUS];
-                if (!sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, widthUS, buf: fake))
-                    return logger.error("Hardware Failure to send pulse width (w/fake buffer)");
-
-                // Enable modulation
-                fake = new byte[8];
-                if (!sendCmd(Opcodes.SET_LASER_MOD_ENABLE, 1, buf: fake))
-                    return logger.error("Hardware Failure to send laser modulation (w/fake buffer)");
-            }
-
-            logger.debug("Laser power set to: {0} / {1}", widthUS, periodUS);
+            logger.debug("Laser power set to: {0:f2}% ({1} / {2})", (float)(100.0 * widthUS / periodUS), widthUS, periodUS);
             return true;
         }
 

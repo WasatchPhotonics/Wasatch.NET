@@ -258,6 +258,9 @@ software and connect to your spectrometer.
 
 - TODO: add cancelAcquisition()?
 
+- 2019-07-29 2.0.21
+    - simplify and speed setLaserPowerPerc
+    - make HiRes laser power the default in WinFormDemo
 - 2019-07-29 2.0.20
     - remove fakeBuf from laser pulse width/period on FX2
 - 2019-07-29 2.0.19

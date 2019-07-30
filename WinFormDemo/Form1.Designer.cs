@@ -210,7 +210,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(213, 192);
+            this.groupBoxSettings.Size = new System.Drawing.Size(214, 192);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -221,7 +221,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(209, 175);
+            this.treeViewSettings.Size = new System.Drawing.Size(210, 175);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -313,10 +313,16 @@
             // 
             // numericUpDownLaserPowerPerc
             // 
+            this.numericUpDownLaserPowerPerc.DecimalPlaces = 1;
             this.numericUpDownLaserPowerPerc.Enabled = false;
+            this.numericUpDownLaserPowerPerc.Increment = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
             this.numericUpDownLaserPowerPerc.Location = new System.Drawing.Point(134, 108);
             this.numericUpDownLaserPowerPerc.Name = "numericUpDownLaserPowerPerc";
-            this.numericUpDownLaserPowerPerc.Size = new System.Drawing.Size(42, 20);
+            this.numericUpDownLaserPowerPerc.Size = new System.Drawing.Size(48, 20);
             this.numericUpDownLaserPowerPerc.TabIndex = 14;
             this.numericUpDownLaserPowerPerc.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownLaserPowerPerc.Value = new decimal(new int[] {
@@ -572,7 +578,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(174, 110);
+            this.label5.Location = new System.Drawing.Point(182, 112);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(15, 13);
             this.label5.TabIndex = 15;
