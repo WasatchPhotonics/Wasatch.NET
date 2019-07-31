@@ -258,6 +258,8 @@ software and connect to your spectrometer.
 
 - TODO: add cancelAcquisition()?
 
+- 2019-07-31 2.0.22
+    - added LaserPowerResolution.MANUAL
 - 2019-07-29 2.0.21
     - simplify and speed setLaserPowerPerc
     - make HiRes laser power the default in WinFormDemo

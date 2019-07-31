@@ -40,7 +40,17 @@ namespace WasatchNET
         // data types
         ////////////////////////////////////////////////////////////////////////
 
-        public enum LaserPowerResolution { LASER_POWER_RESOLUTION_100, LASER_POWER_RESOLUTION_1000 }
+        /// <summary>
+        /// When setting laser power as a percentage (see setLaserPowerPercentage), 
+        /// this enum determines the possible resolution (granularity) of the 
+        /// selectable power.
+        /// </summary>
+        /// <remarks>
+        /// - 100 = 1% resolution (74.4% would round down to 74% power), using pulse period of 100us
+        /// - 1000 = 0.1% resolution (74.4% would yield 74.4% power), use pulse period of 1000us
+        /// - MANUAL = "use whatever laserModulationPulseWidth has been set by the caller"
+        /// </remarks>
+        public enum LaserPowerResolution { LASER_POWER_RESOLUTION_100, LASER_POWER_RESOLUTION_1000, LASER_POWER_RESOLUTION_MANUAL }
 
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
@@ -757,6 +767,7 @@ namespace WasatchNET
             }
             set
             {
+                readOnce.Add(Opcodes.GET_LASER_MOD_PERIOD);
                 UInt40 val = new UInt40(laserModulationPeriod_ = value);
                 sendCmd(Opcodes.SET_LASER_MOD_PERIOD, val.LSW, val.MidW, val.buf);
             }
@@ -1568,14 +1579,26 @@ namespace WasatchNET
         /// <remarks>
         /// Not implemented as a property because it truly isn't; it's a complex 
         /// combination of actual spectrometer properties.
+        ///
+        /// Technically you don't need to call this function at all, and can set 
+        /// the laserModulationPulseWidth, laserModulationPulsePeriod and 
+        /// laserModulationEnabled properties directly if you wish.
         /// </remarks>
         public bool setLaserPowerPercentage(float perc)
         {
             if (perc < 0 || perc > 1)
                 return logger.error("invalid laser power percentage (should be in range (0, 1)): {0}", perc);
 
-            UInt64 periodUS = (UInt64)((laserPowerResolution == LaserPowerResolution.LASER_POWER_RESOLUTION_100) ? 100 : 1000);
-            UInt64 widthUS = (UInt64)Math.Round(perc * periodUS);
+            UInt64 periodUS = laserModulationPeriod;
+            if (laserPowerResolution == LaserPowerResolution.LASER_POWER_RESOLUTION_100)
+                periodUS = 100;
+            else if (laserPowerResolution == LaserPowerResolution.LASER_POWER_RESOLUTION_1000)
+                periodUS = 1000;
+
+            if (periodUS == 0)
+                return logger.error("unsupported laser modulation pulse width {0}", periodUS);
+
+            UInt64 widthUS = (UInt64)Math.Round(perc * periodUS, 0);
 
             // Turn off modulation at full laser power, exit
             if (widthUS >= periodUS)
@@ -1592,7 +1615,10 @@ namespace WasatchNET
             if (!laserModulationEnabled)
                 laserModulationEnabled = true;
 
-            logger.debug("Laser power set to: {0:f2}% ({1} / {2})", (float)(100.0 * widthUS / periodUS), widthUS, periodUS);
+            logger.debug("Laser power set to: {0:f2}% ({1} / {2})", 
+                (float)(100.0 * widthUS / periodUS), 
+                widthUS, 
+                periodUS);
             return true;
         }
 
