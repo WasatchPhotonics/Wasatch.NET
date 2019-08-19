@@ -398,7 +398,7 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
-        internal bool read()
+        public bool read()
         {
             // read all pages into cache
             pages = new List<byte[]>();

@@ -755,12 +755,13 @@ namespace WasatchNET
         }
         UInt64 laserModulationDuration_;
 
+        // don't cache for now
         public UInt64 laserModulationPeriod
         {
             get
             {
                 const Opcodes op = Opcodes.GET_LASER_MOD_PERIOD;
-                if (haveCache(op))
+                if (false && haveCache(op))
                     return laserModulationPeriod_;
                 readOnce.Add(op);
                 return laserModulationPeriod_ = Unpack.toUint64(getCmd(op, 5));
@@ -774,12 +775,13 @@ namespace WasatchNET
         }
         UInt64 laserModulationPeriod_;
 
+        // don't cache for now
         public UInt64 laserModulationPulseWidth
         {
             get
             {
                 const Opcodes op = Opcodes.GET_LASER_MOD_PULSE_WIDTH;
-                if (haveCache(op))
+                if (false && haveCache(op))
                     return laserModulationPulseWidth_;
                 readOnce.Add(op);
                 return laserModulationPulseWidth_ = Unpack.toUint64(getCmd(op, 5));
@@ -1573,7 +1575,7 @@ namespace WasatchNET
         // laser
         ////////////////////////////////////////////////////////////////////////
 
-        public LaserPowerResolution laserPowerResolution { get; set; } = LaserPowerResolution.LASER_POWER_RESOLUTION_100;
+        public LaserPowerResolution laserPowerResolution { get; set; } = LaserPowerResolution.LASER_POWER_RESOLUTION_1000;
 
         /// <param name="perc">a normalized floating-point percentage from 0.0 to 1.0 (100%)</param>
         /// <remarks>
@@ -1610,8 +1612,16 @@ namespace WasatchNET
 
             if (laserModulationPeriod != periodUS)
                 laserModulationPeriod = periodUS;
+            UInt64 actualPeriodUS = laserModulationPeriod;
+            if (actualPeriodUS != periodUS) // double-check
+                logger.error("Set laserModulationPeriod {0}, but actual value {1}", periodUS, actualPeriodUS);
+
             if (laserModulationPulseWidth != widthUS)
                 laserModulationPulseWidth = widthUS;
+            UInt64 actualWidthUS = laserModulationPulseWidth;
+            if (actualWidthUS != widthUS) // double-check
+                logger.error("Set laserModulationPulseWidth {0}, but actual value {1}", widthUS, actualWidthUS);
+
             if (!laserModulationEnabled)
                 laserModulationEnabled = true;
 

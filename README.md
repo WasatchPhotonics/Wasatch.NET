@@ -256,8 +256,12 @@ software and connect to your spectrometer.
 
 # Version History
 
-- TODO: add cancelAcquisition()?
-
+- 2019-08-19 2.0.24
+    - made LaserPowerResolution.1000 the default
+    - made EEPROM.read() public, so the object can refresh itself from the 
+      spectrometer if local values have been changed in memory
+- 2019-07-31 2.0.23
+    - don't cache laser modulation width/period; check values after setting them
 - 2019-07-31 2.0.22
     - added LaserPowerResolution.MANUAL
 - 2019-07-29 2.0.21

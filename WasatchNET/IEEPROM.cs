@@ -210,5 +210,10 @@ namespace WasatchNET
         /// </remarks>
         /// <returns>true on success, false on failure</returns>
         bool write();
+
+        /// <summary>Called automatically when Spectrometer opened</summary>
+        /// <remarks>Can be re-called to overwrite local changes to field contents with spectrometer data</remarks>
+        /// <returns>true on success, false on failure</returns>
+        bool read();
     }
 }
