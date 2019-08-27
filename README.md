@@ -256,6 +256,9 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2019-08-27 2.0.27
+    - unsigned DLL (conflicts with COM registration due to unsigned LibUsbDotNet dependency)
+    - fixed COM declaration for DriverVBAWrapper
 - 2019-08-27 2.0.26
     - attempting to sign DLL with strong name for Delphi/GAC support
 - 2019-08-27 2.0.25
@@ -338,8 +341,6 @@ software and connect to your spectrometer.
     - removed Generics from COM API for Delphi
 - 2018-05-29 1.0.26
     - changed ModelConfig.detectorTempMin/Max from float to short
-- 2018-05-28 1.0.25
-    - added IDriver.logger getter
 - 2018-05-28 1.0.25
     - added IDriver.logger getter
 - 2018-05-27 1.0.24

@@ -24,6 +24,7 @@ namespace WasatchNET
     [ComVisible(true)]
     [Guid("E253CACE-A702-4A11-B285-D9B9E18886E4")]
     [ProgId("WasatchNET.DriverVBAWrapper")]
+    [ClassInterface(ClassInterfaceType.None)]
     public class DriverVBAWrapper : IDriverVBAWrapper
     {
         public IDriver instance { get; } = Driver.getInstance();

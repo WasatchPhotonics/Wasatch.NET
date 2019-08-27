@@ -20,7 +20,7 @@ namespace WasatchNET
     /// </remarks>
     [ComVisible(true)]
     [Guid("A224D5A7-A0E0-4AAC-8489-4BB0CED3171B")]
-    [ProgId("WasatchNET.ModelConfig")]
+    [ProgId("WasatchNET.EEPROM")]
     [ClassInterface(ClassInterfaceType.None)]
     public class EEPROM : IEEPROM
     {
