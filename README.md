@@ -256,6 +256,8 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2019-08-27 2.0.26
+    - attempting to sign DLL with strong name for Delphi/GAC support
 - 2019-08-27 2.0.25
     - removed ILogger.getErrors for COM support
 - 2019-08-19 2.0.24

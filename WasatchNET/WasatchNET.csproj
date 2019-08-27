@@ -69,6 +69,12 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>WasatchNETStrongName.pfx</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="LibUsbDotNet">
       <HintPath>..\lib\LibUsbDotNet.dll</HintPath>
@@ -106,6 +112,9 @@
     <Compile Include="UInt40.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="DriverVBAWrapper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="WasatchNETStrongName.pfx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
