@@ -29,6 +29,18 @@ function validateAssemblyVersion()
     fi
 }
 
+function verifyExists()
+{
+    LOCAL_NAME="WasatchNET-${ARCH}-${VERSION}.msi"
+    LOCAL_PATH="${ARCH}/Debug/$LOCAL_NAME"
+
+    if ! [ -f $LOCAL_PATH ]
+    then
+        echo "ERROR: can't find $LOCAL_PATH"
+        exit 1
+    fi
+}
+
 function postAndRename()
 {
     local ARCH="$1"
@@ -38,12 +50,6 @@ function postAndRename()
 
     REMOTE_NAME="WasatchNET-${VERSION}-${ARCH}.msi"
     REMOTE_PATH="www/binaries/drivers/Wasatch.NET/$REMOTE_NAME"
-
-    if ! [ -f $LOCAL_PATH ]
-    then
-        echo "ERROR: can't find $LOCAL_PATH"
-        exit 1
-    fi
 
     scp $LOCAL_PATH $USERNAME@wasatchphotonics.com:$REMOTE_PATH
 }
@@ -75,6 +81,10 @@ else
     echo "Git tag not found: $VERSION"
     exit 1
 fi
+
+# verify installers
+verifyExists "Setup32"
+verifyExists "Setup64"
 
 # upload installers
 postAndRename "Setup32"

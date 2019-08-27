@@ -45,12 +45,7 @@ namespace WasatchNET
         /// <remarks>other errors will remain in the "recent" queue; this does not necessary clear hasError()</remarks>
         string getLastError();
 
-        /// <summary>
-        /// Returns a list of recent errors.
-        /// </summary>
-        /// <returns>list of queued error strings</returns>
-        /// <remarks>clears hasError()</remarks>
-        List<string> getErrors();
+        // getErrors is removed because COM doesn't support generics
 
         /// <summary>
         /// whether any recent errors have occurred

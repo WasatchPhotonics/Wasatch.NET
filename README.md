@@ -256,6 +256,8 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2019-08-27 2.0.25
+    - removed ILogger.getErrors for COM support
 - 2019-08-19 2.0.24
     - made LaserPowerResolution.1000 the default
     - made EEPROM.read() public, so the object can refresh itself from the 
