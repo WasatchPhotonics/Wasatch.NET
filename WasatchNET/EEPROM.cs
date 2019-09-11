@@ -100,24 +100,37 @@ namespace WasatchNET
         public float[] wavecalCoeffs { get; set; }
 
         /// <summary>
-        /// These are used to convert the user's desired setpoint in degrees Celsius to raw 12-bit DAC inputs.
+        /// These are used to convert the user's desired setpoint in degrees 
+        /// Celsius to raw 12-bit DAC inputs for passing to the detector's 
+        /// Thermo-Electric Cooler (TEC).
         /// </summary>
         /// <remarks>
         /// These correspond to the fields "Temp to TEC Cal" in Wasatch Model Configuration GUI.
         ///
         /// Use these when setting the TEC setpoint.
+        ///
+        /// Note that the TEC is a "write-only" device: you can tell it what temperature you
+        /// WANT, but you can't read what temperature it IS.  (For that, use the thermistor.)
         /// </remarks>
         public float[] degCToDACCoeffs { get; set; }
         public short detectorTempMin { get; set; }
         public short detectorTempMax { get; set; }
 
         /// <summary>
-        /// These are used to convert 12-bit raw ADC temperature readings into degrees Celsius.
+        /// These are used to convert 12-bit raw ADC temperature readings from the detector
+        /// thermistor into degrees Celsius.
         /// </summary>
         /// <remarks>
         /// These correspond to the fields "Therm to Temp Cal" in Wasatch Model Configuration GUI.
         /// 
         /// Use these when reading the detector temperature.
+        ///
+        /// Note that the detector thermistor is a read-only device: you can read what temperature
+        /// it IS, but you can't tell it what temperature you WANT.  (For that, use the TEC.)
+        ///
+        /// Note that there is also a thermistor on the laser.  These calibrated coefficients 
+        /// are for the detector thermistor; the laser thermistor uses hard-coded coefficients
+        /// which aren't calibrated or stored on the EEPROM.
         /// </remarks>
         public float[] adcToDegCCoeffs { get; set; }
         public short thermistorResistanceAt298K { get; set; }

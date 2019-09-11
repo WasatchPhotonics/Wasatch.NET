@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace WasatchNET
 {
     /// <summary>
-    /// In retrospect, should have been called IEEPROM.
+    /// COM wrapper for the EEPROM class.
     /// </summary>
     [ComVisible(true)]
     [Guid("D6BC706B-4B50-4CFD-AFFC-6A01F56B92B4")]
