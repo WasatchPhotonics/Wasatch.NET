@@ -68,7 +68,7 @@ namespace WasatchNET
 
             if (value == null)
             {
-                buf[0] = 0;
+                buf[index] = 0;
                 logger.debug("writeString: WARNING: attempted to write unininitialized string, wrote null string");
                 return true;
             }
