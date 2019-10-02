@@ -64,6 +64,13 @@ namespace WasatchNET
 
         public static bool writeString(string value, byte[] buf, int index, int maxLen)
         {
+            if (value == null)
+            {
+                buf[0] = 0;
+                return false;
+            }
+            
+
             for (int i = 0; i < maxLen; i++)
             {
                 int pos = index + i;

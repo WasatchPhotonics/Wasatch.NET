@@ -515,6 +515,8 @@ namespace WasatchNET
 
                 if (format >= 5)
                     productConfiguration = ParseData.toString(pages[5], 30, 16);
+                else
+                    productConfiguration = "";
             }
             catch (Exception ex)
             {
