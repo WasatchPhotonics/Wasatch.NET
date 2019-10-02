@@ -64,6 +64,16 @@ namespace WasatchNET
 
         public static bool writeString(string value, byte[] buf, int index, int maxLen)
         {
+            Logger logger = Logger.getInstance();
+
+            if (value == null)
+            {
+                buf[0] = 0;
+                logger.debug("writeString: WARNING: attempted to write unininitialized string, wrote null string");
+                return true;
+            }
+            
+
             for (int i = 0; i < maxLen; i++)
             {
                 int pos = index + i;
@@ -72,8 +82,7 @@ namespace WasatchNET
                 else 
                     buf[pos] = 0;
             }
-
-            Logger logger = Logger.getInstance();
+            
             logger.debug("writeString: wrote up to {0} chars of {1} to index {2} of {3}-byte buf",
                 maxLen, value, index, buf.Length);
 
