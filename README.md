@@ -256,6 +256,9 @@ software and connect to your spectrometer.
 
 # Version History
 
+- 2019-10-03 2.0.28
+    - fixed product config initialization error
+	- fixed null string write issue
 - 2019-08-27 2.0.27
     - unsigned DLL (conflicts with COM registration due to unsigned LibUsbDotNet dependency)
     - fixed COM declaration for DriverVBAWrapper
