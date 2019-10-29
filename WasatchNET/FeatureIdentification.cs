@@ -83,7 +83,7 @@ namespace WasatchNET
                 firmwarePartNum = "170019";
                 firmwareDesc = "ARM USB Board";
             }
-            else if (pid == 0x1018)
+            else if (vid == 0x2457)
             {
 
             }

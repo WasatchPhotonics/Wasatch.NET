@@ -29,40 +29,6 @@ namespace WasatchNET
         {
             eeprom = new EEPROM(this);
 
-            /*
-            if (wrapper == null)
-            {
-                logger.info("Unable to instantiate SORS3CCA.Wrapper");
-                return false;
-            }
-            */
-
-            /*
-            if (wrapper.init())
-            {
-                pixels = (uint)wrapper.getNumberOfPixels();
-
-                logger.info("found spectrometer with {0} pixels", pixels);
-
-                char[] ccaVer = new char[64];
-                wrapper.getCCAVersion(64, ref ccaVer);
-                string ccaVerStr = new string(ccaVer);
-                logger.info("CCA Version: {0}", ccaVerStr);
-
-                if (!eeprom.read())
-                {
-                    logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                    wrapper.shutdown();
-                    return false;
-                }
-                logger.debug("back from reading EEPROM");
-
-                regenerateWavelengths();
-
-                return true;
-
-            }
-            */
             int errorReader = 0;
 
             if (SeaBreezeWrapper.seabreeze_open_spectrometer(specIndex, ref errorReader) == 0)
