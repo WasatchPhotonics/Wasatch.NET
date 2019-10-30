@@ -68,9 +68,9 @@ namespace WasatchNET
         Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
         HashSet<Opcodes> armInvertedRetvals = OpcodeHelper.getInstance().getArmInvertedRetvals();
 
-        Logger logger = Logger.getInstance();
+        protected Logger logger = Logger.getInstance();
 
-        object acquisitionLock = new object();
+        protected object acquisitionLock = new object();
         object commsLock = new object();
         DateTime lastUsbTimestamp = DateTime.Now;
         bool shuttingDown = false;
@@ -84,18 +84,18 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
-        public uint pixels { get; private set; }
+        public uint pixels { get; protected set; }
 
         /// <summary>pre-populated array of wavelengths (nm) by pixel, generated from eeprom.wavecalCoeffs</summary>
         /// <remarks>see Util.generateWavelengths</remarks>
-        public double[] wavelengths { get; private set; }
+        public double[] wavelengths { get; protected set; }
 
         /// <summary>pre-populated array of Raman shifts in wavenumber (1/cm) by pixel, generated from wavelengths[] and excitationNM</summary>
         /// <remarks>see Util.wavelengthsToWavenumbers</remarks>
-        public double[] wavenumbers { get; private set; }
+        public double[] wavenumbers { get; protected set; }
 
         /// <summary>spectrometer serial number</summary>
-        public string serialNumber
+        public virtual string serialNumber
         {
             get { return eeprom.serialNumber; }
         }
@@ -117,7 +117,7 @@ namespace WasatchNET
         public FPGAOptions fpgaOptions { get; private set; }
 
         /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
-        public EEPROM eeprom { get; private set; }
+        public EEPROM eeprom { get; protected set; }
 
         ////////////////////////////////////////////////////////////////////////
         // Purely internal driver attributes (no hardware version)
@@ -128,19 +128,19 @@ namespace WasatchNET
         /// <summary>
         /// How many acquisitions to average together (zero for no averaging)
         /// </summary>
-        public uint scanAveraging
+        public virtual uint scanAveraging
         {
             get { return scanAveraging_; }
             set { lock (acquisitionLock) scanAveraging_ = value; }
         }
-        uint scanAveraging_ = 1;
+        protected uint scanAveraging_ = 1;
 
         /// <summary>
         /// Perform post-acquisition high-frequency smoothing by averaging
         /// together "n" pixels to either side of each acquired pixel; zero
         /// to disable (default).
         /// </summary>
-        public uint boxcarHalfWidth
+        public virtual uint boxcarHalfWidth
         {
             get { return boxcarHalfWidth_; }
             set { lock (acquisitionLock) boxcarHalfWidth_ = value; }
@@ -151,12 +151,13 @@ namespace WasatchNET
         /// Perform automatic dark subtraction by setting this property to
         /// an acquired dark spectrum; leave "null" to disable.
         /// </summary>
-        public double[] dark
+        public virtual double[] dark
         {
             get { return dark_; }
             set { lock (acquisitionLock) dark_ = value; }
         }
-        double[] dark_;
+
+        protected double[] dark_;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -233,7 +234,7 @@ namespace WasatchNET
         DateTime batteryStateTimestamp_ = DateTime.Now;
         uint batteryStateRaw_ = 0;
 
-        public float batteryPercentage
+        public virtual float batteryPercentage
         {
             get
             {
@@ -244,7 +245,7 @@ namespace WasatchNET
             }
         }
 
-        public bool batteryCharging
+        public virtual bool batteryCharging
         {
             get
             {
@@ -288,7 +289,7 @@ namespace WasatchNET
         }
         byte continuousFrames_;
 
-        public float detectorGain
+        public virtual float detectorGain
         {
             get
             {
@@ -306,7 +307,7 @@ namespace WasatchNET
         }
         float detectorGain_;
 
-        public float detectorGainOdd
+        public virtual float detectorGainOdd
         {
             get
             {
@@ -334,7 +335,7 @@ namespace WasatchNET
         }
         float detectorGainOdd_;
 
-        public short detectorOffset
+        public virtual short detectorOffset
         {
             get
             {
@@ -352,7 +353,7 @@ namespace WasatchNET
         }
         short detectorOffset_;
 
-        public short detectorOffsetOdd
+        public virtual short detectorOffsetOdd
         {
             get
             {
@@ -416,7 +417,7 @@ namespace WasatchNET
         }
         ushort detectorSensingThreshold_;
 
-        public bool detectorTECEnabled
+        public virtual bool detectorTECEnabled
         {
             get
             {
@@ -439,7 +440,7 @@ namespace WasatchNET
         }
         bool detectorTECEnabled_;
 
-        public float detectorTECSetpointDegC
+        public virtual float detectorTECSetpointDegC
         {
             get
             {
@@ -459,9 +460,9 @@ namespace WasatchNET
                 detectorTECSetpointRaw = Math.Min((ushort)0xfff, (ushort)Math.Round(dac));
             }
         }
-        float detectorTECSetpointDegC_ = UNINITIALIZED_TEMPERATURE_DEG_C;
+        protected float detectorTECSetpointDegC_ = UNINITIALIZED_TEMPERATURE_DEG_C;
 
-        public ushort detectorTECSetpointRaw
+        public virtual ushort detectorTECSetpointRaw
         {
             get
             {
@@ -484,7 +485,7 @@ namespace WasatchNET
         }
         ushort detectorTECSetpointRaw_;
 
-        public float detectorTemperatureDegC
+        public virtual float detectorTemperatureDegC
         {
             get
             {
@@ -512,7 +513,7 @@ namespace WasatchNET
             }
         }
 
-        public string firmwareRevision
+        public virtual string firmwareRevision
         {
             get
             {
@@ -535,7 +536,7 @@ namespace WasatchNET
         }
         string firmwareRevision_;
 
-        public string fpgaRevision
+        public virtual string fpgaRevision
         {
             get
             {
@@ -609,7 +610,7 @@ namespace WasatchNET
         }
         HORIZONTAL_BINNING horizontalBinning_;
 
-        public uint integrationTimeMS
+        public virtual uint integrationTimeMS
         {
             get
             {
@@ -647,9 +648,9 @@ namespace WasatchNET
                 }
             }
         }
-        uint integrationTimeMS_;
+        protected uint integrationTimeMS_;
 
-        public bool laserEnabled // dangerous one to cache...
+        public virtual bool laserEnabled // dangerous one to cache...
         {
             get
             {
@@ -666,7 +667,7 @@ namespace WasatchNET
                 sendCmd(Opcodes.SET_LASER_ENABLE, (ushort)((laserEnabled_ = value) ? 1 : 0), buf: buf);
             }
         }
-        bool laserEnabled_;
+        protected bool laserEnabled_;
 
         public bool laserModulationEnabled
         {
@@ -686,7 +687,7 @@ namespace WasatchNET
         }
         bool laserModulationEnabled_;
 
-        public bool laserInterlockEnabled
+        public virtual bool laserInterlockEnabled
         {
             get
             {
@@ -756,7 +757,7 @@ namespace WasatchNET
         UInt64 laserModulationDuration_;
 
         // don't cache for now
-        public UInt64 laserModulationPeriod
+        public virtual UInt64 laserModulationPeriod
         {
             get
             {
@@ -831,7 +832,7 @@ namespace WasatchNET
 
         public bool areaScanEnabled { get; set; }
 
-        public float laserTemperatureDegC
+        public virtual float laserTemperatureDegC
         {
             get
             {
@@ -875,9 +876,9 @@ namespace WasatchNET
             }
         }
 
-        public ushort laserTemperatureRaw => primaryADC;
+        public virtual ushort laserTemperatureRaw => primaryADC;
 
-        public byte laserTemperatureSetpointRaw
+        public virtual byte laserTemperatureSetpointRaw
         {
             get
             {
@@ -1024,7 +1025,7 @@ namespace WasatchNET
             }
         }
 
-        public ushort secondaryADC
+        public virtual ushort secondaryADC
         {
             get
             {
@@ -1054,7 +1055,7 @@ namespace WasatchNET
         }
         byte selectedADC_;
 
-        public TRIGGER_SOURCE triggerSource
+        public virtual TRIGGER_SOURCE triggerSource
         {
             get
             {
@@ -1145,7 +1146,7 @@ namespace WasatchNET
             pixels = 0;
         }
 
-        internal bool open()
+        virtual internal bool open()
         {
             // clear cache
             readOnce.Clear();
@@ -1257,7 +1258,7 @@ namespace WasatchNET
             return true;
         }
 
-        public void close()
+        public virtual void close()
         {
             shuttingDown = true;
             logger.debug("throwawaySum = {0}", throwawaySum); // just make sure it gets used
@@ -1282,10 +1283,10 @@ namespace WasatchNET
         // Convenience Accessors
         ////////////////////////////////////////////////////////////////////////
 
-        public bool isARM { get { return featureIdentification.boardType == BOARD_TYPES.ARM; } }
+        public virtual bool isARM { get { return featureIdentification.boardType == BOARD_TYPES.ARM; } }
         public bool isSiG { get { return eeprom.model.ToLower().Contains("sig") || eeprom.serialNumber.ToLower().Contains("sig"); } }
 
-        public bool hasLaser
+        public virtual bool hasLaser
         {
             get
             {
@@ -1294,7 +1295,7 @@ namespace WasatchNET
             }
         }
 
-        public float excitationWavelengthNM
+        public virtual float excitationWavelengthNM
         {
             get
             {
@@ -1324,7 +1325,7 @@ namespace WasatchNET
         // Utilities
         ////////////////////////////////////////////////////////////////////////
 
-        public void regenerateWavelengths()
+        public virtual void regenerateWavelengths()
         {
             wavelengths = Util.generateWavelengths(pixels, eeprom.wavecalCoeffs);
             if (excitationWavelengthNM > 0)
@@ -1575,7 +1576,7 @@ namespace WasatchNET
         // laser
         ////////////////////////////////////////////////////////////////////////
 
-        public LaserPowerResolution laserPowerResolution { get; set; } = LaserPowerResolution.LASER_POWER_RESOLUTION_1000;
+        public virtual LaserPowerResolution laserPowerResolution { get; set; } = LaserPowerResolution.LASER_POWER_RESOLUTION_1000;
 
         /// <param name="perc">a normalized floating-point percentage from 0.0 to 1.0 (100%)</param>
         /// <remarks>
@@ -1586,7 +1587,7 @@ namespace WasatchNET
         /// the laserModulationPulseWidth, laserModulationPulsePeriod and 
         /// laserModulationEnabled properties directly if you wish.
         /// </remarks>
-        public bool setLaserPowerPercentage(float perc)
+        public virtual bool setLaserPowerPercentage(float perc)
         {
             if (perc < 0 || perc > 1)
                 return logger.error("invalid laser power percentage (should be in range (0, 1)): {0}", perc);
@@ -1736,7 +1737,7 @@ namespace WasatchNET
         /// averaging, boxcar and dark subtraction.
         /// </summary>
         /// <returns>The acquired spectrum as an array of doubles</returns>
-        public double[] getSpectrum()
+        public virtual double[] getSpectrum()
         {
             lock (acquisitionLock)
             {
@@ -1785,7 +1786,7 @@ namespace WasatchNET
         }
 
         // just the bytes, ma'am
-        double[] getSpectrumRaw()
+        protected virtual double[] getSpectrumRaw()
         {
             logger.debug("requesting spectrum");
             byte[] buf = null;

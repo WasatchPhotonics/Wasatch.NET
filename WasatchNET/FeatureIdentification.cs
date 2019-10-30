@@ -83,6 +83,10 @@ namespace WasatchNET
                 firmwarePartNum = "170019";
                 firmwareDesc = "ARM USB Board";
             }
+            else if (vid == 0x2457)
+            {
+
+            }
             else
             {
                 logger.error("Unrecognized PID {0:x4}", pid);

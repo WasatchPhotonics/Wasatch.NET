@@ -90,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AcquisitionStatus.cs" />
+    <Compile Include="OceanSpectrometer.cs" />
     <Compile Include="FeatureIdentification.cs" />
     <Compile Include="FPGAOptions.cs" />
     <Compile Include="IDriver.cs" />
@@ -102,6 +103,7 @@
     <Compile Include="IUInt40.cs" />
     <Compile Include="EEPROM.cs" />
     <Compile Include="ParseData.cs" />
+    <Compile Include="SeaBreezeWrapper.cs" />
     <Compile Include="Unpack.cs" />
     <Compile Include="FunkyFloat.cs" />
     <Compile Include="Opcodes.cs" />
