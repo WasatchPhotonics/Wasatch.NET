@@ -255,6 +255,8 @@ software and connect to your spectrometer.
 - [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
 
 # Version History
+- 2019-11-01 2.0.30
+    - added proper DLL checking for OceanSpectrometer opening
 - 2019-10-29 2.0.29
     - added OceanSpectrometer subclass
 	- virtualized Spectrometer class
