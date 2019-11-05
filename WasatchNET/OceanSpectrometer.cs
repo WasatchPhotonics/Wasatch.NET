@@ -22,7 +22,7 @@ namespace WasatchNET
             int errorReader = 0;
             integrationTime_ = SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader) / 1000;
             if (errorReader != 0)
-                integrationTime_ = 8000;
+                integrationTime_ = 80;
         }
 
         override internal bool open()

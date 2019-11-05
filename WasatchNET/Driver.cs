@@ -128,10 +128,11 @@ namespace WasatchNET
 
                 int oceanIndex = 0;
 
-                OceanSpectrometer oceanSpectrometer = new OceanSpectrometer(usbRegistry2, oceanIndex);
 
-                if (SeaBreezeWrapper.IsDllLoaded())
+                try
                 {
+                    OceanSpectrometer oceanSpectrometer = new OceanSpectrometer(usbRegistry2, oceanIndex);
+
                     while (oceanSpectrometer.open())
                     {
                         spectrometers.Add(oceanSpectrometer);
@@ -144,9 +145,11 @@ namespace WasatchNET
                         logger.error("openAllSpectrometers: failed to open {0}", desc2);
                     }
                 }
-                else
+                catch (DllNotFoundException)
+                {
                     logger.info("SeaBreeze does not appear to be installed, not trying to open Ocean Spectrometers");
-
+                }
+                    
             }
 
 
