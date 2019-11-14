@@ -35,7 +35,8 @@ namespace WasatchNET
         Logger logger = Logger.getInstance();
 
         public List<byte[]> pages { get; private set; }
-        
+        public event EventHandler EEPROMChanged;
+
         /////////////////////////////////////////////////////////////////////////       
         //
         // public attributes
@@ -46,43 +47,225 @@ namespace WasatchNET
         // Page 0 
         /////////////////////////////////////////////////////////////////////////       
 
-        public byte format { get; set; }
+        public byte format
+        {
+            get { return _format; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _format = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        byte _format;
         /// <summary>spectrometer model</summary>
-        public string model { get; set; }
+        public string model
+        {
+            get { return _model; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _model = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        string _model;
         /// <summary>spectrometer serialNumber</summary>
-        public string serialNumber { get; set; }
+        public string serialNumber
+        {
+            get { return _serialNumber; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _serialNumber = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        string _serialNumber;
         /// <summary>baud rate (bits/sec) for serial communications</summary>
-        public uint baudRate { get; set; }
+        public uint baudRate
+        {
+            get { return _baudRate; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _baudRate = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        uint _baudRate;
         /// <summary>whether the spectrometer has an on-board TEC for cooling the detector</summary>
-        public bool hasCooling { get; set; }
+        public bool hasCooling
+        {
+            get { return _hasCooling; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _hasCooling = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        bool _hasCooling;
         /// <summary>whether the spectrometer has an on-board battery</summary>
-        public bool hasBattery { get; set; }
+        public bool hasBattery
+        {
+            get { return _hasBattery; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _hasBattery = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        bool _hasBattery;
         /// <summary>whether the spectrometer has an integrated laser</summary>
-        public bool hasLaser { get; set; }
+        public bool hasLaser
+        {
+            get { return _hasLaser; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _hasLaser = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        bool _hasLaser;
         /// <summary>the integral center wavelength of the laser in nanometers, if present</summary>
         /// <remarks>user-writable</remarks>
         /// <see cref="Util.wavelengthsToWavenumbers(double, double[])"/>
-        public ushort excitationNM { get; set; }
+        public ushort excitationNM
+        {
+            get { return _excitationNM; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _excitationNM = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        ushort _excitationNM;
         /// <summary>the slit width in µm</summary>
-        public ushort slitSizeUM { get; set; }
+        public ushort slitSizeUM
+        {
+            get { return _slitSizeUM; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _slitSizeUM = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        ushort _slitSizeUM;
         // these will come with ENG-0034 Rev 4
-        public ushort startupIntegrationTimeMS { get; set; }
-        public short  startupDetectorTemperatureDegC { get; set; }
-        public byte   startupTriggeringMode { get; set; }
-        public float  detectorGain { get; set; }
-        public short  detectorOffset { get; set; }
-        public float  detectorGainOdd { get; set; }
-        public short  detectorOffsetOdd { get; set; }
+        public ushort startupIntegrationTimeMS
+        {
+            get { return _startupIntegrationTimeMS; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _startupIntegrationTimeMS = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        ushort _startupIntegrationTimeMS;
+        public short  startupDetectorTemperatureDegC
+        {
+            get { return _startupDetectorTemperatureDegC; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _startupDetectorTemperatureDegC = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        short _startupDetectorTemperatureDegC;
+        public byte   startupTriggeringMode
+        {
+            get { return _startupTriggeringMode; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _startupTriggeringMode = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        byte _startupTriggeringMode;
+        public float  detectorGain
+        {
+            get { return _detectorGain; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _detectorGain = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        float _detectorGain;
+        public short  detectorOffset
+        {
+            get { return _detectorOffset; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _detectorOffset = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        short _detectorOffset;
+        public float  detectorGainOdd
+        {
+            get { return _detectorGainOdd; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _detectorGainOdd = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        float _detectorGainOdd;
+        public short  detectorOffsetOdd
+        {
+            get { return _detectorOffsetOdd; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _detectorOffsetOdd = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        short _detectorOffsetOdd;
         /////////////////////////////////////////////////////////////////////////       
         // Page 1
         /////////////////////////////////////////////////////////////////////////       
@@ -97,7 +280,19 @@ namespace WasatchNET
         /// </remarks>
         /// <see cref="Spectrometer.wavelengths"/>
         /// <see cref="Util.generateWavelengths(uint, float[])"/>
-        public float[] wavecalCoeffs { get; set; }
+        public float[] wavecalCoeffs
+        {
+            get { return _wavecalCoeffs; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _wavecalCoeffs = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        float[] _wavecalCoeffs;
 
         /// <summary>
         /// These are used to convert the user's desired setpoint in degrees 
@@ -112,10 +307,45 @@ namespace WasatchNET
         /// Note that the TEC is a "write-only" device: you can tell it what temperature you
         /// WANT, but you can't read what temperature it IS.  (For that, use the thermistor.)
         /// </remarks>
-        public float[] degCToDACCoeffs { get; set; }
-        public short detectorTempMin { get; set; }
-        public short detectorTempMax { get; set; }
+        public float[] degCToDACCoeffs
+        {
+            get { return _degCToDACCoeffs; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _degCToDACCoeffs = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        float[] _degCToDACCoeffs;
+        public short detectorTempMin
+        {
+            get { return _detectorTempMin; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _detectorTempMin = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        short _detectorTempMin;
+        public short detectorTempMax
+        {
+            get { return _detectorTempMax; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _detectorTempMax = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        short _detectorTempMax;
         /// <summary>
         /// These are used to convert 12-bit raw ADC temperature readings from the detector
         /// thermistor into degrees Celsius.
@@ -132,42 +362,215 @@ namespace WasatchNET
         /// are for the detector thermistor; the laser thermistor uses hard-coded coefficients
         /// which aren't calibrated or stored on the EEPROM.
         /// </remarks>
-        public float[] adcToDegCCoeffs { get; set; }
-        public short thermistorResistanceAt298K { get; set; }
-        public short thermistorBeta { get; set; }
+        public float[] adcToDegCCoeffs
+        {
+            get { return _adcToDegCCoeffs; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _adcToDegCCoeffs = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
 
+        float[] _adcToDegCCoeffs;
+        public short thermistorResistanceAt298K
+        {
+            get { return _thermistorResistanceAt298K; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _thermistorResistanceAt298K = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        short _thermistorResistanceAt298K;
+        public short thermistorBeta
+        {
+            get { return _thermistorBeta; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _thermistorBeta = value;
+                handler?.Invoke(this, new EventArgs());
+                
+            }
+        }
+
+        short _thermistorBeta;
         /// <summary>when the unit was last calibrated (unstructured 12-char field)</summary>
         /// <remarks>user-writable</remarks>
-        public string calibrationDate { get; set; }
+        public string calibrationDate
+        {
+            get { return _calibrationDate; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _calibrationDate = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
 
+        string _calibrationDate;
         /// <summary>whom the unit was last calibrated by (unstructured 3-char field)</summary>
         /// <remarks>user-writable</remarks>
-        public string calibrationBy { get; set; }
+        public string calibrationBy
+        {
+            get { return _calibrationBy; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _calibrationBy = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
 
+        string _calibrationBy;
         /////////////////////////////////////////////////////////////////////////       
         // Page 2
         /////////////////////////////////////////////////////////////////////////       
 
-        public string detectorName { get; set; }
-        public ushort activePixelsHoriz { get; set; }
-        public ushort activePixelsVert { get; set; }
-        public uint minIntegrationTimeMS { get; set; }
-        public uint maxIntegrationTimeMS { get; set; }
-        public ushort actualPixelsHoriz { get; set; }
+        public string detectorName
+        {
+            get { return _detectorName; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _detectorName = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
 
+        string _detectorName;
+        public ushort activePixelsHoriz
+        {
+            get { return _activePixelsHoriz; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _activePixelsHoriz = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        ushort _activePixelsHoriz;
+        public ushort activePixelsVert
+        {
+            get { return _activePixelsVert; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _activePixelsVert = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        ushort _activePixelsVert;
+        public uint minIntegrationTimeMS
+        {
+            get { return _minIntegrationTimeMS; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _minIntegrationTimeMS = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        uint _minIntegrationTimeMS;
+        public uint maxIntegrationTimeMS
+        {
+            get { return _maxIntegrationTimeMS; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _maxIntegrationTimeMS = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        uint _maxIntegrationTimeMS;
+        public ushort actualPixelsHoriz
+        {
+            get { return _actualPixelsHoriz; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _actualPixelsHoriz = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        ushort _actualPixelsHoriz;
         // writable
-        public ushort ROIHorizStart { get; set; }
-        public ushort ROIHorizEnd { get; set; }
-        public ushort[] ROIVertRegionStart { get; set; }
-        public ushort[] ROIVertRegionEnd { get; set; }
+        public ushort ROIHorizStart
+        {
+            get { return _ROIHorizEnd; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _ROIHorizStart = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
 
+        ushort _ROIHorizStart;
+        public ushort ROIHorizEnd
+        {
+            get { return _ROIHorizEnd; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _ROIHorizEnd = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        ushort _ROIHorizEnd;
+        public ushort[] ROIVertRegionStart
+        {
+            get { return _ROIVertRegionStart; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _ROIVertRegionStart = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        ushort[] _ROIVertRegionStart;
+        public ushort[] ROIVertRegionEnd
+        {
+            get { return _ROIVertRegionEnd; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _ROIVertRegionEnd = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        ushort[] _ROIVertRegionEnd;
         /// <summary>
         /// These are reserved for a non-linearity calibration,
         /// but may be harnessed by users for other purposes.
         /// </summary>
         /// <remarks>user-writable</remarks>
-        public float[] linearityCoeffs { get; set; }
+        public float[] linearityCoeffs
+        {
+            get { return _linearityCoeffs; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _linearityCoeffs = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
 
+        float[] _linearityCoeffs;
         /////////////////////////////////////////////////////////////////////////       
         // Page 3
         /////////////////////////////////////////////////////////////////////////       
@@ -176,11 +579,54 @@ namespace WasatchNET
         // public int laserLifetimeOperationMinutes { get; private set; }
         // public short laserTemperatureMax { get; private set; }
         // public short laserTemperatureMin { get; private set; }
-        public float maxLaserPowerMW { get; set; }
-        public float minLaserPowerMW { get; set; }
-        public float laserExcitationWavelengthNMFloat { get; set; }
-        public float[] laserPowerCoeffs { get; set; }
+        public float maxLaserPowerMW
+        {
+            get { return _maxLaserPowerMW; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _maxLaserPowerMW = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
 
+        float _maxLaserPowerMW;
+        public float minLaserPowerMW
+        {
+            get { return _minLaserPowerMW; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _minLaserPowerMW = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        float _minLaserPowerMW;
+        public float laserExcitationWavelengthNMFloat
+        {
+            get { return _laserExcitationWavelengthNMFloat; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _laserExcitationWavelengthNMFloat = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        float _laserExcitationWavelengthNMFloat;
+        public float[] laserPowerCoeffs
+        {
+            get { return _laserPowerCoeffs; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _laserPowerCoeffs = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        float[] _laserPowerCoeffs;
         /////////////////////////////////////////////////////////////////////////       
         // Page 4
         /////////////////////////////////////////////////////////////////////////       
@@ -195,7 +641,18 @@ namespace WasatchNET
         ///
         /// EEPROM versions prior to 4 only had 63 bytes of user data.
         /// </remarks>
-        public byte[] userData { get; set; } 
+        public byte[] userData
+        {
+            get { return _userData; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _userData = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        byte[] _userData;
 
         /// <summary>
         /// a stringified version of the 64-byte raw data block provided by userData
@@ -210,11 +667,13 @@ namespace WasatchNET
 
             set
             {
+                EventHandler handler = EEPROMChanged;
                 for (int i = 0; i < userData.Length; i++)
                     if (i < value.Length)
                         userData[i] = (byte) value[i];
                     else
                         userData[i] = 0;
+                handler?.Invoke(this, new EventArgs());
             }
         }
 
@@ -227,14 +686,34 @@ namespace WasatchNET
         /// to skip or "average over" during spectral post-processing.
         /// </summary>
         /// <remarks>bad pixels are identified by pixel number; empty slots are indicated by -1</remarks>
-        public short[] badPixels { get; set; }
+        public short[] badPixels
+        {
+            get { return _badPixels; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _badPixels = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
 
+        short[] _badPixels;
         // read-only containers for expedited processing
         public List<short> badPixelList { get; private set; }
         public SortedSet<short> badPixelSet { get; private set; }
 
-        public string productConfiguration { get; set; }
+        public string productConfiguration
+        {
+            get { return _productConfiguration; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _productConfiguration = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
 
+        string _productConfiguration;
         /////////////////////////////////////////////////////////////////////////       
         // Pages 6-7 unallocated
         /////////////////////////////////////////////////////////////////////////       
