@@ -839,14 +839,17 @@ namespace WasatchNET
         {
             get
             {
-                if (fpgaOptions.hasAreaScan)
+                
+                if (!fpgaOptions.hasAreaScan)
                 {
                     logger.debug("laserRampingEnabled feature currently disabled");
                     return false; // disabled
                 }
                 else
                 {
-                    return Unpack.toBool(getCmd(Opcodes.GET_AREA_SCAN_ENABLE, 1));
+                    //byte[] pack= getCmd(Opcodes.GET_AREA_SCAN_ENABLE, 1);
+                    byte[] pack = getCmd(Opcodes.GET_AREA_SCAN_ENABLE, 1);
+                    return Unpack.toBool(pack);
                 }
             }
             set
