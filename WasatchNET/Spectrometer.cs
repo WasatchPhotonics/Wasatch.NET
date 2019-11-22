@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
+using MPSSELight;
+using FTD2XX_NET;
 
 namespace WasatchNET
 {

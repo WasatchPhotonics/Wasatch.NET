@@ -1031,6 +1031,139 @@ namespace WasatchNET
                 return true;
             }
 
+            else if (spectrometer is TetonSpectrometer)
+            {
+
+                TetonSpectrometer a = spectrometer as TetonSpectrometer;
+                model = "";
+
+                /*
+                try
+                {
+                    serialNumber = a.wrapper.readEEPROMSlot(0);
+                }
+
+                catch (Exception e)
+                {
+                    serialNumber = "";
+                }
+                */
+
+                serialNumber = a.serialNumber;
+
+                /*
+                try
+                {
+                    baudRate = System.Convert.ToUInt32(a.wrapper.readEEPROMSlot(18));
+                }
+                catch (Exception e)
+                {
+                    baudRate = 0;
+                }
+                */
+
+                baudRate = 0;
+
+                hasCooling = false;
+                hasBattery = true;
+                hasLaser = false;
+
+                excitationNM = 0;
+
+                //string info = a.wrapper.readEEPROMSlot(15);
+                slitSizeUM = 0;//System.Convert.ToUInt16(info.Substring(5));
+                //slitSizeUM = ParseData.toUInt16(pages[0], 41);
+
+                //string test = a.wrapper.readEEPROMSlot(1);
+
+                byte[] buffer = new byte[16];
+                int errorReader = 0;
+
+                //SeaBreezeWrapper.seabreeze_read_eeprom_slot(a.specIndex, ref errorReader, 1, ref buffer, 16);
+
+                string test = buffer.ToString();
+
+                /*
+                try
+                {
+                    wavecalCoeffs[0] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(1));
+                    wavecalCoeffs[1] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(2));
+                    wavecalCoeffs[2] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(3));
+                    wavecalCoeffs[3] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(4));
+                }
+                */
+
+                //catch(Exception e)
+                //{
+                //    wavecalCoeffs = new float[]{ 0, 1, 0, 0 };
+                //}
+
+                //startupIntegrationTimeMS = (ushort)a.wrapper.getIntegrationTimeMillisec();//ParseData.toUInt16(pages[0], 43);
+                startupIntegrationTimeMS = 0;//(ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
+                double temp = 0;//SeaBreezeWrapper.seabreeze_read_tec_temperature(a.specIndex, ref errorReader);//a.wrapper.getSpectrometerTemperatureDegreesC();
+                startupDetectorTemperatureDegC = (short)temp;
+                if (startupDetectorTemperatureDegC >= 99)
+                    startupDetectorTemperatureDegC = 48;
+                else if (startupDetectorTemperatureDegC <= -50)
+                    startupDetectorTemperatureDegC = -48;
+                startupTriggeringMode = 2; //ParseData.toUInt8(pages[0], 47);
+                detectorGain = 0;//ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
+                detectorOffset = 0;//ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
+                detectorGainOdd = 0;// ParseData.toFloat(pages[0], 54); // InGaAs-only
+                detectorOffsetOdd = 0;//ParseData.toInt16(pages[0], 58); // InGaAs-only
+
+                degCToDACCoeffs[0] = 0;
+                degCToDACCoeffs[1] = 0;
+                degCToDACCoeffs[2] = 0;
+                detectorTempMax = 0;
+                detectorTempMin = 0;
+                adcToDegCCoeffs[0] = 0;
+                adcToDegCCoeffs[1] = 0;
+                adcToDegCCoeffs[2] = 0;
+                thermistorResistanceAt298K = 0;
+                thermistorBeta = 0;
+                calibrationDate = "01/01/2020";
+                calibrationBy = "RSC";
+
+                detectorName = "";
+                activePixelsHoriz = (ushort)a.pixels;//ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
+                activePixelsVert = 0;//ParseData.toUInt16(pages[2], 19);
+                minIntegrationTimeMS = 4;//(ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);//(ushort)a.wrapper.getMinIntegrationTimeMillisec();//ParseData.toUInt16(pages[2], 21); // will overwrite if 
+                maxIntegrationTimeMS = 1000000;//(ushort)a.wrapper.getMaxIntegrationTimeMillisec();//ParseData.toUInt16(pages[2], 23); //   format >= 5
+                actualPixelsHoriz = (ushort)a.pixels;//ParseData.toUInt16(pages[2], 25);
+                ROIHorizStart = 0; //ParseData.toUInt16(pages[2], 27);
+                ROIHorizEnd = 0; //ParseData.toUInt16(pages[2], 29);
+                ROIVertRegionStart[0] = 0;//ParseData.toUInt16(pages[2], 31);
+                ROIVertRegionEnd[0] = 0;//ParseData.toUInt16(pages[2], 33);
+                ROIVertRegionStart[1] = 0;//ParseData.toUInt16(pages[2], 35);
+                ROIVertRegionEnd[1] = 0; //ParseData.toUInt16(pages[2], 37);
+                ROIVertRegionStart[2] = 0;//ParseData.toUInt16(pages[2], 39);
+                ROIVertRegionEnd[2] = 0; //ParseData.toUInt16(pages[2], 41);
+                linearityCoeffs[0] = 0;//ParseData.toFloat(pages[2], 43);
+                linearityCoeffs[1] = 0;//ParseData.toFloat(pages[2], 47);
+                linearityCoeffs[2] = 0;// ParseData.toFloat(pages[2], 51);
+                linearityCoeffs[3] = 0;//ParseData.toFloat(pages[2], 55);
+                linearityCoeffs[4] = 0;// ParseData.toFloat(pages[2], 59);
+
+                laserPowerCoeffs[0] = 0;// ParseData.toFloat(pages[3], 12);
+                laserPowerCoeffs[1] = 0;//ParseData.toFloat(pages[3], 16);
+                laserPowerCoeffs[2] = 0;//ParseData.toFloat(pages[3], 20);
+                laserPowerCoeffs[3] = 0;//ParseData.toFloat(pages[3], 24);
+                maxLaserPowerMW = 0;//ParseData.toFloat(pages[3], 28);
+                minLaserPowerMW = 0;//ParseData.toFloat(pages[3], 32);
+
+                //!!!!!!!
+                //!!!!!!!
+                laserExcitationWavelengthNMFloat = 0.0f;//830.0f;//ParseData.toFloat(pages[3], 36);
+
+                userData = new byte[63];
+
+                badPixelSet = new SortedSet<short>();
+                productConfiguration = "";
+
+                return true;
+            }
+
             else
             {
                 pages = new List<byte[]>();
