@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
+using MPSSELight;
+using FTD2XX_NET;
 
 namespace WasatchNET
 {
@@ -801,8 +803,13 @@ namespace WasatchNET
         {
             get
             {
-                logger.debug("laserRampingEnabled feature currently disabled");
-                return false; // disabled
+                if (fpgaOptions.hasAreaScan)
+                {
+                    logger.debug("laserRampingEnabled feature currently disabled");
+                    return false; // disabled
+                }
+                else
+                    return false;
                 /*
                 if (featureIdentification.boardType != BOARD_TYPES.ARM)
                     return false;
@@ -830,7 +837,30 @@ namespace WasatchNET
         }
         // bool laserRampingEnabled_;
 
-        public bool areaScanEnabled { get; set; }
+        public bool areaScanEnabled
+        {
+            get
+            {
+                
+                if (!fpgaOptions.hasAreaScan)
+                {
+                    logger.debug("laserRampingEnabled feature currently disabled");
+                    return false; // disabled
+                }
+                else
+                {
+                    //byte[] pack= getCmd(Opcodes.GET_AREA_SCAN_ENABLE, 1);
+                    byte[] pack = getCmd(Opcodes.GET_AREA_SCAN_ENABLE, 1);
+                    return Unpack.toBool(pack);
+                }
+            }
+            set
+            {
+                sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((_areaScanEnabled = value) ? 1 : 0));
+            }
+        }
+
+        bool _areaScanEnabled;
 
         public virtual float laserTemperatureDegC
         {

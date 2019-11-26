@@ -255,6 +255,9 @@ software and connect to your spectrometer.
 - [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
 
 # Version History
+- 2019-11-26 2.1.0
+    - added support for SPI spectrometers
+	- added event raising for alterations to "Virtual" EEPROM
 - 2019-11-01 2.0.30
     - added proper DLL checking for OceanSpectrometer opening
 - 2019-10-29 2.0.29

@@ -76,8 +76,14 @@
     <AssemblyOriginatorKeyFile>WasatchNETStrongName.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FTD2XX_NET">
+      <HintPath>..\lib\FTD2XX_NET.dll</HintPath>
+    </Reference>
     <Reference Include="LibUsbDotNet">
       <HintPath>..\lib\LibUsbDotNet.dll</HintPath>
+    </Reference>
+    <Reference Include="MPSSELight">
+      <HintPath>..\lib\MPSSELight.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -104,6 +110,7 @@
     <Compile Include="EEPROM.cs" />
     <Compile Include="ParseData.cs" />
     <Compile Include="SeaBreezeWrapper.cs" />
+    <Compile Include="SPISpectrometer.cs" />
     <Compile Include="Unpack.cs" />
     <Compile Include="FunkyFloat.cs" />
     <Compile Include="Opcodes.cs" />

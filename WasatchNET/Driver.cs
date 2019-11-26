@@ -115,10 +115,16 @@ namespace WasatchNET
                 }
             }
 
+            UsbRegistry usbRegistry2;
+            SPISpectrometer teton = new SPISpectrometer(null);
+            bool opened = teton.open();
+            if (opened)
+                spectrometers.Add(teton);
+            
 
             if (deviceRegistries.Count > 0 && System.Environment.Is64BitProcess)
             {
-                UsbRegistry usbRegistry2 = deviceRegistries[0];//deviceRegistries.FindLast();
+                usbRegistry2 = deviceRegistries[0];//deviceRegistries.FindLast();
 
                 String desc2 = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
                     usbRegistry2.Vid,
