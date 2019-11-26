@@ -253,6 +253,7 @@ namespace WinFormDemo
 
                 buttonInitialize.Enabled = false;
                 groupBoxSpectrometers.Enabled = true;
+                checkBoxSPIEnable.Enabled = false;
 
                 comboBoxSpectrometer.SelectedIndex = 0;
 
@@ -644,6 +645,11 @@ namespace WinFormDemo
 
             currentSpectrometer.triggerSource = checkBoxExternalTriggerSource.Checked ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
             logger.debug("GUI: trigger source now {0}", currentSpectrometer.triggerSource);
+        }
+
+        private void checkBoxSPIEnable_CheckedChanged(object sender, EventArgs e)
+        {
+            driver.enableSPI = checkBoxSPIEnable.Checked;
         }
     }
 }

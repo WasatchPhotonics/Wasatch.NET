@@ -21,6 +21,7 @@ namespace WasatchNET
     {
         Logger logger { get; }
         string version { get; }
+        bool enableSPI { get; set; }
 
         /// <summary>
         /// Iterate over all discoverable Wasatch Photonics USB spectrometers,
