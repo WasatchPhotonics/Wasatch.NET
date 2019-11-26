@@ -86,7 +86,7 @@ namespace WasatchNET
             // excitationWavelengthNM = 0;  // MZ: can't write EEPROM before instantiating EEPROM in open()
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
             specIndex = index;
-            integrationTimeMS_ = 80; // MZ: why?
+            integrationTimeMS_ = 6; // MZ: should this be 2 or 3?
         }
 
         static byte Calc_CRC_8(byte[] DataArray, int Length)
