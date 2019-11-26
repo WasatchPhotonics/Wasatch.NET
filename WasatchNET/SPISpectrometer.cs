@@ -456,6 +456,10 @@ namespace WasatchNET
         public override ushort detectorTECSetpointRaw
         {
             get => 0;
+            set
+            {
+                logger.error("detectorTECSetpoint not supported via SPI");
+            }
         }
 
         public override float detectorTECSetpointDegC
