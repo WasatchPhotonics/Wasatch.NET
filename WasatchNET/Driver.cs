@@ -116,7 +116,7 @@ namespace WasatchNET
             }
 
             UsbRegistry usbRegistry2;
-            TetonSpectrometer teton = new TetonSpectrometer(null);
+            SPISpectrometer teton = new SPISpectrometer(null);
             bool opened = teton.open();
             if (opened)
                 spectrometers.Add(teton);

@@ -10,7 +10,7 @@ using FTD2XX_NET;
 
 namespace WasatchNET
 {
-    public class TetonSpectrometer : Spectrometer
+    public class SPISpectrometer : Spectrometer
     {
         //internal Wrapper wrapper;
         //internal SeaBreezeWrapper wrapper;
@@ -18,6 +18,13 @@ namespace WasatchNET
 
         internal MpsseDevice mpsse;
         internal SpiDevice spi;
+
+        //
+        //  Most of the commands here are GET commands with the set being the same
+        //  command with the MSBit set (for example see GET vs. SET integration time)
+        //
+        //  These commands are pulled from the ENG-0072 Documentation
+        //
 
         const byte START_CMD = 0x3C;
         const byte END_CMD = 0x3E;
@@ -74,7 +81,7 @@ namespace WasatchNET
         const byte SET_INTEGRATION_TIME = 0x91;
 
 
-        internal TetonSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
+        internal SPISpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             excitationWavelengthNM = 0;
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
@@ -167,7 +174,7 @@ namespace WasatchNET
             string ftdi = FtdiInventory.DeviceListInfo();
             if (ftdi.Length == 0)
             {
-                logger.info("Unable to find any Teton spectrometer, try again");
+                logger.info("Unable to find any SPI spectrometer, try again");
                 return false;
             }
             else
@@ -209,6 +216,9 @@ namespace WasatchNET
                     return false;
                 }
 
+                // @todo
+                // All supported SPI spectrometers have 1024 pixels, and the API does not yet provide an instruction 
+                // for specifying pixel count
                 pixels = 1024;
 
                 if (!eeprom.read())
@@ -221,7 +231,7 @@ namespace WasatchNET
 
                 regenerateWavelengths();
 
-                logger.info("Successfully connected to Teton Spectrometer through adafruit board with serial number {0}", devSerialNumber);
+                logger.info("Successfully connected to SPI Spectrometer through adafruit board with serial number {0}", devSerialNumber);
 
                 return true;
             }
@@ -420,7 +430,7 @@ namespace WasatchNET
             get => TRIGGER_SOURCE.EXTERNAL;
             set
             {
-
+                logger.error("SETTING NON EXTERNAL TRIGGER NOT SUPPORTED IN SPI SPECTROMETERS");
             }
         }
 
@@ -484,7 +494,6 @@ namespace WasatchNET
             {
                 detectorTECSetpointDegC_ = value;
                 int errorReader = 0;
-                SeaBreezeWrapper.seabreeze_set_tec_temperature(specIndex, ref errorReader, detectorTECSetpointDegC_);
             }
 
         }

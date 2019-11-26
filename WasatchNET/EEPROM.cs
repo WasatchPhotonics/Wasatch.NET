@@ -1031,10 +1031,10 @@ namespace WasatchNET
                 return true;
             }
 
-            else if (spectrometer is TetonSpectrometer)
+            else if (spectrometer is SPISpectrometer)
             {
 
-                TetonSpectrometer a = spectrometer as TetonSpectrometer;
+                SPISpectrometer a = spectrometer as SPISpectrometer;
                 model = "";
 
                 /*
