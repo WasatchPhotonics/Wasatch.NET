@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2019-11-27 2.1.2
+    - removed Driver.enableSPI
+    - added lib/{x86,x64}/FTD2XX.dll, updated post-build events
 - 2019-11-26 2.1.1
     - added Driver.enableSPI
 - 2019-11-26 2.1.0

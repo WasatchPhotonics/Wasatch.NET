@@ -343,7 +343,6 @@ namespace WasatchNET
             get { return boxcarHalfWidth_; }
             set { lock (acquisitionLock) boxcarHalfWidth_ = value; }
         }
-        uint boxcarHalfWidth_;
 
         public override uint integrationTimeMS
         {
@@ -374,7 +373,6 @@ namespace WasatchNET
                 }
             }
         }
-        long integrationTimeMS_;
 
         public override bool hasLaser
         {
@@ -437,16 +435,15 @@ namespace WasatchNET
         {
             get
             {
-                return tecEnabled_;
+                return detectorTECEnabled_;
                 //return wrapper.getSpectrometerTECEnabled();
             }
             set
             {
                 //wrapper.setSpectrometerTECEnabled(value);
-                tecEnabled_ = value;
+                detectorTECEnabled_ = value;
             }
         }
-        bool tecEnabled_ = false;
 
         public override float detectorTemperatureDegC
         {

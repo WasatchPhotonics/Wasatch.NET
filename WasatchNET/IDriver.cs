@@ -23,20 +23,6 @@ namespace WasatchNET
         string version { get; }
 
         /// <summary>
-        /// If set to false (the default), Wasatch.NET will not attempt to 
-        /// enumerate Wasatch Photonics SPI spectrometers via the FTDI USB-SPI 
-        /// bridge. Set this to true (before calling openAllSpectrometers()) if 
-        /// you DO want to search for SPI-based spectrometers.  
-        ///
-        /// Note that if set to true, but the FTDI drivers are not installed, you 
-        /// will receive on-screen warning dialogs.  These on-screen notifications 
-        /// come from the FTD2XX_NET library, and are not something that Wasatch
-        /// can disable (AFAIK).
-        /// </summary>
-        /// <see>README-SPI.md</see>
-        bool enableSPI { get; set; }
-
-        /// <summary>
         /// Iterate over all discoverable Wasatch Photonics USB spectrometers,
         /// and return the number found. Individual spectrometers can then be
         /// accessed via the getSpectrometer(index) call.
