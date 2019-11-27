@@ -21,26 +21,8 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_1924307B44DD4B0928423CF7B09E4B68"
-        "OwnerKey" = "8:_EFC39CDF06D24A5FBCCA8C5D1146F680"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_367EAE3D372B428AB545AABEF84C33C6"
         "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_3C4C56B6EC879E0CC4A1AE53B1A80A65"
-        "OwnerKey" = "8:_536AABD192384650B4C61ED6D3197391"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_3C4C56B6EC879E0CC4A1AE53B1A80A65"
-        "OwnerKey" = "8:_AF7CDEF8890FB1BD18A20A0B590E1776"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -63,24 +45,6 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_792DBC7D57C65ABF0469B377F27351E8"
-        "OwnerKey" = "8:_536AABD192384650B4C61ED6D3197391"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_792DBC7D57C65ABF0469B377F27351E8"
-        "OwnerKey" = "8:_1924307B44DD4B0928423CF7B09E4B68"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_792DBC7D57C65ABF0469B377F27351E8"
-        "OwnerKey" = "8:_3C4C56B6EC879E0CC4A1AE53B1A80A65"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_819E35098E194D5EAC7750816F08B6ED"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
@@ -93,32 +57,8 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_969EEDBB2F0A0D963FB6A38243313D6B"
-        "OwnerKey" = "8:_EFC39CDF06D24A5FBCCA8C5D1146F680"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_A5DC311DBFB64418B523203E2E47A265"
         "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_AA2C9DBEE9A0C8149978889FE76E717D"
-        "OwnerKey" = "8:_EFC39CDF06D24A5FBCCA8C5D1146F680"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_AF7CDEF8890FB1BD18A20A0B590E1776"
-        "OwnerKey" = "8:_EFC39CDF06D24A5FBCCA8C5D1146F680"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_CC885D5B9A6F76074406CEC262817773"
-        "OwnerKey" = "8:_EFC39CDF06D24A5FBCCA8C5D1146F680"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -135,18 +75,6 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_F68A269BE5E0B240317BB6F8148C5D55"
-        "OwnerKey" = "8:_536AABD192384650B4C61ED6D3197391"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_F68A269BE5E0B240317BB6F8148C5D55"
-        "OwnerKey" = "8:_AF7CDEF8890FB1BD18A20A0B590E1776"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_E2B2E2EFA153E28D59A98676895FE84A"
         "MsmSig" = "8:_UNDEFINED"
@@ -154,55 +82,7 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_AF7CDEF8890FB1BD18A20A0B590E1776"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_1924307B44DD4B0928423CF7B09E4B68"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_969EEDBB2F0A0D963FB6A38243313D6B"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_AA2C9DBEE9A0C8149978889FE76E717D"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_CC885D5B9A6F76074406CEC262817773"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
         "OwnerKey" = "8:_EFC39CDF06D24A5FBCCA8C5D1146F680"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_3C4C56B6EC879E0CC4A1AE53B1A80A65"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_F68A269BE5E0B240317BB6F8148C5D55"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_792DBC7D57C65ABF0469B377F27351E8"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -332,37 +212,6 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_1924307B44DD4B0928423CF7B09E4B68"
-            {
-            "AssemblyRegister" = "3:1"
-            "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:MPSSELight, Version=0.5.1.0, Culture=neutral, processorArchitecture=MSIL"
-                "ScatterAssemblies"
-                {
-                    "_1924307B44DD4B0928423CF7B09E4B68"
-                    {
-                    "Name" = "8:MPSSELight.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:MPSSELight.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_367EAE3D372B428AB545AABEF84C33C6"
             {
             "SourcePath" = "8:..\\scripts\\RegisterDLL32.bat"
@@ -381,37 +230,6 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
-            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_3C4C56B6EC879E0CC4A1AE53B1A80A65"
-            {
-            "AssemblyRegister" = "3:1"
-            "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:MPSSELight, Version=0.5.1.0, Culture=neutral, processorArchitecture=MSIL"
-                "ScatterAssemblies"
-                {
-                    "_3C4C56B6EC879E0CC4A1AE53B1A80A65"
-                    {
-                    "Name" = "8:MPSSELight.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:MPSSELight.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_1F33B1D1D0B947AF9650869C56F5211A"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4A0F6CBFC24D46B79170085C56034154"
@@ -454,37 +272,6 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_792DBC7D57C65ABF0469B377F27351E8"
-            {
-            "AssemblyRegister" = "3:1"
-            "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:FTD2XX_NET, Version=1.0.14.0, Culture=neutral, processorArchitecture=MSIL"
-                "ScatterAssemblies"
-                {
-                    "_792DBC7D57C65ABF0469B377F27351E8"
-                    {
-                    "Name" = "8:FTD2XX_NET.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:FTD2XX_NET.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_1F33B1D1D0B947AF9650869C56F5211A"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_819E35098E194D5EAC7750816F08B6ED"
             {
             "SourcePath" = "8:..\\libusb_drivers\\amd64\\libusb0.dll"
@@ -525,37 +312,6 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_969EEDBB2F0A0D963FB6A38243313D6B"
-            {
-            "AssemblyRegister" = "3:1"
-            "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:LibUsbDotNet, Version=2.2.9.110, Culture=neutral, processorArchitecture=MSIL"
-                "ScatterAssemblies"
-                {
-                    "_969EEDBB2F0A0D963FB6A38243313D6B"
-                    {
-                    "Name" = "8:LibUsbDotNet.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:LibUsbDotNet.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A5DC311DBFB64418B523203E2E47A265"
             {
             "SourcePath" = "8:..\\libusb_drivers\\license\\libusb0\\installer_license.txt"
@@ -576,99 +332,6 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_AA2C9DBEE9A0C8149978889FE76E717D"
-            {
-            "AssemblyRegister" = "3:1"
-            "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:FTD2XX_NET, Version=1.0.14.0, Culture=neutral, processorArchitecture=MSIL"
-                "ScatterAssemblies"
-                {
-                    "_AA2C9DBEE9A0C8149978889FE76E717D"
-                    {
-                    "Name" = "8:FTD2XX_NET.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:FTD2XX_NET.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
-            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_AF7CDEF8890FB1BD18A20A0B590E1776"
-            {
-            "AssemblyRegister" = "3:1"
-            "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=2.0.30.0, Culture=neutral, processorArchitecture=MSIL"
-                "ScatterAssemblies"
-                {
-                    "_AF7CDEF8890FB1BD18A20A0B590E1776"
-                    {
-                    "Name" = "8:WasatchNET.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:WasatchNET.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
-            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_CC885D5B9A6F76074406CEC262817773"
-            {
-            "AssemblyRegister" = "3:1"
-            "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL"
-                "ScatterAssemblies"
-                {
-                    "_CC885D5B9A6F76074406CEC262817773"
-                    {
-                    "Name" = "8:Newtonsoft.Json.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:Newtonsoft.Json.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_DCACEEAAFB7F429FA1AEB24AF0EBCFD5"
             {
             "SourcePath" = "8:..\\libusb_drivers\\x86\\libusb0.sys"
@@ -687,37 +350,6 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
-            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_F68A269BE5E0B240317BB6F8148C5D55"
-            {
-            "AssemblyRegister" = "3:1"
-            "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:LibUsbDotNet, Version=2.2.9.110, Culture=neutral, processorArchitecture=MSIL"
-                "ScatterAssemblies"
-                {
-                    "_F68A269BE5E0B240317BB6F8148C5D55"
-                    {
-                    "Name" = "8:LibUsbDotNet.dll"
-                    "Attributes" = "3:512"
-                    }
-                }
-            "SourcePath" = "8:LibUsbDotNet.dll"
-            "TargetName" = "8:"
-            "Tag" = "8:"
-            "Folder" = "8:_1F33B1D1D0B947AF9650869C56F5211A"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
         }
@@ -864,15 +496,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Wasatch.NET"
-        "ProductCode" = "8:{4D698F9C-E69E-4CC6-AE68-B579FD3DBB45}"
-        "PackageCode" = "8:{CDA0DEC3-D867-48B6-83D3-D2E9FC0AFB1C}"
+        "ProductCode" = "8:{E845E475-42F8-407B-8073-D82EA879B5F6}"
+        "PackageCode" = "8:{530F9F52-C06F-4734-8396-AD411F30C1ED}"
         "UpgradeCode" = "8:{F46C8BF0-A35E-4D7F-A611-252DBD4C6D58}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:2.1.0"
+        "ProductVersion" = "8:2.1.1"
         "Manufacturer" = "8:Wasatch Photonics"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://wasatchphotonics.com"
@@ -1400,7 +1032,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_536AABD192384650B4C61ED6D3197391"
             {
-            "SourcePath" = "8:..\\WasatchNET\\obj\\Debug\\WasatchNET.dll"
+            "SourcePath" = "8:..\\WasatchNET\\obj\\x86\\Debug\\WasatchNET.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_1F33B1D1D0B947AF9650869C56F5211A"
@@ -1428,7 +1060,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_EFC39CDF06D24A5FBCCA8C5D1146F680"
             {
-            "SourcePath" = "8:..\\WinFormDemo\\obj\\Debug\\WinFormDemo.exe"
+            "SourcePath" = "8:..\\WinFormDemo\\obj\\x86\\Debug\\WinFormDemo.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"

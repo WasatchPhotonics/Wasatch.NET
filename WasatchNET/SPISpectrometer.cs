@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -83,14 +83,10 @@ namespace WasatchNET
 
         internal SPISpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
-            excitationWavelengthNM = 0;
+            // excitationWavelengthNM = 0;  // MZ: can't write EEPROM before instantiating EEPROM in open()
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
             specIndex = index;
-            int errorReader = 0;
-            //integrationTime_ = SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader) / 1000;
-            integrationTime_ = 6;
-            if (errorReader != 0)
-                integrationTime_ = 80;
+            integrationTimeMS_ = 6; // MZ: should this be 2 or 3?
         }
 
         static byte Calc_CRC_8(byte[] DataArray, int Length)
@@ -169,79 +165,82 @@ namespace WasatchNET
         {
             eeprom = new EEPROM(this);
 
-            int errorReader = 0;
-
-            string ftdi = FtdiInventory.DeviceListInfo();
-            if (ftdi.Length == 0)
+            string ftdi = null;
+            try
             {
-                logger.info("Unable to find any SPI spectrometer, try again");
+                ftdi = FtdiInventory.DeviceListInfo();
+            }
+            catch
+            {
+                logger.debug("Unable to generate FTDI list");
                 return false;
             }
-            else
+
+            if (ftdi.Length == 0)
             {
-                string snPattern = "Serial Number: ";
-
-                int start = ftdi.IndexOf(snPattern, 0);
-
-                start = start + 15;
-
-                string devSerialNumber = ftdi.Substring(start, 8);
-
-                MpsseDevice.MpsseParams mpsseParams = new MpsseDevice.MpsseParams();
-                mpsseParams.clockDevisor = 1;
-
-                try
-                {
-                    mpsse = new FT232H(devSerialNumber, mpsseParams);
-                }
-                catch (Exception e)
-                {
-                    logger.info("Unable to create MPSSE connection with board. May be missing drivers");
-                    return false;
-                }
-
-                try
-                {
-                    spi = new SpiDevice(mpsse,
-                             new SpiDevice.SpiParams
-                             {
-                                 Mode = SpiDevice.SpiMode.Mode0,
-                                 ChipSelect = FtdiPin.CS,
-                                 ChipSelectPolicy = SpiDevice.CsPolicy.CsActiveLow
-                             });
-                }
-                catch (Exception e)
-                {
-                    logger.info("Unable to create SPI connection with board. May be missing drivers");
-                    return false;
-                }
-
-                // @todo
-                // All supported SPI spectrometers have 1024 pixels, and the API does not yet provide an instruction 
-                // for specifying pixel count
-                pixels = 1024;
-
-                if (!eeprom.read())
-                {
-                    logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                    //wrapper.shutdown();
-                    close();
-                    return false;
-                }
-
-                regenerateWavelengths();
-
-                logger.info("Successfully connected to SPI Spectrometer through adafruit board with serial number {0}", devSerialNumber);
-
-                return true;
+                logger.debug("Unable to find any SPI spectrometer");
+                return false;
             }
+
+            string snPattern = "Serial Number: ";
+
+            int start = ftdi.IndexOf(snPattern, 0);
+
+            start = start + 15;
+
+            string devSerialNumber = ftdi.Substring(start, 8);
+
+            MpsseDevice.MpsseParams mpsseParams = new MpsseDevice.MpsseParams();
+            mpsseParams.clockDevisor = 1;
+
+            try
+            {
+                mpsse = new FT232H(devSerialNumber, mpsseParams);
+            }
+            catch (Exception e)
+            {
+                logger.info("Unable to create MPSSE connection with board. May be missing drivers");
+                return false;
+            }
+
+            try
+            {
+                spi = new SpiDevice(mpsse,
+                         new SpiDevice.SpiParams
+                         {
+                             Mode = SpiDevice.SpiMode.Mode0,
+                             ChipSelect = FtdiPin.CS,
+                             ChipSelectPolicy = SpiDevice.CsPolicy.CsActiveLow
+                         });
+            }
+            catch (Exception e)
+            {
+                logger.info("Unable to create SPI connection with board. May be missing drivers");
+                return false;
+            }
+
+            // @todo
+            // All supported SPI spectrometers have 1024 pixels, and the API does not yet provide an instruction 
+            // for specifying pixel count
+            pixels = 1024;
+
+            if (!eeprom.read())
+            {
+                logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                //wrapper.shutdown();
+                close();
+                return false;
+            }
+
+            regenerateWavelengths();
+
+            logger.info("Successfully connected to SPI Spectrometer through adafruit board with serial number {0}", devSerialNumber);
+
+            return true;
         }
 
         public override void close()
         {
-            //wrapper.shutdown();
-            //int errorReader = 0;
-            //SeaBreezeWrapper.seabreeze_close_spectrometer(specIndex, ref errorReader);
             mpsse.Dispose();
         }
 
@@ -336,14 +335,7 @@ namespace WasatchNET
 
         public override string serialNumber
         {
-            get
-            {
-                byte[] serial = new byte[16];
-                int errorReader = 0;
-                //wrapper.getSerialNumber(16, ref serial);
-                //SeaBreezeWrapper.seabreeze_get_serial_number(specIndex, ref errorReader, ref serial, 16);
-                return "";//serial.ToString();
-            }
+            get => "";
         }
 
         public override uint boxcarHalfWidth
@@ -357,8 +349,7 @@ namespace WasatchNET
         {
             get
             {
-                //return (uint)wrapper.getIntegrationTimeMillisec();
-                return (uint)integrationTime_;
+                return (uint)integrationTimeMS_;
             }
             set
             {
@@ -367,31 +358,23 @@ namespace WasatchNET
 
                 lock (acquisitionLock)
                 {
-                    /*
-                    int errorReader = 0;
-                    if (value > (SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader) / 1000))
-                    {
-                        SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000));
-                        if (errorReader == 0)
-                            integrationTime_ = value;
-                    }*/
                     byte[] payload = new byte[3];
 
-                    ushort integTime = (ushort)value;
+                    ushort integTimeMS = (ushort)value;
 
-                    payload[0] = (byte)(0xFF & integTime);
-                    payload[1] = (byte)((0xFF00 & integTime) >> 8);
+                    payload[0] = (byte)(0xFF & integTimeMS);
+                    payload[1] = (byte)((0xFF00 & integTimeMS) >> 8);
                     payload[2] = 0x00;
                     byte[] command = wrapCommand(SET_INTEGRATION_TIME, payload, 20);
 
                     byte[] result = spi.readWrite(command);
 
 
-                    integrationTime_ = integTime;
+                    integrationTimeMS_ = integTimeMS;
                 }
             }
         }
-        long integrationTime_;
+        long integrationTimeMS_;
 
         public override bool hasLaser
         {
@@ -467,23 +450,15 @@ namespace WasatchNET
 
         public override float detectorTemperatureDegC
         {
-            get
-            {
-                int errorReader = 0;
-                return 0;
-                //return (float)SeaBreezeWrapper.seabreeze_read_tec_temperature(specIndex, ref errorReader);
-            }
+            get => 0;
         }
 
         public override ushort detectorTECSetpointRaw
         {
-            get
-            {
-                return 0;
-            }
+            get => 0;
             set
             {
-
+                logger.error("detectorTECSetpoint not supported via SPI");
             }
         }
 
@@ -493,17 +468,13 @@ namespace WasatchNET
             set
             {
                 detectorTECSetpointDegC_ = value;
-                int errorReader = 0;
             }
 
         }
 
         public override ushort secondaryADC
         {
-            get
-            {
-                return 0;
-            }
+            get => 0;
         }
 
         public override string firmwareRevision => "";
@@ -512,15 +483,7 @@ namespace WasatchNET
 
         public override float excitationWavelengthNM
         {
-            get
-            {
-                return eeprom.laserExcitationWavelengthNMFloat;
-            }
-            set
-            {
-
-            }
+            get => eeprom.laserExcitationWavelengthNMFloat;
         }
-
     }
 }

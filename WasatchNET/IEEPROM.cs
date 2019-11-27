@@ -109,7 +109,10 @@ namespace WasatchNET
         ushort actualPixelsHoriz { get; set; }
 
         // writable
+
+        /// <summary>The first valid, usable pixel on the detector</summary>
         ushort ROIHorizStart { get; set; }
+        /// <summary>The last valid, usable pixel on the detector (NOT the first INVALID pixel)</summary>
         ushort ROIHorizEnd { get; set; }
         ushort[] ROIVertRegionStart { get; set; }
         ushort[] ROIVertRegionEnd { get; set; }

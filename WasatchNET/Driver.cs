@@ -21,6 +21,7 @@ namespace WasatchNET
 
         public Logger logger { get; } = Logger.getInstance();
         public string version { get; }
+        public bool enableSPI { get; set; } = false;
 
         ////////////////////////////////////////////////////////////////////////
         // static methods
@@ -63,6 +64,10 @@ namespace WasatchNET
             UsbDevice.ForceLegacyLibUsb = false;
 
             UsbDevice.UsbErrorEvent += OnUsbError;
+
+            ////////////////////////////////////////////////////////////////////
+            // Add Wasatch Photonics USB spectrometers
+            ////////////////////////////////////////////////////////////////////
 
             UsbRegDeviceList deviceRegistries = UsbDevice.AllDevices;
             foreach (UsbRegistry usbRegistry in deviceRegistries)
@@ -115,17 +120,26 @@ namespace WasatchNET
                 }
             }
 
-            UsbRegistry usbRegistry2;
-            SPISpectrometer teton = new SPISpectrometer(null);
-            bool opened = teton.open();
-            if (opened)
-                spectrometers.Add(teton);
-            
+            ////////////////////////////////////////////////////////////////////
+            // Add Wasatch Photonics SPI spectrometers
+            ////////////////////////////////////////////////////////////////////
 
-            if (deviceRegistries.Count > 0 && System.Environment.Is64BitProcess)
+            if (enableSPI)
             {
-                usbRegistry2 = deviceRegistries[0];//deviceRegistries.FindLast();
+                SPISpectrometer spiSpec = new SPISpectrometer(null);
+                bool opened = spiSpec.open();
+                if (opened)
+                    spectrometers.Add(spiSpec);
+            }
+            
+            ////////////////////////////////////////////////////////////////////
+            // Add 3rd-party USB spectrometers (e.g. Ocean Optics, etc)
+            ////////////////////////////////////////////////////////////////////
 
+            // Add 3rd-party USB spectrometers (e.g. Ocean Optics, etc)
+            if (deviceRegistries.Count > 0 && Environment.Is64BitProcess)
+            {
+                UsbRegistry usbRegistry2 = deviceRegistries[0];
                 String desc2 = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
                     usbRegistry2.Vid,
                     usbRegistry2.Pid,
@@ -133,8 +147,6 @@ namespace WasatchNET
                     usbRegistry2[SPDRP.DeviceDesc]);
 
                 int oceanIndex = 0;
-
-
                 try
                 {
                     OceanSpectrometer oceanSpectrometer = new OceanSpectrometer(usbRegistry2, oceanIndex);
@@ -148,16 +160,14 @@ namespace WasatchNET
 
                     if (oceanIndex == 0)
                     {
-                        logger.error("openAllSpectrometers: failed to open {0}", desc2);
+                        logger.debug("openAllSpectrometers: failed to open {0}", desc2);
                     }
                 }
                 catch (DllNotFoundException)
                 {
-                    logger.info("SeaBreeze does not appear to be installed, not trying to open Ocean Spectrometers");
+                    logger.debug("SeaBreeze does not appear to be installed, not trying to open Ocean Spectrometers");
                 }
-                    
             }
-
 
             return spectrometers.Count;
         }
