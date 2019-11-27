@@ -147,7 +147,7 @@ namespace WasatchNET
             get { return boxcarHalfWidth_; }
             set { lock (acquisitionLock) boxcarHalfWidth_ = value; }
         }
-        uint boxcarHalfWidth_;
+        protected uint boxcarHalfWidth_;
 
         /// <summary>
         /// Perform automatic dark subtraction by setting this property to
@@ -440,7 +440,7 @@ namespace WasatchNET
                 }
             }
         }
-        bool detectorTECEnabled_;
+        protected bool detectorTECEnabled_;
 
         public virtual float detectorTECSetpointDegC
         {

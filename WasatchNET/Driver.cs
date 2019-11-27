@@ -21,7 +21,6 @@ namespace WasatchNET
 
         public Logger logger { get; } = Logger.getInstance();
         public string version { get; }
-        public bool enableSPI { get; set; } = false;
 
         ////////////////////////////////////////////////////////////////////////
         // static methods
@@ -124,13 +123,10 @@ namespace WasatchNET
             // Add Wasatch Photonics SPI spectrometers
             ////////////////////////////////////////////////////////////////////
 
-            if (enableSPI)
-            {
-                SPISpectrometer spiSpec = new SPISpectrometer(null);
-                bool opened = spiSpec.open();
-                if (opened)
-                    spectrometers.Add(spiSpec);
-            }
+            SPISpectrometer spiSpec = new SPISpectrometer(null);
+            bool opened = spiSpec.open();
+            if (opened)
+                spectrometers.Add(spiSpec);
             
             ////////////////////////////////////////////////////////////////////
             // Add 3rd-party USB spectrometers (e.g. Ocean Optics, etc)

@@ -78,7 +78,6 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.checkBoxSPIEnable = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -211,7 +210,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(215, 192);
+            this.groupBoxSettings.Size = new System.Drawing.Size(217, 192);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -222,7 +221,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(211, 175);
+            this.treeViewSettings.Size = new System.Drawing.Size(213, 175);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -587,7 +586,6 @@
             // 
             // groupBoxSetup
             // 
-            this.groupBoxSetup.Controls.Add(this.checkBoxSPIEnable);
             this.groupBoxSetup.Controls.Add(this.labelDetTempDegC);
             this.groupBoxSetup.Controls.Add(this.label4);
             this.groupBoxSetup.Controls.Add(this.comboBoxXAxis);
@@ -606,7 +604,7 @@
             // 
             this.labelDetTempDegC.AutoSize = true;
             this.labelDetTempDegC.ForeColor = System.Drawing.SystemColors.ControlDark;
-            this.labelDetTempDegC.Location = new System.Drawing.Point(149, 43);
+            this.labelDetTempDegC.Location = new System.Drawing.Point(151, 20);
             this.labelDetTempDegC.Name = "labelDetTempDegC";
             this.labelDetTempDegC.Size = new System.Drawing.Size(30, 13);
             this.labelDetTempDegC.TabIndex = 4;
@@ -692,17 +690,6 @@
             // backgroundWorkerSettings
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
-            // 
-            // checkBoxSPIEnable
-            // 
-            this.checkBoxSPIEnable.AutoSize = true;
-            this.checkBoxSPIEnable.Location = new System.Drawing.Point(152, 18);
-            this.checkBoxSPIEnable.Name = "checkBoxSPIEnable";
-            this.checkBoxSPIEnable.Size = new System.Drawing.Size(43, 17);
-            this.checkBoxSPIEnable.TabIndex = 5;
-            this.checkBoxSPIEnable.Text = "SPI";
-            this.checkBoxSPIEnable.UseVisualStyleBackColor = true;
-            this.checkBoxSPIEnable.CheckedChanged += new System.EventHandler(this.checkBoxSPIEnable_CheckedChanged);
             // 
             // Form1
             // 
@@ -798,7 +785,6 @@
         private System.Windows.Forms.NumericUpDown numericUpDownDetectorSetpointDegC;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.CheckBox checkBoxExternalTriggerSource;
-        private System.Windows.Forms.CheckBox checkBoxSPIEnable;
     }
 }
 

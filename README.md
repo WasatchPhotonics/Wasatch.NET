@@ -1,7 +1,7 @@
 # Overview
 
-Wasatch.NET is an application-level wrapper over Wasatch Photonics' USB 
-API. It is provided so that application developers don't need to worry about
+Wasatch.NET is an application-level wrapper over Wasatch Photonics' USB and [SPI](README-SPI.md) 
+APIs. It is provided so that application developers don't need to worry about
 opcodes and [de]marshalling octets of raw data; they can simply call high-level
 properties and methods like integrationTimeMS and getSpectrum().
 
@@ -55,17 +55,17 @@ The driver is designed to closely mimic the USB APIs defined in the following
 documents:
 
 - http://wasatchphotonics.com/eng-0001/ (USB API)
-- http://wasatchphotonics.com/eng-0034/ (FID API)
-- http://wasatchphotonics.com/oem-api-specification/ (SPI API)
+- http://wasatchphotonics.com/eng-0034/ (USB EEPROM structure)
+- http://wasatchphotonics.com/eng-0072/ (SPI API)
 
 Therefore, most questions about parameters, modes and options can likely be
-resolved by review of the underlying spectrometer USB interface.
+resolved by review of the underlying spectrometer communication interface.
 
 # Installation
 
 Wasatch.NET is distributed in a Microsoft Installer (.msi) file, which installs
 the WasatchNET.dll and LibUsbDotNet.dll under C:\\Windows (so they'll always be
-in the system path).  
+in the system path).  FTDI drivers are also installed to support SPI communications.
 
 It also installs a simple C# spectroscopy GUI app, WinFormDemo, under 
 \\Program Files\\Wasatch Photonics (or Program Files (x86) on 32-bit systems), 
@@ -155,6 +155,10 @@ This is a .NET wrapper over the standard libusb-win32 which is used by many
 USB device vendors.  The pre-compiled DLL provided in our lib/ directory was 
 built from v2.2.8 using Visual Studio 2017 Community against the .NET 4.0 Client
 Profile.
+
+## FTDI
+
+See [README-SPI.md](README-SPI.md).
 
 ## Build Configuration
 
