@@ -232,6 +232,19 @@ namespace WasatchNET
                 return false;
             }
 
+            //sets trigger to level
+            byte[] transmitData = new byte[2] { 0x86, 0xC0 };
+
+            //to NOT get out the test pattern, axctual data instead
+
+
+            //byte[] transmitData = new byte[2] { 0x86, 0x40 };
+
+
+            transmitData = wrapCommand(SET_SETTINGS, transmitData, 10);
+
+            byte[] result = spi.readWrite(transmitData);
+
             regenerateWavelengths();
 
             logger.info("Successfully connected to SPI Spectrometer through adafruit board with serial number {0}", devSerialNumber);
@@ -299,10 +312,20 @@ namespace WasatchNET
 
             double[] spec = new double[pixels]; // default to all zeros
 
+            //old method with edge trigger
+
+            /*
             mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
             Thread.Sleep(100);
             mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-            
+            */
+
+            //new method with level trigger
+
+            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
+            Thread.Sleep(2);
+            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
+
             byte read = mpsse.ReadDataBitsHighByte();
             while ((read & 0b0010) != 0b0010)
             {
@@ -311,7 +334,39 @@ namespace WasatchNET
 
             byte[] command = padding((int)pixels * 2 + 20);
 
+            //throwaway 1
             byte[] result = spi.readWrite(command);
+
+            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
+            Thread.Sleep(2);
+            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
+
+            read = mpsse.ReadDataBitsHighByte();
+            while ((read & 0b0010) != 0b0010)
+            {
+                read = mpsse.ReadDataBitsHighByte();
+            }
+
+            command = padding((int)pixels * 2 + 20);
+
+            //throaway 2
+            result = spi.readWrite(command);
+
+            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
+            Thread.Sleep((int)integrationTimeMS);
+            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
+
+
+            read = mpsse.ReadDataBitsHighByte();
+            while ((read & 0b0010) != 0b0010)
+            {
+                read = mpsse.ReadDataBitsHighByte();
+            }
+
+            command = padding((int)pixels * 2 + 20);
+
+            //actual result
+            result = spi.readWrite(command);
 
             for (int i = 0; i < pixels; ++i)
             {
