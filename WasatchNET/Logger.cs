@@ -40,31 +40,16 @@ namespace WasatchNET
 
         public LogLevel level { get; set; } = LogLevel.INFO;
 
-        /// <summary>
-        /// Get a handle to the Logger Singleton.
-        /// </summary>
-        /// <returns></returns>
         static public Logger getInstance()
         {
             return instance;
         }
 
-        /// <summary>
-        /// If you're developing in WinForms, pass a TextBook into the Logger 
-        /// for instant visualization!
-        /// </summary>
-        /// <param name="tb">the TextBox control where you would like log messages to appear</param>
-        /// <remarks>Note this creates a dependency on system_windows_forms_tlb in COM clients :-(</remarks>
         public void setTextBox(TextBox tb)
         {
             textBox = tb;
         }
 
-        /// <summary>
-        /// If you'd like log messages written to a text file, specify the path here.
-        /// </summary>
-        /// <remarks>Make sure the directory exists and is writable.</remarks>
-        /// <param name="path">output path (e.g. "\\tmp\\WasatchNET.log")</param>
         public void setPathname(string path)
         {
             try
@@ -78,20 +63,11 @@ namespace WasatchNET
             }
         }
 
-        /// <summary>
-        /// Whether debugging is enabled.
-        /// </summary>
-        /// <returns>true if debugging is enabled</returns>
         public bool debugEnabled()
         {
             return level <= LogLevel.DEBUG;
         }
 
-        /// <summary>
-        /// peel-off the most recent error
-        /// </summary>
-        /// <returns>the most recent error message</returns>
-        /// <remarks>other errors will remain in the "recent" queue; this does not necessary clear hasError()</remarks>
         public string getLastError()
         {
             lock (instance)
@@ -108,12 +84,6 @@ namespace WasatchNET
             }
         }
 
-        /// <summary>
-        /// Returns a list of recent errors.
-        /// </summary>
-        /// <returns>list of queued error strings</returns>
-        /// <remarks>clears hasError()</remarks>
-        /// <remarks>returns a generic, hence is inaccessible from COM</remarks>
         public List<string> getErrors()
         {
             lock (instance)
@@ -129,21 +99,12 @@ namespace WasatchNET
             }
         }
 
-        /// <summary>
-        /// whether any recent errors have occurred
-        /// </summary>
-        /// <returns>true if one or more error messages are pending retrieval</returns>
         public bool hasError()
         {
             lock (instance)
                 return errorCount > 0;
         }
 
-        /// <summary>
-        /// log an error message
-        /// </summary>
-        /// <param name="fmt">see String.Format() fmt</param>
-        /// <param name="obj">see String.Format() args</param>
         public bool error(string fmt, params Object[] obj)
         {
             lock (instance)
@@ -164,33 +125,24 @@ namespace WasatchNET
             return false; // convenient for many cases
         }
 
-        /// <summary>
-        /// log an info message
-        /// </summary>
-        /// <param name="fmt">see String.Format() fmt</param>
-        /// <param name="obj">see String.Format() args</param>
         public void info(string fmt, params Object[] obj)
         {
             if (level <= LogLevel.INFO)
                 log(LogLevel.INFO, fmt, obj);
         }
 
-        /// <summary>
-        /// log a debug message
-        /// </summary>
-        /// <param name="fmt">see String.Format() fmt</param>
-        /// <param name="obj">see String.Format() args</param>
         public void debug(string fmt, params Object[] obj)
         {
             if (level <= LogLevel.DEBUG)
                 log(LogLevel.DEBUG, fmt, obj);
         }
 
-        /// <summary>
-        /// write TextBox contents to a text file
-        /// </summary>
-        /// <param name="pathname">path to create</param>
-        /// <remarks>only works if setTextBox() has been called; otherwise, use setPath()</remarks>
+        public void logString(LogLevel lvl, string msg)
+        {
+            if (level <= lvl)
+                log(lvl, msg);
+        }
+
         public void save(string pathname)
         {
             if (textBox == null)
@@ -253,7 +205,10 @@ namespace WasatchNET
                 Console.WriteLine(msg);
 
                 if (outfile != null)
+                {
                     outfile.WriteLine(msg);
+                    outfile.Flush();
+                }
 
                 if (textBox != null)
                     textBox.BeginInvoke(new MethodInvoker(delegate { textBox.AppendText(msg + Environment.NewLine); }));
