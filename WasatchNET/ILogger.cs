@@ -76,6 +76,14 @@ namespace WasatchNET
         void debug(string fmt, params Object[] obj);
 
         /// <summary>
+        /// log a string at arbitrary level w/o arguments
+        /// </summary>
+        /// <param name="lvl">a valid LogLevel</param>
+        /// <param name="msg">message</param>
+        /// <remarks>Provided for client languages that have difficulty passing an empty params Object[] array</remarks>
+        void logString(LogLevel lvl, string msg);
+
+        /// <summary>
         /// write TextBox contents to a text file
         /// </summary>
         /// <param name="pathname">path to create</param>

@@ -1,5 +1,12 @@
 # Wasatch.NET Changelog
 
+- 2019-12-09 2.1.3
+    - disable trigger accessors on non-ARM units
+    - disable battery accessors if not configured
+    - disable laser accessors if not configured
+    - consolidated Spectrometer docs to ISpectrometer
+    - added Logger.logString() for languages that can't pass empty params
+    - autoflush logfile 
 - 2019-11-27 2.1.2
     - removed Driver.enableSPI
     - added lib/{x86,x64}/FTD2XX.dll, updated post-build events
