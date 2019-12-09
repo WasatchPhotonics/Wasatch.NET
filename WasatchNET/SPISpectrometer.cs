@@ -232,18 +232,33 @@ namespace WasatchNET
                 return false;
             }
 
+
+            //firmware throwaway
+            byte[] transmitData = new byte[1] { 0x01 };
+
+            
+            transmitData = wrapCommand(0xB2, transmitData, 10);
+
+            byte[] result = spi.readWrite(transmitData);
+
             //sets trigger to level
-            byte[] transmitData = new byte[2] { 0x86, 0xC0 };
+            transmitData = new byte[2] { 0x86, 0xC0 };
+
+            //level trigger test pattern
+
+            //transmitData = new byte[2] { 0x87, 0xC0 };
+
 
             //to NOT get out the test pattern, axctual data instead
 
-
-            //byte[] transmitData = new byte[2] { 0x86, 0x40 };
+            //sets edge trigger
+            //transmitData = new byte[2] { 0x86, 0x40 };
 
 
             transmitData = wrapCommand(SET_SETTINGS, transmitData, 10);
 
-            byte[] result = spi.readWrite(transmitData);
+            result = spi.readWrite(transmitData);
+
 
             regenerateWavelengths();
 
@@ -318,10 +333,35 @@ namespace WasatchNET
             mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
             Thread.Sleep(100);
             mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
+
+            byte read = mpsse.ReadDataBitsHighByte();
+            while ((read & 0b0010) != 0b0010)
+            {
+                read = mpsse.ReadDataBitsHighByte();
+            }
+
+            byte[] command = padding((int)pixels * 2 + 20);
+
+            //throwaway 1
+            byte[] result = spi.readWrite(command);
+
+            for (int i = 0; i < pixels; ++i)
+            {
+                int msb = result[i * 2 + 1];
+                int lsb = result[i * 2 + 2];
+
+                UInt16 pixel = (ushort)((msb << 8) | lsb);
+
+                spec[i] = pixel;
+
+            }
+
+            return spec;
             */
+			
+			//new method with level trigger
 
-            //new method with level trigger
-
+            /*
             mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
             Thread.Sleep(2);
             mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
@@ -380,6 +420,110 @@ namespace WasatchNET
             }
 
             return spec;
+            */
+            /*
+            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
+            Thread.Sleep(2);
+            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
+
+            byte read = mpsse.ReadDataBitsHighByte();
+            while ((read & 0b0010) != 0b0010)
+            {
+                read = mpsse.ReadDataBitsHighByte();
+            }
+
+            byte[] command = padding(1);//padding((int)pixels * 2 + 20);
+
+            //throwaway 1
+            byte[] result = spi.readWrite(command);
+
+            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
+            command = padding((int)pixels * 2 + 20);
+            result = spi.readWrite(command);
+
+            Thread.Sleep(2);
+
+            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
+
+            read = mpsse.ReadDataBitsHighByte();
+            while ((read & 0b0010) != 0b0010)
+            {
+                read = mpsse.ReadDataBitsHighByte();
+            }
+
+            command = padding(1);
+            result = spi.readWrite(command);
+
+            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
+
+            command = padding((int)pixels * 2 + 20);
+            result = spi.readWrite(command);
+
+            //throaway 2
+            //result = spi.readWrite(command);
+
+            Thread.Sleep((int)integrationTimeMS);
+            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
+
+
+            read = mpsse.ReadDataBitsHighByte();
+            while ((read & 0b0010) != 0b0010)
+            {
+                read = mpsse.ReadDataBitsHighByte();
+            }
+
+            command = padding((int)pixels * 2 + 20);
+
+            //actual result
+            result = spi.readWrite(command);
+
+            for (int i = 0; i < pixels; ++i)
+            {
+                int msb = result[i * 2 + 1];
+                int lsb = result[i * 2 + 2];
+
+                UInt16 pixel = (ushort)((msb << 8) | lsb);
+
+                spec[i] = pixel;
+
+            }
+
+            return spec;
+            */
+
+            //firmware throwaway mode
+
+            
+            
+            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
+            Thread.Sleep((int)integrationTimeMS);
+            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
+
+
+            byte read = mpsse.ReadDataBitsHighByte();
+            while ((read & 0b0010) != 0b0010)
+            {
+                read = mpsse.ReadDataBitsHighByte();
+            }
+
+            byte[] command = padding((int)pixels * 2 + 20);
+
+            //actual result
+            byte[] result = spi.readWrite(command);
+
+            for (int i = 0; i < pixels; ++i)
+            {
+                int msb = result[i * 2 + 1];
+                int lsb = result[i * 2 + 2];
+
+                UInt16 pixel = (ushort)((msb << 8) | lsb);
+
+                spec[i] = pixel;
+
+            }
+
+            return spec;
+            
         }
 
         public override bool laserEnabled
