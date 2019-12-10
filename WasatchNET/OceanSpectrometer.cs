@@ -55,7 +55,7 @@ namespace WasatchNET
 
             else
             {
-                logger.info("Unable to open Ocean spectrometer with index {0}", specIndex);
+                logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
                 return false;
             }
 
@@ -147,13 +147,6 @@ namespace WasatchNET
                 return "";//serial.ToString();
             }
         }
-
-        public override uint boxcarHalfWidth
-        {
-            get { return boxcarHalfWidth_; }
-            set { lock (acquisitionLock) boxcarHalfWidth_ = value; }
-        }
-        uint boxcarHalfWidth_;
 
         public override uint integrationTimeMS
         {

@@ -610,7 +610,8 @@ namespace WasatchNET
             get => TRIGGER_SOURCE.EXTERNAL;
             set
             {
-                logger.error("SETTING NON EXTERNAL TRIGGER NOT SUPPORTED IN SPI SPECTROMETERS");
+                if (value != TRIGGER_SOURCE.EXTERNAL)
+                    logger.error("TRIGGER_SOURCE {0} not supported in SPISpectrometer", value.ToString());
             }
         }
 

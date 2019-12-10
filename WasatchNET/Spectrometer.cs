@@ -72,6 +72,7 @@ namespace WasatchNET
 
         protected Logger logger = Logger.getInstance();
 
+        protected object adcLock = new object();
         protected object acquisitionLock = new object();
         object commsLock = new object();
         DateTime lastUsbTimestamp = DateTime.Now;
@@ -125,7 +126,7 @@ namespace WasatchNET
         // Purely internal driver attributes (no hardware version)
         ////////////////////////////////////////////////////////////////////////
 
-        public bool throwawayADCRead { get; set; } = true;
+        bool throwawayADCRead { get; set; } = true;
 
         /// <summary>
         /// How many acquisitions to average together (zero for no averaging)
@@ -173,13 +174,21 @@ namespace WasatchNET
         public bool haveCache(Opcodes op) { return readOnce.Contains(op) && !noCache.Contains(op); }
 
         ////////////////////////////////////////////////////////////////////////
-        // device properties (maintain in alphabetical order)
+        // device properties (please maintain in alphabetical order)
         ////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// Used for quickly turning on/off a group of accessors for 
+        /// troubleshooting .NET clients that iteratively call every accessor
+        /// at instantiation.
+        /// </summary>
+        private bool kludgedOut = false;
 
         public ushort actualFrames
         {
             get
             {
+                // if (kludgedOut) return 0; 
                 return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES, 2));
             }
         }
@@ -188,6 +197,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0; 
                 uint value = Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 6));
                 return (value == 0xffffff) ? 0 : value;
             }
@@ -197,10 +207,14 @@ namespace WasatchNET
         /// The photodiode (calling this as secondary ADC) should NOT swap the byte order!
         /// Does laserTemperatureRaw require the byte order to be swapped?!?
         /// </warning>
-        public ushort adcRaw
+        /// <remarks>protected because caller should access via primaryADC or secondaryADC</remarks>
+        protected ushort adcRaw
         {
             get
             {
+                // if (kludgedOut) return 0;
+                if (!adcHasBeenSelected_)
+                    return 0;
                 if (isSiG)
                     return 0;
                 ushort orig = Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2));
@@ -216,6 +230,9 @@ namespace WasatchNET
         {
             get
             {
+                if (!eeprom.hasBattery)
+                    return 0;
+
                 DateTime now = DateTime.Now;
                 DateTime nextCheck = batteryStateTimestamp_.AddSeconds(1);
                 if (batteryStateRaw_ != 0 && now < nextCheck)
@@ -240,6 +257,9 @@ namespace WasatchNET
         {
             get
             {
+                if (!eeprom.hasBattery)
+                    return 0;
+
                 uint raw = batteryStateRaw;
                 byte lsb = (byte)((batteryStateRaw >> 16) & 0xff);
                 byte msb = (byte)((batteryStateRaw >>  8) & 0xff);
@@ -251,6 +271,9 @@ namespace WasatchNET
         {
             get
             {
+                if (!eeprom.hasBattery)
+                    return false;
+
                 return 0 != (batteryStateRaw & 0xff);
             }
         }
@@ -259,6 +282,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_CONTINUOUS_ACQUISITION;
                 if (haveCache(op))
                     return continuousAcquisitionEnable_;
@@ -277,6 +301,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_CONTINUOUS_FRAMES;
                 if (haveCache(op))
                     return continuousFrames_;
@@ -295,6 +320,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_DETECTOR_GAIN;
                 if (haveCache(op))
                     return detectorGain_;
@@ -313,6 +339,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
                 {
                     logger.debug("detectorGainOdd not supported on non-InGaAs detectors");
@@ -341,6 +368,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_DETECTOR_OFFSET;
                 if (haveCache(op))
                     return detectorOffset_;
@@ -359,6 +387,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
                 {
                     logger.debug("detectorOffsetOdd not supported on non-InGaAs detectors");
@@ -387,6 +416,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE;
                 if (haveCache(op))
                     return detectorSensingThresholdEnabled_;
@@ -405,6 +435,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD;
                 if (haveCache(op))
                     return detectorSensingThreshold_;
@@ -423,6 +454,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_DETECTOR_TEC_ENABLE;
                 if (!eeprom.hasCooling)
                     return false;
@@ -468,6 +500,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_DETECTOR_TEC_SETPOINT;
                 if (!eeprom.hasCooling)
                     return 0;
@@ -509,6 +542,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 if (isSiG)
                     return 0;
                 return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
@@ -519,6 +553,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return "UNKNOWN";
                 const Opcodes op = Opcodes.GET_FIRMWARE_REVISION;
                 if (haveCache(op))
                     return firmwareRevision_;
@@ -542,6 +577,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return "UNKNOWN";
                 const Opcodes op = Opcodes.GET_FPGA_REVISION;
                 if (haveCache(op))
                     return fpgaRevision_;
@@ -561,6 +597,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
                     return false;
                 const Opcodes op = Opcodes.GET_CF_SELECT;
@@ -583,6 +620,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return HORIZONTAL_BINNING.ERROR;
                 if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return HORIZONTAL_BINNING.ERROR;
 
@@ -616,6 +654,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
                 if (haveCache(op))
                     return integrationTimeMS_;
@@ -656,6 +695,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_LASER_ENABLE;
                 if (haveCache(op))
                     return laserEnabled_;
@@ -667,14 +707,18 @@ namespace WasatchNET
                 var buf = isARM ? new byte[8] : new byte[0];
                 readOnce.Add(Opcodes.GET_LASER_ENABLE);
                 sendCmd(Opcodes.SET_LASER_ENABLE, (ushort)((laserEnabled_ = value) ? 1 : 0), buf: buf);
+                if (value)
+                    laserHasFired_ = true;
             }
         }
         protected bool laserEnabled_;
+        protected bool laserHasFired_;
 
         public bool laserModulationEnabled
         {
             get
             {
+                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_LASER_MOD_ENABLE;
                 if (haveCache(op))
                     return laserModulationEnabled_;
@@ -693,6 +737,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 if (isARM)
                 {
                     logger.error("GET_LASER_INTERLOCK not supported on ARM");
@@ -706,6 +751,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME;
                 if (haveCache(op))
                     return laserModulationLinkedToIntegrationTime_;
@@ -724,6 +770,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LASER_MOD_PULSE_DELAY;
                 if (haveCache(op))
                     return laserModulationPulseDelay_;
@@ -743,6 +790,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LASER_MOD_DURATION;
                 if (haveCache(op))
                     return laserModulationDuration_;
@@ -758,13 +806,13 @@ namespace WasatchNET
         }
         UInt64 laserModulationDuration_;
 
-        // don't cache for now
         public virtual UInt64 laserModulationPeriod
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LASER_MOD_PERIOD;
-                if (false && haveCache(op))
+                if (haveCache(op))
                     return laserModulationPeriod_;
                 readOnce.Add(op);
                 return laserModulationPeriod_ = Unpack.toUint64(getCmd(op, 5));
@@ -778,13 +826,13 @@ namespace WasatchNET
         }
         UInt64 laserModulationPeriod_;
 
-        // don't cache for now
         public UInt64 laserModulationPulseWidth
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LASER_MOD_PULSE_WIDTH;
-                if (false && haveCache(op))
+                if (haveCache(op))
                     return laserModulationPulseWidth_;
                 readOnce.Add(op);
                 return laserModulationPulseWidth_ = Unpack.toUint64(getCmd(op, 5));
@@ -803,6 +851,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 if (fpgaOptions.hasAreaScan)
                 {
                     logger.debug("laserRampingEnabled feature currently disabled");
@@ -841,15 +890,14 @@ namespace WasatchNET
         {
             get
             {
-                
+                // if (kludgedOut) return false;
                 if (!fpgaOptions.hasAreaScan)
                 {
                     logger.debug("laserRampingEnabled feature currently disabled");
-                    return false; // disabled
+                    return false; 
                 }
                 else
                 {
-                    //byte[] pack= getCmd(Opcodes.GET_AREA_SCAN_ENABLE, 1);
                     byte[] pack = getCmd(Opcodes.GET_AREA_SCAN_ENABLE, 1);
                     return Unpack.toBool(pack);
                 }
@@ -859,13 +907,13 @@ namespace WasatchNET
                 sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((_areaScanEnabled = value) ? 1 : 0));
             }
         }
-
         bool _areaScanEnabled;
 
         public virtual float laserTemperatureDegC
         {
             get
             {
+                // if (kludgedOut) return 0;
                 ushort raw = laserTemperatureRaw;
                 if (raw == 0)
                 {
@@ -912,6 +960,12 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;   
+                // if (!laserHasFired_) return 0;
+
+                if (!eeprom.hasLaser)
+                    return 0;
+
                 const Opcodes op = Opcodes.GET_LASER_TEC_SETPOINT;
                 if (haveCache(op))
                     return laserTemperatureSetpointRaw_;
@@ -922,6 +976,9 @@ namespace WasatchNET
             }
             set
             {
+                if (!eeprom.hasLaser)
+                    return;
+
                 sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ = Math.Min((byte)127, value));
                 readOnce.Add(Opcodes.GET_LASER_TEC_SETPOINT);
             }
@@ -932,6 +989,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LINE_LENGTH;
                 if (haveCache(op))
                     return lineLength_;
@@ -945,6 +1003,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_OPT_AREA_SCAN;
                 if (haveCache(op))
                     return optAreaScan_;
@@ -958,6 +1017,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_OPT_ACTUAL_INTEGRATION_TIME;
                 if (haveCache(op))
                     return optActualIntegrationTime_;
@@ -971,6 +1031,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_OPT_CF_SELECT;
                 if (haveCache(op))
                     return optCFSelect_;
@@ -984,6 +1045,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return FPGA_DATA_HEADER.ERROR;
                 const Opcodes op = Opcodes.GET_OPT_DATA_HEADER_TAG;
                 if (haveCache(op))
                     return optDataHeaderTag_;
@@ -997,6 +1059,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_OPT_HORIZONTAL_BINNING;
                 if (haveCache(op))
                     return optHorizontalBinning_;
@@ -1010,6 +1073,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return FPGA_INTEG_TIME_RES.ERROR;
                 const Opcodes op = Opcodes.GET_OPT_INTEGRATION_TIME_RESOLUTION;
                 if (haveCache(op))
                     return optIntegrationTimeResolution_;
@@ -1023,6 +1087,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return FPGA_LASER_CONTROL.ERROR;
                 const Opcodes op = Opcodes.GET_OPT_LASER_CONTROL;
                 if (haveCache(op))
                     return optLaserControl_;
@@ -1036,6 +1101,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return FPGA_LASER_TYPE.ERROR;
                 const Opcodes op = Opcodes.GET_OPT_LASER_TYPE;
                 if (haveCache(op))
                     return optLaserType_;
@@ -1049,26 +1115,41 @@ namespace WasatchNET
         {
             get
             {
-                if (selectedADC != 0)
-                    selectedADC = 0;
-                return adcRaw;
+                // if (kludgedOut) return 0;
+                lock (adcLock)
+                {
+                    if (selectedADC != 0)
+                        selectedADC = 0;
+                    return adcRaw;
+                }
             }
         }
+
+        public bool hasSecondaryADC { get; set; } = false;
 
         public virtual ushort secondaryADC
         {
             get
             {
-                if (selectedADC != 1)
-                    selectedADC = 1;
-                return adcRaw;
+                // if (kludgedOut) return 0;
+                if (!hasSecondaryADC)
+                    return 0;
+                lock (adcLock)
+                {
+                    if (selectedADC != 1)
+                        selectedADC = 1;
+                    return adcRaw;
+                }
             }
         }
 
-        public byte selectedADC
+        protected byte selectedADC
         {
             get
             {
+                // if (kludgedOut) return 0;
+                if (!adcHasBeenSelected_)
+                    return 0;
                 const Opcodes op = Opcodes.GET_SELECTED_ADC;
                 if (haveCache(op))
                     return selectedADC_;
@@ -1081,14 +1162,22 @@ namespace WasatchNET
                 sendCmd(Opcodes.SET_SELECTED_ADC, selectedADC_ = value);
                 if (throwawayADCRead)
                     throwawaySum += adcRaw;
+                adcHasBeenSelected_ = true;
             }
         }
         byte selectedADC_;
+        bool adcHasBeenSelected_;
 
         public virtual TRIGGER_SOURCE triggerSource
         {
             get
             {
+                // if (kludgedOut) return TRIGGER_SOURCE.ERROR;
+                if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                {
+                    logger.debug("GET_TRIGGER_SOURCE disabled for boardType {0}", featureIdentification.boardType.ToString());
+                    return TRIGGER_SOURCE.INTERNAL;
+                }
                 const Opcodes op = Opcodes.GET_TRIGGER_SOURCE;
                 if (haveCache(op))
                     return triggerSource_;
@@ -1116,17 +1205,25 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return EXTERNAL_TRIGGER_OUTPUT.ERROR;
+                if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                {
+                    logger.debug("GET_TRIGGER_OUTPUT disabled for boardType {0}", featureIdentification.boardType.ToString());
+                    return EXTERNAL_TRIGGER_OUTPUT.ERROR;
+                }
                 const Opcodes op = Opcodes.GET_TRIGGER_OUTPUT;
                 if (haveCache(op))
                     return triggerOutput_;
                 triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.ERROR;
                 byte[] buf = getCmd(Opcodes.GET_TRIGGER_OUTPUT, 1);
                 if (buf != null)
+                {
                     switch (buf[0])
                     {
                         case 0: triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.LASER_MODULATION; break;
                         case 1: triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.INTEGRATION_ACTIVE_PULSE; break;
                     }
+                }
                 if (triggerOutput_ != EXTERNAL_TRIGGER_OUTPUT.ERROR)
                     readOnce.Add(op);
                 return triggerOutput_;
@@ -1145,9 +1242,12 @@ namespace WasatchNET
         {
             get
             {
-                // triggering not currently supported on FX2
-                if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
+                // if (kludgedOut) return 0;
+                if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                {
+                    logger.debug("GET_TRIGGER_DELAY disabled for boardType {0}", featureIdentification.boardType.ToString());
                     return 0;
+                }
                 const Opcodes op = Opcodes.GET_TRIGGER_DELAY;
                 if (haveCache(op))
                     return triggerDelay_;
