@@ -63,6 +63,14 @@ done
 read -p "Username: " USERNAME
 read -p "Version:  " VERSION 
 
+# make sure we're releasing off master
+BRANCH=`git rev-parse --abbrev-ref HEAD`
+if [ $BRANCH != "master" ]
+then
+    echo "Please release off master (currently on $BRANCH)"
+    exit 1
+fi
+
 # render documentation (TODO: incorporate VERSION into rendered docs)
 export VERSION
 make doc
