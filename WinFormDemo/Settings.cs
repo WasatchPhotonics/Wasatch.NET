@@ -159,12 +159,11 @@ namespace WinFormDemo
             stub("laserModPeriod",              "Spectrometer State/Laser/Modulation/Period (µs)");
             stub("laserModPulseDelay",          "Spectrometer State/Laser/Modulation/Pulse Delay (µs)");
             stub("laserModPulseWidth",          "Spectrometer State/Laser/Modulation/Pulse Width (µs)");
-        stub("laserModLinkedToIntegrationTime", "Spectrometer State/Laser/Modulation/Linked to Integration Time");
+            stub("laserModLinkedToIntegrationTime", 
+                                                "Spectrometer State/Laser/Modulation/Linked to Integration Time");
             stub("laserRampingEnabled",         "Spectrometer State/Laser/Ramping Enabled");
             stub("laserInterlock",              "Spectrometer State/Laser/Interlock");
 
-            stub("adcSelection",                "Spectrometer State/Selected ADC");
-                                                
             stub("triggerSource",               "Spectrometer State/Triggering/Source");
             stub("triggerOutput",               "Spectrometer State/Triggering/Output");
             stub("triggerDelay",                "Spectrometer State/Triggering/Delay (us)");
@@ -321,7 +320,6 @@ namespace WinFormDemo
                 update("laserTemperatureSetpointRaw",     spec.laserTemperatureSetpointRaw);
                 update("laserTemperatureRaw",             spec.laserTemperatureRaw);
                 update("laserTemperatureDegC",            spec.laserTemperatureDegC);
-                update("adcSelection",                    spec.selectedADC);
             }
 
             if (spec.eeprom.hasBattery)

@@ -72,6 +72,7 @@ namespace WasatchNET
 
         protected Logger logger = Logger.getInstance();
 
+        protected object adcLock = new object();
         protected object acquisitionLock = new object();
         object commsLock = new object();
         DateTime lastUsbTimestamp = DateTime.Now;
@@ -125,7 +126,7 @@ namespace WasatchNET
         // Purely internal driver attributes (no hardware version)
         ////////////////////////////////////////////////////////////////////////
 
-        public bool throwawayADCRead { get; set; } = true;
+        bool throwawayADCRead { get; set; } = true;
 
         /// <summary>
         /// How many acquisitions to average together (zero for no averaging)
@@ -206,11 +207,14 @@ namespace WasatchNET
         /// The photodiode (calling this as secondary ADC) should NOT swap the byte order!
         /// Does laserTemperatureRaw require the byte order to be swapped?!?
         /// </warning>
-        public ushort adcRaw
+        /// <remarks>protected because caller should access via primaryADC or secondaryADC</remarks>
+        protected ushort adcRaw
         {
             get
             {
                 // if (kludgedOut) return 0;
+                if (!adcHasBeenSelected_)
+                    return 0;
                 if (isSiG)
                     return 0;
                 ushort orig = Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2));
@@ -538,6 +542,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return 0;
                 if (isSiG)
                     return 0;
                 return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
@@ -548,6 +553,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return "UNKNOWN";
                 const Opcodes op = Opcodes.GET_FIRMWARE_REVISION;
                 if (haveCache(op))
                     return firmwareRevision_;
@@ -571,6 +577,7 @@ namespace WasatchNET
         {
             get
             {
+                // if (kludgedOut) return "UNKNOWN";
                 const Opcodes op = Opcodes.GET_FPGA_REVISION;
                 if (haveCache(op))
                     return fpgaRevision_;
@@ -700,9 +707,12 @@ namespace WasatchNET
                 var buf = isARM ? new byte[8] : new byte[0];
                 readOnce.Add(Opcodes.GET_LASER_ENABLE);
                 sendCmd(Opcodes.SET_LASER_ENABLE, (ushort)((laserEnabled_ = value) ? 1 : 0), buf: buf);
+                if (value)
+                    laserHasFired_ = true;
             }
         }
         protected bool laserEnabled_;
+        protected bool laserHasFired_;
 
         public bool laserModulationEnabled
         {
@@ -796,14 +806,13 @@ namespace WasatchNET
         }
         UInt64 laserModulationDuration_;
 
-        // don't cache for now
         public virtual UInt64 laserModulationPeriod
         {
             get
             {
                 // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LASER_MOD_PERIOD;
-                if (false && haveCache(op))
+                if (haveCache(op))
                     return laserModulationPeriod_;
                 readOnce.Add(op);
                 return laserModulationPeriod_ = Unpack.toUint64(getCmd(op, 5));
@@ -817,14 +826,13 @@ namespace WasatchNET
         }
         UInt64 laserModulationPeriod_;
 
-        // don't cache for now
         public UInt64 laserModulationPulseWidth
         {
             get
             {
                 // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LASER_MOD_PULSE_WIDTH;
-                if (false && haveCache(op))
+                if (haveCache(op))
                     return laserModulationPulseWidth_;
                 readOnce.Add(op);
                 return laserModulationPulseWidth_ = Unpack.toUint64(getCmd(op, 5));
@@ -952,7 +960,9 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
+                // if (kludgedOut) return 0;   
+                // if (!laserHasFired_) return 0;
+
                 if (!eeprom.hasLaser)
                     return 0;
 
@@ -1106,28 +1116,40 @@ namespace WasatchNET
             get
             {
                 // if (kludgedOut) return 0;
-                if (selectedADC != 0)
-                    selectedADC = 0;
-                return adcRaw;
+                lock (adcLock)
+                {
+                    if (selectedADC != 0)
+                        selectedADC = 0;
+                    return adcRaw;
+                }
             }
         }
+
+        public bool hasSecondaryADC { get; set; } = false;
 
         public virtual ushort secondaryADC
         {
             get
             {
                 // if (kludgedOut) return 0;
-                if (selectedADC != 1)
-                    selectedADC = 1;
-                return adcRaw;
+                if (!hasSecondaryADC)
+                    return 0;
+                lock (adcLock)
+                {
+                    if (selectedADC != 1)
+                        selectedADC = 1;
+                    return adcRaw;
+                }
             }
         }
 
-        public byte selectedADC
+        protected byte selectedADC
         {
             get
             {
                 // if (kludgedOut) return 0;
+                if (!adcHasBeenSelected_)
+                    return 0;
                 const Opcodes op = Opcodes.GET_SELECTED_ADC;
                 if (haveCache(op))
                     return selectedADC_;
@@ -1140,9 +1162,11 @@ namespace WasatchNET
                 sendCmd(Opcodes.SET_SELECTED_ADC, selectedADC_ = value);
                 if (throwawayADCRead)
                     throwawaySum += adcRaw;
+                adcHasBeenSelected_ = true;
             }
         }
         byte selectedADC_;
+        bool adcHasBeenSelected_;
 
         public virtual TRIGGER_SOURCE triggerSource
         {

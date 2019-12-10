@@ -1,5 +1,10 @@
 # Wasatch.NET Changelog
 
+- 2019-12-09 2.1.4
+    - made adcRaw and selectedADC internal
+    - added adcLock
+    - added hasSecondaryADC
+    - encapsulate internal pushd/popd when loading FTDI drivers
 - 2019-12-09 2.1.3
     - disable trigger accessors on non-ARM units
     - disable battery accessors if not configured
