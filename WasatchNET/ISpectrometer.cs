@@ -89,14 +89,6 @@ namespace WasatchNET
         /// <returns>actual integration time in microseconds (zero on error)</returns>
         uint actualIntegrationTimeUS { get; }
 
-        /// <summary>
-        /// Reads the currently selected 12-bit ADC.
-        /// <see cref="selectedADC"/>
-        /// <see cref="primaryADC"/>
-        /// <see cref="secondaryADC"/>
-        /// </summary>
-        ushort adcRaw { get; }
-
         uint batteryStateRaw { get; }
         float batteryPercentage { get; }
         bool batteryCharging { get; }
@@ -291,25 +283,18 @@ namespace WasatchNET
         ushort primaryADC { get; }
 
         /// <summary>
-        /// Used to toggle between the primary ADC (index 0, used to read laser temperature)
-        /// and secondary ADC (index 1, used for optional OEM accessories like a photodiode).
+        /// This is provided for spectrometers with a secondary ADC connected to an external 
+        /// laser, photodiode or what-have-you.  Attempts to read it on spectrometers where it
+        /// has not been configured can result in indeterminate behavior; therefore, hasSecondaryADC
+        /// is provided to allow callers to selectively enable this function if they believe they
+        /// are using supported hardware.
         /// </summary>
-        /// <remarks>
-        /// Not all units will have a secondary ADC.
-        ///
-        /// Due to the way the ADC internally collects multiple analog readings over time, 
-        /// between digital readouts, and the fact that "clearing" the ADCs internal 
-        /// register is essentially done by reading it, it is advised to perform a 
-        /// "throwaway read" after switching the selected ADC, to ensure that the next
-        /// intentional read will only contain signal from the new ADC, and not the previous
-        /// one.  
-        /// 
-        /// Therefore, an option has been provided to automatically perform a throwaway read
-        /// when the ADC selection is changed.
-        /// </remarks>
-        byte selectedADC { get; set; }
-
         ushort secondaryADC { get; }
+
+        /// <summary>
+        /// This should be replaced with an FGPACompilationFlag or EEPROM field at some point.
+        /// </summary>
+        bool hasSecondaryADC { get; set; }
 
         /// <summary>A configurable delay from when an inbound trigger signal is
         /// received by the spectrometer, until the triggered acquisition actually starts.</summary>
@@ -323,6 +308,7 @@ namespace WasatchNET
         /// As part of triggering, only currently supported on ARM.
         /// </remarks>
         uint triggerDelay { get; set; }
+
         EXTERNAL_TRIGGER_OUTPUT triggerOutput { get; set; }
 
         /// <summary>

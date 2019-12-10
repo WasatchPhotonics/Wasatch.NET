@@ -1,5 +1,16 @@
 # Wasatch.NET Changelog
 
+- 2019-12-09 2.1.4
+    - made adcRaw and selectedADC protected
+    - added adcLock
+    - added hasSecondaryADC
+    - encapsulate internal pushd/popd when loading FTDI drivers
+    - downleveled Ocean warning
+    - fixed Ocean boxcar
+    - narrowed SPI trigger warning
+    - hide throwaway ADC value
+    - cache more laser modulation settings
+    - track laser fired and adc selection events
 - 2019-12-09 2.1.3
     - disable trigger accessors on non-ARM units
     - disable battery accessors if not configured
