@@ -252,7 +252,7 @@ namespace WasatchNET
             //to NOT get out the test pattern, axctual data instead
 
             //sets edge trigger
-            //transmitData = new byte[2] { 0x86, 0x40 };
+            transmitData = new byte[2] { 0x86, 0x40 };
 
 
             transmitData = wrapCommand(SET_SETTINGS, transmitData, 10);
@@ -329,7 +329,7 @@ namespace WasatchNET
 
             //old method with edge trigger
 
-            /*
+            
             mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
             Thread.Sleep(100);
             mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
@@ -357,7 +357,7 @@ namespace WasatchNET
             }
 
             return spec;
-            */
+            
 			
 			//new method with level trigger
 
@@ -494,7 +494,7 @@ namespace WasatchNET
             //firmware throwaway mode
 
             
-            
+            /*
             mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
             Thread.Sleep((int)integrationTimeMS);
             mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
@@ -523,7 +523,7 @@ namespace WasatchNET
             }
 
             return spec;
-            
+            */
         }
 
         public override bool laserEnabled
