@@ -80,13 +80,65 @@ namespace WasatchNET
         const byte SET_SETTINGS = 0x92;
         const byte SET_INTEGRATION_TIME = 0x91;
 
+        bool edgeTrigger;
+        bool firmwareThrowaway;
 
         internal SPISpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             // excitationWavelengthNM = 0;  // MZ: can't write EEPROM before instantiating EEPROM in open()
+            isSPI = true;
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
             specIndex = index;
+
+            edgeTrigger = true;
+            firmwareThrowaway = true;
+
             integrationTimeMS_ = 6; // MZ: should this be 2 or 3?
+        }
+
+        public override void changeSPITrigger(bool edge, bool firmwareThrow)
+        {
+            if (firmwareThrow)
+            {
+                byte[] transmitData = new byte[1] { 0x01 };
+
+                transmitData = wrapCommand(0xB2, transmitData, 10);
+
+                byte[] result = spi.readWrite(transmitData);
+            }
+
+            else
+            {
+                byte[] transmitData = new byte[1] { 0x00 };
+
+                transmitData = wrapCommand(0xB2, transmitData, 10);
+
+                byte[] result = spi.readWrite(transmitData);
+
+            }
+
+            firmwareThrowaway = firmwareThrow;
+
+            if (edge)
+            {
+                byte[] transmitData = new byte[2] { 0x86, 0x40 };
+
+                transmitData = wrapCommand(SET_SETTINGS, transmitData, 10);
+
+                byte[] result = spi.readWrite(transmitData);
+            }
+
+            else
+            {
+                byte[] transmitData = new byte[2] { 0x86, 0xC0 };
+
+                transmitData = wrapCommand(SET_SETTINGS, transmitData, 10);
+
+                byte[] result = spi.readWrite(transmitData);
+            }
+
+            edgeTrigger = edge;
+
         }
 
         static byte Calc_CRC_8(byte[] DataArray, int Length)
@@ -242,7 +294,7 @@ namespace WasatchNET
             byte[] result = spi.readWrite(transmitData);
 
             //sets trigger to level
-            transmitData = new byte[2] { 0x86, 0xC0 };
+            //transmitData = new byte[2] { 0x86, 0xC0 };
 
             //level trigger test pattern
 
@@ -252,7 +304,7 @@ namespace WasatchNET
             //to NOT get out the test pattern, axctual data instead
 
             //sets edge trigger
-            //transmitData = new byte[2] { 0x86, 0x40 };
+            transmitData = new byte[2] { 0x86, 0x40 };
 
 
             transmitData = wrapCommand(SET_SETTINGS, transmitData, 10);
@@ -496,9 +548,11 @@ namespace WasatchNET
             
             
             mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
-            Thread.Sleep((int)integrationTimeMS);
+            if (edgeTrigger)
+                Thread.Sleep(10);
+            else
+                Thread.Sleep((int)integrationTimeMS);
             mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-
 
             byte read = mpsse.ReadDataBitsHighByte();
             while ((read & 0b0010) != 0b0010)

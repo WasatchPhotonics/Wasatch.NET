@@ -97,6 +97,8 @@ namespace WasatchNET
         /// <remarks>see Util.wavelengthsToWavenumbers</remarks>
         public double[] wavenumbers { get; protected set; }
 
+        public bool isSPI { get; protected set; } = false;
+
         /// <summary>spectrometer serial number</summary>
         public virtual string serialNumber
         {
@@ -1479,6 +1481,11 @@ namespace WasatchNET
             byte lsb = (byte)(raw & 0xff);
             byte msb = (byte)((raw >> 8) & 0xff);
             return (ushort)((lsb << 8) | msb);
+        }
+
+        public virtual void changeSPITrigger(bool edge, bool firmwareThrow)
+        {
+
         }
 
         void waitForUsbAvailable()
