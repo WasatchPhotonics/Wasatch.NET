@@ -381,7 +381,7 @@ namespace WasatchNET
 
             //old method with edge trigger
 
-            /*
+            
             mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
             Thread.Sleep(100);
             mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
@@ -409,7 +409,7 @@ namespace WasatchNET
             }
 
             return spec;
-            */
+            
 			
 			//new method with level trigger
 
@@ -546,7 +546,7 @@ namespace WasatchNET
             //firmware throwaway mode
 
             
-            
+            /*
             mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
             if (edgeTrigger)
                 Thread.Sleep(10);
@@ -577,7 +577,7 @@ namespace WasatchNET
             }
 
             return spec;
-            
+            */
         }
 
         public override bool laserEnabled
