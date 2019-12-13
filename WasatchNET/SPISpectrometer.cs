@@ -649,11 +649,81 @@ namespace WasatchNET
 
         public override UInt64 laserModulationPeriod { get => 0; }
 
-        public override float detectorGain { get => 0; }
+        public override float detectorGain 
+        {
+            get
+            {
+                // if (kludgedOut) return 0;
+                /*
+                const Opcodes op = Opcodes.GET_DETECTOR_GAIN;
+                if (haveCache(op))
+                    return detectorGain_;
+                readOnce.Add(op);
+                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2)));
+
+                */
+
+                byte[] transmitData = new byte[0];
+
+                transmitData = wrapCommand(CCD_GAIN, transmitData, 10);
+
+                byte[] result = padding(10);
+                    
+                result = spi.readWrite(transmitData);
+
+                byte[] final = new byte[2];//{ result[0], result[1] };
+
+                int index = 0;
+
+                while (index < result.Length)
+                {
+                    if (result[index] == 0x3c)
+                        break;
+                    ++index;
+                }
+
+                final[1] = result[index + 5];
+                final[0] = result[index + 4]; 
+
+                //byte[] result = new byte[2];
+
+                return FunkyFloat.toFloat(Unpack.toUshort(final));
+
+
+            }
+            set
+            {
+               //eadOnce.Add(Opcodes.GET_DETECTOR_GAIN);
+                //sendCmd(Opcodes.SET_DETECTOR_GAIN, FunkyFloat.fromFloat(detectorGain_ = value));
+            }
+        }
 
         public override float detectorGainOdd { get => 0; }
 
-        public override short detectorOffset { get => 0; }
+        public override short detectorOffset 
+        {
+            get
+            {
+                // if (kludgedOut) return 0;
+                /*
+                const Opcodes op = Opcodes.GET_DETECTOR_GAIN;
+                if (haveCache(op))
+                    return detectorGain_;
+                readOnce.Add(op);
+                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2)));
+                */
+                byte[] result = new byte[2];
+
+                return Unpack.toShort(result);
+
+
+            }
+            set
+            {
+                //eadOnce.Add(Opcodes.GET_DETECTOR_GAIN);
+                //sendCmd(Opcodes.SET_DETECTOR_GAIN, FunkyFloat.fromFloat(detectorGain_ = value));
+            }
+        }
 
         public override short detectorOffsetOdd { get => 0; }
 
