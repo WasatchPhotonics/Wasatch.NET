@@ -1108,7 +1108,7 @@ namespace WasatchNET
                     startupDetectorTemperatureDegC = -48;
                 startupTriggeringMode = 2; //ParseData.toUInt8(pages[0], 47);
                 detectorGain = a.detectorGain;//ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
-                detectorOffset = 0;//ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
+                detectorOffset = a.detectorOffset;//ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
                 detectorGainOdd = 0;// ParseData.toFloat(pages[0], 54); // InGaAs-only
                 detectorOffsetOdd = 0;//ParseData.toInt16(pages[0], 58); // InGaAs-only
 

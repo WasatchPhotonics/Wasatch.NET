@@ -79,6 +79,8 @@ namespace WasatchNET
 
         const byte SET_SETTINGS = 0x92;
         const byte SET_INTEGRATION_TIME = 0x91;
+        const byte SET_CCD_GAIN = 0x94;
+        const byte SET_CCD_OFFSET = 0x93;
 
         bool edgeTrigger;
         bool firmwareThrowaway;
@@ -274,7 +276,7 @@ namespace WasatchNET
             // @todo
             // All supported SPI spectrometers have 1024 pixels, and the API does not yet provide an instruction 
             // for specifying pixel count
-            pixels = 1024;
+            //pixels = 1024;
 
             if (!eeprom.read())
             {
@@ -284,6 +286,30 @@ namespace WasatchNET
                 return false;
             }
 
+            byte[] payload = new byte[0];
+            byte[] command = wrapCommand(GET_PIXEL_COUNT, payload, 10);
+
+            byte[] result = spi.readWrite(command);
+
+            byte[] final = new byte[2];//{ result[0], result[1] };
+
+            int index = 0;
+
+            while (index < result.Length)
+            {
+                if (result[index] == 0x3c)
+                    break;
+                ++index;
+            }
+
+            final[1] = result[index + 5];
+            final[0] = result[index + 4];
+
+            pixels = (ushort)Unpack.toShort(final);
+
+
+            
+
 
             //firmware throwaway
             byte[] transmitData = new byte[1] { 0x01 };
@@ -291,7 +317,7 @@ namespace WasatchNET
             
             transmitData = wrapCommand(0xB2, transmitData, 10);
 
-            byte[] result = spi.readWrite(transmitData);
+            result = spi.readWrite(transmitData);
 
             //sets trigger to level
             //transmitData = new byte[2] { 0x86, 0xC0 };
@@ -693,7 +719,17 @@ namespace WasatchNET
             }
             set
             {
-               //eadOnce.Add(Opcodes.GET_DETECTOR_GAIN);
+                ushort funkyTransform = FunkyFloat.fromFloat(value);
+                byte[] transmitData = new byte[2];
+
+                transmitData[1] = (byte)(((uint)funkyTransform & 0xFF00) >> 8);
+                transmitData[0] = (byte)((uint)funkyTransform & 0x00FF);
+
+                byte[] command = wrapCommand(SET_CCD_GAIN, transmitData, 5);
+
+                byte[] result = spi.readWrite(command);
+
+                //eadOnce.Add(Opcodes.GET_DETECTOR_GAIN);
                 //sendCmd(Opcodes.SET_DETECTOR_GAIN, FunkyFloat.fromFloat(detectorGain_ = value));
             }
         }
@@ -712,14 +748,58 @@ namespace WasatchNET
                 readOnce.Add(op);
                 return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2)));
                 */
-                byte[] result = new byte[2];
 
-                return Unpack.toShort(result);
+                byte[] transmitData = new byte[0];
 
+                transmitData = wrapCommand(CCD_OFFSET, transmitData, 10);
+
+                byte[] result = padding(10);
+
+                result = spi.readWrite(transmitData);
+
+                byte[] final = new byte[2];//{ result[0], result[1] };
+
+                int index = 0;
+
+                while (index < result.Length)
+                {
+                    if (result[index] == 0x3c)
+                        break;
+                    ++index;
+                }
+
+                final[1] = result[index + 5];
+                final[0] = result[index + 4];
+
+
+
+                //byte[] result = new byte[2];
+
+                short wrongForm = Unpack.toShort(final);
+                short finalVal = (short)(0x7FFF & wrongForm);
+                if ((wrongForm & 0x8000) == 0x8000)
+                    finalVal *= -1;
+
+                return finalVal;
 
             }
             set
             {
+                //ushort transform =  ParseData.shortAsUshort(value);
+
+                ushort transform = (ushort)Math.Abs(value);
+                if (value < 0)
+                    transform |= 0x8000;
+
+                byte[] transmitData = new byte[2];
+
+                transmitData[1] = (byte)((transform & 0xFF00) >> 8);
+                transmitData[0] = (byte)(transform & 0x00FF);
+
+                byte[] command = wrapCommand(SET_CCD_OFFSET, transmitData, 5);
+
+                byte[] result = spi.readWrite(command);
+
                 //eadOnce.Add(Opcodes.GET_DETECTOR_GAIN);
                 //sendCmd(Opcodes.SET_DETECTOR_GAIN, FunkyFloat.fromFloat(detectorGain_ = value));
             }
@@ -800,7 +880,48 @@ namespace WasatchNET
 
         public override string firmwareRevision => "";
 
-        public override string fpgaRevision => "";
+        public override string fpgaRevision
+        {
+            get
+            {
+                byte[] payload = new byte[0];
+
+                byte[] command = wrapCommand(GET_FPGA_REV, payload, 30);
+                byte[] result = spi.readWrite(command);
+
+                byte[] final = new byte[2];//{ result[0], result[1] };
+
+                int index = 0;
+
+                while (index < result.Length)
+                {
+                    if (result[index] == 0x3c)
+                        break;
+                    ++index;
+                }
+
+                final[0] = result[index + 2];
+                final[1] = result[index + 1];
+
+                int count = (ushort)Unpack.toShort(final);
+
+                index = index + 4;
+
+                string rev = "";
+
+                for (int i = 0; i < (count - 1); ++i)
+                {
+                    rev += ((char)result[index + i]).ToString();
+                }
+
+                //final[2] = result[index + 6];
+                //final[1] = result[index + 5];
+                //final[0] = result[index + 4];
+
+                return rev;
+
+            }
+        }
 
         public override float excitationWavelengthNM
         {
