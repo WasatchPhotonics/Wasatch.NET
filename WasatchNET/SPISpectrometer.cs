@@ -104,7 +104,7 @@ namespace WasatchNET
             {
                 byte[] transmitData = new byte[1] { 0x01 };
 
-                transmitData = wrapCommand(0xB2, transmitData, 10);
+                transmitData = wrapCommand(0xB2, transmitData, 40);
 
                 byte[] result = spi.readWrite(transmitData);
             }
@@ -113,7 +113,7 @@ namespace WasatchNET
             {
                 byte[] transmitData = new byte[1] { 0x00 };
 
-                transmitData = wrapCommand(0xB2, transmitData, 10);
+                transmitData = wrapCommand(0xB2, transmitData, 40);
 
                 byte[] result = spi.readWrite(transmitData);
 
@@ -125,7 +125,7 @@ namespace WasatchNET
             {
                 byte[] transmitData = new byte[2] { 0x86, 0x40 };
 
-                transmitData = wrapCommand(SET_SETTINGS, transmitData, 10);
+                transmitData = wrapCommand(SET_SETTINGS, transmitData, 40);
 
                 byte[] result = spi.readWrite(transmitData);
             }
@@ -134,7 +134,7 @@ namespace WasatchNET
             {
                 byte[] transmitData = new byte[2] { 0x86, 0xC0 };
 
-                transmitData = wrapCommand(SET_SETTINGS, transmitData, 10);
+                transmitData = wrapCommand(SET_SETTINGS, transmitData, 40);
 
                 byte[] result = spi.readWrite(transmitData);
             }
@@ -287,7 +287,7 @@ namespace WasatchNET
             }
 
             byte[] payload = new byte[0];
-            byte[] command = wrapCommand(GET_PIXEL_COUNT, payload, 10);
+            byte[] command = wrapCommand(GET_PIXEL_COUNT, payload, 40);
 
             byte[] result = spi.readWrite(command);
 
@@ -319,7 +319,7 @@ namespace WasatchNET
             byte[] transmitData = new byte[1] { 0x01 };
 
             
-            transmitData = wrapCommand(0xB2, transmitData, 10);
+            transmitData = wrapCommand(0xB2, transmitData, 40);
 
             result = spi.readWrite(transmitData);
 
@@ -337,7 +337,7 @@ namespace WasatchNET
             transmitData = new byte[2] { 0x86, 0x40 };
 
 
-            transmitData = wrapCommand(SET_SETTINGS, transmitData, 10);
+            transmitData = wrapCommand(SET_SETTINGS, transmitData, 40);
 
             result = spi.readWrite(transmitData);
 
@@ -647,7 +647,7 @@ namespace WasatchNET
                     payload[0] = (byte)(0xFF & integTimeMS);
                     payload[1] = (byte)((0xFF00 & integTimeMS) >> 8);
                     payload[2] = 0x00;
-                    byte[] command = wrapCommand(SET_INTEGRATION_TIME, payload, 20);
+                    byte[] command = wrapCommand(SET_INTEGRATION_TIME, payload, 40);
 
                     byte[] result = spi.readWrite(command);
 
@@ -695,7 +695,7 @@ namespace WasatchNET
 
                 byte[] transmitData = new byte[0];
 
-                transmitData = wrapCommand(CCD_GAIN, transmitData, 10);
+                transmitData = wrapCommand(CCD_GAIN, transmitData, 40);
 
                 byte[] result = padding(10);
                     
@@ -733,7 +733,7 @@ namespace WasatchNET
                 transmitData[1] = (byte)(((uint)funkyTransform & 0xFF00) >> 8);
                 transmitData[0] = (byte)((uint)funkyTransform & 0x00FF);
 
-                byte[] command = wrapCommand(SET_CCD_GAIN, transmitData, 5);
+                byte[] command = wrapCommand(SET_CCD_GAIN, transmitData, 40);
 
                 byte[] result = spi.readWrite(command);
 
@@ -759,7 +759,7 @@ namespace WasatchNET
 
                 byte[] transmitData = new byte[0];
 
-                transmitData = wrapCommand(CCD_OFFSET, transmitData, 10);
+                transmitData = wrapCommand(CCD_OFFSET, transmitData, 40);
 
                 byte[] result = padding(10);
 
@@ -808,7 +808,7 @@ namespace WasatchNET
                 transmitData[1] = (byte)((transform & 0xFF00) >> 8);
                 transmitData[0] = (byte)(transform & 0x00FF);
 
-                byte[] command = wrapCommand(SET_CCD_OFFSET, transmitData, 5);
+                byte[] command = wrapCommand(SET_CCD_OFFSET, transmitData, 40);
 
                 byte[] result = spi.readWrite(command);
 
@@ -898,7 +898,7 @@ namespace WasatchNET
             {
                 byte[] payload = new byte[0];
 
-                byte[] command = wrapCommand(GET_FPGA_REV, payload, 30);
+                byte[] command = wrapCommand(GET_FPGA_REV, payload, 40);
                 byte[] result = spi.readWrite(command);
 
                 byte[] final = new byte[2];//{ result[0], result[1] };
