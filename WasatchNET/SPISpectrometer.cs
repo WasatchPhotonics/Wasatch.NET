@@ -302,6 +302,10 @@ namespace WasatchNET
                 ++index;
             }
 
+            while (result[index] == 0x3c)
+                ++index;
+            --index;
+
             final[1] = result[index + 5];
             final[0] = result[index + 4];
 
@@ -708,6 +712,10 @@ namespace WasatchNET
                     ++index;
                 }
 
+                while (result[index] == 0x3c)
+                    ++index;
+                --index;
+
                 final[1] = result[index + 5];
                 final[0] = result[index + 4]; 
 
@@ -767,6 +775,10 @@ namespace WasatchNET
                         break;
                     ++index;
                 }
+
+                while (result[index] == 0x3c)
+                    ++index;
+                --index;
 
                 final[1] = result[index + 5];
                 final[0] = result[index + 4];
@@ -899,6 +911,10 @@ namespace WasatchNET
                         break;
                     ++index;
                 }
+
+                while (result[index] == 0x3c)
+                    ++index;
+                --index;
 
                 final[0] = result[index + 2];
                 final[1] = result[index + 1];
