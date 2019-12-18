@@ -253,7 +253,7 @@ namespace WasatchNET
             }
             catch (Exception e)
             {
-                logger.info("Unable to create MPSSE connection with board. May be missing drivers");
+                logger.debug("Unable to create MPSSE connection with board. May be missing drivers");
                 return false;
             }
 
@@ -269,7 +269,7 @@ namespace WasatchNET
             }
             catch (Exception e)
             {
-                logger.info("Unable to create SPI connection with board. May be missing drivers");
+                logger.debug("Unable to create SPI connection with board. May be missing drivers");
                 return false;
             }
 
@@ -280,16 +280,25 @@ namespace WasatchNET
 
             if (!eeprom.read())
             {
-                logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                logger.info("Spectrometer: failed to GET_MODEL_CONFIG");
                 //wrapper.shutdown();
                 close();
                 return false;
             }
 
+            logger.debug("Trying to get pixel count");
+
             byte[] payload = new byte[0];
             byte[] command = wrapCommand(GET_PIXEL_COUNT, payload, 40);
 
             byte[] result = spi.readWrite(command);
+
+            logger.debug("pixel response: ");
+
+            foreach (byte b in result)
+                logger.debug( "{0}", b);
+
+            
 
             byte[] final = new byte[2];//{ result[0], result[1] };
 
@@ -310,10 +319,6 @@ namespace WasatchNET
             final[0] = result[index + 4];
 
             pixels = (ushort)Unpack.toShort(final);
-
-
-            
-
 
             //firmware throwaway
             byte[] transmitData = new byte[1] { 0x01 };
@@ -341,10 +346,11 @@ namespace WasatchNET
 
             result = spi.readWrite(transmitData);
 
+            logger.debug("All SPI comm successful, trying to gen wavelengths now");
 
             regenerateWavelengths();
 
-            logger.info("Successfully connected to SPI Spectrometer through adafruit board with serial number {0}", devSerialNumber);
+            logger.debug("Successfully connected to SPI Spectrometer through adafruit board with serial number {0}", devSerialNumber);
 
             return true;
         }

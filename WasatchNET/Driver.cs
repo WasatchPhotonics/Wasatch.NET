@@ -49,7 +49,7 @@ namespace WasatchNET
         /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
         public int openAllSpectrometers()
         {
-            logger.debug("Wasatch.NET v{0}", Assembly.GetExecutingAssembly().GetName().Version.ToString());
+            logger.info("Wasatch.NET v{0}", Assembly.GetExecutingAssembly().GetName().Version.ToString());
 
             SortedDictionary<string, List<Spectrometer>> sorted = new SortedDictionary<string, List<Spectrometer>>();
 
@@ -138,6 +138,7 @@ namespace WasatchNET
                 logger.debug("directory now {0}", Directory.GetCurrentDirectory());
 
                 SPISpectrometer spiSpec = new SPISpectrometer(null);
+                logger.debug("attempting to open spi spectrometer");
                 bool opened = spiSpec.open();
                 if (opened)
                 {
