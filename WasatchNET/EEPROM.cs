@@ -1095,7 +1095,7 @@ namespace WasatchNET
 
                 //catch(Exception e)
                 //{
-                //    wavecalCoeffs = new float[]{ 0, 1, 0, 0 };
+                wavecalCoeffs = new float[]{ 0, 1, 0, 0 };
                 //}
 
                 //startupIntegrationTimeMS = (ushort)a.wrapper.getIntegrationTimeMillisec();//ParseData.toUInt16(pages[0], 43);
@@ -1107,8 +1107,8 @@ namespace WasatchNET
                 else if (startupDetectorTemperatureDegC <= -50)
                     startupDetectorTemperatureDegC = -48;
                 startupTriggeringMode = 2; //ParseData.toUInt8(pages[0], 47);
-                detectorGain = 0;//ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
-                detectorOffset = 0;//ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
+                detectorGain = a.detectorGain;//ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
+                detectorOffset = a.detectorOffset;//ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
                 detectorGainOdd = 0;// ParseData.toFloat(pages[0], 54); // InGaAs-only
                 detectorOffsetOdd = 0;//ParseData.toInt16(pages[0], 58); // InGaAs-only
 
@@ -1128,7 +1128,7 @@ namespace WasatchNET
                 detectorName = "";
                 activePixelsHoriz = (ushort)a.pixels;//ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
                 activePixelsVert = 0;//ParseData.toUInt16(pages[2], 19);
-                minIntegrationTimeMS = 4;//(ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);//(ushort)a.wrapper.getMinIntegrationTimeMillisec();//ParseData.toUInt16(pages[2], 21); // will overwrite if 
+                minIntegrationTimeMS = 1;//(ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);//(ushort)a.wrapper.getMinIntegrationTimeMillisec();//ParseData.toUInt16(pages[2], 21); // will overwrite if 
                 maxIntegrationTimeMS = 1000000;//(ushort)a.wrapper.getMaxIntegrationTimeMillisec();//ParseData.toUInt16(pages[2], 23); //   format >= 5
                 actualPixelsHoriz = (ushort)a.pixels;//ParseData.toUInt16(pages[2], 25);
                 ROIHorizStart = 0; //ParseData.toUInt16(pages[2], 27);
@@ -1154,7 +1154,7 @@ namespace WasatchNET
 
                 //!!!!!!!
                 //!!!!!!!
-                laserExcitationWavelengthNMFloat = 0.0f;//830.0f;//ParseData.toFloat(pages[3], 36);
+                laserExcitationWavelengthNMFloat = 785.0f;//830.0f;//ParseData.toFloat(pages[3], 36);
 
                 userData = new byte[63];
 
