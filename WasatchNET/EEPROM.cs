@@ -1132,104 +1132,236 @@ namespace WasatchNET
 
                 format = pages[0][63];
 
-                try
+                if (format == 0xff)
                 {
-                    model = ParseData.toString(pages[0], 0, 16);
-                    serialNumber = ParseData.toString(pages[0], 16, 16);
-                    baudRate = ParseData.toUInt32(pages[0], 32);
-                    hasCooling = ParseData.toBool(pages[0], 36);
-                    hasBattery = ParseData.toBool(pages[0], 37);
-                    hasLaser = ParseData.toBool(pages[0], 38);
-                    excitationNM = ParseData.toUInt16(pages[0], 39);
-                    slitSizeUM = ParseData.toUInt16(pages[0], 41);
+                    model = "";
 
-                    startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
-                    startupDetectorTemperatureDegC = ParseData.toInt16(pages[0], 45);
-                    startupTriggeringMode = ParseData.toUInt8(pages[0], 47);
-                    detectorGain = ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
-                    detectorOffset = ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
-                    detectorGainOdd = ParseData.toFloat(pages[0], 54); // InGaAs-only
-                    detectorOffsetOdd = ParseData.toInt16(pages[0], 58); // InGaAs-only
 
-                    wavecalCoeffs[0] = ParseData.toFloat(pages[1], 0);
-                    wavecalCoeffs[1] = ParseData.toFloat(pages[1], 4);
-                    wavecalCoeffs[2] = ParseData.toFloat(pages[1], 8);
-                    wavecalCoeffs[3] = ParseData.toFloat(pages[1], 12);
-                    degCToDACCoeffs[0] = ParseData.toFloat(pages[1], 16);
-                    degCToDACCoeffs[1] = ParseData.toFloat(pages[1], 20);
-                    degCToDACCoeffs[2] = ParseData.toFloat(pages[1], 24);
-                    detectorTempMax = ParseData.toInt16(pages[1], 28);
-                    detectorTempMin = ParseData.toInt16(pages[1], 30);
-                    adcToDegCCoeffs[0] = ParseData.toFloat(pages[1], 32);
-                    adcToDegCCoeffs[1] = ParseData.toFloat(pages[1], 36);
-                    adcToDegCCoeffs[2] = ParseData.toFloat(pages[1], 40);
-                    thermistorResistanceAt298K = ParseData.toInt16(pages[1], 44);
-                    thermistorBeta = ParseData.toInt16(pages[1], 46);
-                    calibrationDate = ParseData.toString(pages[1], 48, 12);
-                    calibrationBy = ParseData.toString(pages[1], 60, 3);
-
-                    detectorName = ParseData.toString(pages[2], 0, 16);
-                    activePixelsHoriz = ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
-                    activePixelsVert = ParseData.toUInt16(pages[2], 19);
-                    minIntegrationTimeMS = ParseData.toUInt16(pages[2], 21); // will overwrite if 
-                    maxIntegrationTimeMS = ParseData.toUInt16(pages[2], 23); //   format >= 5
-                    actualPixelsHoriz = ParseData.toUInt16(pages[2], 25);
-                    ROIHorizStart = ParseData.toUInt16(pages[2], 27);
-                    ROIHorizEnd = ParseData.toUInt16(pages[2], 29);
-                    ROIVertRegionStart[0] = ParseData.toUInt16(pages[2], 31);
-                    ROIVertRegionEnd[0] = ParseData.toUInt16(pages[2], 33);
-                    ROIVertRegionStart[1] = ParseData.toUInt16(pages[2], 35);
-                    ROIVertRegionEnd[1] = ParseData.toUInt16(pages[2], 37);
-                    ROIVertRegionStart[2] = ParseData.toUInt16(pages[2], 39);
-                    ROIVertRegionEnd[2] = ParseData.toUInt16(pages[2], 41);
-                    linearityCoeffs[0] = ParseData.toFloat(pages[2], 43);
-                    linearityCoeffs[1] = ParseData.toFloat(pages[2], 47);
-                    linearityCoeffs[2] = ParseData.toFloat(pages[2], 51);
-                    linearityCoeffs[3] = ParseData.toFloat(pages[2], 55);
-                    linearityCoeffs[4] = ParseData.toFloat(pages[2], 59);
-
-                    // deviceLifetimeOperationMinutes = ParseData.toInt32(pages[3], 0);
-                    // laserLifetimeOperationMinutes = ParseData.toInt32(pages[3], 4);
-                    // laserTemperatureMax  = ParseData.toInt16(pages[3], 8);
-                    // laserTemperatureMin  = ParseData.toInt16(pages[3], 10);
-
-                    laserPowerCoeffs[0] = ParseData.toFloat(pages[3], 12);
-                    laserPowerCoeffs[1] = ParseData.toFloat(pages[3], 16);
-                    laserPowerCoeffs[2] = ParseData.toFloat(pages[3], 20);
-                    laserPowerCoeffs[3] = ParseData.toFloat(pages[3], 24);
-                    maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
-                    minLaserPowerMW = ParseData.toFloat(pages[3], 32);
-                    laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
-                    if (format >= 5)
+                    /*
+                    try
                     {
-                        minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
-                        maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
+                        serialNumber = a.wrapper.readEEPROMSlot(0);
                     }
 
-                    userData = format < 4 ? new byte[63] : new byte[64];
-                    Array.Copy(pages[4], userData, userData.Length);
+                    catch (Exception e)
+                    {
+                        serialNumber = "";
+                    }
+                    */
+
+                    serialNumber = a.serialNumber;
+
+                    /*
+                    try
+                    {
+                        baudRate = System.Convert.ToUInt32(a.wrapper.readEEPROMSlot(18));
+                    }
+                    catch (Exception e)
+                    {
+                        baudRate = 0;
+                    }
+                    */
+
+                    baudRate = 0;
+
+                    hasCooling = false;
+                    hasBattery = true;
+                    hasLaser = false;
+
+                    excitationNM = 0;
+
+                    //string info = a.wrapper.readEEPROMSlot(15);
+                    slitSizeUM = 0;//System.Convert.ToUInt16(info.Substring(5));
+                                   //slitSizeUM = ParseData.toUInt16(pages[0], 41);
+
+                    //string test = a.wrapper.readEEPROMSlot(1);
+
+                    byte[] buffer = new byte[16];
+                    int errorReader = 0;
+
+                    //SeaBreezeWrapper.seabreeze_read_eeprom_slot(a.specIndex, ref errorReader, 1, ref buffer, 16);
+
+                    string test = buffer.ToString();
+
+                    /*
+                    try
+                    {
+                        wavecalCoeffs[0] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(1));
+                        wavecalCoeffs[1] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(2));
+                        wavecalCoeffs[2] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(3));
+                        wavecalCoeffs[3] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(4));
+                    }
+                    */
+
+                //catch(Exception e)
+                //{
+                    wavecalCoeffs = new float[] { 0, 1, 0, 0 };
+                    //}
+
+                    //startupIntegrationTimeMS = (ushort)a.wrapper.getIntegrationTimeMillisec();//ParseData.toUInt16(pages[0], 43);
+                    startupIntegrationTimeMS = 0;//(ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
+                    double temp = 0;//SeaBreezeWrapper.seabreeze_read_tec_temperature(a.specIndex, ref errorReader);//a.wrapper.getSpectrometerTemperatureDegreesC();
+                    startupDetectorTemperatureDegC = (short)temp;
+                    if (startupDetectorTemperatureDegC >= 99)
+                        startupDetectorTemperatureDegC = 48;
+                    else if (startupDetectorTemperatureDegC <= -50)
+                        startupDetectorTemperatureDegC = -48;
+                    startupTriggeringMode = 2; //ParseData.toUInt8(pages[0], 47);
+                    detectorGain = a.detectorGain;//ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
+                    detectorOffset = a.detectorOffset;//ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
+                    detectorGainOdd = 0;// ParseData.toFloat(pages[0], 54); // InGaAs-only
+                    detectorOffsetOdd = 0;//ParseData.toInt16(pages[0], 58); // InGaAs-only
+
+                    degCToDACCoeffs[0] = 0;
+                    degCToDACCoeffs[1] = 0;
+                    degCToDACCoeffs[2] = 0;
+                    detectorTempMax = 0;
+                    detectorTempMin = 0;
+                    adcToDegCCoeffs[0] = 0;
+                    adcToDegCCoeffs[1] = 0;
+                    adcToDegCCoeffs[2] = 0;
+                    thermistorResistanceAt298K = 0;
+                    thermistorBeta = 0;
+                    calibrationDate = "01/01/2020";
+                    calibrationBy = "RSC";
+
+                    detectorName = "";
+                    activePixelsHoriz = (ushort)a.pixels;//ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
+                    activePixelsVert = 0;//ParseData.toUInt16(pages[2], 19);
+                    minIntegrationTimeMS = 1;//(ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);//(ushort)a.wrapper.getMinIntegrationTimeMillisec();//ParseData.toUInt16(pages[2], 21); // will overwrite if 
+                    maxIntegrationTimeMS = 1000000;//(ushort)a.wrapper.getMaxIntegrationTimeMillisec();//ParseData.toUInt16(pages[2], 23); //   format >= 5
+                    actualPixelsHoriz = (ushort)a.pixels;//ParseData.toUInt16(pages[2], 25);
+                    ROIHorizStart = 0; //ParseData.toUInt16(pages[2], 27);
+                    ROIHorizEnd = 0; //ParseData.toUInt16(pages[2], 29);
+                    ROIVertRegionStart[0] = 0;//ParseData.toUInt16(pages[2], 31);
+                    ROIVertRegionEnd[0] = 0;//ParseData.toUInt16(pages[2], 33);
+                    ROIVertRegionStart[1] = 0;//ParseData.toUInt16(pages[2], 35);
+                    ROIVertRegionEnd[1] = 0; //ParseData.toUInt16(pages[2], 37);
+                    ROIVertRegionStart[2] = 0;//ParseData.toUInt16(pages[2], 39);
+                    ROIVertRegionEnd[2] = 0; //ParseData.toUInt16(pages[2], 41);
+                    linearityCoeffs[0] = 0;//ParseData.toFloat(pages[2], 43);
+                    linearityCoeffs[1] = 0;//ParseData.toFloat(pages[2], 47);
+                    linearityCoeffs[2] = 0;// ParseData.toFloat(pages[2], 51);
+                    linearityCoeffs[3] = 0;//ParseData.toFloat(pages[2], 55);
+                    linearityCoeffs[4] = 0;// ParseData.toFloat(pages[2], 59);
+
+                    laserPowerCoeffs[0] = 0;// ParseData.toFloat(pages[3], 12);
+                    laserPowerCoeffs[1] = 0;//ParseData.toFloat(pages[3], 16);
+                    laserPowerCoeffs[2] = 0;//ParseData.toFloat(pages[3], 20);
+                    laserPowerCoeffs[3] = 0;//ParseData.toFloat(pages[3], 24);
+                    maxLaserPowerMW = 0;//ParseData.toFloat(pages[3], 28);
+                    minLaserPowerMW = 0;//ParseData.toFloat(pages[3], 32);
+
+                    //!!!!!!!
+                    //!!!!!!!
+                    laserExcitationWavelengthNMFloat = 785.0f;//830.0f;//ParseData.toFloat(pages[3], 36);
+
+                    userData = new byte[63];
 
                     badPixelSet = new SortedSet<short>();
-                    for (int i = 0; i < 15; i++)
-                    {
-                        short pixel = ParseData.toInt16(pages[5], i * 2);
-                        badPixels[i] = pixel;
-                        if (pixel >= 0)
-                            badPixelSet.Add(pixel); // does not throw
-                    }
-                    badPixelList = new List<short>(badPixelSet);
-
-                    if (format >= 5)
-                        productConfiguration = ParseData.toString(pages[5], 30, 16);
-                    else
-                        productConfiguration = "";
+                    productConfiguration = "";
                 }
-                catch (Exception ex)
+
+                else
                 {
-                    logger.error("ModelConfig: caught exception: {0}", ex.Message);
-                    return false;
-                }
+                    try
+                    {
+                        model = ParseData.toString(pages[0], 0, 16);
+                        serialNumber = ParseData.toString(pages[0], 16, 16);
+                        baudRate = ParseData.toUInt32(pages[0], 32);
+                        hasCooling = ParseData.toBool(pages[0], 36);
+                        hasBattery = ParseData.toBool(pages[0], 37);
+                        hasLaser = ParseData.toBool(pages[0], 38);
+                        excitationNM = ParseData.toUInt16(pages[0], 39);
+                        slitSizeUM = ParseData.toUInt16(pages[0], 41);
 
+                        startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
+                        startupDetectorTemperatureDegC = ParseData.toInt16(pages[0], 45);
+                        startupTriggeringMode = ParseData.toUInt8(pages[0], 47);
+                        detectorGain = ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
+                        detectorOffset = ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
+                        detectorGainOdd = ParseData.toFloat(pages[0], 54); // InGaAs-only
+                        detectorOffsetOdd = ParseData.toInt16(pages[0], 58); // InGaAs-only
+
+                        wavecalCoeffs[0] = ParseData.toFloat(pages[1], 0);
+                        wavecalCoeffs[1] = ParseData.toFloat(pages[1], 4);
+                        wavecalCoeffs[2] = ParseData.toFloat(pages[1], 8);
+                        wavecalCoeffs[3] = ParseData.toFloat(pages[1], 12);
+                        degCToDACCoeffs[0] = ParseData.toFloat(pages[1], 16);
+                        degCToDACCoeffs[1] = ParseData.toFloat(pages[1], 20);
+                        degCToDACCoeffs[2] = ParseData.toFloat(pages[1], 24);
+                        detectorTempMax = ParseData.toInt16(pages[1], 28);
+                        detectorTempMin = ParseData.toInt16(pages[1], 30);
+                        adcToDegCCoeffs[0] = ParseData.toFloat(pages[1], 32);
+                        adcToDegCCoeffs[1] = ParseData.toFloat(pages[1], 36);
+                        adcToDegCCoeffs[2] = ParseData.toFloat(pages[1], 40);
+                        thermistorResistanceAt298K = ParseData.toInt16(pages[1], 44);
+                        thermistorBeta = ParseData.toInt16(pages[1], 46);
+                        calibrationDate = ParseData.toString(pages[1], 48, 12);
+                        calibrationBy = ParseData.toString(pages[1], 60, 3);
+
+                        detectorName = ParseData.toString(pages[2], 0, 16);
+                        activePixelsHoriz = ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
+                        activePixelsVert = ParseData.toUInt16(pages[2], 19);
+                        minIntegrationTimeMS = ParseData.toUInt16(pages[2], 21); // will overwrite if 
+                        maxIntegrationTimeMS = ParseData.toUInt16(pages[2], 23); //   format >= 5
+                        actualPixelsHoriz = ParseData.toUInt16(pages[2], 25);
+                        ROIHorizStart = ParseData.toUInt16(pages[2], 27);
+                        ROIHorizEnd = ParseData.toUInt16(pages[2], 29);
+                        ROIVertRegionStart[0] = ParseData.toUInt16(pages[2], 31);
+                        ROIVertRegionEnd[0] = ParseData.toUInt16(pages[2], 33);
+                        ROIVertRegionStart[1] = ParseData.toUInt16(pages[2], 35);
+                        ROIVertRegionEnd[1] = ParseData.toUInt16(pages[2], 37);
+                        ROIVertRegionStart[2] = ParseData.toUInt16(pages[2], 39);
+                        ROIVertRegionEnd[2] = ParseData.toUInt16(pages[2], 41);
+                        linearityCoeffs[0] = ParseData.toFloat(pages[2], 43);
+                        linearityCoeffs[1] = ParseData.toFloat(pages[2], 47);
+                        linearityCoeffs[2] = ParseData.toFloat(pages[2], 51);
+                        linearityCoeffs[3] = ParseData.toFloat(pages[2], 55);
+                        linearityCoeffs[4] = ParseData.toFloat(pages[2], 59);
+
+                        // deviceLifetimeOperationMinutes = ParseData.toInt32(pages[3], 0);
+                        // laserLifetimeOperationMinutes = ParseData.toInt32(pages[3], 4);
+                        // laserTemperatureMax  = ParseData.toInt16(pages[3], 8);
+                        // laserTemperatureMin  = ParseData.toInt16(pages[3], 10);
+
+                        laserPowerCoeffs[0] = ParseData.toFloat(pages[3], 12);
+                        laserPowerCoeffs[1] = ParseData.toFloat(pages[3], 16);
+                        laserPowerCoeffs[2] = ParseData.toFloat(pages[3], 20);
+                        laserPowerCoeffs[3] = ParseData.toFloat(pages[3], 24);
+                        maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
+                        minLaserPowerMW = ParseData.toFloat(pages[3], 32);
+                        laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
+                        if (format >= 5)
+                        {
+                            minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
+                            maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
+                        }
+
+                        userData = format < 4 ? new byte[63] : new byte[64];
+                        Array.Copy(pages[4], userData, userData.Length);
+
+                        badPixelSet = new SortedSet<short>();
+                        for (int i = 0; i < 15; i++)
+                        {
+                            short pixel = ParseData.toInt16(pages[5], i * 2);
+                            badPixels[i] = pixel;
+                            if (pixel >= 0)
+                                badPixelSet.Add(pixel); // does not throw
+                        }
+                        badPixelList = new List<short>(badPixelSet);
+
+                        if (format >= 5)
+                            productConfiguration = ParseData.toString(pages[5], 30, 16);
+                        else
+                            productConfiguration = "";
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.error("ModelConfig: caught exception: {0}", ex.Message);
+                        return false;
+                    }
+                }
                 if (logger.debugEnabled())
                     dump();
 

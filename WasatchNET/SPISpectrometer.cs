@@ -435,7 +435,27 @@ namespace WasatchNET
                 command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 80);
 
                 result = spi.readWrite(command);
-                pages.Add(result.Take(64).ToArray());
+
+                int index = 0;
+
+                while (index < result.Length)
+                {
+                    if (result[index] == 0x3c)
+                        break;
+                    ++index;
+                }
+
+                while (result[index] == 0x3c)
+                    ++index;
+                --index;
+
+                var checkIn = result.Skip(index);
+                checkIn = result.Skip(index + 1);
+                checkIn = result.Skip(index + 2);
+                checkIn = result.Skip(index + 3);
+                checkIn = result.Skip(index + 4);
+
+                pages.Add(checkIn.Take(64).ToArray());
             }
 
 
