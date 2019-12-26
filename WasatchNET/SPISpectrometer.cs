@@ -311,12 +311,12 @@ namespace WasatchNET
 
             while (index < result.Length)
             {
-                if (result[index] == 0x3c)
+                if (result[index] == START_CMD)
                     break;
                 ++index;
             }
 
-            while (result[index] == 0x3c)
+            while (result[index] == START_CMD)
                 ++index;
             --index;
 
@@ -440,12 +440,12 @@ namespace WasatchNET
 
                 while (index < result.Length)
                 {
-                    if (result[index] == 0x3c)
+                    if (result[index] == START_CMD)
                         break;
                     ++index;
                 }
 
-                while (result[index] == 0x3c)
+                while (result[index] == START_CMD)
                     ++index;
                 --index;
 
@@ -791,12 +791,12 @@ namespace WasatchNET
 
                 while (index < result.Length)
                 {
-                    if (result[index] == 0x3c)
+                    if (result[index] == START_CMD)
                         break;
                     ++index;
                 }
 
-                while (result[index] == 0x3c)
+                while (result[index] == START_CMD)
                     ++index;
                 --index;
 
@@ -855,12 +855,12 @@ namespace WasatchNET
 
                 while (index < result.Length)
                 {
-                    if (result[index] == 0x3c)
+                    if (result[index] == START_CMD)
                         break;
                     ++index;
                 }
 
-                while (result[index] == 0x3c)
+                while (result[index] == START_CMD)
                     ++index;
                 --index;
 
@@ -991,12 +991,12 @@ namespace WasatchNET
 
                 while (index < result.Length)
                 {
-                    if (result[index] == 0x3c)
+                    if (result[index] == START_CMD)
                         break;
                     ++index;
                 }
 
-                while (result[index] == 0x3c)
+                while (result[index] == START_CMD)
                     ++index;
                 --index;
 
