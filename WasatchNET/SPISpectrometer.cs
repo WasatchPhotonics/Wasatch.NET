@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Linq;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 using MPSSELight;
@@ -61,8 +62,12 @@ namespace WasatchNET
         const byte HORIZ_BINNING = 0x27;
         const byte TRIGGER_DELAY = 0x28;
         const byte GET_CCD_TEMP = 0x49;
-        const byte OUTPUT_TEST_PATTERN = 0x30;
-        const byte COMP_ENGINE_OUT_ENABLE = 0x31;
+        //public const byte OUTPUT_TEST_PATTERN = 0x30;
+        const byte PREP_FPGA = 0x30;
+        const byte READ_EEPROM_BUFFER = 0x31;
+        const byte EEPROM_OPS = 0xB0;
+        const byte WRITE_EEPROM_BUFFER = 0xB1;
+        //const byte COMP_ENGINE_OUT_ENABLE = 0x31;
         const byte SELECT_USB_FS = 0x32;
         const byte LASER_MODULATION = 0x33;
         const byte LASER_ON = 0x34;
@@ -405,6 +410,59 @@ namespace WasatchNET
                 }
             }
         }
+
+        public List<byte[]> getEEPROMPages()
+        {
+
+            List<byte[]> pages = new List<byte[]>();
+
+            //CHANGES
+            for (ushort page = 0; page < EEPROM.MAX_PAGES; page++)
+            {
+                byte[] transmitData = new byte[0];
+
+                byte[] command = wrapCommand(PREP_FPGA, transmitData, 10);
+
+                byte[] result = spi.readWrite(command);
+
+                byte currPage = (byte)(0x40 | (uint)page);
+
+                transmitData = new byte[1]{ currPage };
+                command = wrapCommand(EEPROM_OPS, transmitData, 10);
+
+                result = spi.readWrite(command);
+                transmitData = new byte[0];
+                command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 80);
+
+                result = spi.readWrite(command);
+                pages.Add(result.Take(64).ToArray());
+            }
+
+
+            return pages;
+
+        }
+
+        public bool writeEEPROM(List<byte[]> pages)
+        {
+            for (ushort page = 0; page < pages.Count; ++page)
+            {
+                byte[] transmitData = pages[page];
+
+                byte[] command = wrapCommand(WRITE_EEPROM_BUFFER, transmitData, 10);
+
+                byte[] result = spi.readWrite(command);
+
+                byte currPage = (byte)(0x80 | (uint)page);
+
+                transmitData = new byte[1] { currPage };
+                command = wrapCommand(EEPROM_OPS, transmitData, 10);
+                result = spi.readWrite(command);
+            }
+
+            return true;
+        }
+
 
         protected override double[] getSpectrumRaw()
         {

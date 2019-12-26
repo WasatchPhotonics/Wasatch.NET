@@ -28,7 +28,7 @@ namespace WasatchNET
         // private attributes
         /////////////////////////////////////////////////////////////////////////       
 
-        const int MAX_PAGES = 6; // really 8, but last 2 are unallocated
+        internal const int MAX_PAGES = 6; // really 8, but last 2 are unallocated
         const byte FORMAT = 5;
 
         Spectrometer spectrometer;
@@ -758,6 +758,97 @@ namespace WasatchNET
                 return true;
             }
 
+            else if (spectrometer is SPISpectrometer)
+            {
+                if (pages == null || pages.Count != MAX_PAGES)
+                {
+                    logger.error("ModelConfig.write: need to perform a read first");
+                    return false;
+                }
+
+                if (!ParseData.writeString(model, pages[0], 0, 16)) return false;
+                if (!ParseData.writeString(serialNumber, pages[0], 16, 16)) return false;
+                if (!ParseData.writeUInt32(baudRate, pages[0], 32)) return false;
+                if (!ParseData.writeBool(hasCooling, pages[0], 36)) return false;
+                if (!ParseData.writeBool(hasBattery, pages[0], 37)) return false;
+                if (!ParseData.writeBool(hasLaser, pages[0], 38)) return false;
+                if (!ParseData.writeUInt16(excitationNM, pages[0], 39)) return false;
+                if (!ParseData.writeUInt16(slitSizeUM, pages[0], 41)) return false;
+                if (!ParseData.writeUInt16(startupIntegrationTimeMS, pages[0], 43)) return false;
+                if (!ParseData.writeInt16(startupDetectorTemperatureDegC, pages[0], 45)) return false;
+                if (!ParseData.writeByte(startupTriggeringMode, pages[0], 47)) return false;
+                if (!ParseData.writeFloat(detectorGain, pages[0], 48)) return false;
+                if (!ParseData.writeInt16(detectorOffset, pages[0], 52)) return false;
+                if (!ParseData.writeFloat(detectorGainOdd, pages[0], 54)) return false;
+                if (!ParseData.writeInt16(detectorOffsetOdd, pages[0], 58)) return false;
+
+                if (!ParseData.writeFloat(wavecalCoeffs[0], pages[1], 0)) return false;
+                if (!ParseData.writeFloat(wavecalCoeffs[1], pages[1], 4)) return false;
+                if (!ParseData.writeFloat(wavecalCoeffs[2], pages[1], 8)) return false;
+                if (!ParseData.writeFloat(wavecalCoeffs[3], pages[1], 12)) return false;
+                if (!ParseData.writeFloat(degCToDACCoeffs[0], pages[1], 16)) return false;
+                if (!ParseData.writeFloat(degCToDACCoeffs[1], pages[1], 20)) return false;
+                if (!ParseData.writeFloat(degCToDACCoeffs[2], pages[1], 24)) return false;
+                if (!ParseData.writeInt16(detectorTempMax, pages[1], 28)) return false;
+                if (!ParseData.writeInt16(detectorTempMin, pages[1], 30)) return false;
+                if (!ParseData.writeFloat(adcToDegCCoeffs[0], pages[1], 32)) return false;
+                if (!ParseData.writeFloat(adcToDegCCoeffs[1], pages[1], 36)) return false;
+                if (!ParseData.writeFloat(adcToDegCCoeffs[2], pages[1], 40)) return false;
+                if (!ParseData.writeInt16(thermistorResistanceAt298K, pages[1], 44)) return false;
+                if (!ParseData.writeInt16(thermistorBeta, pages[1], 46)) return false;
+                if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
+                if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
+
+                if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
+                if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
+                // skip 18
+                if (!ParseData.writeUInt16(activePixelsVert, pages[2], 19)) return false;
+                if (!ParseData.writeUInt16((ushort)minIntegrationTimeMS, pages[2], 21)) return false; // for now
+                if (!ParseData.writeUInt16((ushort)maxIntegrationTimeMS, pages[2], 23)) return false; // for now
+                if (!ParseData.writeUInt16(actualPixelsHoriz, pages[2], 25)) return false;
+                if (!ParseData.writeUInt16(ROIHorizStart, pages[2], 27)) return false;
+                if (!ParseData.writeUInt16(ROIHorizEnd, pages[2], 29)) return false;
+                if (!ParseData.writeUInt16(ROIVertRegionStart[0], pages[2], 31)) return false;
+                if (!ParseData.writeUInt16(ROIVertRegionEnd[0], pages[2], 33)) return false;
+                if (!ParseData.writeUInt16(ROIVertRegionStart[1], pages[2], 35)) return false;
+                if (!ParseData.writeUInt16(ROIVertRegionEnd[1], pages[2], 37)) return false;
+                if (!ParseData.writeUInt16(ROIVertRegionStart[2], pages[2], 39)) return false;
+                if (!ParseData.writeUInt16(ROIVertRegionEnd[2], pages[2], 41)) return false;
+                if (!ParseData.writeFloat(linearityCoeffs[0], pages[2], 43)) return false;
+                if (!ParseData.writeFloat(linearityCoeffs[1], pages[2], 47)) return false;
+                if (!ParseData.writeFloat(linearityCoeffs[2], pages[2], 51)) return false;
+                if (!ParseData.writeFloat(linearityCoeffs[3], pages[2], 55)) return false;
+                if (!ParseData.writeFloat(linearityCoeffs[4], pages[2], 59)) return false;
+
+                if (!ParseData.writeFloat(laserPowerCoeffs[0], pages[3], 12)) return false;
+                if (!ParseData.writeFloat(laserPowerCoeffs[1], pages[3], 16)) return false;
+                if (!ParseData.writeFloat(laserPowerCoeffs[2], pages[3], 20)) return false;
+                if (!ParseData.writeFloat(laserPowerCoeffs[3], pages[3], 24)) return false;
+                if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 28)) return false;
+                if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 32)) return false;
+                if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
+                if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
+                if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
+
+                Array.Copy(userData, pages[4], userData.Length);
+
+                // note that we write the positional, error-prone array (which is 
+                // user -writable), not the List or SortedSet caches
+                for (int i = 0; i < badPixels.Length; i++)
+                    if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
+                        return false;
+
+                if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
+
+                // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
+                pages[0][63] = FORMAT;
+
+                SPISpectrometer a = spectrometer as SPISpectrometer;
+
+                return a.writeEEPROM(pages);
+
+            }
+
             else
             {
                 if (pages == null || pages.Count != MAX_PAGES)
@@ -1034,10 +1125,122 @@ namespace WasatchNET
             else if (spectrometer is SPISpectrometer)
             {
 
+
                 SPISpectrometer a = spectrometer as SPISpectrometer;
-                model = "";
+
+                pages = a.getEEPROMPages();
+
+                format = pages[0][63];
+
+                try
+                {
+                    model = ParseData.toString(pages[0], 0, 16);
+                    serialNumber = ParseData.toString(pages[0], 16, 16);
+                    baudRate = ParseData.toUInt32(pages[0], 32);
+                    hasCooling = ParseData.toBool(pages[0], 36);
+                    hasBattery = ParseData.toBool(pages[0], 37);
+                    hasLaser = ParseData.toBool(pages[0], 38);
+                    excitationNM = ParseData.toUInt16(pages[0], 39);
+                    slitSizeUM = ParseData.toUInt16(pages[0], 41);
+
+                    startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
+                    startupDetectorTemperatureDegC = ParseData.toInt16(pages[0], 45);
+                    startupTriggeringMode = ParseData.toUInt8(pages[0], 47);
+                    detectorGain = ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
+                    detectorOffset = ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
+                    detectorGainOdd = ParseData.toFloat(pages[0], 54); // InGaAs-only
+                    detectorOffsetOdd = ParseData.toInt16(pages[0], 58); // InGaAs-only
+
+                    wavecalCoeffs[0] = ParseData.toFloat(pages[1], 0);
+                    wavecalCoeffs[1] = ParseData.toFloat(pages[1], 4);
+                    wavecalCoeffs[2] = ParseData.toFloat(pages[1], 8);
+                    wavecalCoeffs[3] = ParseData.toFloat(pages[1], 12);
+                    degCToDACCoeffs[0] = ParseData.toFloat(pages[1], 16);
+                    degCToDACCoeffs[1] = ParseData.toFloat(pages[1], 20);
+                    degCToDACCoeffs[2] = ParseData.toFloat(pages[1], 24);
+                    detectorTempMax = ParseData.toInt16(pages[1], 28);
+                    detectorTempMin = ParseData.toInt16(pages[1], 30);
+                    adcToDegCCoeffs[0] = ParseData.toFloat(pages[1], 32);
+                    adcToDegCCoeffs[1] = ParseData.toFloat(pages[1], 36);
+                    adcToDegCCoeffs[2] = ParseData.toFloat(pages[1], 40);
+                    thermistorResistanceAt298K = ParseData.toInt16(pages[1], 44);
+                    thermistorBeta = ParseData.toInt16(pages[1], 46);
+                    calibrationDate = ParseData.toString(pages[1], 48, 12);
+                    calibrationBy = ParseData.toString(pages[1], 60, 3);
+
+                    detectorName = ParseData.toString(pages[2], 0, 16);
+                    activePixelsHoriz = ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
+                    activePixelsVert = ParseData.toUInt16(pages[2], 19);
+                    minIntegrationTimeMS = ParseData.toUInt16(pages[2], 21); // will overwrite if 
+                    maxIntegrationTimeMS = ParseData.toUInt16(pages[2], 23); //   format >= 5
+                    actualPixelsHoriz = ParseData.toUInt16(pages[2], 25);
+                    ROIHorizStart = ParseData.toUInt16(pages[2], 27);
+                    ROIHorizEnd = ParseData.toUInt16(pages[2], 29);
+                    ROIVertRegionStart[0] = ParseData.toUInt16(pages[2], 31);
+                    ROIVertRegionEnd[0] = ParseData.toUInt16(pages[2], 33);
+                    ROIVertRegionStart[1] = ParseData.toUInt16(pages[2], 35);
+                    ROIVertRegionEnd[1] = ParseData.toUInt16(pages[2], 37);
+                    ROIVertRegionStart[2] = ParseData.toUInt16(pages[2], 39);
+                    ROIVertRegionEnd[2] = ParseData.toUInt16(pages[2], 41);
+                    linearityCoeffs[0] = ParseData.toFloat(pages[2], 43);
+                    linearityCoeffs[1] = ParseData.toFloat(pages[2], 47);
+                    linearityCoeffs[2] = ParseData.toFloat(pages[2], 51);
+                    linearityCoeffs[3] = ParseData.toFloat(pages[2], 55);
+                    linearityCoeffs[4] = ParseData.toFloat(pages[2], 59);
+
+                    // deviceLifetimeOperationMinutes = ParseData.toInt32(pages[3], 0);
+                    // laserLifetimeOperationMinutes = ParseData.toInt32(pages[3], 4);
+                    // laserTemperatureMax  = ParseData.toInt16(pages[3], 8);
+                    // laserTemperatureMin  = ParseData.toInt16(pages[3], 10);
+
+                    laserPowerCoeffs[0] = ParseData.toFloat(pages[3], 12);
+                    laserPowerCoeffs[1] = ParseData.toFloat(pages[3], 16);
+                    laserPowerCoeffs[2] = ParseData.toFloat(pages[3], 20);
+                    laserPowerCoeffs[3] = ParseData.toFloat(pages[3], 24);
+                    maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
+                    minLaserPowerMW = ParseData.toFloat(pages[3], 32);
+                    laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
+                    if (format >= 5)
+                    {
+                        minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
+                        maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
+                    }
+
+                    userData = format < 4 ? new byte[63] : new byte[64];
+                    Array.Copy(pages[4], userData, userData.Length);
+
+                    badPixelSet = new SortedSet<short>();
+                    for (int i = 0; i < 15; i++)
+                    {
+                        short pixel = ParseData.toInt16(pages[5], i * 2);
+                        badPixels[i] = pixel;
+                        if (pixel >= 0)
+                            badPixelSet.Add(pixel); // does not throw
+                    }
+                    badPixelList = new List<short>(badPixelSet);
+
+                    if (format >= 5)
+                        productConfiguration = ParseData.toString(pages[5], 30, 16);
+                    else
+                        productConfiguration = "";
+                }
+                catch (Exception ex)
+                {
+                    logger.error("ModelConfig: caught exception: {0}", ex.Message);
+                    return false;
+                }
+
+                if (logger.debugEnabled())
+                    dump();
+
+                enforceReasonableDefaults();
+
+                return true;
 
                 /*
+                model = "";
+
+                
                 try
                 {
                     serialNumber = a.wrapper.readEEPROMSlot(0);
@@ -1047,11 +1250,11 @@ namespace WasatchNET
                 {
                     serialNumber = "";
                 }
-                */
+                
 
                 serialNumber = a.serialNumber;
 
-                /*
+                
                 try
                 {
                     baudRate = System.Convert.ToUInt32(a.wrapper.readEEPROMSlot(18));
@@ -1060,7 +1263,7 @@ namespace WasatchNET
                 {
                     baudRate = 0;
                 }
-                */
+                
 
                 baudRate = 0;
 
@@ -1083,7 +1286,7 @@ namespace WasatchNET
 
                 string test = buffer.ToString();
 
-                /*
+                
                 try
                 {
                     wavecalCoeffs[0] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(1));
@@ -1091,7 +1294,7 @@ namespace WasatchNET
                     wavecalCoeffs[2] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(3));
                     wavecalCoeffs[3] = (float)System.Convert.ToDouble(a.wrapper.readEEPROMSlot(4));
                 }
-                */
+               
 
                 //catch(Exception e)
                 //{
@@ -1160,8 +1363,9 @@ namespace WasatchNET
 
                 badPixelSet = new SortedSet<short>();
                 productConfiguration = "";
+                */
 
-                return true;
+                //return true;
             }
 
             else
