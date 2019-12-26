@@ -1252,9 +1252,7 @@ namespace WasatchNET
                     maxLaserPowerMW = 0;//ParseData.toFloat(pages[3], 28);
                     minLaserPowerMW = 0;//ParseData.toFloat(pages[3], 32);
 
-                    //!!!!!!!
-                    //!!!!!!!
-                    laserExcitationWavelengthNMFloat = 785.0f;//830.0f;//ParseData.toFloat(pages[3], 36);
+                    laserExcitationWavelengthNMFloat = 785.0f;
 
                     userData = new byte[63];
 

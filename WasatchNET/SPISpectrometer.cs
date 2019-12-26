@@ -87,6 +87,8 @@ namespace WasatchNET
         const byte SET_CCD_GAIN = 0x94;
         const byte SET_CCD_OFFSET = 0x93;
 
+        const int STANDARD_PADDING = 10;
+
         bool edgeTrigger;
         bool firmwareThrowaway;
 
@@ -109,7 +111,7 @@ namespace WasatchNET
             {
                 byte[] transmitData = new byte[1] { 0x01 };
 
-                transmitData = wrapCommand(0xB2, transmitData, 40);
+                transmitData = wrapCommand(0xB2, transmitData, STANDARD_PADDING);
 
                 byte[] result = spi.readWrite(transmitData);
             }
@@ -118,7 +120,7 @@ namespace WasatchNET
             {
                 byte[] transmitData = new byte[1] { 0x00 };
 
-                transmitData = wrapCommand(0xB2, transmitData, 40);
+                transmitData = wrapCommand(0xB2, transmitData, STANDARD_PADDING);
 
                 byte[] result = spi.readWrite(transmitData);
 
@@ -130,7 +132,7 @@ namespace WasatchNET
             {
                 byte[] transmitData = new byte[2] { 0x86, 0x40 };
 
-                transmitData = wrapCommand(SET_SETTINGS, transmitData, 40);
+                transmitData = wrapCommand(SET_SETTINGS, transmitData, STANDARD_PADDING);
 
                 byte[] result = spi.readWrite(transmitData);
             }
@@ -139,7 +141,7 @@ namespace WasatchNET
             {
                 byte[] transmitData = new byte[2] { 0x86, 0xC0 };
 
-                transmitData = wrapCommand(SET_SETTINGS, transmitData, 40);
+                transmitData = wrapCommand(SET_SETTINGS, transmitData, STANDARD_PADDING);
 
                 byte[] result = spi.readWrite(transmitData);
             }
@@ -294,7 +296,7 @@ namespace WasatchNET
             logger.debug("Trying to get pixel count");
 
             byte[] payload = new byte[0];
-            byte[] command = wrapCommand(GET_PIXEL_COUNT, payload, 40);
+            byte[] command = wrapCommand(GET_PIXEL_COUNT, payload, STANDARD_PADDING);
 
             byte[] result = spi.readWrite(command);
 
@@ -329,7 +331,7 @@ namespace WasatchNET
             byte[] transmitData = new byte[1] { 0x01 };
 
             
-            transmitData = wrapCommand(0xB2, transmitData, 40);
+            transmitData = wrapCommand(0xB2, transmitData, STANDARD_PADDING);
 
             result = spi.readWrite(transmitData);
 
@@ -347,7 +349,7 @@ namespace WasatchNET
             transmitData = new byte[2] { 0x86, 0x40 };
 
 
-            transmitData = wrapCommand(SET_SETTINGS, transmitData, 40);
+            transmitData = wrapCommand(SET_SETTINGS, transmitData, STANDARD_PADDING);
 
             result = spi.readWrite(transmitData);
 
@@ -731,7 +733,7 @@ namespace WasatchNET
                     payload[0] = (byte)(0xFF & integTimeMS);
                     payload[1] = (byte)((0xFF00 & integTimeMS) >> 8);
                     payload[2] = 0x00;
-                    byte[] command = wrapCommand(SET_INTEGRATION_TIME, payload, 40);
+                    byte[] command = wrapCommand(SET_INTEGRATION_TIME, payload, STANDARD_PADDING);
 
                     byte[] result = spi.readWrite(command);
 
@@ -779,7 +781,7 @@ namespace WasatchNET
 
                 byte[] transmitData = new byte[0];
 
-                transmitData = wrapCommand(CCD_GAIN, transmitData, 40);
+                transmitData = wrapCommand(CCD_GAIN, transmitData, STANDARD_PADDING);
 
                 byte[] result = padding(10);
                     
@@ -817,7 +819,7 @@ namespace WasatchNET
                 transmitData[1] = (byte)(((uint)funkyTransform & 0xFF00) >> 8);
                 transmitData[0] = (byte)((uint)funkyTransform & 0x00FF);
 
-                byte[] command = wrapCommand(SET_CCD_GAIN, transmitData, 40);
+                byte[] command = wrapCommand(SET_CCD_GAIN, transmitData, STANDARD_PADDING);
 
                 byte[] result = spi.readWrite(command);
 
@@ -843,7 +845,7 @@ namespace WasatchNET
 
                 byte[] transmitData = new byte[0];
 
-                transmitData = wrapCommand(CCD_OFFSET, transmitData, 40);
+                transmitData = wrapCommand(CCD_OFFSET, transmitData, STANDARD_PADDING);
 
                 byte[] result = padding(10);
 
@@ -892,7 +894,7 @@ namespace WasatchNET
                 transmitData[1] = (byte)((transform & 0xFF00) >> 8);
                 transmitData[0] = (byte)(transform & 0x00FF);
 
-                byte[] command = wrapCommand(SET_CCD_OFFSET, transmitData, 40);
+                byte[] command = wrapCommand(SET_CCD_OFFSET, transmitData, STANDARD_PADDING);
 
                 byte[] result = spi.readWrite(command);
 
@@ -982,7 +984,7 @@ namespace WasatchNET
             {
                 byte[] payload = new byte[0];
 
-                byte[] command = wrapCommand(GET_FPGA_REV, payload, 40);
+                byte[] command = wrapCommand(GET_FPGA_REV, payload, STANDARD_PADDING);
                 byte[] result = spi.readWrite(command);
 
                 byte[] final = new byte[2];//{ result[0], result[1] };
