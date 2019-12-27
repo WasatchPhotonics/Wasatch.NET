@@ -94,7 +94,6 @@ namespace WasatchNET
 
         internal SPISpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
-            // excitationWavelengthNM = 0;  // MZ: can't write EEPROM before instantiating EEPROM in open()
             isSPI = true;
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
             specIndex = index;
@@ -102,7 +101,7 @@ namespace WasatchNET
             edgeTrigger = true;
             firmwareThrowaway = true;
 
-            integrationTimeMS_ = 6; // MZ: should this be 2 or 3?
+            integrationTimeMS_ = 3;
         }
 
         public override void changeSPITrigger(bool edge, bool firmwareThrow)
@@ -247,7 +246,7 @@ namespace WasatchNET
 
             int start = ftdi.IndexOf(snPattern, 0);
 
-            start = start + 15;
+            start = start + 15; // TS - I'm not positive on how static this will be, may be worth changing down the line
 
             string devSerialNumber = ftdi.Substring(start, 8);
 
@@ -280,15 +279,9 @@ namespace WasatchNET
                 return false;
             }
 
-            // @todo
-            // All supported SPI spectrometers have 1024 pixels, and the API does not yet provide an instruction 
-            // for specifying pixel count
-            //pixels = 1024;
-
             if (!eeprom.read())
             {
                 logger.info("Spectrometer: failed to GET_MODEL_CONFIG");
-                //wrapper.shutdown();
                 close();
                 return false;
             }
@@ -305,9 +298,7 @@ namespace WasatchNET
             foreach (byte b in result)
                 logger.debug( "{0}", b);
 
-            
-
-            byte[] final = new byte[2];//{ result[0], result[1] };
+            byte[] pixelBytes = new byte[2];
 
             int index = 0;
 
@@ -322,36 +313,24 @@ namespace WasatchNET
                 ++index;
             --index;
 
-            final[1] = result[index + 5];
-            final[0] = result[index + 4];
+            pixelBytes[1] = result[index + 5];
+            pixelBytes[0] = result[index + 4];
 
-            pixels = (ushort)Unpack.toShort(final);
+            pixels = (ushort)Unpack.toShort(pixelBytes);
 
-            //firmware throwaway
+            //sets firmware throwaway
             byte[] transmitData = new byte[1] { 0x01 };
-
             
-            transmitData = wrapCommand(0xB2, transmitData, STANDARD_PADDING);
+            command = wrapCommand(0xB2, transmitData, STANDARD_PADDING);
 
-            result = spi.readWrite(transmitData);
-
-            //sets trigger to level
-            //transmitData = new byte[2] { 0x86, 0xC0 };
-
-            //level trigger test pattern
-
-            //transmitData = new byte[2] { 0x87, 0xC0 };
-
-
-            //to NOT get out the test pattern, axctual data instead
+            result = spi.readWrite(command);
 
             //sets edge trigger
             transmitData = new byte[2] { 0x86, 0x40 };
 
+            command = wrapCommand(SET_SETTINGS, transmitData, STANDARD_PADDING);
 
-            transmitData = wrapCommand(SET_SETTINGS, transmitData, STANDARD_PADDING);
-
-            result = spi.readWrite(transmitData);
+            result = spi.readWrite(command);
 
             logger.debug("All SPI comm successful, trying to gen wavelengths now");
 
@@ -451,18 +430,10 @@ namespace WasatchNET
                     ++index;
                 --index;
 
-                var checkIn = result.Skip(index);
-                checkIn = result.Skip(index + 1);
-                checkIn = result.Skip(index + 2);
-                checkIn = result.Skip(index + 3);
-                checkIn = result.Skip(index + 4);
-
-                pages.Add(checkIn.Take(64).ToArray());
+                pages.Add(result.Skip(index + 4).Take(64).ToArray());
             }
 
-
             return pages;
-
         }
 
         public bool writeEEPROM(List<byte[]> pages)
@@ -493,176 +464,8 @@ namespace WasatchNET
             // read spectrum
             ////////////////////////////////////////////////////////////////////
 
-            double[] spec = new double[pixels]; // default to all zeros
+            double[] spec = new double[pixels]; 
 
-            //old method with edge trigger
-
-            /*
-            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
-            Thread.Sleep(100);
-            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-
-            byte read = mpsse.ReadDataBitsHighByte();
-            while ((read & 0b0010) != 0b0010)
-            {
-                read = mpsse.ReadDataBitsHighByte();
-            }
-
-            byte[] command = padding((int)pixels * 2 + 20);
-
-            //throwaway 1
-            byte[] result = spi.readWrite(command);
-
-            for (int i = 0; i < pixels; ++i)
-            {
-                int msb = result[i * 2 + 1];
-                int lsb = result[i * 2 + 2];
-
-                UInt16 pixel = (ushort)((msb << 8) | lsb);
-
-                spec[i] = pixel;
-
-            }
-
-            return spec;
-            */
-			
-			//new method with level trigger
-
-            /*
-            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
-            Thread.Sleep(2);
-            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-
-            byte read = mpsse.ReadDataBitsHighByte();
-            while ((read & 0b0010) != 0b0010)
-            {
-                read = mpsse.ReadDataBitsHighByte();
-            }
-
-            byte[] command = padding((int)pixels * 2 + 20);
-
-            //throwaway 1
-            byte[] result = spi.readWrite(command);
-
-            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
-            Thread.Sleep(2);
-            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-
-            read = mpsse.ReadDataBitsHighByte();
-            while ((read & 0b0010) != 0b0010)
-            {
-                read = mpsse.ReadDataBitsHighByte();
-            }
-
-            command = padding((int)pixels * 2 + 20);
-
-            //throaway 2
-            result = spi.readWrite(command);
-
-            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
-            Thread.Sleep((int)integrationTimeMS);
-            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-
-
-            read = mpsse.ReadDataBitsHighByte();
-            while ((read & 0b0010) != 0b0010)
-            {
-                read = mpsse.ReadDataBitsHighByte();
-            }
-
-            command = padding((int)pixels * 2 + 20);
-
-            //actual result
-            result = spi.readWrite(command);
-
-            for (int i = 0; i < pixels; ++i)
-            {
-                int msb = result[i * 2 + 1];
-                int lsb = result[i * 2 + 2];
-
-                UInt16 pixel = (ushort)((msb << 8) | lsb);
-
-                spec[i] = pixel;
-
-            }
-
-            return spec;
-            */
-            /*
-            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
-            Thread.Sleep(2);
-            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-
-            byte read = mpsse.ReadDataBitsHighByte();
-            while ((read & 0b0010) != 0b0010)
-            {
-                read = mpsse.ReadDataBitsHighByte();
-            }
-
-            byte[] command = padding(1);//padding((int)pixels * 2 + 20);
-
-            //throwaway 1
-            byte[] result = spi.readWrite(command);
-
-            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
-            command = padding((int)pixels * 2 + 20);
-            result = spi.readWrite(command);
-
-            Thread.Sleep(2);
-
-            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-
-            read = mpsse.ReadDataBitsHighByte();
-            while ((read & 0b0010) != 0b0010)
-            {
-                read = mpsse.ReadDataBitsHighByte();
-            }
-
-            command = padding(1);
-            result = spi.readWrite(command);
-
-            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
-
-            command = padding((int)pixels * 2 + 20);
-            result = spi.readWrite(command);
-
-            //throaway 2
-            //result = spi.readWrite(command);
-
-            Thread.Sleep((int)integrationTimeMS);
-            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-
-
-            read = mpsse.ReadDataBitsHighByte();
-            while ((read & 0b0010) != 0b0010)
-            {
-                read = mpsse.ReadDataBitsHighByte();
-            }
-
-            command = padding((int)pixels * 2 + 20);
-
-            //actual result
-            result = spi.readWrite(command);
-
-            for (int i = 0; i < pixels; ++i)
-            {
-                int msb = result[i * 2 + 1];
-                int lsb = result[i * 2 + 2];
-
-                UInt16 pixel = (ushort)((msb << 8) | lsb);
-
-                spec[i] = pixel;
-
-            }
-
-            return spec;
-            */
-
-            //firmware throwaway mode
-
-            
-            
             mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
             if (edgeTrigger)
                 Thread.Sleep(10);
@@ -676,11 +479,12 @@ namespace WasatchNET
                 read = mpsse.ReadDataBitsHighByte();
             }
 
-            byte[] command = padding((int)pixels * 2 + 20);
+            byte[] command = padding((int)pixels * 2 + STANDARD_PADDING * 2);
 
             //actual result
             byte[] result = spi.readWrite(command);
 
+            //unpack pixels
             for (int i = 0; i < pixels; ++i)
             {
                 int msb = result[i * 2 + 1];
@@ -721,22 +525,18 @@ namespace WasatchNET
             }
             set
             {
-                //if (value < wrapper.getMaxIntegrationTimeMillisec())
-                //wrapper.setIntegrationTimeMillisec((long)value);
-
                 lock (acquisitionLock)
                 {
                     byte[] payload = new byte[3];
 
-                    ushort integTimeMS = (ushort)value;
+                    uint integTimeMS = (uint)value;
 
                     payload[0] = (byte)(0xFF & integTimeMS);
                     payload[1] = (byte)((0xFF00 & integTimeMS) >> 8);
-                    payload[2] = 0x00;
+                    payload[2] = (byte)((0xFF0000 & integTimeMS) >> 16);
                     byte[] command = wrapCommand(SET_INTEGRATION_TIME, payload, STANDARD_PADDING);
 
                     byte[] result = spi.readWrite(command);
-
 
                     integrationTimeMS_ = integTimeMS;
                 }
@@ -767,18 +567,8 @@ namespace WasatchNET
 
         public override float detectorGain 
         {
-            get
+            get // TS - this should probably be cached
             {
-                // if (kludgedOut) return 0;
-                /*
-                const Opcodes op = Opcodes.GET_DETECTOR_GAIN;
-                if (haveCache(op))
-                    return detectorGain_;
-                readOnce.Add(op);
-                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2)));
-
-                */
-
                 byte[] transmitData = new byte[0];
 
                 transmitData = wrapCommand(CCD_GAIN, transmitData, STANDARD_PADDING);
@@ -787,7 +577,7 @@ namespace WasatchNET
                     
                 result = spi.readWrite(transmitData);
 
-                byte[] final = new byte[2];//{ result[0], result[1] };
+                byte[] gainBytes = new byte[2];
 
                 int index = 0;
 
@@ -802,14 +592,10 @@ namespace WasatchNET
                     ++index;
                 --index;
 
-                final[1] = result[index + 5];
-                final[0] = result[index + 4]; 
+                gainBytes[1] = result[index + 5];
+                gainBytes[0] = result[index + 4]; 
 
-                //byte[] result = new byte[2];
-
-                return FunkyFloat.toFloat(Unpack.toUshort(final));
-
-
+                return FunkyFloat.toFloat(Unpack.toUshort(gainBytes));
             }
             set
             {
@@ -822,9 +608,6 @@ namespace WasatchNET
                 byte[] command = wrapCommand(SET_CCD_GAIN, transmitData, STANDARD_PADDING);
 
                 byte[] result = spi.readWrite(command);
-
-                //eadOnce.Add(Opcodes.GET_DETECTOR_GAIN);
-                //sendCmd(Opcodes.SET_DETECTOR_GAIN, FunkyFloat.fromFloat(detectorGain_ = value));
             }
         }
 
@@ -834,15 +617,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
-                /*
-                const Opcodes op = Opcodes.GET_DETECTOR_GAIN;
-                if (haveCache(op))
-                    return detectorGain_;
-                readOnce.Add(op);
-                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2)));
-                */
-
                 byte[] transmitData = new byte[0];
 
                 transmitData = wrapCommand(CCD_OFFSET, transmitData, STANDARD_PADDING);
@@ -851,7 +625,7 @@ namespace WasatchNET
 
                 result = spi.readWrite(transmitData);
 
-                byte[] final = new byte[2];//{ result[0], result[1] };
+                byte[] offsetBytes = new byte[2];//{ result[0], result[1] };
 
                 int index = 0;
 
@@ -866,14 +640,11 @@ namespace WasatchNET
                     ++index;
                 --index;
 
-                final[1] = result[index + 5];
-                final[0] = result[index + 4];
+                offsetBytes[1] = result[index + 5];
+                offsetBytes[0] = result[index + 4];
 
-
-
-                //byte[] result = new byte[2];
-
-                short wrongForm = Unpack.toShort(final);
+                //code to deal with our sign bit short (not 2's complement)
+                short wrongForm = Unpack.toShort(offsetBytes);
                 short finalVal = (short)(0x7FFF & wrongForm);
                 if ((wrongForm & 0x8000) == 0x8000)
                     finalVal *= -1;
@@ -883,8 +654,7 @@ namespace WasatchNET
             }
             set
             {
-                //ushort transform =  ParseData.shortAsUshort(value);
-
+                //code to deal with our sign bit short (not 2's complement)
                 ushort transform = (ushort)Math.Abs(value);
                 if (value < 0)
                     transform |= 0x8000;
@@ -897,9 +667,6 @@ namespace WasatchNET
                 byte[] command = wrapCommand(SET_CCD_OFFSET, transmitData, STANDARD_PADDING);
 
                 byte[] result = spi.readWrite(command);
-
-                //eadOnce.Add(Opcodes.GET_DETECTOR_GAIN);
-                //sendCmd(Opcodes.SET_DETECTOR_GAIN, FunkyFloat.fromFloat(detectorGain_ = value));
             }
         }
 
@@ -927,7 +694,7 @@ namespace WasatchNET
         {
             get
             {
-                return 50.0f;//(float)wrapper.getBatteryChargePercent();
+                return 50.0f; // TS - this is really stupid and needs to be fixed someday
             }
         }
 
@@ -938,11 +705,9 @@ namespace WasatchNET
             get
             {
                 return detectorTECEnabled_;
-                //return wrapper.getSpectrometerTECEnabled();
             }
             set
             {
-                //wrapper.setSpectrometerTECEnabled(value);
                 detectorTECEnabled_ = value;
             }
         }
@@ -987,7 +752,7 @@ namespace WasatchNET
                 byte[] command = wrapCommand(GET_FPGA_REV, payload, STANDARD_PADDING);
                 byte[] result = spi.readWrite(command);
 
-                byte[] final = new byte[2];//{ result[0], result[1] };
+                byte[] lenBytes = new byte[2];//{ result[0], result[1] };
 
                 int index = 0;
 
@@ -1002,10 +767,10 @@ namespace WasatchNET
                     ++index;
                 --index;
 
-                final[0] = result[index + 2];
-                final[1] = result[index + 1];
+                lenBytes[0] = result[index + 2];
+                lenBytes[1] = result[index + 1];
 
-                int count = (ushort)Unpack.toShort(final);
+                int count = (ushort)Unpack.toShort(lenBytes);
 
                 index = index + 4;
 
@@ -1015,11 +780,7 @@ namespace WasatchNET
                 {
                     rev += ((char)result[index + i]).ToString();
                 }
-
-                //final[2] = result[index + 6];
-                //final[1] = result[index + 5];
-                //final[0] = result[index + 4];
-
+                
                 return rev;
 
             }
