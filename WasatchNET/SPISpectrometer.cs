@@ -87,7 +87,7 @@ namespace WasatchNET
         const byte SET_CCD_GAIN = 0x94;
         const byte SET_CCD_OFFSET = 0x93;
 
-        const int STANDARD_PADDING = 10;
+        const int STANDARD_PADDING = 40;
 
         bool edgeTrigger;
         bool firmwareThrowaway;
@@ -402,18 +402,18 @@ namespace WasatchNET
             {
                 byte[] transmitData = new byte[0];
 
-                byte[] command = wrapCommand(PREP_FPGA, transmitData, 10);
+                byte[] command = wrapCommand(PREP_FPGA, transmitData, STANDARD_PADDING);
 
                 byte[] result = spi.readWrite(command);
 
                 byte currPage = (byte)(0x40 | (uint)page);
 
                 transmitData = new byte[1]{ currPage };
-                command = wrapCommand(EEPROM_OPS, transmitData, 10);
+                command = wrapCommand(EEPROM_OPS, transmitData, STANDARD_PADDING);
 
                 result = spi.readWrite(command);
                 transmitData = new byte[0];
-                command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 80);
+                command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 100);
 
                 result = spi.readWrite(command);
 
@@ -442,14 +442,14 @@ namespace WasatchNET
             {
                 byte[] transmitData = pages[page];
 
-                byte[] command = wrapCommand(WRITE_EEPROM_BUFFER, transmitData, 10);
+                byte[] command = wrapCommand(WRITE_EEPROM_BUFFER, transmitData, STANDARD_PADDING * 4);
 
                 byte[] result = spi.readWrite(command);
 
                 byte currPage = (byte)(0x80 | (uint)page);
 
                 transmitData = new byte[1] { currPage };
-                command = wrapCommand(EEPROM_OPS, transmitData, 10);
+                command = wrapCommand(EEPROM_OPS, transmitData, STANDARD_PADDING);
                 result = spi.readWrite(command);
             }
 
