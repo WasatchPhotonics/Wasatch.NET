@@ -1,5 +1,13 @@
 # Wasatch.NET Changelog
-
+- 2020-01-02 2.1.6
+    - added support for writing EEPROM on SPI spectrometers
+	- surfaced isSPI flag in Interface
+	- adjusted and standardized padding for SPI commands
+	- added some constants for SPI packets
+- 2019-12-18 2.1.5
+    - added flag to indicate SPI spectrometer
+	- implemented reading and writing detector gain and offset for SPI spectrometers
+	- implemented reading pixel count and fpga revision for SPI spectrometers
 - 2019-12-09 2.1.4
     - made adcRaw and selectedADC protected
     - added adcLock
