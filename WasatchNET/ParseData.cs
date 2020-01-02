@@ -4,7 +4,7 @@ namespace WasatchNET
 {
     /// <summary>
     /// A class to access fields of various primitive types embedded at 
-    /// arbitrary indexes within a byte array. Used by ModelConfig.
+    /// arbitrary indexes within a byte array. Used by EEPROM.
     /// </summary>
     /// <remarks>
     /// Differs from Unpack in that these functions all take an offset,
