@@ -1,4 +1,9 @@
 # Wasatch.NET Changelog
+- 2020-01-08 2.1.8
+    - added strong assembly names to WasatchNET, LibUsbDotNet and MPSSELight for
+      LabVIEW NXG
+- 2020-01-08 2.1.7 
+    - internal build
 - 2020-01-02 2.1.6
     - added support for writing EEPROM on SPI spectrometers
 	- surfaced isSPI flag in Interface

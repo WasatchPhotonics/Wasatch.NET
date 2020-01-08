@@ -18,6 +18,7 @@ namespace WasatchNET
     /// could lead to subtly malformed or biased spectral readings, which could
     /// taint or invalidate your measurement results.
     /// </remarks>
+    /// <see cref="http://ww1.microchip.com/downloads/en/DeviceDoc/20006270A.pdf"/>
     [ComVisible(true)]
     [Guid("A224D5A7-A0E0-4AAC-8489-4BB0CED3171B")]
     [ProgId("WasatchNET.EEPROM")]
