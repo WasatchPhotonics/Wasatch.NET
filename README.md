@@ -256,6 +256,7 @@ software and connect to your spectrometer.
 
 # Backlog
 
+- [ ] change installer projects to WiX so they can auto-populate the GAC?
 - [ ] refactor USB calls into Bus abstraction for Bluetooth/Ethernet
 
 # Version History
