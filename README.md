@@ -61,6 +61,31 @@ documents:
 Therefore, most questions about parameters, modes and options can likely be
 resolved by review of the underlying spectrometer communication interface.
 
+# Driver Completeness
+
+Wasatch Photonics application drivers are provided as *reference implementations* 
+to demonstrate how to command and control our spectrometers over USB from a 
+variety of platforms and languages. As working examples and "convenience wrappers" 
+over our USB API, they are *not* guaranteed to include convenience functions for 
+every call and option within the hardware API, *nor* are they necessarily the 
+most efficient or optimal implementation in any given language.
+
+The formal and complete interface to our spectrometers is provided in our USB
+API documentation. Standard USB drivers to access that direct interface 
+are plentiful on all standard operating systems: libusb, WinUSB etc. No 
+additional wrappers or libraries are required to make full use of our 
+spectrometers from the platform of your choice.
+
+If there is a spectrometer or spectroscopy function that you do not find
+provided in our open-source wrapper collection, please contact us and request
+its addition; or if you wish to "get your hands dirty," feel free to create
+your own implementation and optionally share it with us for merge into the
+base distribution. Wasatch Photonics is proud to help support our online 
+community, but not too proud to decline patches when they improve the product!
+
+That said, some known areas for improvement can be found in our Backlog 
+(below).
+
 # Installation
 
 Wasatch.NET is distributed in a Microsoft Installer (.msi) file, which installs
@@ -182,37 +207,15 @@ If you have a Wasatch Photonics spectrometer plugged-in and correctly showing
 under "libusb-win32 devices" in the Device Manager, you should be able to run
 the demo, then click "Initialize" to connect to the spectrometer.  
 
-# Support
+# Digital Signatures
 
-For questions about the driver or API, please contact:
+At least one client language (LabVIEW NXG) only supports .NET assemblies loaded
+in the GAC (General Assembly Cache).  In order to be loaded into the GAC, an
+assembly has to be "strongly named" (digitally signed)...along with its direct
+dependencies (3rd-party DLLs like LibUsbDotNet).
 
-    support@wasatchphotonics.com
-
-# Wrapper Completeness
-
-The Wasatch.Driver series of wrappers over our USB API are provided as
-*reference implementations* to demonstrate how to command and control our 
-spectrometers over USB from a variety of platforms and languages. As working
-examples and "convenience wrappers," they are *not* guaranteed to include
-convenience functions for every call and option within the hardware API,
-*nor* are they necessarily the most efficient or optimal implementation in any
-given language.
-
-The formal and complete interface to our spectrometers is provided in our USB
-API documentation. Standard USB drivers to access that direct interface 
-are plentiful on all standard operating systems: libusb, WinUSB etc. No 
-additional wrappers or libraries are required to make full use of our 
-spectrometers from the platform of your choice.
-
-If there is a spectrometer or spectroscopy function that you do not find
-provided in our open-source wrapper collection, please contact us and request
-its addition; or if you wish to "get your hands dirty," feel free to create
-your own implementation and optionally share it with us for merge into the
-base distribution. Wasatch Photonics is proud to help support our online 
-community, but not too proud to decline patches when they improve the product!
-
-That said, some known areas for improvement can be found in our Backlog 
-(below).
+For information on digitally signing Wasatch.NET assemblies for GAC support,
+Wasatch maintainers should reference "Admin/Keys/Wasatch.NET".
 
 # Troubleshooting
 
@@ -262,3 +265,10 @@ software and connect to your spectrometer.
 # Version History
 
 - see [Changelog](README_CHANGELOG.md)
+
+# Support
+
+For questions about the driver or API, please contact:
+
+    support@wasatchphotonics.com
+
