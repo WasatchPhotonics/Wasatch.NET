@@ -29,8 +29,8 @@ namespace WasatchNET
         // private attributes
         /////////////////////////////////////////////////////////////////////////       
 
-        internal const int MAX_PAGES = 6; // really 8, but last 2 are unallocated
-        const byte FORMAT = 5;
+        internal const int MAX_PAGES = 7; // really 8, but last 2 are unallocated
+        const byte FORMAT = 6;
 
         Spectrometer spectrometer;
         Logger logger = Logger.getInstance();
@@ -294,6 +294,34 @@ namespace WasatchNET
         }
 
         float[] _wavecalCoeffs;
+
+
+        public float[] intensityCorrectionCoeffs
+        {
+            get { return _intensityCorrectionCoeffs; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _intensityCorrectionCoeffs = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+
+        float[] _intensityCorrectionCoeffs;
+
+        public byte intensityCorrectionOrder
+        {
+            get { return _intensityCorrectionOrder; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _intensityCorrectionOrder = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        byte _intensityCorrectionOrder;
 
         /// <summary>
         /// These are used to convert the user's desired setpoint in degrees 
@@ -931,6 +959,13 @@ namespace WasatchNET
                         return false;
 
                 if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
+                
+                if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
+                for (int i = 0; i < intensityCorrectionCoeffs.Length; ++i)
+                {
+                    if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4*i)) return false;
+                }
+
 
                 // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
                 pages[0][63] = FORMAT;
@@ -985,6 +1020,7 @@ namespace WasatchNET
             badPixels = new short[15];
             linearityCoeffs = new float[5];
             laserPowerCoeffs = new float[4];
+            intensityCorrectionCoeffs = new float[12];
 
             badPixelList = new List<short>();
             badPixelSet = new SortedSet<short>();
@@ -1074,6 +1110,8 @@ namespace WasatchNET
 
                 badPixelSet = new SortedSet<short>();
                 productConfiguration = "";
+
+                intensityCorrectionOrder = 0;
 
                 return true;
             }
@@ -1177,6 +1215,9 @@ namespace WasatchNET
 
                     badPixelSet = new SortedSet<short>();
                     productConfiguration = "";
+
+                    //needs work
+                    intensityCorrectionOrder = 0;
                 }
 
                 //if the format type has been written we will assume sane EEPROM values
@@ -1393,6 +1434,24 @@ namespace WasatchNET
                         productConfiguration = ParseData.toString(pages[5], 30, 16);
                     else
                         productConfiguration = "";
+
+                    if (format >= 6)
+                    {
+                        intensityCorrectionOrder = ParseData.toUInt8(pages[6], 0);
+                        uint numCoeffs = (uint)intensityCorrectionOrder + 1;
+                        
+                        for (int i = 0; i < numCoeffs; ++i)
+                        {
+                            intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
+                        }
+
+                    }
+                    else
+                    {
+                        intensityCorrectionOrder = 0;
+                    }
+
+
                 }
                 catch (Exception ex)
                 {
