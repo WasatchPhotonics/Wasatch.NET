@@ -22,7 +22,7 @@ namespace WasatchNET
             int errorReader = 0;
             integrationTime_ = SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader) / 1000;
             if (errorReader != 0)
-                integrationTime_ = 80;
+                integrationTime_ = 8;
         }
 
         override internal bool open()
@@ -162,12 +162,10 @@ namespace WasatchNET
                 lock (acquisitionLock)
                 {
                     int errorReader = 0;
-                    if (value > (SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader) / 1000))
-                    {
-                        SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000));
-                        if (errorReader == 0)
-                            integrationTime_ = value;
-                    }
+                    SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000));
+                    if (errorReader == 0)
+                        integrationTime_ = value;
+                    
                 }
             }
         }

@@ -12,3 +12,4 @@ lib/WasatchNET.dll
 doxygen.out
 doxygen.err
 **/.DS_Store
+*.pfx
