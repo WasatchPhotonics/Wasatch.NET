@@ -1,4 +1,7 @@
 # Wasatch.NET Changelog
+- 2020-01-16 2.1.9
+    - added support for EEPROM format 6 (intensity correction coeffs)
+	- removed problematic integration time checks for Ocean specs
 - 2020-01-08 2.1.8
     - added strong assembly names to WasatchNET, LibUsbDotNet and MPSSELight for
       LabVIEW NXG
