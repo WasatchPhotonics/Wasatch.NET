@@ -782,7 +782,7 @@ namespace WasatchNET
         /// <returns>true on success, false on failure</returns>
         public bool write()
         {
-            if (spectrometer is OceanSpectrometer)
+            if (spectrometer is BoulderSpectrometer)
             {
                 return true;
             }
@@ -1029,17 +1029,17 @@ namespace WasatchNET
         public bool read()
         {
             // read all pages into cache
-            if (spectrometer is OceanSpectrometer)
+            if (spectrometer is BoulderSpectrometer)
             {
                 
-                OceanSpectrometer a = spectrometer as OceanSpectrometer;
+                BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
                 model = "";
 
                 serialNumber = a.serialNumber;
 
                 baudRate = 0;
 
-                hasCooling = false;
+                hasCooling = true;
                 hasBattery = true;
                 hasLaser = false;
 
@@ -1053,7 +1053,7 @@ namespace WasatchNET
                 string test = buffer.ToString();
 
                 startupIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
-                double temp = 0;
+                double temp = a.detectorTemperatureDegC;
                 startupDetectorTemperatureDegC = (short)temp;
                 if (startupDetectorTemperatureDegC >= 99)
                     startupDetectorTemperatureDegC = 48;

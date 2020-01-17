@@ -174,26 +174,26 @@ namespace WasatchNET
                     (ushort)usbRegistry2.Rev,
                     usbRegistry2[SPDRP.DeviceDesc]);
 
-                int oceanIndex = 0;
+                int boulderIndex = 0;
                 try
                 {
-                    OceanSpectrometer oceanSpectrometer = new OceanSpectrometer(usbRegistry2, oceanIndex);
+                    BoulderSpectrometer boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
 
-                    while (oceanSpectrometer.open())
+                    while (boulderSpectrometer.open())
                     {
-                        spectrometers.Add(oceanSpectrometer);
-                        ++oceanIndex;
-                        oceanSpectrometer = new OceanSpectrometer(usbRegistry2, oceanIndex);
+                        spectrometers.Add(boulderSpectrometer);
+                        ++boulderIndex;
+                        boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
                     }
 
-                    if (oceanIndex == 0)
+                    if (boulderIndex == 0)
                     {
                         logger.debug("openAllSpectrometers: failed to open {0}", desc2);
                     }
                 }
                 catch (DllNotFoundException)
                 {
-                    logger.debug("SeaBreeze does not appear to be installed, not trying to open Ocean Spectrometers");
+                    logger.debug("SeaBreeze does not appear to be installed, not trying to open relevant Spectrometers");
                 }
             }
 
