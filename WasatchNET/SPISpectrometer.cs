@@ -402,20 +402,20 @@ namespace WasatchNET
             for (ushort page = 0; page < EEPROM.MAX_PAGES; page++)
             {
                 byte[] transmitData = new byte[0];
-
                 byte[] command = wrapCommand(PREP_FPGA, transmitData, STANDARD_PADDING);
-
                 byte[] result = spi.readWrite(command);
-
                 byte currPage = (byte)(0x40 | (uint)page);
 
                 transmitData = new byte[1]{ currPage };
                 command = wrapCommand(EEPROM_OPS, transmitData, STANDARD_PADDING);
-
                 result = spi.readWrite(command);
+
+                transmitData = new byte[0];
+                command = wrapCommand(PREP_FPGA, transmitData, STANDARD_PADDING);
+                result = spi.readWrite(command);
+
                 transmitData = new byte[0];
                 command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 100);
-
                 result = spi.readWrite(command);
 
                 int index = 0;
@@ -448,6 +448,13 @@ namespace WasatchNET
                 byte[] command = wrapCommand(WRITE_EEPROM_BUFFER, transmitData, STANDARD_PADDING * 4);
 
                 byte[] result = spi.readWrite(command);
+
+                Thread.Sleep(50);
+
+                transmitData = new byte[0];
+                command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 100);
+                result = spi.readWrite(command);
+
 
                 byte currPage = (byte)(0x80 | (uint)page);
 

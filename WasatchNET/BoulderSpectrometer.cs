@@ -58,7 +58,7 @@ namespace WasatchNET
                 logger.debug("back from reading EEPROM");
 
                 regenerateWavelengths();
-                detectorTECSetpointDegC = 15.0f;
+                //detectorTECSetpointDegC = 15.0f;
 
                 logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
 

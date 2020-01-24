@@ -1056,9 +1056,9 @@ namespace WasatchNET
                 double temp = a.detectorTemperatureDegC;
                 startupDetectorTemperatureDegC = (short)temp;
                 if (startupDetectorTemperatureDegC >= 99)
-                    startupDetectorTemperatureDegC = 48;
+                    startupDetectorTemperatureDegC = 15;
                 else if (startupDetectorTemperatureDegC <= -50)
-                    startupDetectorTemperatureDegC = -48;
+                    startupDetectorTemperatureDegC = 15;
                 startupTriggeringMode = 2; 
                 detectorGain = 0;
                 detectorOffset = 0;
@@ -1128,7 +1128,7 @@ namespace WasatchNET
 
                 //this if block checks for unwritten EEPROM (indicated by 0xff) and fills our virtual EEPROM with sane default values
                 //this will prevent us from upping the format to version 255(6?) but the tradeoff seems worth it
-                if (format == 0xff)
+                if (format > FORMAT)
                 {
                     model = "";
 
@@ -1160,9 +1160,9 @@ namespace WasatchNET
                     double temp = 0;
                     startupDetectorTemperatureDegC = (short)temp;
                     if (startupDetectorTemperatureDegC >= 99)
-                        startupDetectorTemperatureDegC = 48;
+                        startupDetectorTemperatureDegC = 15;
                     else if (startupDetectorTemperatureDegC <= -50)
-                        startupDetectorTemperatureDegC = -48;
+                        startupDetectorTemperatureDegC = 15;
                     startupTriggeringMode = 2;
                     detectorGain = a.detectorGain;
                     detectorOffset = a.detectorOffset;
@@ -1439,6 +1439,9 @@ namespace WasatchNET
                     {
                         intensityCorrectionOrder = ParseData.toUInt8(pages[6], 0);
                         uint numCoeffs = (uint)intensityCorrectionOrder + 1;
+
+                        if (numCoeffs > 8)
+                            numCoeffs = 0;
                         
                         for (int i = 0; i < numCoeffs; ++i)
                         {
