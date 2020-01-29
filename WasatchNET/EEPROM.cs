@@ -537,7 +537,7 @@ namespace WasatchNET
         // writable
         public ushort ROIHorizStart
         {
-            get { return _ROIHorizEnd; }
+            get { return _ROIHorizStart; }
             set
             {
                 EventHandler handler = EEPROMChanged;
@@ -869,6 +869,12 @@ namespace WasatchNET
 
                 if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
 
+                if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
+                for (int i = 0; i < intensityCorrectionCoeffs.Length; ++i)
+                {
+                    if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                }
+
                 // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
                 pages[0][63] = FORMAT;
 
@@ -1128,7 +1134,7 @@ namespace WasatchNET
 
                 //this if block checks for unwritten EEPROM (indicated by 0xff) and fills our virtual EEPROM with sane default values
                 //this will prevent us from upping the format to version 255(6?) but the tradeoff seems worth it
-                if (format > FORMAT || pages[0] == pages[1] || pages[1] == pages[2])
+                if (format > FORMAT)
                 {
                     model = "";
 
@@ -1314,6 +1320,26 @@ namespace WasatchNET
                             productConfiguration = ParseData.toString(pages[5], 30, 16);
                         else
                             productConfiguration = "";
+
+                        if (format >= 6)
+                        {
+                            intensityCorrectionOrder = ParseData.toUInt8(pages[6], 0);
+                            uint numCoeffs = (uint)intensityCorrectionOrder + 1;
+
+                            if (numCoeffs > 8)
+                                numCoeffs = 0;
+
+                            for (int i = 0; i < numCoeffs; ++i)
+                            {
+                                intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
+                            }
+
+                        }
+                        else
+                        {
+                            intensityCorrectionOrder = 0;
+                        }
+
                     }
                     catch (Exception ex)
                     {
