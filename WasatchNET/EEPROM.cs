@@ -1128,7 +1128,7 @@ namespace WasatchNET
 
                 //this if block checks for unwritten EEPROM (indicated by 0xff) and fills our virtual EEPROM with sane default values
                 //this will prevent us from upping the format to version 255(6?) but the tradeoff seems worth it
-                if (format > FORMAT)
+                if (format > FORMAT || pages[0] == pages[1] || pages[1] == pages[2])
                 {
                     model = "";
 
