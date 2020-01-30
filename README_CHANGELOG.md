@@ -1,4 +1,8 @@
 # Wasatch.NET Changelog
+- 2020-01-30 2.1.10
+    - added sanity check for intensity correction format
+    - added support for TEC reading on some units
+    - changed method for EEPROM read/write for SPI units
 - 2020-01-16 2.1.9
     - added support for EEPROM format 6 (intensity correction coeffs)
 	- removed problematic integration time checks for Ocean specs
