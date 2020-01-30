@@ -870,11 +870,13 @@ namespace WasatchNET
                 if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
 
                 if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                for (int i = 0; i < intensityCorrectionCoeffs.Length; ++i)
+                if (intensityCorrectionOrder < 8)
                 {
-                    if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                    for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                    {
+                        if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                    }
                 }
-
                 // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
                 pages[0][63] = FORMAT;
 
@@ -967,11 +969,13 @@ namespace WasatchNET
                 if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
                 
                 if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                for (int i = 0; i < intensityCorrectionCoeffs.Length; ++i)
+                if (intensityCorrectionOrder < 8)
                 {
-                    if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4*i)) return false;
+                    for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                    {
+                        if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                    }
                 }
-
 
                 // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
                 pages[0][63] = FORMAT;
