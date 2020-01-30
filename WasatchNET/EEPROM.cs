@@ -1468,7 +1468,9 @@ namespace WasatchNET
 
                         if (numCoeffs > 8)
                             numCoeffs = 0;
-                        
+
+                        intensityCorrectionCoeffs = numCoeffs > 0 ? new float[numCoeffs] : null;
+
                         for (int i = 0; i < numCoeffs; ++i)
                         {
                             intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);

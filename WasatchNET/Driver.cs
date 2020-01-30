@@ -129,7 +129,6 @@ namespace WasatchNET
             try
             {
                 // to load FTD2XX.dll, we apparently need to be in its directory
-                string oldDir = Directory.GetCurrentDirectory();
                 string dllDir = Path.Combine(new string[] {
                     Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),  // "Program Files" or "(ibid) x86" as appropriate
                     "Wasatch Photonics",
@@ -150,9 +149,6 @@ namespace WasatchNET
                 {
                     logger.debug("no SPISpectrometer found");
                 }
-
-                Directory.SetCurrentDirectory(currentDir);
-
             }
             catch
             {
