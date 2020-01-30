@@ -537,7 +537,7 @@ namespace WasatchNET
         // writable
         public ushort ROIHorizStart
         {
-            get { return _ROIHorizEnd; }
+            get { return _ROIHorizStart; }
             set
             {
                 EventHandler handler = EEPROMChanged;
@@ -782,7 +782,7 @@ namespace WasatchNET
         /// <returns>true on success, false on failure</returns>
         public bool write()
         {
-            if (spectrometer is OceanSpectrometer)
+            if (spectrometer is BoulderSpectrometer)
             {
                 return true;
             }
@@ -868,6 +868,12 @@ namespace WasatchNET
                         return false;
 
                 if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
+
+                if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
+                for (int i = 0; i < intensityCorrectionCoeffs.Length; ++i)
+                {
+                    if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                }
 
                 // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
                 pages[0][63] = FORMAT;
@@ -1029,17 +1035,17 @@ namespace WasatchNET
         public bool read()
         {
             // read all pages into cache
-            if (spectrometer is OceanSpectrometer)
+            if (spectrometer is BoulderSpectrometer)
             {
                 
-                OceanSpectrometer a = spectrometer as OceanSpectrometer;
+                BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
                 model = "";
 
                 serialNumber = a.serialNumber;
 
                 baudRate = 0;
 
-                hasCooling = false;
+                hasCooling = true;
                 hasBattery = true;
                 hasLaser = false;
 
@@ -1053,12 +1059,12 @@ namespace WasatchNET
                 string test = buffer.ToString();
 
                 startupIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
-                double temp = 0;
+                double temp = a.detectorTemperatureDegC;
                 startupDetectorTemperatureDegC = (short)temp;
                 if (startupDetectorTemperatureDegC >= 99)
-                    startupDetectorTemperatureDegC = 48;
+                    startupDetectorTemperatureDegC = 15;
                 else if (startupDetectorTemperatureDegC <= -50)
-                    startupDetectorTemperatureDegC = -48;
+                    startupDetectorTemperatureDegC = 15;
                 startupTriggeringMode = 2; 
                 detectorGain = 0;
                 detectorOffset = 0;
@@ -1128,7 +1134,7 @@ namespace WasatchNET
 
                 //this if block checks for unwritten EEPROM (indicated by 0xff) and fills our virtual EEPROM with sane default values
                 //this will prevent us from upping the format to version 255(6?) but the tradeoff seems worth it
-                if (format == 0xff)
+                if (format > FORMAT)
                 {
                     model = "";
 
@@ -1160,9 +1166,9 @@ namespace WasatchNET
                     double temp = 0;
                     startupDetectorTemperatureDegC = (short)temp;
                     if (startupDetectorTemperatureDegC >= 99)
-                        startupDetectorTemperatureDegC = 48;
+                        startupDetectorTemperatureDegC = 15;
                     else if (startupDetectorTemperatureDegC <= -50)
-                        startupDetectorTemperatureDegC = -48;
+                        startupDetectorTemperatureDegC = 15;
                     startupTriggeringMode = 2;
                     detectorGain = a.detectorGain;
                     detectorOffset = a.detectorOffset;
@@ -1314,6 +1320,26 @@ namespace WasatchNET
                             productConfiguration = ParseData.toString(pages[5], 30, 16);
                         else
                             productConfiguration = "";
+
+                        if (format >= 6)
+                        {
+                            intensityCorrectionOrder = ParseData.toUInt8(pages[6], 0);
+                            uint numCoeffs = (uint)intensityCorrectionOrder + 1;
+
+                            if (numCoeffs > 8)
+                                numCoeffs = 0;
+
+                            for (int i = 0; i < numCoeffs; ++i)
+                            {
+                                intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
+                            }
+
+                        }
+                        else
+                        {
+                            intensityCorrectionOrder = 0;
+                        }
+
                     }
                     catch (Exception ex)
                     {
@@ -1439,7 +1465,12 @@ namespace WasatchNET
                     {
                         intensityCorrectionOrder = ParseData.toUInt8(pages[6], 0);
                         uint numCoeffs = (uint)intensityCorrectionOrder + 1;
-                        
+
+                        if (numCoeffs > 8)
+                            numCoeffs = 0;
+
+                        intensityCorrectionCoeffs = numCoeffs > 0 ? new float[numCoeffs] : null;
+
                         for (int i = 0; i < numCoeffs; ++i)
                         {
                             intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);

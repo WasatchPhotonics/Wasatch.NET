@@ -8,13 +8,26 @@ using LibUsbDotNet.Main;
 
 namespace WasatchNET
 {
-    public class OceanSpectrometer : Spectrometer
+    public class BoulderSpectrometer : Spectrometer
     {
+        public const byte OP_TECENABLE = 0x70;
+        public const byte OP_SETDETSETPOINT = 0x71;
+        public const byte OP_STATUS = 0xfe;
+
+        public const byte txEndpoint = 0x01;
+        public const byte rxEndpoint = 0x81;
+
         //internal Wrapper wrapper;
         //internal SeaBreezeWrapper wrapper;
         internal int specIndex;
-        
-        internal OceanSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
+        BoulderStatusRegister status = new BoulderStatusRegister();
+        BoulderStatusRegister lastStatus;
+
+        /// <summary>
+        /// Project Boulder is an OEM spectrometer with customer-supplied electronics 
+        /// using Ocean Optics-derived firmware interface, hence SeaBreeze communications
+        /// </summary>
+        internal BoulderSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             excitationWavelengthNM = 0;
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
@@ -47,6 +60,7 @@ namespace WasatchNET
                 logger.debug("back from reading EEPROM");
 
                 regenerateWavelengths();
+                //detectorTECSetpointDegC = 15.0f;
 
                 logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
 
@@ -66,6 +80,178 @@ namespace WasatchNET
             //wrapper.shutdown();
             int errorReader = 0;
             SeaBreezeWrapper.seabreeze_close_spectrometer(specIndex, ref errorReader);
+        }
+
+        public bool updateStatus()
+        {
+            byte[] request = new byte[1];
+            request[0] = OP_STATUS;
+            
+            byte[] response;
+            bool ok = false;
+
+            lock (acquisitionLock)
+            {
+                ok = sbWrite(request, false);
+                if (!ok)
+                {
+                    //wrapper.setError("Error requesting status register update");
+                    //mut.ReleaseMutex();
+                    //statusMut.ReleaseMutex();
+                    logger.info("updateStatus: failed");
+                    return false;
+                }
+
+                response = sbRead(16, false);
+            }
+
+            if (response == null || response.Length == 0)
+                if (!ok)
+                {
+                    logger.info("updateStatus: failed");
+                    return false;
+                }
+
+            // logger.info("updateStatus: updating from response");
+            status.update(response);
+
+            // did anything significant change? this will include any button-presses, hence user behavior
+            if (lastStatus == null || !lastStatus.same(status))
+            {
+                logger.info("CCA status: ({0})", DateTime.Now);
+                logger.info("  detectorTemperature = 0x{0:x6} -> 0x{1:x4} -> {2:f2} deg C", status.detectorTemperature24, status.detectorTemperature16, status.detectorTemperatureDegC);
+                logger.info("  laserTemperature    = 0x{0:x6} -> 0x{1:x4} -> {2:f2} deg C", status.laserTemperature24, status.laserTemperature16, status.laserTemperatureDegC);
+                logger.info("  runningOnBatteries  = {0}", status.runningOnBatteries);
+                logger.info("  laserTECEnabled     = {0}", status.laserTECEnabled);
+                logger.info("  detectorTECEnabled  = {0}", status.detectorTECEnabled);
+                logger.info("  batteryVoltage      = 0x{0:x4}", status.batteryVoltage);
+                logger.info("  spectrumCount       = {0}", status.spectrumCount);
+                
+                lastStatus = new BoulderStatusRegister(status);
+
+                // obviously something just happened, so brighten the display unless forced otherwise
+                //userOperation();
+            }
+            
+            return true;
+        }
+
+        private bool sbWrite(byte[] data, bool log = true)
+        {
+            if (log)
+            {
+                string debug = "";
+                for (int i = 0; i < data.Length; i++)
+                    debug += String.Format(" 0x{0:x2}", data[i]);
+                logger.info(">> {0}", debug);
+            }
+
+            int errorCode = 0;
+            SeaBreezeWrapper.seabreeze_write_usb(specIndex, ref errorCode, txEndpoint, ref data[0], data.Length);
+
+            if (errorCode != 0)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private byte[] sbRead(int bytes, bool log = true)
+        {
+            byte[] data = new byte[bytes];
+
+            int errorCode = 0;
+            SeaBreezeWrapper.seabreeze_read_usb(specIndex, ref errorCode, rxEndpoint, ref data[0], data.Length);
+
+            if (errorCode != 0)
+            {
+                return null;
+            }
+
+            if (log)
+            {
+                string debug = "";
+                for (int i = 0; i < data.Length; i++)
+                    debug += String.Format(" 0x{0:x2}", data[i]);
+                logger.info("<< {0}", debug);
+            }
+
+            return data;
+        }
+
+        public void setDetectorTECSetpointDegreesC(double deg)
+        {
+            // TEC Setpoint (Op Code 0x71): (NEW)
+            //      Detector TEC Set point = =(R/(10000+R))*2^12
+            //      Where R = -0.1867*(T^3)+25.767*(T^2)-1380.1*T+31286
+            //      Where T is the desired set point in degrees C.
+            double R = -0.1867 * deg * deg * deg
+                     + 25.767 * deg * deg
+                     - 1380.1 * deg
+                     + 31286;
+            uint setpoint = (uint)(R / (10000 + R) * 4096);
+
+            logger.info("[setDetectorTECSetpointDegreesC] {0:f2} degC => R {1:f4} => setpoint 0x{2:x4}", deg, R, setpoint);
+
+            byte[] cmd = new byte[3];
+            cmd[0] = OP_SETDETSETPOINT;
+            cmd[1] = (byte)((setpoint >> 8) & 0xff);
+            cmd[2] = (byte)(setpoint & 0xff);
+
+            lock (acquisitionLock)
+            {
+                sbWrite(cmd);
+            }
+        }
+
+        public bool getDetectorTECEnabled()
+        {
+            if (status == null)
+                return false;
+            return status.detectorTECEnabled;
+        }
+
+        public bool getLaserTECEnabled()
+        {
+            return status.laserTECEnabled;
+        }
+
+        public bool enableDetectorTEC(bool flag)
+        {
+            logger.info("enableDetectorTEC: asked to set Detector TEC {0}", flag ? "ON" : "off");
+            return enableTEC(flag, getLaserTECEnabled());
+        }
+
+        // change just the laser TEC state
+        public bool enableLaserTEC(bool flag)
+        {
+            logger.info("enableLaserTEC: asked to set Laser TEC {0}", flag ? "ON" : "off");
+            return enableTEC(getDetectorTECEnabled(), flag);
+        }
+
+        // change both TEC states
+        bool enableTEC(bool detectorFlag, bool laserFlag)
+        {
+            bool result = false;
+
+            logger.info("enableTEC: setting detector TEC {0}, laser TEC {1}", detectorFlag ? "ON" : "off", laserFlag ? "ON" : "off");
+
+            byte[] cmd = new byte[3];
+            cmd[0] = OP_TECENABLE;
+            cmd[1] = (byte)(detectorFlag ? 1 : 0);
+            cmd[2] = (byte)(laserFlag ? 1 : 0);
+
+            lock (acquisitionLock)
+            {
+                result = sbWrite(cmd);
+            }
+            
+            if (!result)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public override double[] getSpectrum()
@@ -238,12 +424,15 @@ namespace WasatchNET
             set
             {
                 //wrapper.setSpectrometerTECEnabled(value);
-                int errorReader = 0;
+                /*int errorReader = 0;
                 if (value)
                     SeaBreezeWrapper.seabreeze_set_tec_enable(specIndex, ref errorReader, 1);
                 else
                     SeaBreezeWrapper.seabreeze_set_tec_enable(specIndex, ref errorReader, 0);
                 if (errorReader == 0)
+                    tecEnabled_ = value;*/
+                bool ok = enableDetectorTEC(value);
+                if (ok)
                     tecEnabled_ = value;
             }
         }
@@ -253,8 +442,13 @@ namespace WasatchNET
         {
             get
             {
-                int errorReader = 0;
-                return 0;
+                bool readSuccess = updateStatus();
+                if (readSuccess)
+                    return (float)status.detectorTemperatureDegC;
+                else
+                    return 0;
+                //int errorReader = 0;
+                //return 0;
                 //return (float)SeaBreezeWrapper.seabreeze_read_tec_temperature(specIndex, ref errorReader);
             }
         }
@@ -276,9 +470,10 @@ namespace WasatchNET
             get => base.detectorTECSetpointDegC;
             set
             {
+                if (value != detectorTECSetpointDegC_)
+                    setDetectorTECSetpointDegreesC(value);
                 detectorTECSetpointDegC_ = value;
-                int errorReader = 0;
-                SeaBreezeWrapper.seabreeze_set_tec_temperature(specIndex, ref errorReader, detectorTECSetpointDegC_);
+                
             }
             
         }

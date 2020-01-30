@@ -96,7 +96,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AcquisitionStatus.cs" />
-    <Compile Include="OceanSpectrometer.cs" />
+    <Compile Include="BoulderSpectrometer.cs" />
     <Compile Include="FeatureIdentification.cs" />
     <Compile Include="FPGAOptions.cs" />
     <Compile Include="IDriver.cs" />
@@ -111,6 +111,7 @@
     <Compile Include="ParseData.cs" />
     <Compile Include="SeaBreezeWrapper.cs" />
     <Compile Include="SPISpectrometer.cs" />
+    <Compile Include="BoulderStatusRegister.cs" />
     <Compile Include="Unpack.cs" />
     <Compile Include="FunkyFloat.cs" />
     <Compile Include="Opcodes.cs" />
