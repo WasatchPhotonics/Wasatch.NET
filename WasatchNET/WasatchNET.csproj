@@ -108,6 +108,7 @@
     <Compile Include="ISpectrometer.cs" />
     <Compile Include="IUInt40.cs" />
     <Compile Include="EEPROM.cs" />
+    <Compile Include="MultiChannelWrapper.cs" />
     <Compile Include="ParseData.cs" />
     <Compile Include="SeaBreezeWrapper.cs" />
     <Compile Include="SPISpectrometer.cs" />

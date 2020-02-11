@@ -112,7 +112,7 @@ namespace WasatchNET
         }
 
         ////////////////////////////////////////////////////////////////////////
-        // Purely internal driver attributes (no hardware version)
+        // Spectrometer Components
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>metadata inferred from the spectrometer's USB PID</summary>
@@ -125,7 +125,7 @@ namespace WasatchNET
         public EEPROM eeprom { get; protected set; }
 
         ////////////////////////////////////////////////////////////////////////
-        // Purely internal driver attributes (no hardware version)
+        // internal driver attributes (no direct corresponding HW component)
         ////////////////////////////////////////////////////////////////////////
 
         bool throwawayADCRead { get; set; } = true;
@@ -161,8 +161,19 @@ namespace WasatchNET
             get { return dark_; }
             set { lock (acquisitionLock) dark_ = value; }
         }
-
         protected double[] dark_;
+
+        /// <summary>
+        /// If the spectrometer is deployed in a multi-channel configuration,
+        /// this provides a place to store an integral position in the Spectrometer
+        /// object.  
+        /// </summary>
+        /// <remarks>
+        /// This may be populated from EEPROM.UserText or other sources.
+        /// This value is not used by anything except MultiChannelWrapper and 
+        /// end-user code.
+        /// </remarks>
+        public int multiChannelPosition = -1;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 

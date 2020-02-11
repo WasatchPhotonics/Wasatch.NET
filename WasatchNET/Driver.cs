@@ -404,6 +404,10 @@ namespace WasatchNET
     //      Type t = mSender as Type;
     //      senderText = senderText += string.Format(" {0} ", t.Name);
     //  }
-    }
 
+        public MultiChannelWrapper getMultiChannelWrapper()
+        {
+            return MultiChannelWrapper.getInstance();
+        }
+    }
 }
