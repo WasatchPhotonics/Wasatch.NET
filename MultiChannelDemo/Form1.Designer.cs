@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea37 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Series series37 = new System.Windows.Forms.DataVisualization.Charting.Series();
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea38 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
@@ -106,6 +107,7 @@
             this.chartAll = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -247,7 +249,9 @@
             this.checkBoxTriggerEnableOne.Size = new System.Drawing.Size(95, 17);
             this.checkBoxTriggerEnableOne.TabIndex = 6;
             this.checkBoxTriggerEnableOne.Text = "Trigger Enable";
+            this.toolTip1.SetToolTip(this.checkBoxTriggerEnableOne, "Turn hardware triggering on or off for THIS spectrometer");
             this.checkBoxTriggerEnableOne.UseVisualStyleBackColor = true;
+            this.checkBoxTriggerEnableOne.CheckedChanged += new System.EventHandler(this.checkBoxTriggerEnableOne_CheckedChanged);
             // 
             // label1
             // 
@@ -282,6 +286,7 @@
             this.numericUpDownIntegrationTimeMSOne.Name = "numericUpDownIntegrationTimeMSOne";
             this.numericUpDownIntegrationTimeMSOne.Size = new System.Drawing.Size(63, 20);
             this.numericUpDownIntegrationTimeMSOne.TabIndex = 2;
+            this.numericUpDownIntegrationTimeMSOne.ValueChanged += new System.EventHandler(this.numericUpDownIntegrationTimeMSOne_ValueChanged);
             // 
             // buttonOptimizeOne
             // 
@@ -299,7 +304,10 @@
             this.buttonAcquireOne.Size = new System.Drawing.Size(75, 23);
             this.buttonAcquireOne.TabIndex = 0;
             this.buttonAcquireOne.Text = "Acquire";
+            this.toolTip1.SetToolTip(this.buttonAcquireOne, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
+        " triggering to previous state");
             this.buttonAcquireOne.UseVisualStyleBackColor = true;
+            this.buttonAcquireOne.Click += new System.EventHandler(this.buttonAcquireOne_Click);
             // 
             // groupBox13
             // 
@@ -335,6 +343,7 @@
             this.checkBoxTriggerEnableAll.Size = new System.Drawing.Size(95, 17);
             this.checkBoxTriggerEnableAll.TabIndex = 6;
             this.checkBoxTriggerEnableAll.Text = "Trigger Enable";
+            this.toolTip1.SetToolTip(this.checkBoxTriggerEnableAll, "Turn hardware triggering on or off for all spectrometers");
             this.checkBoxTriggerEnableAll.UseVisualStyleBackColor = true;
             this.checkBoxTriggerEnableAll.CheckedChanged += new System.EventHandler(this.checkBoxTriggerEnableAll_CheckedChanged);
             // 
@@ -364,7 +373,9 @@
             this.buttonAcquireAll.Size = new System.Drawing.Size(75, 23);
             this.buttonAcquireAll.TabIndex = 3;
             this.buttonAcquireAll.Text = "Acquire";
+            this.toolTip1.SetToolTip(this.buttonAcquireAll, "Raise hardware trigger, then read all spectra");
             this.buttonAcquireAll.UseVisualStyleBackColor = true;
+            this.buttonAcquireAll.Click += new System.EventHandler(this.buttonAcquireAll_Click);
             // 
             // buttonInit
             // 
@@ -1118,6 +1129,7 @@
         private System.Windows.Forms.SplitContainer splitContainer8;
         private System.Windows.Forms.DataVisualization.Charting.Chart chart8;
         private System.Windows.Forms.RadioButton radioButtonSelectedPos8;
+        private System.Windows.Forms.ToolTip toolTip1;
     }
 }
 
