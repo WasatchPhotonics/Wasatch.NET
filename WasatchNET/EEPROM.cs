@@ -1045,12 +1045,12 @@ namespace WasatchNET
                 BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
                 model = "";
 
-                serialNumber = a.serialNumber;
+                serialNumber = "";
 
                 baudRate = 0;
 
                 hasCooling = true;
-                hasBattery = true;
+                hasBattery = false;
                 hasLaser = false;
 
                 excitationNM = 0;
