@@ -319,6 +319,9 @@ namespace WasatchNET
 
             pixels = (ushort)Unpack.toShort(pixelBytes);
 
+            if (pixels > 10000)
+                return false;
+
             //sets firmware throwaway
             byte[] transmitData = new byte[1] { 0x01 };
             
@@ -332,6 +335,17 @@ namespace WasatchNET
             command = wrapCommand(SET_SETTINGS, transmitData, STANDARD_PADDING);
 
             result = spi.readWrite(command);
+
+            index = 0;
+            while (index < result.Length)
+            {
+                if (result[index] == START_CMD)
+                    break;
+                ++index;
+            }
+
+            if (index == result.Length || result[index + 3] != 0)
+                return false;
 
             logger.debug("All SPI comm successful, trying to gen wavelengths now");
 

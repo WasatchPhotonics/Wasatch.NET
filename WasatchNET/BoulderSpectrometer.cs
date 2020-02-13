@@ -33,7 +33,10 @@ namespace WasatchNET
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
             specIndex = index;
             int errorReader = 0;
-            integrationTime_ = SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader) / 1000;
+            lock (acquisitionLock)
+            {
+                integrationTime_ = SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader) / 1000;
+            }
             if (errorReader != 0)
                 integrationTime_ = 8;
         }
@@ -44,33 +47,36 @@ namespace WasatchNET
 
             int errorReader = 0;
 
-            if (SeaBreezeWrapper.seabreeze_open_spectrometer(specIndex, ref errorReader) == 0)
+            lock (acquisitionLock)
             {
-                pixels = (uint)SeaBreezeWrapper.seabreeze_get_formatted_spectrum_length(specIndex, ref errorReader);
-
-                logger.info("found spectrometer with {0} pixels", pixels);
-
-                if (!eeprom.read())
+                if (SeaBreezeWrapper.seabreeze_open_spectrometer(specIndex, ref errorReader) == 0)
                 {
-                    logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                    //wrapper.shutdown();
-                    close();
+                    pixels = (uint)SeaBreezeWrapper.seabreeze_get_formatted_spectrum_length(specIndex, ref errorReader);
+
+                    logger.info("found spectrometer with {0} pixels", pixels);
+
+                    if (!eeprom.read())
+                    {
+                        logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                        //wrapper.shutdown();
+                        close();
+                        return false;
+                    }
+                    logger.debug("back from reading EEPROM");
+
+                    regenerateWavelengths();
+                    //detectorTECSetpointDegC = 15.0f;
+
+                    logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
+
+                    return true;
+                }
+
+                else
+                {
+                    logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
                     return false;
                 }
-                logger.debug("back from reading EEPROM");
-
-                regenerateWavelengths();
-                //detectorTECSetpointDegC = 15.0f;
-
-                logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
-
-                return true;
-            }
-
-            else
-            {
-                logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
-                return false;
             }
 
         }
@@ -79,7 +85,10 @@ namespace WasatchNET
         {
             //wrapper.shutdown();
             int errorReader = 0;
-            SeaBreezeWrapper.seabreeze_close_spectrometer(specIndex, ref errorReader);
+            lock (acquisitionLock)
+            {
+                SeaBreezeWrapper.seabreeze_close_spectrometer(specIndex, ref errorReader);
+            }
         }
 
         public bool updateStatus()
@@ -322,18 +331,6 @@ namespace WasatchNET
             set { laserEnabled_ = value; }
         }
 
-        public override string serialNumber
-        {
-            get
-            {
-                byte[] serial = new byte[16];
-                int errorReader = 0;
-                //wrapper.getSerialNumber(16, ref serial);
-                //SeaBreezeWrapper.seabreeze_get_serial_number(specIndex, ref errorReader, ref serial, 16);
-                return "";//serial.ToString();
-            }
-        }
-
         public override uint integrationTimeMS
         {
             get
@@ -408,7 +405,7 @@ namespace WasatchNET
         {
             get
             {
-                return 50.0f;//(float)wrapper.getBatteryChargePercent();
+                return 0.0f; 
             }
         }
 
