@@ -1,4 +1,9 @@
 # Wasatch.NET Changelog
+- 2020-02-13 2.1.11
+    - Boulder specs no longer read as having a battery
+	- added sanity check to prevent bare adafruits being interpreted as spectrometers
+	- added acquisition locks to all api calls in boulder spec
+	- added average resolution field (part of format 7) to EEPROM
 - 2020-01-30 2.1.10
     - added sanity check for intensity correction format
     - added support for TEC reading on some units

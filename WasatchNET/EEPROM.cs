@@ -30,7 +30,7 @@ namespace WasatchNET
         /////////////////////////////////////////////////////////////////////////       
 
         internal const int MAX_PAGES = 7; // really 8, but last 2 are unallocated
-        const byte FORMAT = 6;
+        const byte FORMAT = 7;
 
         Spectrometer spectrometer;
         Logger logger = Logger.getInstance();
@@ -656,6 +656,19 @@ namespace WasatchNET
         }
 
         float[] _laserPowerCoeffs;
+
+        public float avgResolution
+        {
+            get { return _avgResolution; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _avgResolution = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        float _avgResolution;
         /////////////////////////////////////////////////////////////////////////       
         // Page 4
         /////////////////////////////////////////////////////////////////////////       
@@ -858,6 +871,7 @@ namespace WasatchNET
                 if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
                 if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
                 if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
+                if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
 
                 Array.Copy(userData, pages[4], userData.Length);
 
@@ -957,6 +971,7 @@ namespace WasatchNET
                 if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
                 if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
                 if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
+                if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
 
                 Array.Copy(userData, pages[4], userData.Length);
 
@@ -1116,6 +1131,8 @@ namespace WasatchNET
                 minLaserPowerMW = 0;
                 laserExcitationWavelengthNMFloat = 830.0f;
 
+                avgResolution = 0.0f;
+
                 userData = new byte[63];
 
                 badPixelSet = new SortedSet<short>();
@@ -1221,6 +1238,8 @@ namespace WasatchNET
 
                     laserExcitationWavelengthNMFloat = 785.0f;
 
+                    avgResolution = 0.0f;
+
                     userData = new byte[63];
 
                     badPixelSet = new SortedSet<short>();
@@ -1301,10 +1320,20 @@ namespace WasatchNET
                         maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
                         minLaserPowerMW = ParseData.toFloat(pages[3], 32);
                         laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
+
                         if (format >= 5)
                         {
                             minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
                             maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
+                        }
+
+                        if (format >= 7)
+                        {
+                            avgResolution = ParseData.toFloat(pages[3], 48);
+                        }
+                        else
+                        {
+                            avgResolution = 0.0f;
                         }
 
                         userData = format < 4 ? new byte[63] : new byte[64];
@@ -1484,6 +1513,15 @@ namespace WasatchNET
                     else
                     {
                         intensityCorrectionOrder = 0;
+                    }
+
+                    if (format >= 7)
+                    {
+                        avgResolution = ParseData.toFloat(pages[3], 48);
+                    }
+                    else
+                    {
+                        avgResolution = 0.0f;
                     }
 
 
