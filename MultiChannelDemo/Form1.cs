@@ -35,13 +35,30 @@ namespace MultiChannelDemo
         {
             InitializeComponent();
 
+            logger.setTextBox(textBoxEventLog);
+
             // note all are 1-indexed
             charts = new Chart[] { chart1, chart2, chart3, chart4, chart5, chart6, chart7, chart8 };
             groupBoxes = new GroupBox[] { groupBoxPos1, groupBoxPos2, groupBoxPos3, groupBoxPos4, groupBoxPos5, groupBoxPos6, groupBoxPos7, groupBoxPos8 };
             radioButtons = new RadioButton[] { radioButtonSelectedPos1, radioButtonSelectedPos2, radioButtonSelectedPos3, radioButtonSelectedPos4,
                                                radioButtonSelectedPos5, radioButtonSelectedPos6, radioButtonSelectedPos7, radioButtonSelectedPos8 };
+
+            // initialize widgets
             foreach (var gb in groupBoxes)
                 gb.Enabled = false;
+
+            configureChart(chartAll);
+            foreach (var chart in charts)
+                configureChart(chart);
+
+            clearSelection();
+        }
+
+        void configureChart(Chart chart)
+        {
+            var area = chart.ChartAreas[0];
+            area.AxisY.IsStartedFromZero = false;
+            area.AxisX.LabelStyle.Format = "{0:f2}";
         }
 
         private void buttonInit_Click(object sender, EventArgs e)
@@ -64,7 +81,8 @@ namespace MultiChannelDemo
                 // big graph
                 var s = new Series($"Position {pos}");
                 s.ChartType = SeriesChartType.Line;
-                seriesAll[pos] = s;
+                seriesAll[pos - 1] = s;
+                chartAll.Series.Add(s);
             }
 
             initialized = true;
@@ -75,44 +93,28 @@ namespace MultiChannelDemo
         ////////////////////////////////////////////////////////////////////////
 
         // user clicked the "enable external hardware triggering" system checkbox 
-        private void checkBoxTriggerEnableAll_CheckedChanged(object sender, EventArgs e)
-        {
-            var enabled = checkBoxTriggerEnableAll.Checked;
-            logger.info($"HW triggering -> {enabled}");
-            wrapper.triggeringEnabled = enabled;
-        }
+        private void checkBoxTriggerEnableAll_CheckedChanged(object sender, EventArgs e) => wrapper.triggeringEnabled = checkBoxTriggerEnableAll.Checked;
 
-        // user clicked the "fan control" checkbox
-        private void checkBoxFanEnable_CheckedChanged(object sender, EventArgs e)
-        {
-            wrapper.fanEnabled = checkBoxFanEnable.Checked;
-        }
+        // user clicked the "fan control" system checkbox
+        private void checkBoxFanEnable_CheckedChanged(object sender, EventArgs e) => wrapper.fanEnabled = checkBoxFanEnable.Checked;
 
-        // user clicked the "Acquire from all spectrometers" button
-        private void buttonAcquireAll_Click(object sender, EventArgs e)
-        {
-            logger.info("starting acquisition");
-            wrapper.startAcquisition();
+        // user clicked the system-level "Acquire" button 
+        private void buttonAcquireAll_Click(object sender, EventArgs e) => processSpectra(wrapper.getSpectra());
 
-            logger.info("getting spectra");
-            var spectraByPos = wrapper.getSpectra();
-
-            foreach (var pair in spectraByPos)
-            {
-                var pos = pair.Key;
-                var spectrum = pair.Value;
-                processSpectrum(pos, spectrum);
-            }
-        }
+        // user clicked the system-level "Take Dark" button 
+        private void buttonTakeDark_Click(object sender, EventArgs e) => processSpectra(wrapper.takeDark());
 
         ////////////////////////////////////////////////////////////////////////
         // Individual Spectrometer Control (for testing/troubleshooting)
         ////////////////////////////////////////////////////////////////////////
 
+        // user selected a spectrometer
         private void radioButtonSelected_CheckedChanged(object sender, EventArgs e) => updateSelection();
+
+        // user selected no spectrometer
         private void buttonClearSelection_Click(object sender, EventArgs e) => updateSelection(reset: true);
 
-        // user manually turned triggering on or off for the selected spectrometer
+        // user manually toggled triggering for a single spectrometer
         private void checkBoxTriggerEnableOne_CheckedChanged(object sender, EventArgs e)
         {
             var spec = wrapper.getSpectrometer(selectedPos);
@@ -120,12 +122,18 @@ namespace MultiChannelDemo
                 spec.triggerSource = checkBoxTriggerEnableOne.Checked ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
         }
 
-        // user manually overrode integration time for the selected spectrometer
+        // user manually set integration time for a single spectrometer
         private void numericUpDownIntegrationTimeMSOne_ValueChanged(object sender, EventArgs e) 
         {
             var spec = wrapper.getSpectrometer(selectedPos);
             if (spec != null)
                 spec.integrationTimeMS = (uint)numericUpDownIntegrationTimeMSOne.Value;
+        }
+
+        void clearSelection()
+        {
+            groupBoxSelected.Enabled = false;
+            labelSelectedPos.Text = labelSelectedNotes.Text = "";
         }
 
         /// <summary>
@@ -149,9 +157,7 @@ namespace MultiChannelDemo
 
             if (selectedPos < 0 || spec is null)
             {
-                groupBoxSelected.Enabled = false;
-                labelSelectedPos.Text = "Selected Pos: N/A";
-                labelSelectedNotes.Text = "";
+                clearSelection();
                 return;
             }
 
@@ -162,9 +168,9 @@ namespace MultiChannelDemo
             groupBoxSelected.Enabled = true;
 
             labelSelectedPos.Text = $"Selected Pos: {selectedPos}";
-            if (selectedPos == wrapper.getTriggerPos())
+            if (selectedPos == wrapper.triggerPos)
                 labelSelectedNotes.Text = "Trigger Master";
-            else if (selectedPos == wrapper.getFanPos())
+            else if (selectedPos == wrapper.fanPos)
                 labelSelectedNotes.Text = "Fan Master";
             else
                 labelSelectedNotes.Text = "";
@@ -173,34 +179,67 @@ namespace MultiChannelDemo
             numericUpDownIntegrationTimeMSOne.Maximum = spec.eeprom.maxIntegrationTimeMS;
         }
 
-        // User clicked the "Acquire one spectrum from selected spectrometer",
-        // so do that.  Note we take the spectrum immediately, w/o triggering
-        // (if they want to test triggering, that is done with the standard
-        // system-level "Acquire" button).
-        private async void buttonAcquireOne_Click(object sender, EventArgs e)
+        async Task<ChannelSpectrum> takeOneSpectrum(Spectrometer spec)
         {
-            Spectrometer spec = wrapper.getSpectrometer(selectedPos);
-            if (spec is null)
-                return;
-
-            var prev = spec.triggerSource;
-
-            logger.info($"disabling triggering on {selectedPos}");
-            spec.triggerSource = TRIGGER_SOURCE.INTERNAL;
+            bool restoreExternal = false;
+            if (spec.triggerSource != TRIGGER_SOURCE.INTERNAL)
+            {
+                logger.debug($"disabling triggering on {selectedPos}");
+                spec.triggerSource = TRIGGER_SOURCE.INTERNAL;
+                restoreExternal = true;
+            }
 
             logger.info($"getting spectrum from {selectedPos}");
             ChannelSpectrum spectrum = await Task.Run(() => wrapper.getSpectrum(selectedPos));
             logger.debug($"recieved spectrum from {selectedPos}");
 
-            logger.info($"restoring triggering on {selectedPos}");
-            spec.triggerSource = prev;
+            if (restoreExternal)
+            {
+                logger.debug($"restoring triggering on {selectedPos}");
+                spec.triggerSource = TRIGGER_SOURCE.EXTERNAL;
+            }
+            return spectrum;
+        }
 
+        // User clicked the "Acquire one spectrum from selected spectrometer",
+        // so do that.  Note we take the spectrum immediately, w/o triggering
+        // (if they want to test triggering, that is done with the standard
+        // system-level "Acquire" button).
+        async void buttonAcquireOne_Click(object sender, EventArgs e)
+        {
+            Spectrometer spec = wrapper.getSpectrometer(selectedPos);
+            if (spec is null)
+                return;
+
+            var spectrum = await takeOneSpectrum(spec);
+            processSpectrum(selectedPos, spectrum);
+        }
+        
+        // User clicked the "Take Dark" button for an individual spectrometer
+        async void buttonTakeDarkOne_Click(object sender, EventArgs e)
+        {
+            Spectrometer spec = wrapper.getSpectrometer(selectedPos);
+            if (spec is null)
+                return;
+
+            var spectrum = await takeOneSpectrum(spec);
+            spec.dark = spectrum.intensities;
             processSpectrum(selectedPos, spectrum);
         }
 
         ////////////////////////////////////////////////////////////////////////
         // Graphing
         ////////////////////////////////////////////////////////////////////////
+
+        void processSpectra(Dictionary<int, ChannelSpectrum> spectraByPos)
+        {
+            foreach (var pair in spectraByPos)
+            {
+                var pos = pair.Key;
+                var spectrum = pair.Value;
+                processSpectrum(pos, spectrum);
+            }
+        }
 
         // do whatever we're gonna do with new spectra (save, dark-correct, ...)
         void processSpectrum(int pos, ChannelSpectrum spectrum)
@@ -221,7 +260,7 @@ namespace MultiChannelDemo
         void updateChartAll(int pos, ChannelSpectrum spectrum)
         {
             Series s = null;
-            seriesAll.TryGetValue(pos, out s);
+            seriesAll.TryGetValue(pos - 1, out s);
             if (s != null)
                 s.Points.DataBindXY(spectrum.xAxis, spectrum.intensities);
         }

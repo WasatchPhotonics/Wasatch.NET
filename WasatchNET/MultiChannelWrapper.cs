@@ -37,6 +37,8 @@ namespace WasatchNET
     /// the laserEnable output is being used as a quasi-GPIO, both for raising
     /// trigger signals and to control connected fans (if found).
     /// </remarks>
+    /// <todo>
+    /// </todo>
     public class MultiChannelWrapper
     {
         ////////////////////////////////////////////////////////////////////////
@@ -57,6 +59,8 @@ namespace WasatchNET
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
 
+        const int TRIGGER_PULSE_WIDTH_MS = 50;
+
         static MultiChannelWrapper instance = null;
 
         Driver driver = Driver.getInstance();
@@ -66,11 +70,15 @@ namespace WasatchNET
         Spectrometer specTrigger = null;
         Spectrometer specFan = null;
 
-
         static object mut = new object();
 
-        const int TRIGGER_PULSE_WIDTH_MS = 50;
+        ////////////////////////////////////////////////////////////////////////
+        // Lifecycle
+        ////////////////////////////////////////////////////////////////////////
 
+        /// <summary>
+        /// Get a handle to the MultiChannelWrapper singleton.
+        /// </summary>
         public static MultiChannelWrapper getInstance()
         {
             lock (mut)
@@ -86,8 +94,20 @@ namespace WasatchNET
             reset();
         }
 
-        public int spectrometerCount => specByPos.Count;
+        void reset()
+        {
+            specByPos = new Dictionary<int, Spectrometer>();
+            positions = new SortedSet<int>();
+            specTrigger = null;
+            specFan = null;
+        }
 
+        /// <summary>
+        /// Initialize all connected spectrometers, determine positions in the multi-channel
+        /// system, find out which are configured to provide the external hardware trigger
+        /// and fan control, etc.
+        /// </summary>
+        /// <returns>true on success</returns>
         public bool open()
         {
             reset();
@@ -99,61 +119,66 @@ namespace WasatchNET
                 var spec = driver.getSpectrometer(i);
                 var sn = spec.serialNumber;
 
-                logger.info($"found {spec.model} {sn} with {spec.pixels} pixels ({0:f2}, {1:f2})", 
-                    spec.wavelengths[0], spec.wavelengths[spec.pixels-1]);
+                logger.info("found {0} {1} with {2} pixels ({3:f2}, {4:f2})", 
+                    spec.model, sn, spec.pixels, spec.wavelengths[0], spec.wavelengths[spec.pixels-1]);
 
                 ////////////////////////////////////////////////////////////////
                 // Parse EEPROM.userText
                 ////////////////////////////////////////////////////////////////
 
-                var pos = spectrometerCount;
+                var pos = spectrometerCount + 1;
 
-                var featureList = spec.eeprom.userText;
-                var features = featureList.Split(';');
-
-                foreach (var feature in features)
+                var attributes = spec.eeprom.userText.Split(';');
+                foreach (var attr in attributes)
                 {
-                    var pair = feature.Split('=');
-                    var key = pair[0].ToLower().Trim();
-                    var value = pair[1].ToLower().Trim();
+                    var pair = attr.Split('=');
+                    if (pair.Length == 2)
+                    {
+                        var name = pair[0].ToLower().Trim();
+                        var value = pair[1].ToLower().Trim();
 
-                    if (key.Contains("pos"))
-                    {
-                        if (Int32.TryParse(value, out pos))
-                            logger.info($"{sn} has position {pos}");
-                        else
-                            logger.error($"{sn}: failed to parse {feature}");
-                    }
-                    else if (key == "feature")
-                    {
-                        if (value.Contains("trigger"))
+                        if (name.Contains("pos"))
                         {
-                            logger.info($"{sn} has trigger feature");
-                            specTrigger = spec;
+                            if (Int32.TryParse(value, out pos))
+                                logger.info($"{sn} has position {pos}");
+                            else
+                                logger.error($"{sn}: failed to parse {attr}");
                         }
-                        else if (value.Contains("fan"))
+                        else if (name == "feature")
                         {
-                            logger.info($"{sn} has fan feature");
-                            specFan = spec;
+                            if (value.Contains("trigger"))
+                            {
+                                logger.info($"{sn} has trigger feature");
+                                specTrigger = spec;
+                            }
+                            else if (value.Contains("fan"))
+                            {
+                                logger.info($"{sn} has fan feature");
+                                specFan = spec;
+                            }
+                            else
+                            {
+                                logger.error($"unsupported feature: {attr}");
+                            }
                         }
                         else
                         {
-                            logger.error($"unsupported value: {feature}");
+                            logger.error($"unsupported attribute: {attr}");
                         }
                     }
                     else
                     {
-                        logger.error($"unsupported feature: {feature}");
+                        logger.error($"{sn}: not name-value pair: {attr}");
                     }
                 }
 
                 // make sure we have no duplicates
                 while (specByPos.ContainsKey(pos))
                     pos++;
-
                 logger.info($"storing {sn} as position {pos}");
                 specByPos[pos] = spec;
                 spec.multiChannelPosition = pos;
+                positions.Add(pos);
             }
 
             // default to internal triggering
@@ -162,22 +187,67 @@ namespace WasatchNET
             return spectrometerCount > 0;
         }
 
+        /// <summary>
+        /// Release all resources at end of application session.
+        /// </summary>
         public void close()
         {
             driver.closeAllSpectrometers();
             reset();
         }
 
-        void reset()
+        ////////////////////////////////////////////////////////////////////////
+        // Device Control
+        ////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// How many spectrometers are configured.
+        /// </summary>
+        public int spectrometerCount => specByPos.Count;
+
+        IEnumerable<Spectrometer> specByIntegrationTime()
         {
-            specByPos = new Dictionary<int, Spectrometer>();
-            positions = new SortedSet<int>();
-            specTrigger = null;
-            specFan = null;
+            return from pair in specByPos
+                   orderby pair.Value.integrationTimeMS ascending
+                   select pair.Value;
         }
 
-        public int getFanPos() { return specFan != null ? specFan.multiChannelPosition : -1; }
-        public int getTriggerPos() { return specTrigger != null ? specTrigger.multiChannelPosition : -1; }
+        /// <summary>
+        /// Lets the caller directly control the spectrometer at a given position.
+        /// </summary>
+        /// <param name="pos">Which channel</param>
+        public Spectrometer getSpectrometer(int pos)
+        {
+            return specByPos.ContainsKey(pos) ? specByPos[pos] : null;
+        }
+
+        /// <summary>
+        /// The position of the spectrometer configured to generate the external hardware trigger (-1 if none)
+        /// </summary>
+        public int triggerPos => specTrigger != null ? specTrigger.multiChannelPosition : -1;
+
+        /// <summary>
+        /// Whether external hardware triggering is currently enabled.
+        /// </summary>
+        public bool triggeringEnabled
+        {
+            get => _triggeringEnabled; 
+            set
+            {
+                foreach (var pair in specByPos)
+                {
+                    logger.debug($"pos {pair.Key}: triggerEnabled -> {value}");
+                    pair.Value.triggerSource = value ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
+                }
+                _triggeringEnabled = value;
+            }
+        }
+        bool _triggeringEnabled;
+
+        /// <summary>
+        /// The position of the spectrometer configured to control the fans (-1 if none)
+        /// </summary>
+        public int fanPos => specFan != null ? specFan.multiChannelPosition : -1;
 
         /// <summary>
         /// Use the configured spectrometer's laserEnable output to turn the system fans on or off.
@@ -207,29 +277,9 @@ namespace WasatchNET
             }
         }
 
-        public bool triggeringEnabled
-        {
-            get => _triggeringEnabled; 
-            set
-            {
-                foreach (var pair in specByPos)
-                {
-                    logger.debug($"pos {pair.Key}: triggerEnabled -> {value}");
-                    pair.Value.triggerSource = value ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
-                }
-                _triggeringEnabled = value;
-            }
-        }
-        bool _triggeringEnabled;
-
-        /// <summary>
-        /// Lets the caller directly control the spectrometer at a given position.
-        /// </summary>
-        /// <param name="pos">Which channel</param>
-        public Spectrometer getSpectrometer(int pos)
-        {
-            return specByPos.ContainsKey(pos) ? specByPos[pos] : null;
-        }
+        ////////////////////////////////////////////////////////////////////////
+        // Acquisition
+        ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Use the configured spectrometer's laserEnable output to raise a brief 
@@ -266,26 +316,22 @@ namespace WasatchNET
         /// compared to integration time.  Sorting by integration time should ensure
         /// total acquisition time is close to minimal.
         /// </remarks>
-        public Dictionary<int, ChannelSpectrum> getSpectra()
+        public Dictionary<int, ChannelSpectrum> getSpectra(bool sendTrigger=true)
         {
+            if (sendTrigger)
+                startAcquisition();
+
             Dictionary<int, ChannelSpectrum> results = new Dictionary<int, ChannelSpectrum>();
 
-            // sort by integration time
-            var sortedSpectrometers = from pair in specByPos
-                                      orderby pair.Value.integrationTimeMS ascending
-                                      select pair;
-
-            foreach (KeyValuePair<int, Spectrometer> pair in sortedSpectrometers)
+            foreach (var spec in specByIntegrationTime())
             {
-                int pos = pair.Key;
-                Spectrometer spec = pair.Value;
+                var pos = spec.multiChannelPosition;
+                ChannelSpectrum cs = new ChannelSpectrum();
 
                 logger.debug($"getting spectrum from pos {pos} {spec.serialNumber}");
-
-                ChannelSpectrum cs = new ChannelSpectrum();
+                cs.intensities = spec.getSpectrum();
                 cs.xAxisType = useWavenumbers ? X_AXIS_TYPE.WAVENUMBER : X_AXIS_TYPE.WAVELENGTH;
                 cs.xAxis = useWavenumbers ? spec.wavenumbers : spec.wavelengths;
-                cs.intensities = spec.getSpectrum();
 
                 results.Add(pos, cs);
             }
@@ -293,6 +339,34 @@ namespace WasatchNET
             return results;
         }
 
+        /// <summary>
+        /// Takes a spectrum from each spectrometer, and stores it internally as a new dark reference.
+        /// </summary>
+        /// <remarks>Subsequent calls to getSpectra will be automatically dark-corrected, until clearDark() is called.</remarks>
+        /// <returns>The darks collected (also stored internally)</returns>
+        public Dictionary<int, ChannelSpectrum> takeDark(bool sendTrigger=true)
+        {
+            clearDark();
+            Dictionary<int, ChannelSpectrum> results = getSpectra(sendTrigger);
+            foreach (var pos in results.Keys)
+                specByPos[pos].dark = results[pos].intensities;
+            return results;
+        }
+
+        /// <summary>
+        /// Clears the stored dark from all spectrometers.
+        /// </summary>
+        public void clearDark()
+        {
+            foreach (var pair in specByPos)
+                pair.Value.dark = null;
+        }
+
+        /// <summary>
+        /// Get a spectrum from one spectrometer.  Assumes HW triggering is disabled, or caller is providing.
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <returns></returns>
         public ChannelSpectrum getSpectrum(int pos)
         {
             if (!specByPos.ContainsKey(pos))
