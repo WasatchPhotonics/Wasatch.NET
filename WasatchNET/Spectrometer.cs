@@ -81,6 +81,7 @@ namespace WasatchNET
         List<UsbEndpointReader> endpoints = new List<UsbEndpointReader>();
         int pixelsPerEndpoint = 0;
         ulong throwawaySum = 0;
+        bool throwawayAfterIntegrationTime = false;
 
         ////////////////////////////////////////////////////////////////////////
         // Convenience lookups
@@ -202,7 +203,7 @@ namespace WasatchNET
         /// troubleshooting .NET clients that iteratively call every accessor
         /// at instantiation.
         /// </summary>
-        private bool kludgedOut = false;
+        // private bool kludgedOut = false;
 
         public ushort actualFrames
         {
@@ -707,6 +708,13 @@ namespace WasatchNET
                     integrationTimeMS_ = ms;
                     readOnce.Add(Opcodes.GET_INTEGRATION_TIME);
                 }
+
+                if (throwawayAfterIntegrationTime)
+                {
+                    logger.debug("taking throwaway spectrum");
+                    _ = getSpectrumRaw();
+                }
+
             }
         }
         protected uint integrationTimeMS_;
@@ -1386,11 +1394,19 @@ namespace WasatchNET
                 logger.debug("setting TEC setpoint to {0} deg C", degC);
                 detectorTECSetpointDegC = degC;
 
+                // MZ: why don't we do this for ARM?  Is it automatic in FW?
                 if (!isARM)
                 {
                     logger.debug("enabling detector TEC");
                     detectorTECEnabled = true;
                 }
+            }
+
+            // might only need for SiG-VIS?
+            if (isARM)
+            {
+                logger.debug("requiring throwaway after changing integration time");
+                throwawayAfterIntegrationTime = true;
             }
 
             // if we're using a modern EEPROM format, automatically apply the stored gain/offset values

@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -19,7 +20,7 @@ namespace MultiChannelDemo
         Logger logger = Logger.getInstance();
 
         bool initialized = false;
-        int selectedPos = -1;
+        int selectedPos = 0; // multi-channel systems assumed to be 1-indexed
 
         // note these are zero-indexed
         Chart[] charts;
@@ -37,7 +38,6 @@ namespace MultiChannelDemo
             InitializeComponent();
 
             logger.setTextBox(textBoxEventLog);
-            // logger.level = LogLevel.DEBUG;
 
             // note all are 1-indexed
             charts = new Chart[] { chart1, chart2, chart3, chart4, chart5, chart6, chart7, chart8 };
@@ -54,6 +54,8 @@ namespace MultiChannelDemo
                 initChart(chart);
 
             clearSelection();
+
+            Text = String.Format("MultiChannelDemo v{0}", Application.ProductVersion);
         }
 
         void initChart(Chart chart)
@@ -78,10 +80,15 @@ namespace MultiChannelDemo
             chartAll.Series.Clear();
             foreach (var pos in wrapper.positions)
             {
-                groupBoxes[pos - 1].Enabled = true;
+                var spec = wrapper.getSpectrometer(pos);
+                var sn = spec.serialNumber;
+
+                var gb = groupBoxes[pos - 1];
+                gb.Enabled = true;
+                gb.Text = $"Position {pos} ({sn})";
 
                 // big graph
-                var s = new Series($"Position {pos}");
+                var s = new Series($"Pos {pos} ({sn})");
                 s.ChartType = SeriesChartType.Line;
                 seriesAll[pos - 1] = s;
                 chartAll.Series.Add(s);
@@ -89,6 +96,10 @@ namespace MultiChannelDemo
 
             initialized = true;
         }
+
+        protected override void OnFormClosing(FormClosingEventArgs e) => logger.setTextBox(null);
+
+        private void checkBoxVerbose_CheckedChanged(object sender, EventArgs e) => logger.level = checkBoxVerbose.Checked ? LogLevel.DEBUG : LogLevel.INFO;
 
         ////////////////////////////////////////////////////////////////////////
         // System-Level Control (all spectrometers)
@@ -101,13 +112,35 @@ namespace MultiChannelDemo
         void checkBoxFanEnable_CheckedChanged(object sender, EventArgs e) => wrapper.fanEnabled = checkBoxFanEnable.Checked;
 
         // user clicked the system-level "Acquire" button 
-        void buttonAcquireAll_Click(object sender, EventArgs e) => processSpectra(wrapper.getSpectra());
+        async void buttonAcquireAll_Click(object sender, EventArgs e)
+        {
+            enableControls(false);
+            await Task.Run(() => processSpectra(wrapper.getSpectra()));
+            enableControls(true);
+        }
 
         // user clicked the system-level "Take Dark" button 
-        void buttonTakeDark_Click(object sender, EventArgs e) => processSpectra(wrapper.takeDark());
+        async void buttonTakeDark_Click(object sender, EventArgs e)
+        {
+            enableControls(false);
+            await Task.Run(() => processSpectra(wrapper.takeDark()));
+            enableControls(true);
+        }
 
+        private void buttonClearDark_Click(object sender, EventArgs e) => wrapper.clearDark();
+
+        /// <summary>
+        /// The user clicked the button to optimize integration time for all units.
+        /// </summary>
+        /// <remarks>
+        /// Even though this is an async method, it is triggered from the GUI 
+        /// thread, so can manipulate widgets.
+        /// </remarks>
         async void buttonOptimizeAll_Click(object sender, EventArgs e)
         {
+            enableControls(false);
+
+            // kick-off background optimizers
             List<IntegrationOptimizer> intOpts = new List<IntegrationOptimizer>();
             foreach (var pos in wrapper.positions)
             {
@@ -117,10 +150,43 @@ namespace MultiChannelDemo
                 intOpts.Add(intOpt);
             }
 
+            // graph optimizers while they run
             await Task.Run(() => graphIntegrationSpectra(intOpts));
 
-            // all done
-            logger.info("Optimization completed");
+            // reports results
+            bool allPassed = true;
+            foreach (var intOpt in intOpts)
+                allPassed &= intOpt.status == IntegrationOptimizer.Status.SUCCESS;
+
+            if (allPassed)
+            {
+                logger.info("Optimization successful");
+                foreach (var intOpt in intOpts)
+                    logger.info($"  pos {intOpt.spec.multiChannelPosition} {intOpt.spec.serialNumber} integration time {intOpt.spec.integrationTimeMS}ms");
+            }
+            else
+                logger.error("Optimization FAILED!");
+
+            updateIntegrationTimeControl(); 
+
+            enableControls(true);
+        }
+
+        /// <todo>
+        /// enable/disable RadioButtons
+        /// </todo>
+        void enableControls(bool flag)
+        {
+            if (flag)
+            {
+                groupBoxSystem.Enabled = true;
+                groupBoxSelected.Enabled = getSelectedPos() > 0;
+            }
+            else
+            {
+                groupBoxSystem.Enabled = false;
+                groupBoxSelected.Enabled = false;
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -145,8 +211,13 @@ namespace MultiChannelDemo
         void numericUpDownIntegrationTimeMSOne_ValueChanged(object sender, EventArgs e) 
         {
             var spec = wrapper.getSpectrometer(selectedPos);
-            if (spec != null)
-                spec.integrationTimeMS = (uint)numericUpDownIntegrationTimeMSOne.Value;
+            if (spec is null)
+                return;
+
+            var old = spec.integrationTimeMS;
+            var ms = (uint) numericUpDownIntegrationTimeMSOne.Value;
+            logger.info($"{spec.serialNumber}: changing integration time from {old} to {ms}");
+            spec.integrationTimeMS = ms;
         }
 
         void clearSelection()
@@ -155,31 +226,31 @@ namespace MultiChannelDemo
             labelSelectedPos.Text = labelSelectedNotes.Text = "";
         }
 
+        int getSelectedPos()
+        {
+            for (int i = 0; i < radioButtons.Length; i++)
+                if (radioButtons[i].Checked)
+                    return i + 1; // position is 1-indexed
+            return 0;
+        }
+
         /// <summary>
         /// The user has clicked one of the "Selected" radio buttons on the GUI,
         /// so select that spectrometer for subsequent "single-device" operations.
         /// Alternatively, they clicked the "Clear Selection" button, so do that.
         /// </summary>
         /// <param name="selected">the RadioButton just clicked</param>
-        void updateSelection(RadioButton selected=null)
+        void updateSelection(RadioButton selected = null)
         {
+            // ensure all other RadioButtons are unchecked (not in a single GroupBox)
             foreach (var rb in radioButtons)
-            { 
-                if ((selected is null || rb != selected) && rb.Checked)
-                {
-                    logger.debug($"unchecking {rb.Name}");
+                if (selected is null || (selected.Checked && rb != selected))
                     rb.Checked = false;
-                }
-            }
 
-            selectedPos = -1;
-            for (int i = 0; i < radioButtons.Length; i++)
-                if (radioButtons[i].Checked)
-                    selectedPos = i + 1;
-
+            // determine our channel position
+            selectedPos = getSelectedPos();
             var spec = wrapper.getSpectrometer(selectedPos);
-
-            if (selectedPos < 0 || spec is null)
+            if (selectedPos < 1 || spec is null)
             {
                 clearSelection();
                 return;
@@ -199,8 +270,20 @@ namespace MultiChannelDemo
             else
                 labelSelectedNotes.Text = "";
 
+            updateIntegrationTimeControl();
+        }
+
+        void updateIntegrationTimeControl()
+        { 
+            var spec = wrapper.getSpectrometer(selectedPos);
+            if (spec is null)
+                return;
+
+            numericUpDownIntegrationTimeMSOne.ValueChanged -= numericUpDownIntegrationTimeMSOne_ValueChanged;
             numericUpDownIntegrationTimeMSOne.Minimum = spec.eeprom.minIntegrationTimeMS;
             numericUpDownIntegrationTimeMSOne.Maximum = spec.eeprom.maxIntegrationTimeMS;
+            numericUpDownIntegrationTimeMSOne.Value = spec.integrationTimeMS;
+            numericUpDownIntegrationTimeMSOne.ValueChanged += numericUpDownIntegrationTimeMSOne_ValueChanged;
         }
 
         async Task<ChannelSpectrum> takeOneSpectrum(Spectrometer spec)
@@ -222,6 +305,7 @@ namespace MultiChannelDemo
                 logger.debug($"restoring triggering on {selectedPos}");
                 spec.triggerSource = TRIGGER_SOURCE.EXTERNAL;
             }
+
             return spectrum;
         }
 
@@ -235,8 +319,10 @@ namespace MultiChannelDemo
             if (spec is null)
                 return;
 
+            enableControls(false);
             var cs = await takeOneSpectrum(spec);
             processSpectrum(cs);
+            enableControls(true);
         }
         
         // User clicked the "Take Dark" button for an individual spectrometer
@@ -246,9 +332,20 @@ namespace MultiChannelDemo
             if (spec is null)
                 return;
 
+            enableControls(false);
             var cs = await takeOneSpectrum(spec);
             spec.dark = cs.intensities;
             processSpectrum(cs);
+            enableControls(true);
+        }
+
+        private void buttonClearDarkOne_Click(object sender, EventArgs e)
+        {
+            var spec = wrapper.getSpectrometer(selectedPos);
+            if (spec is null)
+                return;
+
+            spec.dark = null;
         }
 
         async void buttonOptimizeOne_Click(object sender, EventArgs e)
@@ -256,6 +353,8 @@ namespace MultiChannelDemo
             Spectrometer spec = wrapper.getSpectrometer(selectedPos);
             if (spec is null)
                 return;
+
+            enableControls(false);
 
             // kick-off optimization in a background thread
             var intOpt = new IntegrationOptimizer(spec);
@@ -266,6 +365,9 @@ namespace MultiChannelDemo
 
             // all done
             logger.info($"Optimization completed with status {intOpt.status}, integration time {spec.integrationTimeMS}ms");
+
+            updateIntegrationTimeControl();
+            enableControls(true);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -281,6 +383,11 @@ namespace MultiChannelDemo
         // do whatever we're gonna do with new spectra (save, dark-correct, ...)
         void processSpectrum(ChannelSpectrum cs)
         {
+            if (cs.intensities is null)
+            {
+                logger.error("can't graph null spectrum");
+                return;
+            }
             updateChartAll(cs);
             updateChartSmall(cs);
         }
@@ -290,7 +397,7 @@ namespace MultiChannelDemo
         {
             var chart = charts[cs.pos - 1];
             var s = chart.Series[0];
-            s.Points.DataBindXY(cs.xAxis, cs.intensities);
+            chart.BeginInvoke(new MethodInvoker(delegate { s.Points.DataBindXY(cs.xAxis, cs.intensities); }));
         }
 
         // update the big graph
@@ -299,7 +406,7 @@ namespace MultiChannelDemo
             Series s = null;
             seriesAll.TryGetValue(cs.pos - 1, out s);
             if (s != null)
-                s.Points.DataBindXY(cs.xAxis, cs.intensities);
+                chartAll.BeginInvoke(new MethodInvoker(delegate { s.Points.DataBindXY(cs.xAxis, cs.intensities); }));
         }
 
         /// <summary>
@@ -332,6 +439,11 @@ namespace MultiChannelDemo
                 chartAll.BeginInvoke(new MethodInvoker(delegate { processSpectra(spectra); }));
                 Thread.Sleep(200);
             }
+
+            var final = new List<ChannelSpectrum>();
+            foreach (var intOpt in intOpts)
+                final.Add(new ChannelSpectrum(intOpt.spec));
+            chartAll.BeginInvoke(new MethodInvoker(delegate { processSpectra(final); }));
         }
 
     }

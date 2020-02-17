@@ -58,11 +58,6 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
-        /// Whether spectra should be returned with wavenumber axis or wavelengths.
-        /// </summary>
-        public bool useWavenumbers = false;
-
-        /// <summary>
         /// A convenience accessor to iterate over valid positions (channels).
         /// </summary>
         public SortedSet<int> positions { get; private set; } = new SortedSet<int>();
@@ -338,17 +333,14 @@ namespace WasatchNET
             foreach (var spec in specByIntegrationTime())
             {
                 var pos = spec.multiChannelPosition;
-                ChannelSpectrum cs = new ChannelSpectrum();
+                ChannelSpectrum cs = new ChannelSpectrum(spec);
 
-                logger.debug($"getting spectrum from pos {pos} {spec.serialNumber}");
-                cs.pos = spec.multiChannelPosition;
+                logger.info($"getting spectrum from pos {pos} {spec.serialNumber} ({spec.integrationTimeMS} ms)");
                 cs.intensities = spec.getSpectrum();
-                cs.xAxisType = useWavenumbers ? X_AXIS_TYPE.WAVENUMBER : X_AXIS_TYPE.WAVELENGTH;
-                cs.xAxis = useWavenumbers ? spec.wavenumbers : spec.wavelengths;
 
                 results.Add(cs);
             }
-            logger.info($"returning {results.Count} spectra");
+            logger.debug($"returning {results.Count} spectra");
             return results;
         }
 
@@ -387,9 +379,7 @@ namespace WasatchNET
 
             Spectrometer spec = specByPos[pos];
 
-            ChannelSpectrum cs = new ChannelSpectrum();
-            cs.xAxisType = useWavenumbers ? X_AXIS_TYPE.WAVENUMBER : X_AXIS_TYPE.WAVELENGTH;
-            cs.xAxis = useWavenumbers ? spec.wavenumbers : spec.wavelengths;
+            ChannelSpectrum cs = new ChannelSpectrum(spec);
             cs.intensities = spec.getSpectrum();
             return cs;
         }

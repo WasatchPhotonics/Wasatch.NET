@@ -60,7 +60,7 @@
             this.numericUpDownIntegrationTimeMSOne = new System.Windows.Forms.NumericUpDown();
             this.buttonOptimizeOne = new System.Windows.Forms.Button();
             this.buttonAcquireOne = new System.Windows.Forms.Button();
-            this.groupBox13 = new System.Windows.Forms.GroupBox();
+            this.groupBoxSystem = new System.Windows.Forms.GroupBox();
             this.buttonTakeDark = new System.Windows.Forms.Button();
             this.checkBoxFanEnable = new System.Windows.Forms.CheckBox();
             this.checkBoxTriggerEnableAll = new System.Windows.Forms.CheckBox();
@@ -110,6 +110,9 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.buttonClearDarkOne = new System.Windows.Forms.Button();
+            this.buttonClearDark = new System.Windows.Forms.Button();
+            this.checkBoxVerbose = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -121,7 +124,7 @@
             this.groupBox2.SuspendLayout();
             this.groupBoxSelected.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegrationTimeMSOne)).BeginInit();
-            this.groupBox13.SuspendLayout();
+            this.groupBoxSystem.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -218,7 +221,7 @@
             // groupBox2
             // 
             this.groupBox2.Controls.Add(this.groupBoxSelected);
-            this.groupBox2.Controls.Add(this.groupBox13);
+            this.groupBox2.Controls.Add(this.groupBoxSystem);
             this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox2.Location = new System.Drawing.Point(0, 0);
             this.groupBox2.Name = "groupBox2";
@@ -229,6 +232,7 @@
             // 
             // groupBoxSelected
             // 
+            this.groupBoxSelected.Controls.Add(this.buttonClearDarkOne);
             this.groupBoxSelected.Controls.Add(this.buttonTakeDarkOne);
             this.groupBoxSelected.Controls.Add(this.checkBoxTriggerEnableOne);
             this.groupBoxSelected.Controls.Add(this.label1);
@@ -237,16 +241,16 @@
             this.groupBoxSelected.Controls.Add(this.numericUpDownIntegrationTimeMSOne);
             this.groupBoxSelected.Controls.Add(this.buttonOptimizeOne);
             this.groupBoxSelected.Controls.Add(this.buttonAcquireOne);
-            this.groupBoxSelected.Location = new System.Drawing.Point(6, 161);
+            this.groupBoxSelected.Location = new System.Drawing.Point(6, 190);
             this.groupBoxSelected.Name = "groupBoxSelected";
-            this.groupBoxSelected.Size = new System.Drawing.Size(254, 128);
+            this.groupBoxSelected.Size = new System.Drawing.Size(254, 182);
             this.groupBoxSelected.TabIndex = 1;
             this.groupBoxSelected.TabStop = false;
             this.groupBoxSelected.Text = "Selected Spectrometer";
             // 
             // buttonTakeDarkOne
             // 
-            this.buttonTakeDarkOne.Location = new System.Drawing.Point(108, 62);
+            this.buttonTakeDarkOne.Location = new System.Drawing.Point(108, 55);
             this.buttonTakeDarkOne.Name = "buttonTakeDarkOne";
             this.buttonTakeDarkOne.Size = new System.Drawing.Size(75, 23);
             this.buttonTakeDarkOne.TabIndex = 7;
@@ -259,7 +263,7 @@
             // checkBoxTriggerEnableOne
             // 
             this.checkBoxTriggerEnableOne.AutoSize = true;
-            this.checkBoxTriggerEnableOne.Location = new System.Drawing.Point(9, 91);
+            this.checkBoxTriggerEnableOne.Location = new System.Drawing.Point(6, 32);
             this.checkBoxTriggerEnableOne.Name = "checkBoxTriggerEnableOne";
             this.checkBoxTriggerEnableOne.Size = new System.Drawing.Size(95, 17);
             this.checkBoxTriggerEnableOne.TabIndex = 6;
@@ -271,7 +275,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(189, 37);
+            this.label1.Location = new System.Drawing.Point(87, 115);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(20, 13);
             this.label1.TabIndex = 5;
@@ -297,7 +301,7 @@
             // 
             // numericUpDownIntegrationTimeMSOne
             // 
-            this.numericUpDownIntegrationTimeMSOne.Location = new System.Drawing.Point(108, 35);
+            this.numericUpDownIntegrationTimeMSOne.Location = new System.Drawing.Point(6, 113);
             this.numericUpDownIntegrationTimeMSOne.Name = "numericUpDownIntegrationTimeMSOne";
             this.numericUpDownIntegrationTimeMSOne.Size = new System.Drawing.Size(75, 20);
             this.numericUpDownIntegrationTimeMSOne.TabIndex = 2;
@@ -305,7 +309,7 @@
             // 
             // buttonOptimizeOne
             // 
-            this.buttonOptimizeOne.Location = new System.Drawing.Point(9, 32);
+            this.buttonOptimizeOne.Location = new System.Drawing.Point(6, 84);
             this.buttonOptimizeOne.Name = "buttonOptimizeOne";
             this.buttonOptimizeOne.Size = new System.Drawing.Size(75, 23);
             this.buttonOptimizeOne.TabIndex = 1;
@@ -315,7 +319,7 @@
             // 
             // buttonAcquireOne
             // 
-            this.buttonAcquireOne.Location = new System.Drawing.Point(9, 61);
+            this.buttonAcquireOne.Location = new System.Drawing.Point(6, 55);
             this.buttonAcquireOne.Name = "buttonAcquireOne";
             this.buttonAcquireOne.Size = new System.Drawing.Size(75, 23);
             this.buttonAcquireOne.TabIndex = 0;
@@ -325,21 +329,23 @@
             this.buttonAcquireOne.UseVisualStyleBackColor = true;
             this.buttonAcquireOne.Click += new System.EventHandler(this.buttonAcquireOne_Click);
             // 
-            // groupBox13
+            // groupBoxSystem
             // 
-            this.groupBox13.Controls.Add(this.buttonTakeDark);
-            this.groupBox13.Controls.Add(this.checkBoxFanEnable);
-            this.groupBox13.Controls.Add(this.checkBoxTriggerEnableAll);
-            this.groupBox13.Controls.Add(this.buttonClearSelection);
-            this.groupBox13.Controls.Add(this.buttonOptimizeAll);
-            this.groupBox13.Controls.Add(this.buttonAcquireAll);
-            this.groupBox13.Controls.Add(this.buttonInit);
-            this.groupBox13.Location = new System.Drawing.Point(6, 19);
-            this.groupBox13.Name = "groupBox13";
-            this.groupBox13.Size = new System.Drawing.Size(254, 136);
-            this.groupBox13.TabIndex = 0;
-            this.groupBox13.TabStop = false;
-            this.groupBox13.Text = "System";
+            this.groupBoxSystem.Controls.Add(this.checkBoxVerbose);
+            this.groupBoxSystem.Controls.Add(this.buttonClearDark);
+            this.groupBoxSystem.Controls.Add(this.buttonTakeDark);
+            this.groupBoxSystem.Controls.Add(this.checkBoxFanEnable);
+            this.groupBoxSystem.Controls.Add(this.checkBoxTriggerEnableAll);
+            this.groupBoxSystem.Controls.Add(this.buttonClearSelection);
+            this.groupBoxSystem.Controls.Add(this.buttonOptimizeAll);
+            this.groupBoxSystem.Controls.Add(this.buttonAcquireAll);
+            this.groupBoxSystem.Controls.Add(this.buttonInit);
+            this.groupBoxSystem.Location = new System.Drawing.Point(6, 19);
+            this.groupBoxSystem.Name = "groupBoxSystem";
+            this.groupBoxSystem.Size = new System.Drawing.Size(254, 165);
+            this.groupBoxSystem.TabIndex = 0;
+            this.groupBoxSystem.TabStop = false;
+            this.groupBoxSystem.Text = "System";
             // 
             // buttonTakeDark
             // 
@@ -377,9 +383,9 @@
             // 
             // buttonClearSelection
             // 
-            this.buttonClearSelection.Location = new System.Drawing.Point(108, 19);
+            this.buttonClearSelection.Location = new System.Drawing.Point(6, 129);
             this.buttonClearSelection.Name = "buttonClearSelection";
-            this.buttonClearSelection.Size = new System.Drawing.Size(100, 23);
+            this.buttonClearSelection.Size = new System.Drawing.Size(177, 23);
             this.buttonClearSelection.TabIndex = 5;
             this.buttonClearSelection.Text = "Clear Selection";
             this.buttonClearSelection.UseVisualStyleBackColor = true;
@@ -1006,6 +1012,41 @@
             this.textBoxEventLog.Size = new System.Drawing.Size(1192, 77);
             this.textBoxEventLog.TabIndex = 0;
             // 
+            // buttonClearDarkOne
+            // 
+            this.buttonClearDarkOne.Location = new System.Drawing.Point(108, 84);
+            this.buttonClearDarkOne.Name = "buttonClearDarkOne";
+            this.buttonClearDarkOne.Size = new System.Drawing.Size(75, 23);
+            this.buttonClearDarkOne.TabIndex = 8;
+            this.buttonClearDarkOne.Text = "Clear Dark";
+            this.toolTip1.SetToolTip(this.buttonClearDarkOne, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
+        " triggering to previous state");
+            this.buttonClearDarkOne.UseVisualStyleBackColor = true;
+            this.buttonClearDarkOne.Click += new System.EventHandler(this.buttonClearDarkOne_Click);
+            // 
+            // buttonClearDark
+            // 
+            this.buttonClearDark.Location = new System.Drawing.Point(108, 100);
+            this.buttonClearDark.Name = "buttonClearDark";
+            this.buttonClearDark.Size = new System.Drawing.Size(75, 23);
+            this.buttonClearDark.TabIndex = 9;
+            this.buttonClearDark.Text = "Clear Dark";
+            this.toolTip1.SetToolTip(this.buttonClearDark, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
+        " triggering to previous state");
+            this.buttonClearDark.UseVisualStyleBackColor = true;
+            this.buttonClearDark.Click += new System.EventHandler(this.buttonClearDark_Click);
+            // 
+            // checkBoxVerbose
+            // 
+            this.checkBoxVerbose.AutoSize = true;
+            this.checkBoxVerbose.Location = new System.Drawing.Point(113, 23);
+            this.checkBoxVerbose.Name = "checkBoxVerbose";
+            this.checkBoxVerbose.Size = new System.Drawing.Size(65, 17);
+            this.checkBoxVerbose.TabIndex = 10;
+            this.checkBoxVerbose.Text = "Verbose";
+            this.checkBoxVerbose.UseVisualStyleBackColor = true;
+            this.checkBoxVerbose.CheckedChanged += new System.EventHandler(this.checkBoxVerbose_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1026,8 +1067,8 @@
             this.groupBoxSelected.ResumeLayout(false);
             this.groupBoxSelected.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegrationTimeMSOne)).EndInit();
-            this.groupBox13.ResumeLayout(false);
-            this.groupBox13.PerformLayout();
+            this.groupBoxSystem.ResumeLayout(false);
+            this.groupBoxSystem.PerformLayout();
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);
@@ -1115,7 +1156,7 @@
         private System.Windows.Forms.GroupBox groupBoxPos8;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.TextBox textBoxEventLog;
-        private System.Windows.Forms.GroupBox groupBox13;
+        private System.Windows.Forms.GroupBox groupBoxSystem;
         private System.Windows.Forms.GroupBox groupBoxSelected;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage1;
@@ -1161,6 +1202,9 @@
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.Button buttonTakeDarkOne;
         private System.Windows.Forms.Button buttonTakeDark;
+        private System.Windows.Forms.Button buttonClearDarkOne;
+        private System.Windows.Forms.Button buttonClearDark;
+        private System.Windows.Forms.CheckBox checkBoxVerbose;
     }
 }
 

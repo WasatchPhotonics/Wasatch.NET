@@ -19,10 +19,11 @@ namespace WasatchNET
         public enum Status { PENDING, SUCCESS, ERROR }
 
         public Status status = Status.PENDING;
-        public uint targetCounts = 40000;
-        public uint targetCountThreshold = 2500;
+        public int targetCounts = 40000;
+        public int targetCountThreshold = 2500;
         public uint maxIterations = 20;
         public uint maxSaneIntegrationTimeMS = 10000;
+        public uint startMS = 10;
 
         public Spectrometer spec;
         Logger logger = Logger.getInstance();
@@ -39,9 +40,11 @@ namespace WasatchNET
             if (saveAvg > 1)
                 spec.scanAveraging = 1;
 
-            logger.info("starting optimization");
+            var sn = spec.serialNumber;
+
+            logger.debug($"{sn}: starting optimization");
             await Task.Run(() => run());
-            logger.info($"optimization done (status = {status}, integrationTImeMS = {spec.integrationTimeMS}");
+            logger.debug($"{sn}: optimization done (status = {status}, integrationTimeMS = {spec.integrationTimeMS}");
 
             if (saveAvg > 1)
                 spec.scanAveraging = saveAvg;
@@ -56,10 +59,12 @@ namespace WasatchNET
             int maxConsecutiveRounding = 2;
 
             status = Status.PENDING;
+            spec.integrationTimeMS = startMS;
+            var sn = spec.serialNumber;
 
             while (iterations < maxIterations)
             {
-                logger.debug($"determining optimal integration time for {spec.serialNumber} (iteration {iterations}, {spec.integrationTimeMS}ms)");
+                logger.debug($"{sn}: iteration = {iterations}, ms = {spec.integrationTimeMS})");
 
                 var spectrum = spec.getSpectrum();
 
@@ -70,16 +75,15 @@ namespace WasatchNET
                 }
 
                 peakCounts = spectrum.Max();
-                logger.debug($"max = {peakCounts}");
+                logger.debug($"{sn}:   max = {peakCounts}");
 
                 ////////////////////////////////////////////////////////////////
                 // are we optimal?
                 ////////////////////////////////////////////////////////////////
 
-                logger.debug("PIO: checking if optimal");
                 if (Math.Abs(peakCounts - targetCounts) <= targetCountThreshold)
                 {
-                    logger.debug($"optimized integration time for {spec.serialNumber} at {spec.integrationTimeMS}ms");
+                    logger.debug($"{sn}:   optimized integration time at {spec.integrationTimeMS}ms (max {peakCounts}, target {targetCounts}, threshold {targetCountThreshold})");
                     status = Status.SUCCESS;
                     return;
                 }
@@ -98,20 +102,20 @@ namespace WasatchNET
                         tmp++;
                     ms = tmp;
                 }
-                logger.debug($"adjusting integration time to {ms}ms");
+                logger.debug($"{sn}:   scaling integration time to {ms}");
 
                 // clamp
                 if (ms > maxSaneIntegrationTimeMS)
                 {
+                    logger.debug($"{sn}:   rounding {ms} down to {maxSaneIntegrationTimeMS}");
                     ms = maxSaneIntegrationTimeMS;
-                    logger.info($"    (rounding down to {ms}ms)");
                     consecutiveRoundDowns++;
                     consecutiveRoundUps = 0;
                 }
                 else if (ms < spec.eeprom.minIntegrationTimeMS)
                 {
+                    logger.debug($"{sn}:   rounding {ms} up to {spec.eeprom.minIntegrationTimeMS}");
                     ms = spec.eeprom.minIntegrationTimeMS;
-                    logger.info($"    (rounding up to {ms}ms)");
                     consecutiveRoundUps++;
                     consecutiveRoundDowns = 0;
                 }
@@ -124,14 +128,16 @@ namespace WasatchNET
                 // detect head-banging
                 if (Math.Max(consecutiveRoundUps, consecutiveRoundDowns) > maxConsecutiveRounding)
                 {
-                    logger.error($"failing to converge...giving up after {maxConsecutiveRounding} consecutive roundings");
+                    logger.error($"{sn}:    failing to converge...giving up after {maxConsecutiveRounding} consecutive roundings");
                     status = Status.ERROR;
                     return;
                 }
+
+                spec.integrationTimeMS = ms;
                 iterations++;
             }
 
-            logger.error($"giving up after {iterations} iterations");
+            logger.error($"{sn}: gave up after {iterations} iterations");
             status = Status.ERROR;
         }
     }
