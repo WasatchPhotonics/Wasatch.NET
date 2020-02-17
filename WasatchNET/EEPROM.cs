@@ -44,6 +44,8 @@ namespace WasatchNET
         //
         /////////////////////////////////////////////////////////////////////////       
 
+        public bool defaultValues;
+
         /////////////////////////////////////////////////////////////////////////       
         // Page 0 
         /////////////////////////////////////////////////////////////////////////       
@@ -797,6 +799,7 @@ namespace WasatchNET
         {
             if (spectrometer is BoulderSpectrometer)
             {
+                defaultValues = false;
                 return true;
             }
 
@@ -896,7 +899,11 @@ namespace WasatchNET
 
                 SPISpectrometer a = spectrometer as SPISpectrometer;
 
-                return a.writeEEPROM(pages);
+                bool writeOk = a.writeEEPROM(pages);
+                if (writeOk)
+                    defaultValues = false;
+
+                return writeOk;
 
             }
 
@@ -1025,6 +1032,7 @@ namespace WasatchNET
                     }
                     logger.debug("EEPROM: wrote EEPROM page {0}", page);
                 }
+                defaultValues = false;
                 return true;
             }
         }
@@ -1036,6 +1044,8 @@ namespace WasatchNET
         internal EEPROM(Spectrometer spec)
         {
             spectrometer = spec;
+
+            defaultValues = false;
 
             wavecalCoeffs = new float[4];
             degCToDACCoeffs = new float[3];
@@ -1562,9 +1572,10 @@ namespace WasatchNET
             for (int i = 0; i < 4; i++)
                 if (Double.IsNaN(wavecalCoeffs[i]))
                     defaultWavecal = true;
-            if (defaultWavecal)
+            if (defaultWavecal || format > FORMAT)
             {
-                logger.error("No wavecal found (pixel space)");
+                logger.error("EEPROM appears to be default");
+                defaultValues = true;
                 wavecalCoeffs[0] = 0;
                 wavecalCoeffs[1] = 1;
                 wavecalCoeffs[2] = 0;
