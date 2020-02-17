@@ -76,7 +76,7 @@ namespace WasatchNET
         protected object acquisitionLock = new object();
         object commsLock = new object();
         DateTime lastUsbTimestamp = DateTime.Now;
-        bool shuttingDown = false;
+        internal bool shuttingDown = false;
 
         List<UsbEndpointReader> endpoints = new List<UsbEndpointReader>();
         int pixelsPerEndpoint = 0;
@@ -96,6 +96,13 @@ namespace WasatchNET
         /// <summary>pre-populated array of Raman shifts in wavenumber (1/cm) by pixel, generated from wavelengths[] and excitationNM</summary>
         /// <remarks>see Util.wavelengthsToWavenumbers</remarks>
         public double[] wavenumbers { get; protected set; }
+
+        /// <summary>
+        /// Useful if you lost the results of getSpectrum, or if you want to 
+        /// peek into ongoing multi-acquisition tasks like scan averaging or 
+        /// optimization.
+        /// </summary>
+        public double[] lastSpectrum { get; protected set; }
 
         public bool isSPI { get; protected set; } = false;
 
@@ -1974,6 +1981,7 @@ namespace WasatchNET
             }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+            lastSpectrum = spec;
             return spec;
         }
 

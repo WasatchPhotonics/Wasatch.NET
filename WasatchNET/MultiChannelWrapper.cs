@@ -10,9 +10,21 @@ namespace WasatchNET
 
     public class ChannelSpectrum
     {
+        public int pos = -1;
         public X_AXIS_TYPE xAxisType;
         public double[] xAxis;
         public double[] intensities;
+
+        public ChannelSpectrum(Spectrometer spec = null)
+        {
+            if (spec != null)
+            {
+                pos = spec.multiChannelPosition;
+                xAxis = spec.wavenumbers is null ? spec.wavelengths : spec.wavenumbers;
+                xAxisType = spec.wavenumbers is null ? X_AXIS_TYPE.WAVELENGTH : X_AXIS_TYPE.WAVENUMBER;
+                intensities = spec.lastSpectrum;
+            }
+        }
     }
 
     /// <summary>
@@ -316,12 +328,12 @@ namespace WasatchNET
         /// compared to integration time.  Sorting by integration time should ensure
         /// total acquisition time is close to minimal.
         /// </remarks>
-        public Dictionary<int, ChannelSpectrum> getSpectra(bool sendTrigger=true)
+        public List<ChannelSpectrum> getSpectra(bool sendTrigger=true)
         {
             if (sendTrigger)
                 startAcquisition();
 
-            Dictionary<int, ChannelSpectrum> results = new Dictionary<int, ChannelSpectrum>();
+            List<ChannelSpectrum> results = new List<ChannelSpectrum>();
 
             foreach (var spec in specByIntegrationTime())
             {
@@ -329,11 +341,12 @@ namespace WasatchNET
                 ChannelSpectrum cs = new ChannelSpectrum();
 
                 logger.debug($"getting spectrum from pos {pos} {spec.serialNumber}");
+                cs.pos = spec.multiChannelPosition;
                 cs.intensities = spec.getSpectrum();
                 cs.xAxisType = useWavenumbers ? X_AXIS_TYPE.WAVENUMBER : X_AXIS_TYPE.WAVELENGTH;
                 cs.xAxis = useWavenumbers ? spec.wavenumbers : spec.wavelengths;
 
-                results.Add(pos, cs);
+                results.Add(cs);
             }
             logger.info($"returning {results.Count} spectra");
             return results;
@@ -344,12 +357,12 @@ namespace WasatchNET
         /// </summary>
         /// <remarks>Subsequent calls to getSpectra will be automatically dark-corrected, until clearDark() is called.</remarks>
         /// <returns>The darks collected (also stored internally)</returns>
-        public Dictionary<int, ChannelSpectrum> takeDark(bool sendTrigger=true)
+        public List<ChannelSpectrum> takeDark(bool sendTrigger=true)
         {
             clearDark();
-            Dictionary<int, ChannelSpectrum> results = getSpectra(sendTrigger);
-            foreach (var pos in results.Keys)
-                specByPos[pos].dark = results[pos].intensities;
+            List<ChannelSpectrum> results = getSpectra(sendTrigger);
+            foreach (var cs in results)
+                specByPos[cs.pos].dark = cs.intensities;
             return results;
         }
 

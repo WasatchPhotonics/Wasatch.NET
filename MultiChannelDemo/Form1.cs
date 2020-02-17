@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
@@ -36,6 +37,7 @@ namespace MultiChannelDemo
             InitializeComponent();
 
             logger.setTextBox(textBoxEventLog);
+            // logger.level = LogLevel.DEBUG;
 
             // note all are 1-indexed
             charts = new Chart[] { chart1, chart2, chart3, chart4, chart5, chart6, chart7, chart8 };
@@ -47,21 +49,21 @@ namespace MultiChannelDemo
             foreach (var gb in groupBoxes)
                 gb.Enabled = false;
 
-            configureChart(chartAll);
+            initChart(chartAll);
             foreach (var chart in charts)
-                configureChart(chart);
+                initChart(chart);
 
             clearSelection();
         }
 
-        void configureChart(Chart chart)
+        void initChart(Chart chart)
         {
             var area = chart.ChartAreas[0];
             area.AxisY.IsStartedFromZero = false;
             area.AxisX.LabelStyle.Format = "{0:f2}";
         }
 
-        private void buttonInit_Click(object sender, EventArgs e)
+        void buttonInit_Click(object sender, EventArgs e)
         {
             if (initialized)
                 return;
@@ -93,29 +95,46 @@ namespace MultiChannelDemo
         ////////////////////////////////////////////////////////////////////////
 
         // user clicked the "enable external hardware triggering" system checkbox 
-        private void checkBoxTriggerEnableAll_CheckedChanged(object sender, EventArgs e) => wrapper.triggeringEnabled = checkBoxTriggerEnableAll.Checked;
+        void checkBoxTriggerEnableAll_CheckedChanged(object sender, EventArgs e) => wrapper.triggeringEnabled = checkBoxTriggerEnableAll.Checked;
 
         // user clicked the "fan control" system checkbox
-        private void checkBoxFanEnable_CheckedChanged(object sender, EventArgs e) => wrapper.fanEnabled = checkBoxFanEnable.Checked;
+        void checkBoxFanEnable_CheckedChanged(object sender, EventArgs e) => wrapper.fanEnabled = checkBoxFanEnable.Checked;
 
         // user clicked the system-level "Acquire" button 
-        private void buttonAcquireAll_Click(object sender, EventArgs e) => processSpectra(wrapper.getSpectra());
+        void buttonAcquireAll_Click(object sender, EventArgs e) => processSpectra(wrapper.getSpectra());
 
         // user clicked the system-level "Take Dark" button 
-        private void buttonTakeDark_Click(object sender, EventArgs e) => processSpectra(wrapper.takeDark());
+        void buttonTakeDark_Click(object sender, EventArgs e) => processSpectra(wrapper.takeDark());
+
+        async void buttonOptimizeAll_Click(object sender, EventArgs e)
+        {
+            List<IntegrationOptimizer> intOpts = new List<IntegrationOptimizer>();
+            foreach (var pos in wrapper.positions)
+            {
+                var spec = wrapper.getSpectrometer(pos);
+                IntegrationOptimizer intOpt = new IntegrationOptimizer(spec);
+                intOpt.start();
+                intOpts.Add(intOpt);
+            }
+
+            await Task.Run(() => graphIntegrationSpectra(intOpts));
+
+            // all done
+            logger.info("Optimization completed");
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // Individual Spectrometer Control (for testing/troubleshooting)
         ////////////////////////////////////////////////////////////////////////
 
         // user selected a spectrometer
-        private void radioButtonSelected_CheckedChanged(object sender, EventArgs e) => updateSelection();
+        void radioButtonSelected_CheckedChanged(object sender, EventArgs e) => updateSelection(sender as RadioButton);
 
         // user selected no spectrometer
-        private void buttonClearSelection_Click(object sender, EventArgs e) => updateSelection(reset: true);
+        void buttonClearSelection_Click(object sender, EventArgs e) => updateSelection();
 
         // user manually toggled triggering for a single spectrometer
-        private void checkBoxTriggerEnableOne_CheckedChanged(object sender, EventArgs e)
+        void checkBoxTriggerEnableOne_CheckedChanged(object sender, EventArgs e)
         {
             var spec = wrapper.getSpectrometer(selectedPos);
             if (spec != null)
@@ -123,7 +142,7 @@ namespace MultiChannelDemo
         }
 
         // user manually set integration time for a single spectrometer
-        private void numericUpDownIntegrationTimeMSOne_ValueChanged(object sender, EventArgs e) 
+        void numericUpDownIntegrationTimeMSOne_ValueChanged(object sender, EventArgs e) 
         {
             var spec = wrapper.getSpectrometer(selectedPos);
             if (spec != null)
@@ -141,12 +160,17 @@ namespace MultiChannelDemo
         /// so select that spectrometer for subsequent "single-device" operations.
         /// Alternatively, they clicked the "Clear Selection" button, so do that.
         /// </summary>
-        /// <param name="reset">whether the selection should be cleared</param>
-        void updateSelection(bool reset=false)
+        /// <param name="selected">the RadioButton just clicked</param>
+        void updateSelection(RadioButton selected=null)
         {
-            if (reset)
-                foreach (var rb in radioButtons)
+            foreach (var rb in radioButtons)
+            { 
+                if ((selected is null || rb != selected) && rb.Checked)
+                {
+                    logger.debug($"unchecking {rb.Name}");
                     rb.Checked = false;
+                }
+            }
 
             selectedPos = -1;
             for (int i = 0; i < radioButtons.Length; i++)
@@ -207,62 +231,108 @@ namespace MultiChannelDemo
         // system-level "Acquire" button).
         async void buttonAcquireOne_Click(object sender, EventArgs e)
         {
-            Spectrometer spec = wrapper.getSpectrometer(selectedPos);
+            var spec = wrapper.getSpectrometer(selectedPos);
             if (spec is null)
                 return;
 
-            var spectrum = await takeOneSpectrum(spec);
-            processSpectrum(selectedPos, spectrum);
+            var cs = await takeOneSpectrum(spec);
+            processSpectrum(cs);
         }
         
         // User clicked the "Take Dark" button for an individual spectrometer
         async void buttonTakeDarkOne_Click(object sender, EventArgs e)
         {
+            var spec = wrapper.getSpectrometer(selectedPos);
+            if (spec is null)
+                return;
+
+            var cs = await takeOneSpectrum(spec);
+            spec.dark = cs.intensities;
+            processSpectrum(cs);
+        }
+
+        async void buttonOptimizeOne_Click(object sender, EventArgs e)
+        {
             Spectrometer spec = wrapper.getSpectrometer(selectedPos);
             if (spec is null)
                 return;
 
-            var spectrum = await takeOneSpectrum(spec);
-            spec.dark = spectrum.intensities;
-            processSpectrum(selectedPos, spectrum);
+            // kick-off optimization in a background thread
+            var intOpt = new IntegrationOptimizer(spec);
+            intOpt.start();
+
+            // graph spectra during optimization
+            await Task.Run(() => graphIntegrationSpectra(new IntegrationOptimizer[] { intOpt }.ToList()));
+
+            // all done
+            logger.info($"Optimization completed with status {intOpt.status}, integration time {spec.integrationTimeMS}ms");
         }
 
         ////////////////////////////////////////////////////////////////////////
         // Graphing
         ////////////////////////////////////////////////////////////////////////
 
-        void processSpectra(Dictionary<int, ChannelSpectrum> spectraByPos)
+        void processSpectra(List<ChannelSpectrum> spectra)
         {
-            foreach (var pair in spectraByPos)
-            {
-                var pos = pair.Key;
-                var spectrum = pair.Value;
-                processSpectrum(pos, spectrum);
-            }
+            foreach (var cs in spectra)
+                processSpectrum(cs);
         }
 
         // do whatever we're gonna do with new spectra (save, dark-correct, ...)
-        void processSpectrum(int pos, ChannelSpectrum spectrum)
+        void processSpectrum(ChannelSpectrum cs)
         {
-            updateChartAll(pos, spectrum);
-            updateChartSmall(pos, spectrum);
+            updateChartAll(cs);
+            updateChartSmall(cs);
         }
 
         // update the little graph
-        void updateChartSmall(int pos, ChannelSpectrum spectrum)
+        void updateChartSmall(ChannelSpectrum cs)
         {
-            Chart chart = charts[pos - 1];
-            Series s = chart.Series[0];
-            s.Points.DataBindXY(spectrum.xAxis, spectrum.intensities);
+            var chart = charts[cs.pos - 1];
+            var s = chart.Series[0];
+            s.Points.DataBindXY(cs.xAxis, cs.intensities);
         }
 
         // update the big graph
-        void updateChartAll(int pos, ChannelSpectrum spectrum)
+        void updateChartAll(ChannelSpectrum cs)
         {
             Series s = null;
-            seriesAll.TryGetValue(pos - 1, out s);
+            seriesAll.TryGetValue(cs.pos - 1, out s);
             if (s != null)
-                s.Points.DataBindXY(spectrum.xAxis, spectrum.intensities);
+                s.Points.DataBindXY(cs.xAxis, cs.intensities);
         }
+
+        /// <summary>
+        /// Provide a visual monitor of one or more IntegrationOptimizers as
+        /// they optimize integration time on various spectrometers.
+        /// </summary>
+        /// <remarks>
+        /// It is assumed that this will be called as a background task via 
+        /// 'await', hence uses a delegate to graph the collected spectra.
+        ///
+        /// Returns when optimization is finished on all spectrometers (successful
+        /// or otherwise).
+        /// </remarks>
+        void graphIntegrationSpectra(List<IntegrationOptimizer> intOpts)
+        {
+            if (intOpts is null)
+                return;
+            
+            while (true)
+            {
+                var spectra = new List<ChannelSpectrum>();
+                foreach (var intOpt in intOpts)
+                    if (intOpt.status == IntegrationOptimizer.Status.PENDING)
+                        spectra.Add(new ChannelSpectrum(intOpt.spec));
+
+                // exit if all optimizers have finished
+                if (spectra.Count == 0)
+                    break;
+
+                chartAll.BeginInvoke(new MethodInvoker(delegate { processSpectra(spectra); }));
+                Thread.Sleep(200);
+            }
+        }
+
     }
 }

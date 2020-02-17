@@ -52,6 +52,7 @@
             this.splitContainerControlsVsGraphs = new System.Windows.Forms.SplitContainer();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.groupBoxSelected = new System.Windows.Forms.GroupBox();
+            this.buttonTakeDarkOne = new System.Windows.Forms.Button();
             this.checkBoxTriggerEnableOne = new System.Windows.Forms.CheckBox();
             this.label1 = new System.Windows.Forms.Label();
             this.labelSelectedNotes = new System.Windows.Forms.Label();
@@ -60,6 +61,7 @@
             this.buttonOptimizeOne = new System.Windows.Forms.Button();
             this.buttonAcquireOne = new System.Windows.Forms.Button();
             this.groupBox13 = new System.Windows.Forms.GroupBox();
+            this.buttonTakeDark = new System.Windows.Forms.Button();
             this.checkBoxFanEnable = new System.Windows.Forms.CheckBox();
             this.checkBoxTriggerEnableAll = new System.Windows.Forms.CheckBox();
             this.buttonClearSelection = new System.Windows.Forms.Button();
@@ -108,8 +110,6 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.buttonTakeDarkOne = new System.Windows.Forms.Button();
-            this.buttonTakeDark = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -244,6 +244,18 @@
             this.groupBoxSelected.TabStop = false;
             this.groupBoxSelected.Text = "Selected Spectrometer";
             // 
+            // buttonTakeDarkOne
+            // 
+            this.buttonTakeDarkOne.Location = new System.Drawing.Point(108, 62);
+            this.buttonTakeDarkOne.Name = "buttonTakeDarkOne";
+            this.buttonTakeDarkOne.Size = new System.Drawing.Size(75, 23);
+            this.buttonTakeDarkOne.TabIndex = 7;
+            this.buttonTakeDarkOne.Text = "Take Dark";
+            this.toolTip1.SetToolTip(this.buttonTakeDarkOne, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
+        " triggering to previous state");
+            this.buttonTakeDarkOne.UseVisualStyleBackColor = true;
+            this.buttonTakeDarkOne.Click += new System.EventHandler(this.buttonTakeDarkOne_Click);
+            // 
             // checkBoxTriggerEnableOne
             // 
             this.checkBoxTriggerEnableOne.AutoSize = true;
@@ -299,6 +311,7 @@
             this.buttonOptimizeOne.TabIndex = 1;
             this.buttonOptimizeOne.Text = "Optimize";
             this.buttonOptimizeOne.UseVisualStyleBackColor = true;
+            this.buttonOptimizeOne.Click += new System.EventHandler(this.buttonOptimizeOne_Click);
             // 
             // buttonAcquireOne
             // 
@@ -327,6 +340,17 @@
             this.groupBox13.TabIndex = 0;
             this.groupBox13.TabStop = false;
             this.groupBox13.Text = "System";
+            // 
+            // buttonTakeDark
+            // 
+            this.buttonTakeDark.Location = new System.Drawing.Point(108, 71);
+            this.buttonTakeDark.Name = "buttonTakeDark";
+            this.buttonTakeDark.Size = new System.Drawing.Size(75, 23);
+            this.buttonTakeDark.TabIndex = 8;
+            this.buttonTakeDark.Text = "Take Dark";
+            this.toolTip1.SetToolTip(this.buttonTakeDark, "Raise hardware trigger, then read all spectra");
+            this.buttonTakeDark.UseVisualStyleBackColor = true;
+            this.buttonTakeDark.Click += new System.EventHandler(this.buttonTakeDark_Click);
             // 
             // checkBoxFanEnable
             // 
@@ -369,6 +393,7 @@
             this.buttonOptimizeAll.TabIndex = 4;
             this.buttonOptimizeAll.Text = "Optimize";
             this.buttonOptimizeAll.UseVisualStyleBackColor = true;
+            this.buttonOptimizeAll.Click += new System.EventHandler(this.buttonOptimizeAll_Click);
             // 
             // buttonAcquireAll
             // 
@@ -980,29 +1005,6 @@
             this.textBoxEventLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.textBoxEventLog.Size = new System.Drawing.Size(1192, 77);
             this.textBoxEventLog.TabIndex = 0;
-            // 
-            // buttonTakeDarkOne
-            // 
-            this.buttonTakeDarkOne.Location = new System.Drawing.Point(108, 62);
-            this.buttonTakeDarkOne.Name = "buttonTakeDarkOne";
-            this.buttonTakeDarkOne.Size = new System.Drawing.Size(75, 23);
-            this.buttonTakeDarkOne.TabIndex = 7;
-            this.buttonTakeDarkOne.Text = "Take Dark";
-            this.toolTip1.SetToolTip(this.buttonTakeDarkOne, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
-        " triggering to previous state");
-            this.buttonTakeDarkOne.UseVisualStyleBackColor = true;
-            this.buttonTakeDarkOne.Click += new System.EventHandler(this.buttonTakeDarkOne_Click);
-            // 
-            // buttonTakeDark
-            // 
-            this.buttonTakeDark.Location = new System.Drawing.Point(108, 71);
-            this.buttonTakeDark.Name = "buttonTakeDark";
-            this.buttonTakeDark.Size = new System.Drawing.Size(75, 23);
-            this.buttonTakeDark.TabIndex = 8;
-            this.buttonTakeDark.Text = "Take Dark";
-            this.toolTip1.SetToolTip(this.buttonTakeDark, "Raise hardware trigger, then read all spectra");
-            this.buttonTakeDark.UseVisualStyleBackColor = true;
-            this.buttonTakeDark.Click += new System.EventHandler(this.buttonTakeDark_Click);
             // 
             // Form1
             // 

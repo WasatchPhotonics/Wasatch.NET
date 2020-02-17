@@ -111,6 +111,7 @@
     <Compile Include="IFPGAOptions.cs" />
     <Compile Include="ILogger.cs" />
     <Compile Include="IEEPROM.cs" />
+    <Compile Include="IntegrationOptimizer.cs" />
     <Compile Include="IOpcodes.cs" />
     <Compile Include="ISpectrometer.cs" />
     <Compile Include="IUInt40.cs" />
