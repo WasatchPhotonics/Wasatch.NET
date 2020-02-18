@@ -7,32 +7,76 @@ using System.Threading.Tasks;
 namespace WasatchNET
 {
     /// <summary>
+    /// Controls the automatic (background) optimization of a spectrometer's integration time
+    /// to within 'targetCountThreshold' counts of 'targetCounts' intensity goal.
     /// </summary>
     /// <remarks>
     /// This class is similar to the PeakIntegrationOptimizer (PIO) in WPSpecCal,
     /// but simpler, as it only optimizes "full spectra" (uses the maximum height
     /// of the entire spectrum), rather than allowing individual peaks to be optimized
     /// to target levels.
+    ///
+    /// The typical use-case would be to instantiate the IntegrationOptimizer
+    /// with a reference to the spectrometer you want to optimize, then tweak
+    /// the values of any public parameters (targetCounts, targetCountThreshold, 
+    /// maxIterations, maxSaneItegrationTimeMS, startMS etc) you wish.  Then
+    /// call start(), and internally poll the object until status no longer reads
+    /// PENDING (switches to either SUCCESS or ERROR).  At that time, you can read
+    /// the Spectrometer's integration time to obtain the converged value.
+    ///
+    /// While polling, you can graph the intermediate spectra if you wish, using
+    /// Spectrometer.lastSpectrum.  See MultiChannelDemo.Form1.graphIntegrationSpectra 
+    /// for examples.
     /// </remarks>
     public class IntegrationOptimizer
     {
         public enum Status { PENDING, SUCCESS, ERROR }
 
+        /// <summary>
+        /// Current (or final) status of the IntegrationOptimizer.  Defaults to 
+        /// PENDING at construction, and switches to SUCCESS or ERROR only at 
+        /// completion.
+        /// </summary>
         public Status status = Status.PENDING;
+
+        /// <summary>the intensity you want to reach</summary>
         public int targetCounts = 40000;
+
+        /// <summary>error margin around the targetCounts intensity</summary>
         public int targetCountThreshold = 2500;
+
+        /// <summary>how many acquisitions the algorithm can attempt</summary>
         public uint maxIterations = 20;
+
+        /// <summary>longest integration time you're willing to consider</summary>
         public uint maxSaneIntegrationTimeMS = 10000;
+
+        /// <summary>initial integration time for first iteration</summary>
         public uint startMS = 10;
 
+        /// <summary>the Spectrometer being optimized</summary>
         public Spectrometer spec;
         Logger logger = Logger.getInstance();
 
+        /// <summary>
+        /// Instantiate a new IntegrationOptimizer on a particular Spectrometer.
+        /// </summary>
+        /// <param name="spec">the Spectrometer whose integration time should be optimized</param>
         public IntegrationOptimizer(Spectrometer spec)
         {
             this.spec = spec;
         }
 
+        /// <summary>
+        /// Start the background integration.  Note that this will generate a series of
+        /// integrations in a background thread.  Spectrometer communications during an
+        /// ongoing optimization may be compromised and parallel activity could yield
+        /// unpredictable results.
+        /// </summary>
+        /// <todo>
+        /// consider an additional lock, beyond acquisitionLock, to preclude user
+        /// commands during internal activities
+        /// </todo>
         public async void start()
         {
             spec.dark = null;

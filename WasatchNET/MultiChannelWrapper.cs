@@ -8,6 +8,15 @@ namespace WasatchNET
 {
     public enum X_AXIS_TYPE { PIXEL, WAVELENGTH, WAVENUMBER };
 
+    /// <summary>
+    /// Return type used by MultiChannelWrapper acquisitions, primarily provided
+    /// to bundle x-axis and position number, as different channels will presumably
+    /// have different settings.
+    /// </summary>
+    /// <remarks>
+    /// Populates "intensities" with last spectrum, but many callers will promptly
+    /// overwrite with getSpectrum().
+    /// </remarks>
     public class ChannelSpectrum
     {
         public int pos = -1;
@@ -42,6 +51,9 @@ namespace WasatchNET
     /// - "Position" and "Channel" are used interchangeably.
     /// - all testing was done with 8-channel system of WP-OEM (ARM) spectrometers,
     ///   but should apply to other configurations
+    /// - Position is generally assumed to be 1-indexed, given typical customer 
+    ///   tendencies and user labeling requirements.  However, negatives are
+    ///   definitely considered invalid.
     /// 
     /// As WP-OEM spectrometers do not currently expose an accessory connector 
     /// with an obvious GPIO output useable as a trigger source, and as the 
@@ -49,8 +61,6 @@ namespace WasatchNET
     /// the laserEnable output is being used as a quasi-GPIO, both for raising
     /// trigger signals and to control connected fans (if found).
     /// </remarks>
-    /// <todo>
-    /// </todo>
     public class MultiChannelWrapper
     {
         ////////////////////////////////////////////////////////////////////////
@@ -208,10 +218,13 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
-        /// How many spectrometers are configured.
+        /// How many spectrometers (channels) were found.
         /// </summary>
         public int spectrometerCount => specByPos.Count;
 
+        // private utility method to sort spectrometers by integration time
+        // in increasing order, so we can process the "soonest-done" first,
+        // grab the longest at the end and save time.
         IEnumerable<Spectrometer> specByIntegrationTime()
         {
             return from pair in specByPos
@@ -229,8 +242,9 @@ namespace WasatchNET
         }
 
         /// <summary>
-        /// The position of the spectrometer configured to generate the external hardware trigger (-1 if none)
+        /// The position of the spectrometer configured to generate the external hardware trigger.
         /// </summary>
+        /// <returns>-1 if none found</returns>
         public int triggerPos => specTrigger != null ? specTrigger.multiChannelPosition : -1;
 
         /// <summary>
@@ -252,8 +266,9 @@ namespace WasatchNET
         bool _triggeringEnabled;
 
         /// <summary>
-        /// The position of the spectrometer configured to control the fans (-1 if none)
+        /// The position of the spectrometer configured to control the fans.
         /// </summary>
+        /// <returns>-1 if none found</returns>
         public int fanPos => specFan != null ? specFan.multiChannelPosition : -1;
 
         /// <summary>
@@ -292,6 +307,7 @@ namespace WasatchNET
         /// Use the configured spectrometer's laserEnable output to raise a brief 
         /// HW trigger pulse.
         /// </summary>
+        /// <todo>test w/ARM spectrometers</todo>
         public async void startAcquisition()
         {
             if (specTrigger is null)
@@ -318,11 +334,12 @@ namespace WasatchNET
         /// Choice of x-axis is determined by useWavenumbers.
         /// </returns>
         /// <remarks>
-        /// This is not executed in parallel because it doesn't need to be.
+        /// This is not executed in parallel because it doesn't really need to be.
         /// The USB bus is serial anyway, and communication latencies are minimal
         /// compared to integration time.  Sorting by integration time should ensure
         /// total acquisition time is close to minimal.
         /// </remarks>
+        /// <param name="sendTrigger">whether to automatically raise the HW trigger (default true)</param>
         public List<ChannelSpectrum> getSpectra(bool sendTrigger=true)
         {
             if (sendTrigger)
@@ -347,8 +364,11 @@ namespace WasatchNET
         /// <summary>
         /// Takes a spectrum from each spectrometer, and stores it internally as a new dark reference.
         /// </summary>
-        /// <remarks>Subsequent calls to getSpectra will be automatically dark-corrected, until clearDark() is called.</remarks>
-        /// <returns>The darks collected (also stored internally)</returns>
+        /// <remarks>
+        /// Subsequent calls to getSpectra will be automatically dark-corrected,
+        /// until clearDark() is called.
+        /// </remarks>
+        /// <returns>The darks collected (also stored in Spectrometer)</returns>
         public List<ChannelSpectrum> takeDark(bool sendTrigger=true)
         {
             clearDark();
@@ -370,8 +390,8 @@ namespace WasatchNET
         /// <summary>
         /// Get a spectrum from one spectrometer.  Assumes HW triggering is disabled, or caller is providing.
         /// </summary>
-        /// <param name="pos"></param>
-        /// <returns></returns>
+        /// <param name="pos">spectrometer position to acquire</param>
+        /// <returns>measured spectrum</returns>
         public ChannelSpectrum getSpectrum(int pos)
         {
             if (!specByPos.ContainsKey(pos))

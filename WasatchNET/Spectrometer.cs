@@ -1402,8 +1402,7 @@ namespace WasatchNET
                 }
             }
 
-            // might only need for SiG-VIS?
-            if (isARM)
+            if (isSiG)
             {
                 logger.debug("requiring throwaway after changing integration time");
                 throwawayAfterIntegrationTime = true;
@@ -1449,8 +1448,8 @@ namespace WasatchNET
         // Convenience Accessors
         ////////////////////////////////////////////////////////////////////////
 
-        public virtual bool isARM { get { return featureIdentification.boardType == BOARD_TYPES.ARM; } }
-        public bool isSiG { get { return eeprom.model.ToLower().Contains("sig") || eeprom.serialNumber.ToLower().Contains("sig"); } }
+        public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
+        public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx"); 
 
         public virtual bool hasLaser
         {
