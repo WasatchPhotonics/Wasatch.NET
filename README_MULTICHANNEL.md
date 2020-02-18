@@ -15,7 +15,9 @@ otherwise be difficult in some environments.
 Not all features will be applicable to all users, but each feature was requested
 by a particular user for a particular system, and may be found of use to others.
 
-For API, see \ref MultiChannelWrapper.
+For API, see:
+
+- \ref WasatchNET.MultiChannelWrapper
 
 # Triggering Configuration
 
