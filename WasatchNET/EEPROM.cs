@@ -991,7 +991,7 @@ namespace WasatchNET
                 if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
                 
                 if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                if (intensityCorrectionOrder < 8)
+                if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
                 {
                     for (int i = 0; i <= intensityCorrectionOrder; ++i)
                     {
@@ -1572,6 +1572,14 @@ namespace WasatchNET
             for (int i = 0; i < 4; i++)
                 if (Double.IsNaN(wavecalCoeffs[i]))
                     defaultWavecal = true;
+
+            for (int i = 0; i < 5; i++)
+                if (Double.IsNaN(linearityCoeffs[i]))
+                    linearityCoeffs[i] = 0;
+            for (int i = 0; i < 4; i++)
+                if (Double.IsNaN(laserPowerCoeffs[i]))
+                    laserPowerCoeffs[i] = 0;
+
             if (defaultWavecal || format > FORMAT)
             {
                 logger.error("EEPROM appears to be default");
