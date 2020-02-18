@@ -79,8 +79,10 @@ make doc
 # read -p "Press return to continue..." FOO
 
 # verify version number is consistent (postAndRename handles for MSI)
+# (arguably, all that really matters is the WasatchNET assembly version)
 validateAssemblyVersion "WasatchNET"
 validateAssemblyVersion "WinFormDemo"
+#validateAssemblyVersion "MultiChannelDemo"
 
 # verify version number is tagged
 if git tag | egrep -q $VERSION
