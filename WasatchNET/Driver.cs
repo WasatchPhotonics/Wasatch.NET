@@ -271,6 +271,13 @@ namespace WasatchNET
             foreach (string line in deviceInfoSummaries)
                 logger.debug("Summary: {0}", line);
 
+            // SiG-VIS doesn't seem to like the advanced logging?
+            if (usbRegistry.Pid == 0x4000)
+            {
+                device.Close();
+                return;
+            }
+
             foreach (UsbConfigInfo cfgInfo in device.Configs)
             {
                 logger.debug("Config {0}", cfgInfo.Descriptor.ConfigID);
@@ -404,6 +411,10 @@ namespace WasatchNET
     //      Type t = mSender as Type;
     //      senderText = senderText += string.Format(" {0} ", t.Name);
     //  }
-    }
 
+        public MultiChannelWrapper getMultiChannelWrapper()
+        {
+            return MultiChannelWrapper.getInstance();
+        }
+    }
 }

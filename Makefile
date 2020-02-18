@@ -1,12 +1,12 @@
 help:
 	@echo "This library is built using Visual Studio; see README.md"
 
-.PHONY: doc clean cloc
+.PHONY: doc docs clean cloc
 
 cloc:
 	@cloc --exclude-lang=XML WasatchNET WinFormDemo APITest LibUsbDotNetTest MonoTest UnitTests scripts
 
-doc:
+doc docs:
 	@echo "Rendering Doxygen..."
 	@rm -rf doc/doxygen
 	@mkdir -p doc/doxygen

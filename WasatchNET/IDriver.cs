@@ -50,5 +50,11 @@ namespace WasatchNET
         /// Automatically called as part of application shutdown (can be called manually).
         /// </summary>
         void closeAllSpectrometers();
+
+        /// <summary>
+        /// Gets a custom Wrapper object provided to automate multi-channel operations.
+        /// </summary>
+        /// <returns>a MultiChannelWrapper</returns>
+        MultiChannelWrapper getMultiChannelWrapper();
     }
 }

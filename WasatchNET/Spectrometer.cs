@@ -76,11 +76,12 @@ namespace WasatchNET
         protected object acquisitionLock = new object();
         object commsLock = new object();
         DateTime lastUsbTimestamp = DateTime.Now;
-        bool shuttingDown = false;
+        internal bool shuttingDown = false;
 
         List<UsbEndpointReader> endpoints = new List<UsbEndpointReader>();
         int pixelsPerEndpoint = 0;
         ulong throwawaySum = 0;
+        bool throwawayAfterIntegrationTime = false;
 
         ////////////////////////////////////////////////////////////////////////
         // Convenience lookups
@@ -97,6 +98,13 @@ namespace WasatchNET
         /// <remarks>see Util.wavelengthsToWavenumbers</remarks>
         public double[] wavenumbers { get; protected set; }
 
+        /// <summary>
+        /// Useful if you lost the results of getSpectrum, or if you want to 
+        /// peek into ongoing multi-acquisition tasks like scan averaging or 
+        /// optimization.
+        /// </summary>
+        public double[] lastSpectrum { get; protected set; }
+
         public bool isSPI { get; protected set; } = false;
 
         /// <summary>spectrometer serial number</summary>
@@ -112,7 +120,7 @@ namespace WasatchNET
         }
 
         ////////////////////////////////////////////////////////////////////////
-        // Purely internal driver attributes (no hardware version)
+        // Spectrometer Components
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>metadata inferred from the spectrometer's USB PID</summary>
@@ -125,7 +133,7 @@ namespace WasatchNET
         public EEPROM eeprom { get; protected set; }
 
         ////////////////////////////////////////////////////////////////////////
-        // Purely internal driver attributes (no hardware version)
+        // internal driver attributes (no direct corresponding HW component)
         ////////////////////////////////////////////////////////////////////////
 
         bool throwawayADCRead { get; set; } = true;
@@ -161,8 +169,19 @@ namespace WasatchNET
             get { return dark_; }
             set { lock (acquisitionLock) dark_ = value; }
         }
-
         protected double[] dark_;
+
+        /// <summary>
+        /// If the spectrometer is deployed in a multi-channel configuration,
+        /// this provides a place to store an integral position in the Spectrometer
+        /// object.  
+        /// </summary>
+        /// <remarks>
+        /// This may be populated from EEPROM.UserText or other sources.
+        /// This value is not used by anything except MultiChannelWrapper and 
+        /// end-user code.
+        /// </remarks>
+        public int multiChannelPosition = -1;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -184,7 +203,7 @@ namespace WasatchNET
         /// troubleshooting .NET clients that iteratively call every accessor
         /// at instantiation.
         /// </summary>
-        private bool kludgedOut = false;
+        // private bool kludgedOut = false;
 
         public ushort actualFrames
         {
@@ -689,6 +708,13 @@ namespace WasatchNET
                     integrationTimeMS_ = ms;
                     readOnce.Add(Opcodes.GET_INTEGRATION_TIME);
                 }
+
+                if (throwawayAfterIntegrationTime)
+                {
+                    logger.debug("taking throwaway spectrum");
+                    _ = getSpectrumRaw();
+                }
+
             }
         }
         protected uint integrationTimeMS_;
@@ -1368,11 +1394,18 @@ namespace WasatchNET
                 logger.debug("setting TEC setpoint to {0} deg C", degC);
                 detectorTECSetpointDegC = degC;
 
+                // MZ: why don't we do this for ARM?  Is it automatic in FW?
                 if (!isARM)
                 {
                     logger.debug("enabling detector TEC");
                     detectorTECEnabled = true;
                 }
+            }
+
+            if (isSiG)
+            {
+                logger.debug("requiring throwaway after changing integration time");
+                throwawayAfterIntegrationTime = true;
             }
 
             // if we're using a modern EEPROM format, automatically apply the stored gain/offset values
@@ -1415,8 +1448,8 @@ namespace WasatchNET
         // Convenience Accessors
         ////////////////////////////////////////////////////////////////////////
 
-        public virtual bool isARM { get { return featureIdentification.boardType == BOARD_TYPES.ARM; } }
-        public bool isSiG { get { return eeprom.model.ToLower().Contains("sig") || eeprom.serialNumber.ToLower().Contains("sig"); } }
+        public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
+        public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx"); 
 
         public virtual bool hasLaser
         {
@@ -1963,6 +1996,7 @@ namespace WasatchNET
             }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+            lastSpectrum = spec;
             return spec;
         }
 
