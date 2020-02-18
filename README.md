@@ -217,6 +217,10 @@ dependencies (3rd-party DLLs like LibUsbDotNet).
 For information on digitally signing Wasatch.NET assemblies for GAC support,
 Wasatch maintainers should reference "Admin/Keys/Wasatch.NET".
 
+# Multi-Channel Operation
+
+- see [MultiChannel](README_MULTICHANNEL.md)
+
 # Troubleshooting
 
 ## "The best driver is already installed."
