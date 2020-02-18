@@ -271,58 +271,61 @@ namespace WasatchNET
             foreach (string line in deviceInfoSummaries)
                 logger.debug("Summary: {0}", line);
 
-            // YOU ARE HERE -- does this die on Zynq? On ARM in general?
-            if (usbRegistry.Pid != 0x4000)
+            // SiG-VIS doesn't seem to like the advanced logging?
+            if (usbRegistry.Pid == 0x4000)
             {
-                foreach (UsbConfigInfo cfgInfo in device.Configs)
+                device.Close();
+                return;
+            }
+
+            foreach (UsbConfigInfo cfgInfo in device.Configs)
+            {
+                logger.debug("Config {0}", cfgInfo.Descriptor.ConfigID);
+
+                // log UsbConfigInfo
+                logNameValuePairs(cfgInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
+
+                // log UsbInterfaceInfo 
+                foreach (UsbInterfaceInfo interfaceInfo in cfgInfo.InterfaceInfoList)
                 {
-                    logger.debug("Config {0}", cfgInfo.Descriptor.ConfigID);
+                    logger.debug("Interface [InterfaceID {0}, AlternateID {1}]", interfaceInfo.Descriptor.InterfaceID, interfaceInfo.Descriptor.AlternateID);
+                    logNameValuePairs(interfaceInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
 
-                    // log UsbConfigInfo
-                    logNameValuePairs(cfgInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
-
-                    // log UsbInterfaceInfo 
-                    foreach (UsbInterfaceInfo interfaceInfo in cfgInfo.InterfaceInfoList)
+                    // log UsbEndpointInfo
+                    foreach (UsbEndpointInfo endpointInfo in interfaceInfo.EndpointInfoList)
                     {
-                        logger.debug("Interface [InterfaceID {0}, AlternateID {1}]", interfaceInfo.Descriptor.InterfaceID, interfaceInfo.Descriptor.AlternateID);
-                        logNameValuePairs(interfaceInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
-
-                        // log UsbEndpointInfo
-                        foreach (UsbEndpointInfo endpointInfo in interfaceInfo.EndpointInfoList)
-                        {
-                            logger.debug("  Endpoint 0x" + (endpointInfo.Descriptor.EndpointID).ToString("x2"));
-                            logNameValuePairs(endpointInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), "    ");
-                        }
+                        logger.debug("  Endpoint 0x" + (endpointInfo.Descriptor.EndpointID).ToString("x2"));
+                        logNameValuePairs(endpointInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), "    ");
                     }
-
-                    // log SymbolicName 
-                    UsbSymbolicName symName = UsbSymbolicName.Parse(usbRegistry.SymbolicName);
-                    logger.debug("Symbolic Name:");
-                    logger.debug("  VID:          0x{0:x4}", symName.Vid);
-                    logger.debug("  PID:          0x{0:x4}", symName.Pid);
-                    logger.debug("  SerialNumber: {0}", symName.SerialNumber);
-                    logger.debug("  Class Guid:   {0}", symName.ClassGuid);
-
-                    logger.debug("Device Properties:");
-                    foreach (KeyValuePair<string, object> pair in usbRegistry.DeviceProperties)
-                    {
-                        string key = pair.Key;
-                        object value = pair.Value;
-
-                        // handle array values
-                        if (value is string[])
-                        {
-                            string[] values = value as string[];
-                            logger.debug("  {0}: [ {1} ]", key, string.Join(", ", values));
-                        }
-                        else
-                        {
-                            logger.debug("  {0}: {1}", key, value);
-                        }
-                    }
-
-                    logger.debug(" ");
                 }
+
+                // log SymbolicName 
+                UsbSymbolicName symName = UsbSymbolicName.Parse(usbRegistry.SymbolicName);
+                logger.debug("Symbolic Name:");
+                logger.debug("  VID:          0x{0:x4}", symName.Vid);
+                logger.debug("  PID:          0x{0:x4}", symName.Pid);
+                logger.debug("  SerialNumber: {0}", symName.SerialNumber);
+                logger.debug("  Class Guid:   {0}", symName.ClassGuid);
+
+                logger.debug("Device Properties:");
+                foreach (KeyValuePair<string, object> pair in usbRegistry.DeviceProperties)
+                {
+                    string key = pair.Key;
+                    object value = pair.Value;
+
+                    // handle array values
+                    if (value is string[])
+                    {
+                        string[] values = value as string[];
+                        logger.debug("  {0}: [ {1} ]", key, string.Join(", ", values));
+                    }
+                    else
+                    {
+                        logger.debug("  {0}: {1}", key, value);
+                    }
+                }
+
+                logger.debug(" ");
             }
             device.Close();
         }
