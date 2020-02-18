@@ -533,7 +533,7 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=2.1.9.0, Culture=neutral, PublicKeyToken=0aacf2b28afda300, processorArchitecture=MSIL"
+            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=2.1.10.0, Culture=neutral, PublicKeyToken=0aacf2b28afda300, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
                 }

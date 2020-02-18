@@ -1523,7 +1523,7 @@ namespace WasatchNET
 
         void waitForUsbAvailable()
         {
-            if (featureIdentification.usbDelayMS > 0)
+            if (featureIdentification != null && featureIdentification.usbDelayMS > 0)
             {
                 DateTime nextUsbTimestamp = lastUsbTimestamp.AddMilliseconds(featureIdentification.usbDelayMS);
                 int delayMS = (int)(nextUsbTimestamp - DateTime.Now).TotalMilliseconds;
