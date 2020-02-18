@@ -1,4 +1,9 @@
 # Wasatch.NET Changelog
+- 2020-02-18 2.1.12
+    - added IntegrationOptimizer
+    - added MultiChannelWrapper
+    - added MultiChannelDemo
+    - bumped .NET to 4.6.1
 - 2020-02-13 2.1.11
     - Boulder specs no longer read as having a battery
 	- added sanity check to prevent bare adafruits being interpreted as spectrometers
