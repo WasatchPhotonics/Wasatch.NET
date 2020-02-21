@@ -77,10 +77,10 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>WasatchNETStrongName.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>WasatchNETStrongName.pfx.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="FTD2XX_NET">
@@ -134,6 +134,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="WasatchNETStrongName.pfx" />
+    <None Include="WasatchNETStrongName.pfx.snk" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
