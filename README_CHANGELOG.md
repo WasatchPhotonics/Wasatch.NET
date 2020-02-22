@@ -1,4 +1,8 @@
 # Wasatch.NET Changelog
+- 2020-02-18 2.1.13
+    - unsigned WasatchNET
+    - rebuilt under Win10 v1909 and VS 2019
+    - retested from LabVIEW 2018 32-bit
 - 2020-02-18 2.1.12
     - added IntegrationOptimizer
     - added MultiChannelWrapper
