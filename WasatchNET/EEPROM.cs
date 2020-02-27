@@ -1405,7 +1405,17 @@ namespace WasatchNET
                 {
                     byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                     if (buf == null)
-                        return false;
+                    {
+                        try
+                        {
+                            setDefault(spectrometer);
+                        }
+                        catch (Exception e)
+                        {
+                            return false;
+                        }
+                        return true;
+                    }
                     pages.Add(buf);
                     logger.hexdump(buf, String.Format("read page {0}: ", page));
                 }
@@ -1549,6 +1559,100 @@ namespace WasatchNET
 
                 return true;
             }
+        }
+
+        public void setDefault(Spectrometer a)
+        {
+            model = "";
+
+
+
+            serialNumber = a.serialNumber;
+
+
+            baudRate = 0;
+
+            hasCooling = false;
+            hasBattery = false;
+            hasLaser = false;
+
+            excitationNM = 0;
+
+            slitSizeUM = 0;
+
+            byte[] buffer = new byte[16];
+            int errorReader = 0;
+
+            string test = buffer.ToString();
+
+
+            wavecalCoeffs = new float[] { 0, 1, 0, 0 };
+
+
+            startupIntegrationTimeMS = 0;
+            double temp = 0;
+            startupDetectorTemperatureDegC = (short)temp;
+            if (startupDetectorTemperatureDegC >= 99)
+                startupDetectorTemperatureDegC = 15;
+            else if (startupDetectorTemperatureDegC <= -50)
+                startupDetectorTemperatureDegC = 15;
+            startupTriggeringMode = 2;
+            detectorGain = a.detectorGain;
+            detectorOffset = a.detectorOffset;
+            detectorGainOdd = 0;
+            detectorOffsetOdd = 0;
+
+            degCToDACCoeffs[0] = 0;
+            degCToDACCoeffs[1] = 0;
+            degCToDACCoeffs[2] = 0;
+            detectorTempMax = 0;
+            detectorTempMin = 0;
+            adcToDegCCoeffs[0] = 0;
+            adcToDegCCoeffs[1] = 0;
+            adcToDegCCoeffs[2] = 0;
+            thermistorResistanceAt298K = 0;
+            thermistorBeta = 0;
+            calibrationDate = "01/01/2020";
+            calibrationBy = "RSC";
+
+            detectorName = "";
+            activePixelsHoriz = (ushort)1024;
+            activePixelsVert = 70;
+            minIntegrationTimeMS = 1;
+            maxIntegrationTimeMS = 1000000;
+            actualPixelsHoriz = (ushort)1024;
+            ROIHorizStart = 0;
+            ROIHorizEnd = 0;
+            ROIVertRegionStart[0] = 0;
+            ROIVertRegionEnd[0] = 0;
+            ROIVertRegionStart[1] = 0;
+            ROIVertRegionEnd[1] = 0;
+            ROIVertRegionStart[2] = 0;
+            ROIVertRegionEnd[2] = 0;
+            linearityCoeffs[0] = 0;
+            linearityCoeffs[1] = 0;
+            linearityCoeffs[2] = 0;
+            linearityCoeffs[3] = 0;
+            linearityCoeffs[4] = 0;
+
+            laserPowerCoeffs[0] = 0;
+            laserPowerCoeffs[1] = 0;
+            laserPowerCoeffs[2] = 0;
+            laserPowerCoeffs[3] = 0;
+            maxLaserPowerMW = 0;
+            minLaserPowerMW = 0;
+
+            laserExcitationWavelengthNMFloat = 785.0f;
+
+            avgResolution = 0.0f;
+
+            userData = new byte[63];
+
+            badPixelSet = new SortedSet<short>();
+            productConfiguration = "";
+
+            //needs work
+            intensityCorrectionOrder = 0;
         }
 
         public bool hasLaserPowerCalibration()

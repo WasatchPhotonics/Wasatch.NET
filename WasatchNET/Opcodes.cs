@@ -74,7 +74,8 @@ namespace WasatchNET
             cmd[Opcodes.GET_TRIGGER_SOURCE                     ] = 0xd3;
             cmd[Opcodes.POLL_DATA                              ] = 0xd4;
             cmd[Opcodes.SECOND_TIER_COMMAND                    ] = 0xff;
-            cmd[Opcodes.SET_AREA_SCAN_ENABLE                   ] = 0xe9; // was: SET_LASER_RAMPING_ENABLE
+            //cmd[Opcodes.SET_AREA_SCAN_ENABLE                   ] = 0xe9; // was: SET_LASER_RAMPING_ENABLE
+            cmd[Opcodes.SET_AREA_SCAN_ENABLE                   ] = 0xeb; //LMAOOOOOOO, legacy opcode
             cmd[Opcodes.SET_CF_SELECT                          ] = 0xeb;
             cmd[Opcodes.SET_CONTINUOUS_ACQUISITION             ] = 0xc8;
             cmd[Opcodes.SET_CONTINUOUS_FRAMES                  ] = 0xc9;

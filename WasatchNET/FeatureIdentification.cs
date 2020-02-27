@@ -3,7 +3,7 @@
 namespace WasatchNET
 {
     /// <summary>the fundamental electronic board configurations supported by our spectrometers</summary>
-    public enum BOARD_TYPES { RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, ARM, ERROR };
+    public enum BOARD_TYPES { RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, ARM, STROKER,ERROR };
 
     /// <summary>
     /// TODO: move to IFeatureIdentification file
@@ -86,6 +86,10 @@ namespace WasatchNET
             else if (vid == 0x2457)
             {
 
+            }
+            else if (pid == 0x0000)
+            {
+                boardType = BOARD_TYPES.STROKER;
             }
             else
             {

@@ -70,6 +70,9 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////////
 
             UsbRegDeviceList deviceRegistries = UsbDevice.AllDevices;
+
+            //UsbDeviceFinder usbDeviceFinder = UsbDevice.
+
             foreach (UsbRegistry usbRegistry in deviceRegistries)
             {
                 String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
