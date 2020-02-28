@@ -1,4 +1,6 @@
 # Wasatch.NET Changelog
+- 2020-02-28 2.1.14
+	- internal build for WPSC 1.9.8 
 - 2020-02-18 2.1.12
     - added IntegrationOptimizer
     - added MultiChannelWrapper
