@@ -325,7 +325,7 @@ namespace WasatchNET
             //sets firmware throwaway
             byte[] transmitData = new byte[1] { 0x01 };
             
-            /*
+            
             command = wrapCommand(0xB2, transmitData, STANDARD_PADDING);
 
             result = spi.readWrite(command);
@@ -349,7 +349,7 @@ namespace WasatchNET
                 return false;
 
             logger.debug("All SPI comm successful, trying to gen wavelengths now");
-            */
+            
             regenerateWavelengths();
 
             logger.debug("Successfully connected to SPI Spectrometer through adafruit board with serial number {0}", devSerialNumber);
