@@ -844,6 +844,8 @@ namespace WasatchNET
                 if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
                 if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
 
+                if (!ParseData.writeFloat(0.0f, pages[2], 21)) return false;
+
                 if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
                 if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
                 // skip 18
@@ -947,6 +949,8 @@ namespace WasatchNET
                 if (!ParseData.writeInt16(thermistorBeta, pages[1], 46)) return false;
                 if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
                 if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
+
+                if (!ParseData.writeFloat(0.0f, pages[2], 21)) return false;
 
                 if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
                 if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;

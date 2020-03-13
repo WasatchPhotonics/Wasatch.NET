@@ -1470,8 +1470,8 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
-        public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx"); 
-
+        public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx");
+        
         public virtual bool hasLaser
         {
             get
@@ -2152,6 +2152,8 @@ namespace WasatchNET
                 pixelsPerEndpoint *= maxLines;
             }
 
+            chunk_size = bytesPerEndpoint;
+
             bool triggerWasExternal = triggerSource == TRIGGER_SOURCE.EXTERNAL;
 
             byte[] subspectrumBytes = new byte[bytesPerEndpoint];  // initialize to zeros
@@ -2162,7 +2164,7 @@ namespace WasatchNET
             {
                 // compute this inside the loop, just in case (if doing external
                 // triggering), someone changes integration time during trigger wait
-                int timeoutMS = (int)(2 * integrationTimeMS_ + 100);
+                int timeoutMS = (int)(100 * integrationTimeMS_ + 100);
 
                 // read the next block of data
                 ErrorCode err = new ErrorCode();
