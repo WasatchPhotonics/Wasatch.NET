@@ -37,6 +37,7 @@ namespace WasatchNET
         public const byte HOST_TO_DEVICE = 0x40;
         public const byte DEVICE_TO_HOST = 0xc0;
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
+        public const bool RECONNECT_ON_ERROR = true;
 
         ////////////////////////////////////////////////////////////////////////
         // data types
@@ -1977,8 +1978,51 @@ namespace WasatchNET
             int pixelsRead = 0;
             foreach (UsbEndpointReader spectralReader in endpoints)
             {
-                // read all expected pixels from the endpoint
-                uint[] subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                uint[] subspectrum = null;
+
+                if (RECONNECT_ON_ERROR)
+                {
+                    // with retry logic
+                    const int maxRetries = 3;
+                    int retries = 0;
+                    while (true)
+                    {
+                        try
+                        {
+                            // read all expected pixels from the endpoint
+                            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.error($"Caught exception in WasatchNET.Spectrometer.getSpectrumRaw: {ex}");
+                            retries++;
+                            if (retries >= maxRetries)
+                            {
+                                logger.error($"giving up after {retries} retries");
+                                return null;
+                            }
+
+                            logger.debug("reconnecting");
+                            var ok = reconnect();
+                            if (ok)
+                            {
+                                logger.debug("reconnection succeeded, retrying read");
+                                continue;
+                            }
+                            else
+                            {
+                                logger.error("reconnection failed, giving up");
+                                return null;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // without retry logic
+                    subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                }
 
                 // verify that exactly the number expected were received
                 if (subspectrum == null || subspectrum.Length != pixelsPerEndpoint)

@@ -347,13 +347,17 @@ namespace WasatchNET
             if (suppressErrors)
                 return;
 
-            string prefix = String.Format("Driver.OnUsbError: sender {0}", sender.GetType());
+            string prefix = String.Format("WasatchNET.Driver.OnUsbError (sender {0}):", sender.GetType());
             if (sender is UsbEndpointBase)
             {
                 logger.error("{0} [UsbEndPointBase]: Win32ErrorNumber {1} ({2}): {3}",
                     prefix, e.Win32ErrorNumber, e.Win32ErrorString, e.Description);
 
                 // Magic number 31 came from here: http://libusbdotnet.sourceforge.net/V2/html/718df290-f19a-9033-3a26-1e8917adf15d.htm
+                // (actually arises with ARM devices in testing)
+                // per https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
+                // 31 == ERROR_GEN_FAILURE (0x1f) "A device attached to the system is not functioning."
+
                 if (e.Win32ErrorNumber == 31)
                 {
                     UsbDevice usb = sender as UsbDevice;
@@ -372,6 +376,22 @@ namespace WasatchNET
                             return;
                         }
                     }
+                    else
+                    {
+                        // probably need to reconnect, per https://stackoverflow.com/questions/20822869/libusbdotnet-strange-errors-after-working-with-usb-device-for-awhile
+                        logger.error("YOU ARE HERE -- add disconnect / reconnect logic?");
+                        // except the reconnect recommended by the above SO link is basically
+                        // what we already have in Spectrometer.reconnect(), so maybe we want
+                        // to continue to "silently ignore" here and handle this from
+                        // Spectrometer.getSpectrum()?
+                        // Perhaps this would be a good place to throw a custom exception
+                        // that could be caught in getSpectrum, which could then trigger reconnect()?
+                    }
+                }
+                else
+                {
+                    // silently ignore Endpoint errors other than Win32Error
+                    // could 
                 }
             }
             else if (sender is UsbTransfer)
