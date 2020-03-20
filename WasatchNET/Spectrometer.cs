@@ -37,6 +37,7 @@ namespace WasatchNET
         public const byte HOST_TO_DEVICE = 0x40;
         public const byte DEVICE_TO_HOST = 0xc0;
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
+        public const bool RECONNECT_ON_ERROR = true;
 
         ////////////////////////////////////////////////////////////////////////
         // data types
@@ -679,15 +680,13 @@ namespace WasatchNET
             {
                 const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
                 // if (kludgedOut) return 0;
-                /*
                 const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
                 if (haveCache(op))
                     return integrationTimeMS_;
-                    */
                 byte[] buf = getCmd(op, 3, fullLen: 6);
                 if (buf == null)
                     return 0;
-                //readOnce.Add(op);
+                readOnce.Add(op);
                 return integrationTimeMS_ = Unpack.toUint(buf);
             }
             set
@@ -1436,11 +1435,6 @@ namespace WasatchNET
                 }
             }
 
-            integrationTimeMS = 4;
-            uint temp = integrationTimeMS;
-
-            logger.info("Integration time is {0}", temp);
-
             return true;
         }
 
@@ -1667,17 +1661,7 @@ namespace WasatchNET
             // extract just the bytes we really needed
             return Util.truncateArray(buf, len);
         }
-        
-        /*
-        internal byte[] getCmd3(Opcodes opcode, int len, ushort wIndex = 0, int fakeBufferLengthARM = 0)
-        {
-            byte[] ZEROS = { 0,0,0,0,0,0,0,0 };
 
-
-            //controlMsg(self.HOST2DEVICE, self.CMD_LASER_ENABLE,
-            //self.ZEROS, set_val, 0, self.timeout)
-        }
-        */
         /// <summary>
         /// Execute a request-response transfer with a "second-tier" request.
         /// </summary>
@@ -2012,17 +1996,64 @@ namespace WasatchNET
             foreach (UsbEndpointReader spectralReader in endpoints)
             {
                 // read all expected pixels from the endpoint
-                uint[] subspectrum;
+                uint[] subspectrum = null;
 
-                if (isStroker)
+                if (RECONNECT_ON_ERROR)
                 {
-                    subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
-                    if (areaScanEnabled)
-                        pixelsPerEndpoint *= 70;
-                    spec = new double[pixelsPerEndpoint];
+                    // with retry logic
+                    const int maxRetries = 3;
+                    int retries = 0;
+                    while (true)
+                    {
+                        try
+                        {
+                            // read all expected pixels from the endpoint
+                            if (isStroker)
+		            {
+                    		subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
+                    		if (areaScanEnabled)
+                        	    pixelsPerEndpoint *= 70;
+                    		spec = new double[pixelsPerEndpoint];
+			    }
+			    else
+			    	subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.error($"Caught exception in WasatchNET.Spectrometer.getSpectrumRaw: {ex}");
+                            retries++;
+                            if (retries >= maxRetries)
+                            {
+                                logger.error($"giving up after {retries} retries");
+                                return null;
+                            }
+
+                            logger.debug("reconnecting");
+                            var ok = reconnect();
+                            if (ok)
+                            {
+                                logger.debug("reconnection succeeded, retrying read");
+                                continue;
+                            }
+                            else
+                            {
+                                logger.error("reconnection failed, giving up");
+                                return null;
+                            }
+                        }
+                    }
                 }
                 else
-                    subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                {
+                    // without retry logic
+		    if (isStroker)
+	 	    {
+
+		    }
+		    else
+                    	subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                }
 
                 // verify that exactly the number expected were received
                 if (subspectrum == null || subspectrum.Length != pixelsPerEndpoint)

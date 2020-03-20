@@ -1,6 +1,14 @@
 # Wasatch.NET Changelog
-- 2020-02-28 2.1.14
-	- internal build for WPSC 1.9.8 
+- 2020-03-19 2.1.16
+    - added retry logic on spectrum bulk read failure
+- 2020-xx-xx 2.1.15
+    - internal
+- 2020-xx-xx 2.1.14
+    - internal
+- 2020-02-18 2.1.13
+    - unsigned WasatchNET
+    - rebuilt under Win10 v1909 and VS 2019
+    - retested from LabVIEW 2018 32-bit
 - 2020-02-18 2.1.12
     - added IntegrationOptimizer
     - added MultiChannelWrapper
