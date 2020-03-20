@@ -38,6 +38,7 @@ namespace WasatchNET
         public const byte DEVICE_TO_HOST = 0xc0;
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
         public const bool RECONNECT_ON_ERROR = true;
+        public const int LEGACY_VERTICAL_PIXELS = 70;
 
         ////////////////////////////////////////////////////////////////////////
         // data types
@@ -108,6 +109,7 @@ namespace WasatchNET
 
         public bool isSPI { get; protected set; } = false;
 
+        //Stroker is a legacy board firmware with no PID or EEPROM
         public bool isStroker { get; protected set; } = false;
 
         /// <summary>spectrometer serial number</summary>
@@ -2011,7 +2013,7 @@ namespace WasatchNET
 		                    {
                     		    subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
                     		    if (areaScanEnabled)
-                        	        pixelsPerEndpoint *= 70;
+                        	        pixelsPerEndpoint *= LEGACY_VERTICAL_PIXELS;
                     		    spec = new double[pixelsPerEndpoint];
 			                }
 			                else
@@ -2050,7 +2052,7 @@ namespace WasatchNET
 	 	            {
                         subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
                         if (areaScanEnabled)
-                            pixelsPerEndpoint *= 70;
+                            pixelsPerEndpoint *= LEGACY_VERTICAL_PIXELS;
                         spec = new double[pixelsPerEndpoint];
                     }
 		            else
@@ -2063,7 +2065,7 @@ namespace WasatchNET
                     logger.error("failed when reading subspectrum from {0}", spectralReader);
                     Thread.Sleep(100);
                     if (isStroker && areaScanEnabled)
-                        pixelsPerEndpoint /= 70;
+                        pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
                     return null;
                 }
 
@@ -2075,7 +2077,7 @@ namespace WasatchNET
             }
 
             if (isStroker && areaScanEnabled)
-                pixelsPerEndpoint /= 70;
+                pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             lastSpectrum = spec;
@@ -2174,7 +2176,7 @@ namespace WasatchNET
 
             int chunk_size = pixelsPerEndpoint / 2;
 
-            int maxLines = 70;
+            int maxLines = LEGACY_VERTICAL_PIXELS;
 
             int bytesPerEndpoint;
             if (!areaScanEnabled)
