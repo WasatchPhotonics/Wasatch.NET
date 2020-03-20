@@ -44,6 +44,8 @@ namespace WasatchNET
         //
         /////////////////////////////////////////////////////////////////////////       
 
+        public bool defaultValues;
+
         /////////////////////////////////////////////////////////////////////////       
         // Page 0 
         /////////////////////////////////////////////////////////////////////////       
@@ -797,6 +799,7 @@ namespace WasatchNET
         {
             if (spectrometer is BoulderSpectrometer)
             {
+                defaultValues = false;
                 return true;
             }
 
@@ -840,6 +843,8 @@ namespace WasatchNET
                 if (!ParseData.writeInt16(thermistorBeta, pages[1], 46)) return false;
                 if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
                 if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
+
+                if (!ParseData.writeFloat(0.0f, pages[2], 21)) return false;
 
                 if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
                 if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
@@ -896,7 +901,11 @@ namespace WasatchNET
 
                 SPISpectrometer a = spectrometer as SPISpectrometer;
 
-                return a.writeEEPROM(pages);
+                bool writeOk = a.writeEEPROM(pages);
+                if (writeOk)
+                    defaultValues = false;
+
+                return writeOk;
 
             }
 
@@ -941,6 +950,8 @@ namespace WasatchNET
                 if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
                 if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
 
+                if (!ParseData.writeFloat(0.0f, pages[2], 21)) return false;
+
                 if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
                 if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
                 // skip 18
@@ -984,7 +995,7 @@ namespace WasatchNET
                 if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
                 
                 if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                if (intensityCorrectionOrder < 8)
+                if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
                 {
                     for (int i = 0; i <= intensityCorrectionOrder; ++i)
                     {
@@ -1025,6 +1036,7 @@ namespace WasatchNET
                     }
                     logger.debug("EEPROM: wrote EEPROM page {0}", page);
                 }
+                defaultValues = false;
                 return true;
             }
         }
@@ -1036,6 +1048,8 @@ namespace WasatchNET
         internal EEPROM(Spectrometer spec)
         {
             spectrometer = spec;
+
+            defaultValues = false;
 
             wavecalCoeffs = new float[4];
             degCToDACCoeffs = new float[3];
@@ -1395,7 +1409,17 @@ namespace WasatchNET
                 {
                     byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                     if (buf == null)
-                        return false;
+                    {
+                        try
+                        {
+                            setDefault(spectrometer);
+                        }
+                        catch (Exception e)
+                        {
+                            return false;
+                        }
+                        return true;
+                    }
                     pages.Add(buf);
                     logger.hexdump(buf, String.Format("read page {0}: ", page));
                 }
@@ -1541,6 +1565,100 @@ namespace WasatchNET
             }
         }
 
+        public void setDefault(Spectrometer a)
+        {
+            model = "";
+
+
+
+            serialNumber = a.serialNumber;
+
+
+            baudRate = 0;
+
+            hasCooling = false;
+            hasBattery = false;
+            hasLaser = false;
+
+            excitationNM = 0;
+
+            slitSizeUM = 0;
+
+            byte[] buffer = new byte[16];
+            int errorReader = 0;
+
+            string test = buffer.ToString();
+
+
+            wavecalCoeffs = new float[] { 0, 1, 0, 0 };
+
+
+            startupIntegrationTimeMS = 0;
+            double temp = 0;
+            startupDetectorTemperatureDegC = (short)temp;
+            if (startupDetectorTemperatureDegC >= 99)
+                startupDetectorTemperatureDegC = 15;
+            else if (startupDetectorTemperatureDegC <= -50)
+                startupDetectorTemperatureDegC = 15;
+            startupTriggeringMode = 2;
+            detectorGain = a.detectorGain;
+            detectorOffset = a.detectorOffset;
+            detectorGainOdd = 0;
+            detectorOffsetOdd = 0;
+
+            degCToDACCoeffs[0] = 0;
+            degCToDACCoeffs[1] = 0;
+            degCToDACCoeffs[2] = 0;
+            detectorTempMax = 0;
+            detectorTempMin = 0;
+            adcToDegCCoeffs[0] = 0;
+            adcToDegCCoeffs[1] = 0;
+            adcToDegCCoeffs[2] = 0;
+            thermistorResistanceAt298K = 0;
+            thermistorBeta = 0;
+            calibrationDate = "01/01/2020";
+            calibrationBy = "RSC";
+
+            detectorName = "";
+            activePixelsHoriz = (ushort)1024;
+            activePixelsVert = 70;
+            minIntegrationTimeMS = 1;
+            maxIntegrationTimeMS = 1000000;
+            actualPixelsHoriz = (ushort)1024;
+            ROIHorizStart = 0;
+            ROIHorizEnd = 0;
+            ROIVertRegionStart[0] = 0;
+            ROIVertRegionEnd[0] = 0;
+            ROIVertRegionStart[1] = 0;
+            ROIVertRegionEnd[1] = 0;
+            ROIVertRegionStart[2] = 0;
+            ROIVertRegionEnd[2] = 0;
+            linearityCoeffs[0] = 0;
+            linearityCoeffs[1] = 0;
+            linearityCoeffs[2] = 0;
+            linearityCoeffs[3] = 0;
+            linearityCoeffs[4] = 0;
+
+            laserPowerCoeffs[0] = 0;
+            laserPowerCoeffs[1] = 0;
+            laserPowerCoeffs[2] = 0;
+            laserPowerCoeffs[3] = 0;
+            maxLaserPowerMW = 0;
+            minLaserPowerMW = 0;
+
+            laserExcitationWavelengthNMFloat = 785.0f;
+
+            avgResolution = 0.0f;
+
+            userData = new byte[63];
+
+            badPixelSet = new SortedSet<short>();
+            productConfiguration = "";
+
+            //needs work
+            intensityCorrectionOrder = 0;
+        }
+
         public bool hasLaserPowerCalibration()
         {
             if (maxLaserPowerMW <= 0)
@@ -1562,9 +1680,18 @@ namespace WasatchNET
             for (int i = 0; i < 4; i++)
                 if (Double.IsNaN(wavecalCoeffs[i]))
                     defaultWavecal = true;
-            if (defaultWavecal)
+
+            for (int i = 0; i < 5; i++)
+                if (Double.IsNaN(linearityCoeffs[i]))
+                    linearityCoeffs[i] = 0;
+            for (int i = 0; i < 4; i++)
+                if (Double.IsNaN(laserPowerCoeffs[i]))
+                    laserPowerCoeffs[i] = 0;
+
+            if (defaultWavecal || format > FORMAT)
             {
-                logger.error("No wavecal found (pixel space)");
+                logger.error("EEPROM appears to be default");
+                defaultValues = true;
                 wavecalCoeffs[0] = 0;
                 wavecalCoeffs[1] = 1;
                 wavecalCoeffs[2] = 0;

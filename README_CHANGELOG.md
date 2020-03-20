@@ -1,4 +1,11 @@
 # Wasatch.NET Changelog
+- 2020-03-20 2.1.17
+    - incorporating 2.1.16 with internal builds
+	- internal features incorporated
+		- added support for legacy boards (with libusb drivers)
+		- added area scan read and logic for legacy boards only
+		- added attribute and logic for "default EEPROM"
+		- temporarily changed area scan opcode back to legacy opcode
 - 2020-03-19 2.1.16
     - added retry logic on spectrum bulk read failure
 - 2020-xx-xx 2.1.15
