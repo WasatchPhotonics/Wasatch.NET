@@ -109,7 +109,7 @@ namespace WasatchNET
 
         public bool isSPI { get; protected set; } = false;
 
-        //Stroker is a legacy board firmware with no PID or EEPROM
+        //Stroker is a legacy board firmware without PID conforming to FID and no EEPROM
         public bool isStroker { get; protected set; } = false;
 
         /// <summary>spectrometer serial number</summary>

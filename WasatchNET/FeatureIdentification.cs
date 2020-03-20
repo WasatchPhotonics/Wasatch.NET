@@ -3,7 +3,7 @@
 namespace WasatchNET
 {
     /// <summary>the fundamental electronic board configurations supported by our spectrometers</summary>
-    /// STROKER is a legacy board firmware with no PID or EEPROM
+    /// STROKER is a legacy board firmware without PID conforming to FID and no EEPROM
     public enum BOARD_TYPES { RAMAN_FX2, INGAAS_FX2, DRAGSTER_FX3, ARM, STROKER,ERROR };
 
     /// <summary>
