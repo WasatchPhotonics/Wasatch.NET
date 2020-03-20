@@ -680,7 +680,6 @@ namespace WasatchNET
             {
                 const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
                 // if (kludgedOut) return 0;
-                const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
                 if (haveCache(op))
                     return integrationTimeMS_;
                 byte[] buf = getCmd(op, 3, fullLen: 6);
@@ -2009,14 +2008,14 @@ namespace WasatchNET
                         {
                             // read all expected pixels from the endpoint
                             if (isStroker)
-		            {
-                    		subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
-                    		if (areaScanEnabled)
-                        	    pixelsPerEndpoint *= 70;
-                    		spec = new double[pixelsPerEndpoint];
-			    }
-			    else
-			    	subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+		                    {
+                    		    subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
+                    		    if (areaScanEnabled)
+                        	        pixelsPerEndpoint *= 70;
+                    		    spec = new double[pixelsPerEndpoint];
+			                }
+			                else
+			    	            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
                             break;
                         }
                         catch (Exception ex)
@@ -2047,12 +2046,15 @@ namespace WasatchNET
                 else
                 {
                     // without retry logic
-		    if (isStroker)
-	 	    {
-
-		    }
-		    else
-                    	subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+		            if (isStroker)
+	 	            {
+                        subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
+                        if (areaScanEnabled)
+                            pixelsPerEndpoint *= 70;
+                        spec = new double[pixelsPerEndpoint];
+                    }
+		            else
+                        subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
                 }
 
                 // verify that exactly the number expected were received
