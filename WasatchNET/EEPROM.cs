@@ -30,13 +30,14 @@ namespace WasatchNET
         /////////////////////////////////////////////////////////////////////////       
 
         internal const int MAX_PAGES = 7; // really 8, but last 2 are unallocated
-        const byte FORMAT = 7;
+        const byte FORMAT = 8;
 
         Spectrometer spectrometer;
         Logger logger = Logger.getInstance();
 
         public List<byte[]> pages { get; private set; }
         public event EventHandler EEPROMChanged;
+        public enum PAGE_SUBFORMAT { USER_DATA, INTESITY_CALIBRATION, WAVECAL_SPLINES, RESERVED };
 
         /////////////////////////////////////////////////////////////////////////       
         //
@@ -324,6 +325,19 @@ namespace WasatchNET
         }
 
         byte _intensityCorrectionOrder;
+
+        public PAGE_SUBFORMAT subformat
+        {
+            get { return _subformat; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _subformat = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        PAGE_SUBFORMAT _subformat;
 
         /// <summary>
         /// These are used to convert the user's desired setpoint in degrees 
@@ -844,14 +858,16 @@ namespace WasatchNET
                 if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
                 if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
 
-                if (!ParseData.writeFloat(0.0f, pages[2], 21)) return false;
-
+                
                 if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
                 if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
                 // skip 18
                 if (!ParseData.writeUInt16(activePixelsVert, pages[2], 19)) return false;
                 if (!ParseData.writeUInt16((ushort)minIntegrationTimeMS, pages[2], 21)) return false; // for now
                 if (!ParseData.writeUInt16((ushort)maxIntegrationTimeMS, pages[2], 23)) return false; // for now
+
+                if (!ParseData.writeFloat(wavecalCoeffs[4], pages[2], 21)) return false;
+
                 if (!ParseData.writeUInt16(actualPixelsHoriz, pages[2], 25)) return false;
                 if (!ParseData.writeUInt16(ROIHorizStart, pages[2], 27)) return false;
                 if (!ParseData.writeUInt16(ROIHorizEnd, pages[2], 29)) return false;
@@ -950,14 +966,15 @@ namespace WasatchNET
                 if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
                 if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
 
-                if (!ParseData.writeFloat(0.0f, pages[2], 21)) return false;
-
                 if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
                 if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
                 // skip 18
                 if (!ParseData.writeUInt16(activePixelsVert, pages[2], 19)) return false;
                 if (!ParseData.writeUInt16((ushort)minIntegrationTimeMS, pages[2], 21)) return false; // for now
                 if (!ParseData.writeUInt16((ushort)maxIntegrationTimeMS, pages[2], 23)) return false; // for now
+
+                if (!ParseData.writeFloat(wavecalCoeffs[4], pages[2], 21)) return false;
+
                 if (!ParseData.writeUInt16(actualPixelsHoriz, pages[2], 25)) return false;
                 if (!ParseData.writeUInt16(ROIHorizStart, pages[2], 27)) return false;
                 if (!ParseData.writeUInt16(ROIHorizEnd, pages[2], 29)) return false;
@@ -984,7 +1001,7 @@ namespace WasatchNET
                 if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
                 if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
 
-                Array.Copy(userData, pages[4], userData.Length);
+                Array.Copy(userData, pages[4], 64);
 
                 // note that we write the positional, error-prone array (which is 
                 // user -writable), not the List or SortedSet caches
@@ -993,13 +1010,23 @@ namespace WasatchNET
                         return false;
 
                 if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
-                
-                if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
+                //subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
+                if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
+
+                if (subformat == PAGE_SUBFORMAT.USER_DATA)
                 {
-                    for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                    Array.Copy(userData, 64, pages[6], 0, 64);
+                    Array.Copy(userData, 128, pages[7], 0, 64);
+                }
+                else if (subformat == PAGE_SUBFORMAT.INTESITY_CALIBRATION)
+                {
+                    if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
+                    if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
                     {
-                        if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                        for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                        {
+                            if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                        }
                     }
                 }
 
@@ -1051,7 +1078,7 @@ namespace WasatchNET
 
             defaultValues = false;
 
-            wavecalCoeffs = new float[4];
+            wavecalCoeffs = new float[5];
             degCToDACCoeffs = new float[3];
             adcToDegCCoeffs = new float[3];
             ROIVertRegionStart = new ushort[3];
@@ -1548,6 +1575,30 @@ namespace WasatchNET
                         avgResolution = 0.0f;
                     }
 
+                    if (format >= 8)
+                    {
+                        wavecalCoeffs[4] = ParseData.toFloat(pages[2], 21);
+                        subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
+                        if (subformat == PAGE_SUBFORMAT.USER_DATA)
+                        {
+                            intensityCorrectionOrder = 0;
+                            intensityCorrectionCoeffs = null;
+
+                            userData = new byte[192];
+                            //Array.Copy(pages[4], userData, userData.Length);
+                            Array.Copy(pages[4], 0, userData, 0, 64);
+                            Array.Copy(pages[6], 0, userData, 64, 64);
+                            Array.Copy(pages[7], 0, userData, 128, 64);
+                        }
+                    }
+                    else
+                    {
+                        if (format >= 6)
+                            subformat = PAGE_SUBFORMAT.INTESITY_CALIBRATION;
+                        else
+                            subformat = PAGE_SUBFORMAT.USER_DATA;
+                    }
+
 
                 }
                 catch (Exception ex)
@@ -1589,9 +1640,7 @@ namespace WasatchNET
 
             string test = buffer.ToString();
 
-
-            wavecalCoeffs = new float[] { 0, 1, 0, 0 };
-
+            wavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
 
             startupIntegrationTimeMS = 0;
             double temp = 0;
@@ -1696,6 +1745,7 @@ namespace WasatchNET
                 wavecalCoeffs[1] = 1;
                 wavecalCoeffs[2] = 0;
                 wavecalCoeffs[3] = 0;
+                wavecalCoeffs[4] = 0;
             }
 
             if (minIntegrationTimeMS < 1)
