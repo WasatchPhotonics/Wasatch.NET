@@ -38,7 +38,7 @@ namespace WasatchNET
             {
                 wavelengths[pixel] = coeffs[0];
                 for (int i = 1; i < coeffs.Length; ++i)
-                    wavelengths[pixel] += Math.Pow(pixel, i);
+                    wavelengths[pixel] += (coeffs[i] * Math.Pow(pixel, i));
             }
             return wavelengths;
         }
