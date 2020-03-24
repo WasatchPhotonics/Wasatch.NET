@@ -1376,20 +1376,10 @@ namespace WasatchNET
                         maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
                         minLaserPowerMW = ParseData.toFloat(pages[3], 32);
                         laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
-
                         if (format >= 5)
                         {
                             minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
                             maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
-                        }
-
-                        if (format >= 7)
-                        {
-                            avgResolution = ParseData.toFloat(pages[3], 48);
-                        }
-                        else
-                        {
-                            avgResolution = 0.0f;
                         }
 
                         userData = format < 4 ? new byte[63] : new byte[64];
@@ -1418,6 +1408,8 @@ namespace WasatchNET
                             if (numCoeffs > 8)
                                 numCoeffs = 0;
 
+                            intensityCorrectionCoeffs = numCoeffs > 0 ? new float[numCoeffs] : null;
+
                             for (int i = 0; i < numCoeffs; ++i)
                             {
                                 intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
@@ -1428,6 +1420,40 @@ namespace WasatchNET
                         {
                             intensityCorrectionOrder = 0;
                         }
+
+                        if (format >= 7)
+                        {
+                            avgResolution = ParseData.toFloat(pages[3], 48);
+                        }
+                        else
+                        {
+                            avgResolution = 0.0f;
+                        }
+
+                        if (format >= 8)
+                        {
+                            wavecalCoeffs[4] = ParseData.toFloat(pages[2], 21);
+                            subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
+                            if (subformat == PAGE_SUBFORMAT.USER_DATA)
+                            {
+                                intensityCorrectionOrder = 0;
+                                intensityCorrectionCoeffs = null;
+
+                                userData = new byte[192];
+                                //Array.Copy(pages[4], userData, userData.Length);
+                                Array.Copy(pages[4], 0, userData, 0, 64);
+                                Array.Copy(pages[6], 0, userData, 64, 64);
+                                Array.Copy(pages[7], 0, userData, 128, 64);
+                            }
+                        }
+                        else
+                        {
+                            if (format >= 6)
+                                subformat = PAGE_SUBFORMAT.INTESITY_CALIBRATION;
+                            else
+                                subformat = PAGE_SUBFORMAT.USER_DATA;
+                        }
+
 
                     }
                     catch (Exception ex)
@@ -1752,7 +1778,7 @@ namespace WasatchNET
                 if (Double.IsNaN(laserPowerCoeffs[i]))
                     laserPowerCoeffs[i] = 0;
 
-            if (defaultWavecal || format > FORMAT)
+            if (defaultWavecal || format == 0xFF)
             {
                 logger.error("EEPROM appears to be default");
                 defaultValues = true;
