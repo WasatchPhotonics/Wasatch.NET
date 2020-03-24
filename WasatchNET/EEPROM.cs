@@ -290,7 +290,22 @@ namespace WasatchNET
             set
             {
                 EventHandler handler = EEPROMChanged;
-                _wavecalCoeffs = value;
+                if (wavecalCoeffs == null || value.Length == wavecalCoeffs.Length)
+                    _wavecalCoeffs = value;
+                else
+                {
+                    int index = 0;
+                    while (index < value.Length)
+                    {
+                        wavecalCoeffs[index] = value[index];
+                        ++index;
+                    }
+                    while (index < wavecalCoeffs.Length)
+                    {
+                        wavecalCoeffs[index] = 0;
+                        ++index;
+                    }
+                }
                 handler?.Invoke(this, new EventArgs());
                 
             }
