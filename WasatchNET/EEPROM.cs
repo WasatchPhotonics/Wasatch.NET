@@ -921,12 +921,12 @@ namespace WasatchNET
                 else
                 {
                     Array.Copy(userData, pages[4], 64);
-                    if (userData.Length < 128)
+                    if (userData.Length <= 128)
                     {
                         Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
 
                     }
-                    else if (userData.Length < 192)
+                    else if (userData.Length <= 192)
                     {
                         Array.Copy(userData, 64, userDataChunk2, 0, 64);
                         Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
@@ -948,8 +948,8 @@ namespace WasatchNET
 
                 if (subformat == PAGE_SUBFORMAT.USER_DATA)
                 {
-                    Array.Copy(userDataChunk2, 64, pages[6], 0, 64);
-                    Array.Copy(userDataChunk3, 128, pages[7], 0, 64);
+                    Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
+                    Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
                 }
                 else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
                 {
@@ -1063,12 +1063,12 @@ namespace WasatchNET
                 else
                 {
                     Array.Copy(userData, pages[4], 64);
-                    if (userData.Length < 128)
+                    if (userData.Length <= 128)
                     {
                         Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
 
                     }
-                    else if (userData.Length < 192)
+                    else if (userData.Length <= 192)
                     {
                         Array.Copy(userData, 64, userDataChunk2, 0, 64);
                         Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
@@ -1092,8 +1092,8 @@ namespace WasatchNET
 
                 if (subformat == PAGE_SUBFORMAT.USER_DATA)
                 {
-                    Array.Copy(userDataChunk2, 64, pages[6], 0, 64);
-                    Array.Copy(userDataChunk3, 128, pages[7], 0, 64);
+                    Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
+                    Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
                 }
                 else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
                 {
