@@ -905,9 +905,38 @@ namespace WasatchNET
                 if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
                 if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
                 if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
-                
-                Array.Copy(userData, pages[4], 64);
 
+                byte[] userDataChunk2 = new byte[64];
+                byte[] userDataChunk3 = new byte[64];
+
+                // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
+                // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
+                // than try to write them.
+                //
+                // Should protect users without restricting them
+                if (userData.Length <= 64)
+                {
+                    Array.Copy(userData, pages[4], userData.Length);
+                }
+                else
+                {
+                    Array.Copy(userData, pages[4], 64);
+                    if (userData.Length < 128)
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
+
+                    }
+                    else if (userData.Length < 192)
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                        Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
+                    }
+                    else
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                        Array.Copy(userData, 128, userDataChunk3, 0, 64);
+                    }
+                }
                 // note that we write the positional, error-prone array (which is 
                 // user -writable), not the List or SortedSet caches
                 for (int i = 0; i < badPixels.Length; i++)
@@ -919,8 +948,8 @@ namespace WasatchNET
 
                 if (subformat == PAGE_SUBFORMAT.USER_DATA)
                 {
-                    Array.Copy(userData, 64, pages[6], 0, 64);
-                    Array.Copy(userData, 128, pages[7], 0, 64);
+                    Array.Copy(userDataChunk2, 64, pages[6], 0, 64);
+                    Array.Copy(userDataChunk3, 128, pages[7], 0, 64);
                 }
                 else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
                 {
@@ -1019,7 +1048,37 @@ namespace WasatchNET
                 if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
                 if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
 
-                Array.Copy(userData, pages[4], 64);
+                byte[] userDataChunk2 = new byte[64];
+                byte[] userDataChunk3 = new byte[64];
+
+                // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
+                // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
+                // than try to write them.
+                //
+                // Should protect users without restricting them
+                if (userData.Length <= 64)
+                {
+                    Array.Copy(userData, pages[4], userData.Length);
+                }
+                else
+                {
+                    Array.Copy(userData, pages[4], 64);
+                    if (userData.Length < 128)
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
+
+                    }
+                    else if (userData.Length < 192)
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                        Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
+                    }
+                    else
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                        Array.Copy(userData, 128, userDataChunk3, 0, 64);
+                    }
+                }
 
                 // note that we write the positional, error-prone array (which is 
                 // user -writable), not the List or SortedSet caches
@@ -1033,10 +1092,8 @@ namespace WasatchNET
 
                 if (subformat == PAGE_SUBFORMAT.USER_DATA)
                 {
-                    if (userData.Length >= 128)
-                        Array.Copy(userData, 64, pages[6], 0, 64);
-                    if (userData.Length >= 192)
-                        Array.Copy(userData, 128, pages[7], 0, 64);
+                    Array.Copy(userDataChunk2, 64, pages[6], 0, 64);
+                    Array.Copy(userDataChunk3, 128, pages[7], 0, 64);
                 }
                 else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
                 {
