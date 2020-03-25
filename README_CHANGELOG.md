@@ -1,4 +1,7 @@
 # Wasatch.NET Changelog
+- 2020-03-24 2.1.18
+    - added support for EEPROM Format 8
+	- tweaked wavelength calculation in accordance with up to 5 coeffs
 - 2020-03-20 2.1.17
     - incorporating 2.1.16 with internal builds
 	- internal features incorporated

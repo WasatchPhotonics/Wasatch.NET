@@ -21,9 +21,9 @@ namespace WasatchNET
         /// <returns>array of 'pixel' wavalengths</returns>
         public static double[] generateWavelengths(uint pixels, float[] coeffs)
         {
-            if (coeffs == null || coeffs.Length != 4)
+            if (coeffs == null || coeffs.Length < 4 || coeffs.Length > 5)
             {
-                logger.error("generateWavelengths: invalid 4th-order wavecal");
+                logger.error("generateWavelengths: invalid wavecal, only 4th- or 5th-order fits are valid");
                 return null;
             }
 
@@ -35,10 +35,11 @@ namespace WasatchNET
                 
             double[] wavelengths = new double[pixels];
             for (uint pixel = 0; pixel < pixels; pixel++)
-                wavelengths[pixel] = coeffs[0]
-                                   + coeffs[1] * pixel
-                                   + coeffs[2] * pixel * pixel
-                                   + coeffs[3] * pixel * pixel * pixel;
+            {
+                wavelengths[pixel] = coeffs[0];
+                for (int i = 1; i < coeffs.Length; ++i)
+                    wavelengths[pixel] += (coeffs[i] * Math.Pow(pixel, i));
+            }
             return wavelengths;
         }
 

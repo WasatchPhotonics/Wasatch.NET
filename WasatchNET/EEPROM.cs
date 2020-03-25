@@ -29,14 +29,15 @@ namespace WasatchNET
         // private attributes
         /////////////////////////////////////////////////////////////////////////       
 
-        internal const int MAX_PAGES = 7; // really 8, but last 2 are unallocated
-        const byte FORMAT = 7;
+        internal const int MAX_PAGES = 8; // really 8, but last 2 are unallocated
+        const byte FORMAT = 8;
 
         Spectrometer spectrometer;
         Logger logger = Logger.getInstance();
 
         public List<byte[]> pages { get; private set; }
         public event EventHandler EEPROMChanged;
+        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, RESERVED };
 
         /////////////////////////////////////////////////////////////////////////       
         //
@@ -289,7 +290,22 @@ namespace WasatchNET
             set
             {
                 EventHandler handler = EEPROMChanged;
-                _wavecalCoeffs = value;
+                if (wavecalCoeffs == null || value.Length == wavecalCoeffs.Length)
+                    _wavecalCoeffs = value;
+                else
+                {
+                    int index = 0;
+                    while (index < value.Length)
+                    {
+                        _wavecalCoeffs[index] = value[index];
+                        ++index;
+                    }
+                    while (index < wavecalCoeffs.Length)
+                    {
+                        _wavecalCoeffs[index] = 0;
+                        ++index;
+                    }
+                }
                 handler?.Invoke(this, new EventArgs());
                 
             }
@@ -324,6 +340,19 @@ namespace WasatchNET
         }
 
         byte _intensityCorrectionOrder;
+
+        public PAGE_SUBFORMAT subformat
+        {
+            get { return _subformat; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _subformat = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        PAGE_SUBFORMAT _subformat;
 
         /// <summary>
         /// These are used to convert the user's desired setpoint in degrees 
@@ -844,14 +873,13 @@ namespace WasatchNET
                 if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
                 if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
 
-                if (!ParseData.writeFloat(0.0f, pages[2], 21)) return false;
-
+                
                 if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
                 if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
                 // skip 18
                 if (!ParseData.writeUInt16(activePixelsVert, pages[2], 19)) return false;
-                if (!ParseData.writeUInt16((ushort)minIntegrationTimeMS, pages[2], 21)) return false; // for now
-                if (!ParseData.writeUInt16((ushort)maxIntegrationTimeMS, pages[2], 23)) return false; // for now
+                if (!ParseData.writeFloat(wavecalCoeffs[4], pages[2], 21)) return false;
+
                 if (!ParseData.writeUInt16(actualPixelsHoriz, pages[2], 25)) return false;
                 if (!ParseData.writeUInt16(ROIHorizStart, pages[2], 27)) return false;
                 if (!ParseData.writeUInt16(ROIHorizEnd, pages[2], 29)) return false;
@@ -878,8 +906,37 @@ namespace WasatchNET
                 if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
                 if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
 
-                Array.Copy(userData, pages[4], userData.Length);
+                byte[] userDataChunk2 = new byte[64];
+                byte[] userDataChunk3 = new byte[64];
 
+                // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
+                // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
+                // than try to write them.
+                //
+                // Should protect users without restricting them
+                if (userData.Length <= 64)
+                {
+                    Array.Copy(userData, pages[4], userData.Length);
+                }
+                else
+                {
+                    Array.Copy(userData, pages[4], 64);
+                    if (userData.Length <= 128)
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
+
+                    }
+                    else if (userData.Length <= 192)
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                        Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
+                    }
+                    else
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                        Array.Copy(userData, 128, userDataChunk3, 0, 64);
+                    }
+                }
                 // note that we write the positional, error-prone array (which is 
                 // user -writable), not the List or SortedSet caches
                 for (int i = 0; i < badPixels.Length; i++)
@@ -887,13 +944,22 @@ namespace WasatchNET
                         return false;
 
                 if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
+                if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
 
-                if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                if (intensityCorrectionOrder < 8)
+                if (subformat == PAGE_SUBFORMAT.USER_DATA)
                 {
-                    for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                    Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
+                    Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
+                }
+                else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
+                {
+                    if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
+                    if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
                     {
-                        if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                        for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                        {
+                            if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                        }
                     }
                 }
                 // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
@@ -950,14 +1016,12 @@ namespace WasatchNET
                 if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
                 if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
 
-                if (!ParseData.writeFloat(0.0f, pages[2], 21)) return false;
-
                 if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
                 if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
                 // skip 18
                 if (!ParseData.writeUInt16(activePixelsVert, pages[2], 19)) return false;
-                if (!ParseData.writeUInt16((ushort)minIntegrationTimeMS, pages[2], 21)) return false; // for now
-                if (!ParseData.writeUInt16((ushort)maxIntegrationTimeMS, pages[2], 23)) return false; // for now
+                if (!ParseData.writeFloat(wavecalCoeffs[4], pages[2], 21)) return false;
+
                 if (!ParseData.writeUInt16(actualPixelsHoriz, pages[2], 25)) return false;
                 if (!ParseData.writeUInt16(ROIHorizStart, pages[2], 27)) return false;
                 if (!ParseData.writeUInt16(ROIHorizEnd, pages[2], 29)) return false;
@@ -984,7 +1048,37 @@ namespace WasatchNET
                 if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
                 if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
 
-                Array.Copy(userData, pages[4], userData.Length);
+                byte[] userDataChunk2 = new byte[64];
+                byte[] userDataChunk3 = new byte[64];
+
+                // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
+                // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
+                // than try to write them.
+                //
+                // Should protect users without restricting them
+                if (userData.Length <= 64)
+                {
+                    Array.Copy(userData, pages[4], userData.Length);
+                }
+                else
+                {
+                    Array.Copy(userData, pages[4], 64);
+                    if (userData.Length <= 128)
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
+
+                    }
+                    else if (userData.Length <= 192)
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                        Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
+                    }
+                    else
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                        Array.Copy(userData, 128, userDataChunk3, 0, 64);
+                    }
+                }
 
                 // note that we write the positional, error-prone array (which is 
                 // user -writable), not the List or SortedSet caches
@@ -993,13 +1087,23 @@ namespace WasatchNET
                         return false;
 
                 if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
-                
-                if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
+                //subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
+                if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
+
+                if (subformat == PAGE_SUBFORMAT.USER_DATA)
                 {
-                    for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                    Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
+                    Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
+                }
+                else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
+                {
+                    if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
+                    if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
                     {
-                        if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                        for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                        {
+                            if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                        }
                     }
                 }
 
@@ -1051,7 +1155,7 @@ namespace WasatchNET
 
             defaultValues = false;
 
-            wavecalCoeffs = new float[4];
+            wavecalCoeffs = new float[5];
             degCToDACCoeffs = new float[3];
             adcToDegCCoeffs = new float[3];
             ROIVertRegionStart = new ushort[3];
@@ -1169,7 +1273,7 @@ namespace WasatchNET
 
                 //this if block checks for unwritten EEPROM (indicated by 0xff) and fills our virtual EEPROM with sane default values
                 //this will prevent us from upping the format to version 255(6?) but the tradeoff seems worth it
-                if (format > FORMAT)
+                if (format == 0xff)
                 {
                     model = "";
 
@@ -1334,20 +1438,10 @@ namespace WasatchNET
                         maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
                         minLaserPowerMW = ParseData.toFloat(pages[3], 32);
                         laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
-
                         if (format >= 5)
                         {
                             minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
                             maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
-                        }
-
-                        if (format >= 7)
-                        {
-                            avgResolution = ParseData.toFloat(pages[3], 48);
-                        }
-                        else
-                        {
-                            avgResolution = 0.0f;
                         }
 
                         userData = format < 4 ? new byte[63] : new byte[64];
@@ -1376,6 +1470,8 @@ namespace WasatchNET
                             if (numCoeffs > 8)
                                 numCoeffs = 0;
 
+                            intensityCorrectionCoeffs = numCoeffs > 0 ? new float[numCoeffs] : null;
+
                             for (int i = 0; i < numCoeffs; ++i)
                             {
                                 intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
@@ -1386,6 +1482,40 @@ namespace WasatchNET
                         {
                             intensityCorrectionOrder = 0;
                         }
+
+                        if (format >= 7)
+                        {
+                            avgResolution = ParseData.toFloat(pages[3], 48);
+                        }
+                        else
+                        {
+                            avgResolution = 0.0f;
+                        }
+
+                        if (format >= 8)
+                        {
+                            wavecalCoeffs[4] = ParseData.toFloat(pages[2], 21);
+                            subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
+                            if (subformat == PAGE_SUBFORMAT.USER_DATA)
+                            {
+                                intensityCorrectionOrder = 0;
+                                intensityCorrectionCoeffs = null;
+
+                                userData = new byte[192];
+                                //Array.Copy(pages[4], userData, userData.Length);
+                                Array.Copy(pages[4], 0, userData, 0, 64);
+                                Array.Copy(pages[6], 0, userData, 64, 64);
+                                Array.Copy(pages[7], 0, userData, 128, 64);
+                            }
+                        }
+                        else
+                        {
+                            if (format >= 6)
+                                subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
+                            else
+                                subformat = PAGE_SUBFORMAT.USER_DATA;
+                        }
+
 
                     }
                     catch (Exception ex)
@@ -1548,6 +1678,30 @@ namespace WasatchNET
                         avgResolution = 0.0f;
                     }
 
+                    if (format >= 8)
+                    {
+                        wavecalCoeffs[4] = ParseData.toFloat(pages[2], 21);
+                        subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
+                        if (subformat == PAGE_SUBFORMAT.USER_DATA)
+                        {
+                            intensityCorrectionOrder = 0;
+                            intensityCorrectionCoeffs = null;
+
+                            userData = new byte[192];
+                            //Array.Copy(pages[4], userData, userData.Length);
+                            Array.Copy(pages[4], 0, userData, 0, 64);
+                            Array.Copy(pages[6], 0, userData, 64, 64);
+                            Array.Copy(pages[7], 0, userData, 128, 64);
+                        }
+                    }
+                    else
+                    {
+                        if (format >= 6)
+                            subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
+                        else
+                            subformat = PAGE_SUBFORMAT.USER_DATA;
+                    }
+
 
                 }
                 catch (Exception ex)
@@ -1589,9 +1743,7 @@ namespace WasatchNET
 
             string test = buffer.ToString();
 
-
-            wavecalCoeffs = new float[] { 0, 1, 0, 0 };
-
+            wavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
 
             startupIntegrationTimeMS = 0;
             double temp = 0;
@@ -1688,7 +1840,7 @@ namespace WasatchNET
                 if (Double.IsNaN(laserPowerCoeffs[i]))
                     laserPowerCoeffs[i] = 0;
 
-            if (defaultWavecal || format > FORMAT)
+            if (defaultWavecal || format == 0xff)
             {
                 logger.error("EEPROM appears to be default");
                 defaultValues = true;
@@ -1696,6 +1848,7 @@ namespace WasatchNET
                 wavecalCoeffs[1] = 1;
                 wavecalCoeffs[2] = 0;
                 wavecalCoeffs[3] = 0;
+                wavecalCoeffs[4] = 0;
             }
 
             if (minIntegrationTimeMS < 1)
