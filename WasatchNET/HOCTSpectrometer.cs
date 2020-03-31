@@ -939,7 +939,7 @@ namespace WasatchNET
                     return false;
                 }
                 OctUsb.SetDelayAdc(3);
-                OctUsb.SetLinesPerFrame(50);
+                OctUsb.SetLinesPerFrame(200);
                 OctUsb.SetPixelCount(2048);
                 pixels = (uint)1024;
             }
@@ -958,10 +958,23 @@ namespace WasatchNET
 
         public override double[] getSpectrum()
         {
+
+            ushort[] RawPixelData = getFrame();
+            double[] data = new double[pixels];
+                
+            for (int i = 0; i < pixels; ++i)
+                data[i] = RawPixelData[i + (24 * 2048)];
+
+            return data;
+           
+        }
+
+        public override ushort[] getFrame()
+        {
             lock (acquisitionLock)
             {
                 OctUsb.SetIntegrationTime((int)integrationTimeMS_);
-                
+
                 OctUsb.ControlBoardSim(1);
 
                 ushort[] RawPixelData = Enumerable.Repeat((ushort)0, OctUsb.iNumOfPixels).ToArray();
@@ -971,34 +984,9 @@ namespace WasatchNET
 
                 bool bError = false;
 
-                RawPixelData = OctUsb.CaptureSpectra(iFramesTransmitted, true, true, ref bError);
-
-                for (int i = 0; i < pixels; ++i)
-                    data[i] = RawPixelData[i];
-
-                OctUsb.DisarmCapture();
-
-                return data;
-            }
-        }
-
-        public override ushort[] getFrame()
-        {
-            lock (acquisitionLock)
-            {
-                OctUsb.ControlBoardSim(1000000000);
-
-                ushort[] RawPixelData = Enumerable.Repeat((ushort)0, OctUsb.iNumOfPixels).ToArray();
-                int iFramesTransmitted = 1;
-
-                bool bError = false;
-
                 RawPixelData = OctUsb.CaptureBitMap(iFramesTransmitted, true, true, ref bError);
 
-                OctUsb.ControlBoardSim(0);
-
                 OctUsb.DisarmCapture();
-                OctUsb.ClearProcessingBuffer();
 
                 return RawPixelData;
             }
