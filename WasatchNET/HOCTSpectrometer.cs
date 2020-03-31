@@ -941,7 +941,7 @@ namespace WasatchNET
                 OctUsb.SetDelayAdc(3);
                 OctUsb.SetLinesPerFrame(50);
                 OctUsb.SetPixelCount(2048);
-                pixels = (uint)OctUsb.iNumOfPixels;
+                pixels = (uint)1024;
             }
 
             return openOk;
@@ -960,8 +960,9 @@ namespace WasatchNET
         {
             lock (acquisitionLock)
             {
+                OctUsb.SetIntegrationTime((int)integrationTimeMS_);
                 
-                OctUsb.ControlBoardSim(1000000000);
+                OctUsb.ControlBoardSim(1);
 
                 ushort[] RawPixelData = Enumerable.Repeat((ushort)0, OctUsb.iNumOfPixels).ToArray();
                 double[] data = new double[RawPixelData.Length];
@@ -972,13 +973,10 @@ namespace WasatchNET
 
                 RawPixelData = OctUsb.CaptureSpectra(iFramesTransmitted, true, true, ref bError);
 
-                for (int i = 0; i < RawPixelData.Length; ++i)
+                for (int i = 0; i < pixels; ++i)
                     data[i] = RawPixelData[i];
 
-                OctUsb.ControlBoardSim(0);
-
                 OctUsb.DisarmCapture();
-                OctUsb.ClearProcessingBuffer();
 
                 return data;
             }
