@@ -106,6 +106,7 @@
     <Compile Include="BoulderSpectrometer.cs" />
     <Compile Include="FeatureIdentification.cs" />
     <Compile Include="FPGAOptions.cs" />
+    <Compile Include="HOCTSpectrometer.cs" />
     <Compile Include="IDriver.cs" />
     <Compile Include="IDriverVBAWrapper.cs" />
     <Compile Include="IFPGAOptions.cs" />

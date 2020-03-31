@@ -923,13 +923,28 @@ namespace WasatchNET
         {
             isOCT = true;
             //OctUsb.SetLinesPerFrame(500);
-            integrationTimeMS_ = 300;
-            pixels = (uint)OctUsb.iNumOfPixels;
+            integrationTimeMS_ = (uint)OctUsb.DefaultIntegrationTime();
         }
 
         internal override bool open()
         {
-            return OctUsb.OpenDevice(0x24AA, 0x5000);
+            bool openOk = OctUsb.OpenDevice(0x24AA, 0x5000);
+
+            if (openOk)
+            {
+                eeprom = new EEPROM(this);
+                if (!eeprom.read())
+                {
+                    logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                    return false;
+                }
+                OctUsb.SetDelayAdc(3);
+                OctUsb.SetLinesPerFrame(50);
+                OctUsb.SetPixelCount(2048);
+                pixels = (uint)OctUsb.iNumOfPixels;
+            }
+
+            return openOk;
         }
 
         public override void close()
@@ -943,36 +958,52 @@ namespace WasatchNET
 
         public override double[] getSpectrum()
         {
-            double[] data = new double[0];
+            lock (acquisitionLock)
+            {
+                
+                OctUsb.ControlBoardSim(1000000000);
 
-            OctUsb.ControlBoardSim(1);
+                ushort[] RawPixelData = Enumerable.Repeat((ushort)0, OctUsb.iNumOfPixels).ToArray();
+                double[] data = new double[RawPixelData.Length];
 
-            ushort[] RawPixelData = Enumerable.Repeat((ushort)0, OctUsb.iNumOfPixels).ToArray();
-            int iFramesTransmitted = 1;
+                int iFramesTransmitted = 1;
 
-            bool bError = false;
+                bool bError = false;
 
-            RawPixelData = OctUsb.CaptureSpectra(iFramesTransmitted, true, true, ref bError);
+                RawPixelData = OctUsb.CaptureSpectra(iFramesTransmitted, true, true, ref bError);
 
-            OctUsb.DisarmCapture();
+                for (int i = 0; i < RawPixelData.Length; ++i)
+                    data[i] = RawPixelData[i];
 
-            return data;
+                OctUsb.ControlBoardSim(0);
+
+                OctUsb.DisarmCapture();
+                OctUsb.ClearProcessingBuffer();
+
+                return data;
+            }
         }
 
         public override ushort[] getFrame()
         {
-            OctUsb.ControlBoardSim(1);
+            lock (acquisitionLock)
+            {
+                OctUsb.ControlBoardSim(1000000000);
 
-            ushort[] RawPixelData = Enumerable.Repeat((ushort)0, OctUsb.iNumOfPixels).ToArray();
-            int iFramesTransmitted = 1;
+                ushort[] RawPixelData = Enumerable.Repeat((ushort)0, OctUsb.iNumOfPixels).ToArray();
+                int iFramesTransmitted = 1;
 
-            bool bError = false;
+                bool bError = false;
 
-            RawPixelData = OctUsb.CaptureBitMap(iFramesTransmitted, true, true, ref bError);
+                RawPixelData = OctUsb.CaptureBitMap(iFramesTransmitted, true, true, ref bError);
 
-            OctUsb.DisarmCapture();
+                OctUsb.ControlBoardSim(0);
 
-            return RawPixelData;
+                OctUsb.DisarmCapture();
+                OctUsb.ClearProcessingBuffer();
+
+                return RawPixelData;
+            }
         }
 
         public override string serialNumber
@@ -982,43 +1013,150 @@ namespace WasatchNET
 
         public override float detectorGain
         {
+            get 
+            { 
+                return 0.0f; 
+            }
+            set 
+            {
+                
+            }
+        }
+
+        public override float detectorGainOdd
+        {
+            get
+            {
+                return 0.0f;
+            }
+            set
+            {
+
+            }
         }
 
         public override short detectorOffset
         {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override short detectorOffsetOdd
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
         }
 
         public override bool detectorTECEnabled
         {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
         }
 
         public override ushort detectorTECSetpointRaw
         {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+        public override float detectorTemperatureDegC
+        { 
+            get
+            {
+                return 0.0f;
+            }
         }
 
         public override string firmwareRevision
         {
+            get
+            {
+                return "";
+            }
         }
 
         public override string fpgaRevision
         {
+            get
+            {
+                return "";
+            }
+            
         }
 
         public override uint integrationTimeMS
         {
+            get
+            {
+                return integrationTimeMS_;
+            }
+            set
+            {
+                lock (acquisitionLock)
+                {
+                    bool ok = OctUsb.SetIntegrationTime((int)value);
+                    if (ok)
+                        integrationTimeMS_ = (uint)value;
+                }
+            }
         }
+
+        public override bool isARM => false;
 
         public override bool laserEnabled // dangerous one to cache...
         {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
         }
 
         public override ushort laserTemperatureRaw
         {
-
+            get
+            {
+                return 0;
+            }
+            
         }
 
         public override TRIGGER_SOURCE triggerSource
         {
+            get
+            {
+                return TRIGGER_SOURCE.INTERNAL;
+            }
+            set
+            {
+
+            }
         }
 
 
