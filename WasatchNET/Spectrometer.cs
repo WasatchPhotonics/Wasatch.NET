@@ -1924,7 +1924,7 @@ namespace WasatchNET
         /// averaging, boxcar and dark subtraction.
         /// </summary>
         /// <returns>The acquired spectrum as an array of doubles</returns>
-        public virtual double[] getSpectrum()
+        public virtual double[] getSpectrum(bool forceNew = false)
         {
             lock (acquisitionLock)
             {

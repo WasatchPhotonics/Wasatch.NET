@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.Info;
 using LibUsbDotNet.Main;
@@ -926,70 +927,117 @@ namespace WasatchNET
             integrationTimeMS_ = (uint)OctUsb.DefaultIntegrationTime();
         }
 
+        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        ushort[] lastFrame;
+        protected object frameLock = new object();
+        bool commsOpen = false;
+        
         internal override bool open()
         {
-            bool openOk = OctUsb.OpenDevice(0x24AA, 0x5000);
-
-            if (openOk)
+            if (!commsOpen)
             {
-                eeprom = new EEPROM(this);
-                if (!eeprom.read())
+                bool openOk = OctUsb.OpenDevice(0x24AA, 0x5000);
+
+                if (openOk)
                 {
-                    logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                    return false;
+                    eeprom = new EEPROM(this);
+                    if (!eeprom.read())
+                    {
+                        logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                        return false;
+                    }
+                    OctUsb.SetDelayAdc(3);
+                    OctUsb.SetLinesPerFrame(200);
+                    OctUsb.SetPixelCount(2048);
+                    pixels = (uint)1024;
+
+                    _cancellationTokenSource = new CancellationTokenSource();
+                    new Task(() => collectFrames(), _cancellationTokenSource.Token, TaskCreationOptions.LongRunning).Start();
                 }
-                OctUsb.SetDelayAdc(3);
-                OctUsb.SetLinesPerFrame(200);
-                OctUsb.SetPixelCount(2048);
-                pixels = (uint)1024;
+
+                commsOpen = openOk;
+                return openOk;
             }
 
-            return openOk;
+            else
+                return false;
+
+        }
+
+        void collectFrames()
+        {
+            lock (acquisitionLock)
+            {
+                OctUsb.SetIntegrationTime((int)integrationTimeMS_);
+            }
+
+            OctUsb.ControlBoardSim(1000000000);
+
+            ushort[] RawPixelData = Enumerable.Repeat((ushort)0, OctUsb.iNumOfPixels).ToArray();
+            int iFramesTransmitted = 1;
+
+            bool bError = false;
+            bool bFirst = true;
+
+            while (!_cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                lock (acquisitionLock)
+                    RawPixelData = OctUsb.CaptureBitMap(iFramesTransmitted, true, bFirst, ref bError);
+
+                if (bError == false)
+                {
+                    lock (frameLock)
+                        lastFrame = RawPixelData;
+                    bFirst = false;
+                }
+                
+                Thread.Sleep(10);
+            }
+
+            OctUsb.ControlBoardSim(0);
+            OctUsb.DisarmCapture();
+            OctUsb.ClearProcessingBuffer();
         }
 
         public override void close()
         {
-            OctUsb.CloseDevice();
+            if (commsOpen)
+            {
+                lock (acquisitionLock)
+                    _cancellationTokenSource.Cancel();
+                Thread.Sleep(20);
+
+                bool closeOk = OctUsb.CloseDevice();
+                if (closeOk)
+                    commsOpen = false;
+            }
         }
 
         public override void regenerateWavelengths()
         {
         }
 
-        public override double[] getSpectrum()
+        public override double[] getSpectrum(bool forceNew = false)
         {
+            if (forceNew)
+                Thread.Sleep(100);
 
             ushort[] RawPixelData = getFrame();
             double[] data = new double[pixels];
-                
-            for (int i = 0; i < pixels; ++i)
-                data[i] = RawPixelData[i + (24 * 2048)];
 
-            return data;
-           
+            if (RawPixelData != null)
+            {
+                for (int i = 0; i < pixels; ++i)
+                    data[i] = RawPixelData[i + (24 * 2048)];
+            }
+
+            return data;  
         }
 
         public override ushort[] getFrame()
         {
-            lock (acquisitionLock)
-            {
-                OctUsb.SetIntegrationTime((int)integrationTimeMS_);
-
-                OctUsb.ControlBoardSim(1);
-
-                ushort[] RawPixelData = Enumerable.Repeat((ushort)0, OctUsb.iNumOfPixels).ToArray();
-                double[] data = new double[RawPixelData.Length];
-
-                int iFramesTransmitted = 1;
-
-                bool bError = false;
-
-                RawPixelData = OctUsb.CaptureBitMap(iFramesTransmitted, true, true, ref bError);
-
-                OctUsb.DisarmCapture();
-
-                return RawPixelData;
-            }
+            lock(frameLock)
+                return lastFrame;
         }
 
         public override string serialNumber

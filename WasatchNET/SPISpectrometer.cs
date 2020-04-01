@@ -362,7 +362,7 @@ namespace WasatchNET
             mpsse.Dispose();
         }
 
-        public override double[] getSpectrum()
+        public override double[] getSpectrum(bool forceNew = false)
         {
             lock (acquisitionLock)
             {
