@@ -10,7 +10,7 @@ using LibUsbDotNet.Main;
 
 namespace WasatchNET
 {
-    class HOCTSpectrometer : Spectrometer
+    public class HOCTSpectrometer : Spectrometer
     {
         public static class OctUsb
         {
@@ -930,6 +930,7 @@ namespace WasatchNET
         private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         ushort[] lastFrame;
         protected object frameLock = new object();
+        protected object lineLock = new object();
         bool commsOpen = false;
         public int sampleLine
         {
@@ -939,12 +940,15 @@ namespace WasatchNET
             }
             set
             {
-                if (value > 200)
-                    sampleLine_ = 200;
-                else if (value < 0)
-                    sampleLine_ = 0;
-                else
-                    sampleLine_ = value;
+                lock (lineLock)
+                {
+                    if (value > 200)
+                        sampleLine_ = 200;
+                    else if (value < 0)
+                        sampleLine_ = 0;
+                    else
+                        sampleLine_ = value;
+                }
             }
 
         }
@@ -1061,12 +1065,14 @@ namespace WasatchNET
             ushort[] RawPixelData = getFrame();
             double[] data = new double[pixels];
 
-            if (RawPixelData != null)
+            lock (lineLock)
             {
-                for (int i = 0; i < pixels; ++i)
-                    data[i] = RawPixelData[i + (sampleLine_ * 2048)];
+                if (RawPixelData != null)
+                {
+                    for (int i = 0; i < pixels; ++i)
+                        data[i] = RawPixelData[i + (sampleLine_ * 2048)];
+                }
             }
-
             return data;  
         }
 
