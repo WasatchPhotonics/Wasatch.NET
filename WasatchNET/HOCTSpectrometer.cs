@@ -931,7 +931,25 @@ namespace WasatchNET
         ushort[] lastFrame;
         protected object frameLock = new object();
         bool commsOpen = false;
-        
+        public int sampleLine
+        {
+            get
+            {
+                return sampleLine_;
+            }
+            set
+            {
+                if (value > 200)
+                    sampleLine_ = 200;
+                else if (value < 0)
+                    sampleLine_ = 0;
+                else
+                    sampleLine_ = value;
+            }
+
+        }
+        int sampleLine_ = 100;
+
         internal override bool open()
         {
             if (!commsOpen)
@@ -940,16 +958,17 @@ namespace WasatchNET
 
                 if (openOk)
                 {
+                    OctUsb.SetDelayAdc(3);
+                    OctUsb.SetLinesPerFrame(200);
+                    OctUsb.SetPixelCount(2048);
+                    pixels = (uint)1024;
+
                     eeprom = new EEPROM(this);
                     if (!eeprom.read())
                     {
                         logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                         return false;
                     }
-                    OctUsb.SetDelayAdc(3);
-                    OctUsb.SetLinesPerFrame(200);
-                    OctUsb.SetPixelCount(2048);
-                    pixels = (uint)1024;
 
                     _cancellationTokenSource = new CancellationTokenSource();
                     new Task(() => collectFrames(), _cancellationTokenSource.Token, TaskCreationOptions.LongRunning).Start();
@@ -1020,15 +1039,32 @@ namespace WasatchNET
         public override double[] getSpectrum(bool forceNew = false)
         {
             if (forceNew)
-                Thread.Sleep(100);
+            {
+                // 11.25 is based on the HOCT clock rate (11.25), and dividing by 5 is for *200 lines per frame and /1000
+                // to convert from us to ms
+                // The line rate is at least 100 us, in practice we've seen returns take up to ~60-70 ms, hard to say where exactly
+                // all the delay comes from. 20 ms is theoretical minimum. We give an extra buffer for long reads then an extra
+                // 10 for the frame loop's sleep
+                //
+                // May reduce the minimum or change the frame vs. usb split with more experimentation
+                int minWait = 20;
 
+                int wait = (int)((integrationTimeMS / 11.25) / 5);
+                if (wait < minWait)
+                    wait = minWait;
+
+                //give time for loop wait and usb read back
+                wait += 70;
+
+                Thread.Sleep(wait);
+            }
             ushort[] RawPixelData = getFrame();
             double[] data = new double[pixels];
 
             if (RawPixelData != null)
             {
                 for (int i = 0; i < pixels; ++i)
-                    data[i] = RawPixelData[i + (24 * 2048)];
+                    data[i] = RawPixelData[i + (sampleLine_ * 2048)];
             }
 
             return data;  

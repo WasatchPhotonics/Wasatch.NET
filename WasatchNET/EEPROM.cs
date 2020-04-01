@@ -1583,8 +1583,8 @@ namespace WasatchNET
                 detectorName = "";
                 activePixelsHoriz = (ushort)a.pixels;
                 activePixelsVert = (ushort)HOCTSpectrometer.OctUsb.NUM_OF_LINES_PER_FRAME;
-                minIntegrationTimeMS = 0;
-                maxIntegrationTimeMS = 900;
+                minIntegrationTimeMS = 98;
+                maxIntegrationTimeMS = 25000;
                 actualPixelsHoriz = (ushort)a.pixels;
                 ROIHorizStart = 0;
                 ROIHorizEnd = (ushort)(a.pixels - 1);
