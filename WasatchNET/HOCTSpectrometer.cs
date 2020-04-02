@@ -919,7 +919,7 @@ namespace WasatchNET
             }
         }
 
-        
+
         internal HOCTSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             isOCT = true;
@@ -927,11 +927,13 @@ namespace WasatchNET
             integrationTimeMS_ = (uint)OctUsb.DefaultIntegrationTime();
         }
 
-        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        protected CancellationTokenSource _cancellationTokenSource { get; set; } = new CancellationTokenSource();
         ushort[] lastFrame;
         protected object frameLock = new object();
         protected object lineLock = new object();
         bool commsOpen = false;
+        protected Task FrameProcess { get; set; } = null;
+
         public int sampleLine
         {
             get
@@ -974,8 +976,7 @@ namespace WasatchNET
                         return false;
                     }
 
-                    _cancellationTokenSource = new CancellationTokenSource();
-                    new Task(() => collectFrames(), _cancellationTokenSource.Token, TaskCreationOptions.LongRunning).Start();
+                    FrameProcess = Task.Run(() => collectFrames(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
                 }
 
                 commsOpen = openOk;
@@ -987,7 +988,7 @@ namespace WasatchNET
 
         }
 
-        void collectFrames()
+        private void collectFrames(CancellationToken CT)
         {
             lock (acquisitionLock)
             {
@@ -1002,7 +1003,7 @@ namespace WasatchNET
             bool bError = false;
             bool bFirst = true;
 
-            while (!_cancellationTokenSource.Token.IsCancellationRequested)
+            while (!CT.IsCancellationRequested)
             {
                 lock (acquisitionLock)
                     RawPixelData = OctUsb.CaptureBitMap(iFramesTransmitted, true, bFirst, ref bError);
@@ -1028,16 +1029,13 @@ namespace WasatchNET
             {
                 lock (acquisitionLock)
                     _cancellationTokenSource.Cancel();
-                Thread.Sleep(20);
+
+                FrameProcess.Wait();
 
                 bool closeOk = OctUsb.CloseDevice();
                 if (closeOk)
                     commsOpen = false;
             }
-        }
-
-        public override void regenerateWavelengths()
-        {
         }
 
         public override double[] getSpectrum(bool forceNew = false)
