@@ -937,7 +937,7 @@ namespace WasatchNET
         protected object lineLock = new object();
         bool commsOpen = false;
         protected Task FrameProcess { get; set; } = null;
-        const long ONE_BILLION = 1000000000;
+        const int ONE_BILLION = 1000000000;
 
         public int sampleLine
         {
@@ -971,6 +971,22 @@ namespace WasatchNET
                 {
                     OctUsb.SetDelayAdc(3);
                     OctUsb.SetLinesPerFrame(200);
+                    
+                    //
+                    // This discrepency probably seems strange but it exists for a reason.
+                    //
+                    // The HOCT unit has a 2048 pixel detector but only the first 1024 of them are actually exposed to light.
+                    // There is hardware level support for sending out frames and spectra that are only 1024 pixels wide,
+                    // however, doing this leads to untenable amounts of lag in feedback (on the order of seconds vs. fractions
+                    // of a second if we set to 2048). It also defaults to 1024 in the class above so we must manually set
+                    // it to 2048.
+                    //
+                    // It is worth discussing whether the pixels should be set to 2048 instead of 1024 and allow higher level
+                    // software to deal with the dead detector. As of this writing there is a bit of a discrepancy: getSectrum
+                    // returns an array that is 1024 pixels wide while getFrame returns frames that are 2048 pixels wide, i.e.
+                    // none are thrown away. Consistency between the two (either throwing away in both, or surfacing all pixels for both)
+                    // is probably preferable. 
+                    //
                     OctUsb.SetPixelCount(2048);
                     pixels = (uint)1024;
 
