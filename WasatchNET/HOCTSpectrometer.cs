@@ -97,6 +97,10 @@ namespace WasatchNET
             private static UsbEndpointReader b2_reader = null;
             private static UsbEndpointWriter b2_writer = null;
 
+            private const byte SET_READ_BIT = 0x80;
+            private const int LONG_TIMEOUT_MS = 1000;
+            private const int SHORT_TIMEOUT_MS = 100;
+
 
             /// <summary>
             /// Initialize the USB Device to a Clean Starting Point
@@ -143,9 +147,9 @@ namespace WasatchNET
                     b2_reader.Reset();
                     b2_reader.Flush();
 
-                    CmdVersionFpga[0] |= 0x80;
-                    b1_writer.Write(CmdVersionFpga, 1000, out uiTemp);
-                    if ((eReturn = b1_reader.Read(bReturnBuffer, 1000, out uiTemp)) == ErrorCode.None)
+                    CmdVersionFpga[0] |= SET_READ_BIT;
+                    b1_writer.Write(CmdVersionFpga, LONG_TIMEOUT_MS, out uiTemp);
+                    if ((eReturn = b1_reader.Read(bReturnBuffer, LONG_TIMEOUT_MS, out uiTemp)) == ErrorCode.None)
                     {
                         for (int i = 0; i < uiTemp; i++)
                         {
@@ -159,9 +163,9 @@ namespace WasatchNET
                         Console.WriteLine("ERROR: Reading Veriong FPGA");
                     }
 
-                    CmdVersionArm[0] |= 0x80;
-                    b1_writer.Write(CmdVersionArm, 1000, out uiTemp);
-                    if ((eReturn = b1_reader.Read(bReturnBuffer, 1000, out uiTemp)) == ErrorCode.None)
+                    CmdVersionArm[0] |= SET_READ_BIT;
+                    b1_writer.Write(CmdVersionArm, LONG_TIMEOUT_MS, out uiTemp);
+                    if ((eReturn = b1_reader.Read(bReturnBuffer, LONG_TIMEOUT_MS, out uiTemp)) == ErrorCode.None)
                     {
                         for (int i = 0; i < uiTemp; i++)
                         {
@@ -175,9 +179,9 @@ namespace WasatchNET
                         Console.WriteLine("ERROR: Reading Veriong ARM");
                     }
 
-                    CmdVersionArmBuildDate[0] |= 0x80;
-                    b1_writer.Write(CmdVersionArmBuildDate, 1000, out uiTemp);
-                    if ((eReturn = b1_reader.Read(bReturnBuffer, 1000, out uiTemp)) == ErrorCode.None)
+                    CmdVersionArmBuildDate[0] |= SET_READ_BIT;
+                    b1_writer.Write(CmdVersionArmBuildDate, LONG_TIMEOUT_MS, out uiTemp);
+                    if ((eReturn = b1_reader.Read(bReturnBuffer, LONG_TIMEOUT_MS, out uiTemp)) == ErrorCode.None)
                     {
                         for (int i = 0; i < uiTemp; i++)
                         {
@@ -189,9 +193,9 @@ namespace WasatchNET
                         Console.WriteLine("ERROR: Reading Veriong ARM Build Date");
                     }
 
-                    CmdVersionArmBuildTime[0] |= 0x80;
-                    b1_writer.Write(CmdVersionArmBuildTime, 1000, out uiTemp);
-                    if ((eReturn = b1_reader.Read(bReturnBuffer, 1000, out uiTemp)) == ErrorCode.None)
+                    CmdVersionArmBuildTime[0] |= SET_READ_BIT;
+                    b1_writer.Write(CmdVersionArmBuildTime, LONG_TIMEOUT_MS, out uiTemp);
+                    if ((eReturn = b1_reader.Read(bReturnBuffer, LONG_TIMEOUT_MS, out uiTemp)) == ErrorCode.None)
                     {
                         for (int i = 0; i < uiTemp; i++)
                         {
@@ -296,16 +300,16 @@ namespace WasatchNET
                 if (bFirst)
                 {
                     Console.WriteLine("CaptureBitMap: ConfigIntegrationTime");
-                    b1_writer.Write(CmdConfigIntegrationTime, 1000, out uiTransmitted);
+                    b1_writer.Write(CmdConfigIntegrationTime, LONG_TIMEOUT_MS, out uiTransmitted);
                     Console.WriteLine("CaptureBitMap: ResetSequence");
-                    b1_writer.Write(CmdResetSequence, 1000, out uiTransmitted);
+                    b1_writer.Write(CmdResetSequence, LONG_TIMEOUT_MS, out uiTransmitted);
                     Console.WriteLine("CaptureBitMap: ArmCapture");
-                    b1_writer.Write(CmdArmCapture, 1000, out uiTransmitted);
+                    b1_writer.Write(CmdArmCapture, LONG_TIMEOUT_MS, out uiTransmitted);
                 }
 
                 for (int j = 0; j < (iLinesPerFrame / NUM_OF_LINES_PER_USB); j++)
                 {
-                    if ((eReturn = b2_reader.Read(bReadBuffer, 1000, out uiTransmitted)) == ErrorCode.None)
+                    if ((eReturn = b2_reader.Read(bReadBuffer, LONG_TIMEOUT_MS, out uiTransmitted)) == ErrorCode.None)
                     {
                         Buffer.BlockCopy(bReadBuffer, 0, RawPixelData, j * NUM_OF_LINES_PER_USB * iNumOfPixels * NUM_OF_BYTES_PER_PIXEL, iTransferSize);
                     }
@@ -346,11 +350,11 @@ namespace WasatchNET
                 if (bFirst)
                 {
                     Console.WriteLine("CaptureSpectra: ConfigIntegrationTime");
-                    b1_writer.Write(CmdConfigIntegrationTime, 1000, out uiTransmitted);
+                    b1_writer.Write(CmdConfigIntegrationTime, LONG_TIMEOUT_MS, out uiTransmitted);
                     Console.WriteLine("CaptureSpectra: ResetSequence");
-                    b1_writer.Write(CmdResetSequence, 1000, out uiTransmitted);
+                    b1_writer.Write(CmdResetSequence, LONG_TIMEOUT_MS, out uiTransmitted);
                     Console.WriteLine("CaptureSpectra: ArmCapture");
-                    b1_writer.Write(CmdArmCapture, 1000, out uiTransmitted);
+                    b1_writer.Write(CmdArmCapture, LONG_TIMEOUT_MS, out uiTransmitted);
                 }
 
                 for (int j = 0; j < (iLinesPerFrame / NUM_OF_LINES_PER_USB); j++)
@@ -358,7 +362,7 @@ namespace WasatchNET
                     if (j == (iLinesPerFrame / NUM_OF_LINES_PER_USB) / 2)
                     {
                         // Capture to Display Performed Here
-                        if ((eReturn = b2_reader.Read(bReturnBuffer, 1000, out uiTransmitted)) != ErrorCode.None)
+                        if ((eReturn = b2_reader.Read(bReturnBuffer, LONG_TIMEOUT_MS, out uiTransmitted)) != ErrorCode.None)
                         {
                             Console.WriteLine("ERROR: Reading Line " + j);
                             bError = true;
@@ -368,7 +372,7 @@ namespace WasatchNET
                     else
                     {
                         // Read Out Buffer But Don't Do Anthing With the Data
-                        if ((eReturn = b2_reader.Read(bReadBuffer, 1000, out uiTransmitted)) != ErrorCode.None)
+                        if ((eReturn = b2_reader.Read(bReadBuffer, LONG_TIMEOUT_MS, out uiTransmitted)) != ErrorCode.None)
                         {
                             Console.WriteLine("ERROR: Reading Line " + j);
                             bError = true;
@@ -405,7 +409,7 @@ namespace WasatchNET
                         {
                             Console.WriteLine("ClearProcessingBuffer: Clearing Line " + x);
 
-                            if ((eReturn = b2_reader.Read(bReturnBuffer, 1000, out int uiTransmitted)) != ErrorCode.None)
+                            if ((eReturn = b2_reader.Read(bReturnBuffer, LONG_TIMEOUT_MS, out int uiTransmitted)) != ErrorCode.None)
                             {
                                 Console.WriteLine("ERROR: Removing Line " + x);
                                 return false;
@@ -434,7 +438,7 @@ namespace WasatchNET
                 CmdControlBoardSim[4] = (byte)((iFramesTransmitted & 0xFF000000) >> 24);
 
                 Console.WriteLine("CaptureSpectra: ControlBoardSim");
-                b1_writer.Write(CmdControlBoardSim, 1000, out int uiTransmitted);
+                b1_writer.Write(CmdControlBoardSim, LONG_TIMEOUT_MS, out int uiTransmitted);
 
                 return true;
             }
@@ -453,7 +457,7 @@ namespace WasatchNET
                 try
                 {
                     Console.WriteLine("DisarmCapture: Sending Command");
-                    eReturn = b1_writer.Write(CmdDisarmCapture, 1000, out int uiTransmitted);
+                    eReturn = b1_writer.Write(CmdDisarmCapture, LONG_TIMEOUT_MS, out int uiTransmitted);
 
                     if (eReturn != ErrorCode.None)
                     {
@@ -487,16 +491,16 @@ namespace WasatchNET
 
                 //sUsb.WaitOne();
 
-                CmdRetrieveFifoStatus[0] |= 0x80;
+                CmdRetrieveFifoStatus[0] |= SET_READ_BIT;
 
                 try
                 {
                     Console.WriteLine("GetFifoStatus: RetrieveFifoStatus");
-                    eReturn = b1_writer.Write(CmdRetrieveFifoStatus, 100, out int uiTransmitted);
+                    eReturn = b1_writer.Write(CmdRetrieveFifoStatus, SHORT_TIMEOUT_MS, out int uiTransmitted);
 
                     if (eReturn == ErrorCode.None)
                     {
-                        eReturn = b1_reader.Read(bReturnBuffer, 100, out uiTransmitted);
+                        eReturn = b1_reader.Read(bReturnBuffer, SHORT_TIMEOUT_MS, out uiTransmitted);
 
                         if (eReturn == ErrorCode.None)
                         {
@@ -546,16 +550,16 @@ namespace WasatchNET
 
                 bError = false;
 
-                CmdReadCalibration[0] |= 0x80;
+                CmdReadCalibration[0] |= SET_READ_BIT;
 
                 try
                 {
-                    eReturn = b1_writer.Write(CmdReadCalibration, 100, out int uiTransmitted);
+                    eReturn = b1_writer.Write(CmdReadCalibration, SHORT_TIMEOUT_MS, out int uiTransmitted);
 
                     if (eReturn == ErrorCode.None)
                     {
 
-                        eReturn = b1_reader.Read(bReturnBuffer, 100, out uiTransmitted);
+                        eReturn = b1_reader.Read(bReturnBuffer, SHORT_TIMEOUT_MS, out uiTransmitted);
 
                         if (eReturn != ErrorCode.None)
                         {
@@ -598,7 +602,7 @@ namespace WasatchNET
                 bError = false;
 
                 // Capture to Display Performed Here
-                if ((eReturn = b2_reader.Read(bReturnBuffer, 1000, out int uiTransmitted)) != ErrorCode.None)
+                if ((eReturn = b2_reader.Read(bReturnBuffer, LONG_TIMEOUT_MS, out int uiTransmitted)) != ErrorCode.None)
                 {
                     Console.WriteLine("ERROR: Reading Line");
                     bError = true;
@@ -629,7 +633,7 @@ namespace WasatchNET
                     bSend[2] = (byte)(0x2 << 3);
 
                     Console.WriteLine("SetAdcGain: " + NewGain);
-                    b1_writer.Write(bSend, 1000, out int uiTransmitted);
+                    b1_writer.Write(bSend, LONG_TIMEOUT_MS, out int uiTransmitted);
 
                     Console.WriteLine("Set ADC Gain to " + (20.0f * System.Math.Log10(5.9f / (1f + 4.9f * ((63.0f - (float)NewGain) / 63.0f)))) + "dB");
                 }
@@ -664,7 +668,7 @@ namespace WasatchNET
                     bSend[2] = (byte)((0x6 << 3) + ((NewOffset & 0x100) >> 8));
 
                     Console.WriteLine("SetAdcOffset: " + NewOffset);
-                    b1_writer.Write(bSend, 1000, out int uiTransmitted);
+                    b1_writer.Write(bSend, LONG_TIMEOUT_MS, out int uiTransmitted);
                 }
                 catch (Exception e)
                 {
@@ -700,7 +704,7 @@ namespace WasatchNET
                     bSend[5] = (byte)(0x00);
 
                     Console.WriteLine("SetDelayAdc: " + NewDelay);
-                    b1_writer.Write(bSend, 1000, out int uiTransmitted);
+                    b1_writer.Write(bSend, LONG_TIMEOUT_MS, out int uiTransmitted);
                 }
                 catch (Exception e)
                 {
@@ -736,7 +740,7 @@ namespace WasatchNET
                     bSend[5] = (byte)(0x00);
 
                     Console.WriteLine("SetDelaySensor: " + NewDelay);
-                    b1_writer.Write(bSend, 1000, out int uiTransmitted);
+                    b1_writer.Write(bSend, LONG_TIMEOUT_MS, out int uiTransmitted);
                 }
                 catch (Exception e)
                 {
@@ -766,7 +770,7 @@ namespace WasatchNET
                     CmdConfigIntegrationTime[3] = (byte)((NewTime >> 8) & 0xFF);
 
                     Console.WriteLine("SetIntegrationTime: " + NewTime);
-                    b1_writer.Write(CmdConfigIntegrationTime, 1000, out int uiTransmitted);
+                    b1_writer.Write(CmdConfigIntegrationTime, LONG_TIMEOUT_MS, out int uiTransmitted);
                 }
                 catch (Exception e)
                 {
@@ -798,7 +802,7 @@ namespace WasatchNET
                     CmdConfigLinesPerFrame[5] = (byte)((NewLineCount >> 24) & 0xFF);
 
                     Console.WriteLine("SetLinesPerFrame: " + NewLineCount);
-                    b1_writer.Write(CmdConfigLinesPerFrame, 1000, out int uiTransmitted);
+                    b1_writer.Write(CmdConfigLinesPerFrame, LONG_TIMEOUT_MS, out int uiTransmitted);
 
                     iLinesPerFrame = NewLineCount;
 
@@ -831,7 +835,7 @@ namespace WasatchNET
                     CmdConfigPixelCount[3] = (byte)((NewValue >> 8) & 0xFF);
 
                     Console.WriteLine("SetPixelCount: " + NewValue);
-                    b1_writer.Write(CmdConfigPixelCount, 1000, out int uiTransmitted);
+                    b1_writer.Write(CmdConfigPixelCount, LONG_TIMEOUT_MS, out int uiTransmitted);
 
                     iNumOfPixels = NewValue;
 
@@ -875,7 +879,7 @@ namespace WasatchNET
                     }
 
                     Console.WriteLine("SetTestPattern: Pattern(" + Pattern + ") ExternalTrig(" + bExtTrig + ")");
-                    b1_writer.Write(CmdTestPattern, 1000, out int uiTransmitted);
+                    b1_writer.Write(CmdTestPattern, LONG_TIMEOUT_MS, out int uiTransmitted);
                 }
                 catch (Exception e)
                 {
@@ -906,7 +910,7 @@ namespace WasatchNET
                     bDataArray.CopyTo(CmdWriteCalibration, 2);
 
                     Console.WriteLine("Write Calibration - Page 0: " + BitConverter.ToString(bDataArray));
-                    b1_writer.Write(CmdWriteCalibration, 1000, out int uiTransmitted);
+                    b1_writer.Write(CmdWriteCalibration, LONG_TIMEOUT_MS, out int uiTransmitted);
                 }
                 catch (Exception e)
                 {
@@ -933,6 +937,7 @@ namespace WasatchNET
         protected object lineLock = new object();
         bool commsOpen = false;
         protected Task FrameProcess { get; set; } = null;
+        const long ONE_BILLION = 1000000000;
 
         public int sampleLine
         {
@@ -995,24 +1000,26 @@ namespace WasatchNET
                 OctUsb.SetIntegrationTime((int)integrationTimeMS_);
             }
 
-            OctUsb.ControlBoardSim(1000000000);
+            // To-Do: find out from Jesse or other EE what in the world this command does and why this thing only
+            // seems to work when we set it very very high
+            OctUsb.ControlBoardSim(ONE_BILLION);
 
             ushort[] RawPixelData = Enumerable.Repeat((ushort)0, OctUsb.iNumOfPixels).ToArray();
             int iFramesTransmitted = 1;
 
-            bool bError = false;
-            bool bFirst = true;
+            bool readError = false;
+            bool firstFrame = true;
 
             while (!CT.IsCancellationRequested)
             {
                 lock (acquisitionLock)
-                    RawPixelData = OctUsb.CaptureBitMap(iFramesTransmitted, true, bFirst, ref bError);
+                    RawPixelData = OctUsb.CaptureBitMap(iFramesTransmitted, true, firstFrame, ref readError);
 
-                if (bError == false)
+                if (readError == false)
                 {
                     lock (frameLock)
                         lastFrame = RawPixelData;
-                    bFirst = false;
+                    firstFrame = false;
                 }
                 
                 Thread.Sleep(10);
