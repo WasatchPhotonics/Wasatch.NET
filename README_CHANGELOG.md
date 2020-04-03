@@ -1,4 +1,7 @@
 # Wasatch.NET Changelog
+- 2020-04-02 2.1.19
+    - internal build for WPSC 1.9.15
+	- initial support for HOCT units
 - 2020-03-24 2.1.18
     - added support for EEPROM Format 8
 	- tweaked wavelength calculation in accordance with up to 5 coeffs

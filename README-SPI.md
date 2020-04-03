@@ -23,11 +23,11 @@ To use our software with SPI spectrometers you will need
 #Board Wiring (Production)
 
 Our software expects the FTD232H board to be wired for SPI as follows
-C0: clock
-C1: MOSI
-C2: MISO
-C3: enable
+D0: clock
+D1: MOSI
+D2: MISO
+D3: enable
 
 Our software also currently performs a software based external trigger with the following wire setup
-D0: trigger
-D1: data ready
+C0: trigger
+C1: data ready

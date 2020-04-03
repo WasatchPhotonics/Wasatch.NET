@@ -87,7 +87,19 @@ namespace WasatchNET
                     logDevice(usbRegistry);
                 }
 
-                if (usbRegistry.Vid == 0x24aa)
+                if (usbRegistry.Vid == 0x24aa && usbRegistry.Pid == 0x5000)
+                {
+                    HOCTSpectrometer spectrometer = new HOCTSpectrometer(usbRegistry);
+                    if (spectrometer.open())
+                    {
+                        string key = String.Format("{0}-{1}", "HOCT", "0000");
+                        if (!sorted.ContainsKey(key))
+                            sorted.Add(key, new List<Spectrometer>());
+                        sorted[key].Add(spectrometer);
+                    }
+
+                }
+                else if (usbRegistry.Vid == 0x24aa)
                 {
                     Spectrometer spectrometer = new Spectrometer(usbRegistry);
                     if (spectrometer.open())

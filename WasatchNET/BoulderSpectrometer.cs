@@ -263,7 +263,7 @@ namespace WasatchNET
             return true;
         }
 
-        public override double[] getSpectrum()
+        public override double[] getSpectrum(bool forceNew = false)
         {
             lock (acquisitionLock)
             {

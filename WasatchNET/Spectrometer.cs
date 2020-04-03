@@ -111,6 +111,7 @@ namespace WasatchNET
 
         //Stroker is a legacy board firmware without PID conforming to FID and no EEPROM
         public bool isStroker { get; protected set; } = false;
+        public bool isOCT { get; protected set; } = false;
 
         /// <summary>spectrometer serial number</summary>
         public virtual string serialNumber
@@ -1923,7 +1924,7 @@ namespace WasatchNET
         /// averaging, boxcar and dark subtraction.
         /// </summary>
         /// <returns>The acquired spectrum as an array of doubles</returns>
-        public virtual double[] getSpectrum()
+        public virtual double[] getSpectrum(bool forceNew = false)
         {
             lock (acquisitionLock)
             {
@@ -2082,6 +2083,11 @@ namespace WasatchNET
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             lastSpectrum = spec;
             return spec;
+        }
+
+        public virtual ushort[] getFrame()
+        {
+            return null;
         }
 
         uint[] readImage(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
