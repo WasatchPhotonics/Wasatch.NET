@@ -29,7 +29,8 @@ namespace WasatchNET
         // private attributes
         /////////////////////////////////////////////////////////////////////////       
 
-        internal const int MAX_PAGES = 256; // really 8, but last 2 are unallocated
+        //internal const int MAX_PAGES = 256; // really 8, but last 2 are unallocated
+        internal const int MAX_PAGES = 8;
         const byte FORMAT = 8;
 
         Spectrometer spectrometer;
@@ -1782,6 +1783,7 @@ namespace WasatchNET
                             Array.Copy(pages[7], 0, userData, 128, 64);
                         }
 
+                        /*
                         userData = new byte[16000];
                         Array.Copy(pages[4], 0, userData, 0, 64);
                         Array.Copy(pages[7], 0, userData, 64, 64);
@@ -1790,6 +1792,7 @@ namespace WasatchNET
                         {
                             Array.Copy(pages[k], 0, userData, 64 * (k - 6), 64);
                         }
+                        */
                     }
                     else
                     {
