@@ -949,8 +949,8 @@ namespace WasatchNET
             {
                 lock (lineLock)
                 {
-                    if (value > 200)
-                        sampleLine_ = 200;
+                    if (value > linesPerFrame)
+                        sampleLine_ = linesPerFrame;
                     else if (value < 0)
                         sampleLine_ = 0;
                     else
@@ -959,6 +959,9 @@ namespace WasatchNET
             }
 
         }
+
+        public int linesPerFrame = 200;
+
         int sampleLine_ = 100;
 
         internal override bool open()
@@ -970,7 +973,7 @@ namespace WasatchNET
                 if (openOk)
                 {
                     OctUsb.SetDelayAdc(3);
-                    OctUsb.SetLinesPerFrame(200);
+                    OctUsb.SetLinesPerFrame(linesPerFrame);
                     
                     //
                     // This discrepency probably seems strange but it exists for a reason.
@@ -1055,6 +1058,8 @@ namespace WasatchNET
 
                 FrameProcess.Wait();
 
+                eeprom.write();
+
                 bool closeOk = OctUsb.CloseDevice();
                 if (closeOk)
                     commsOpen = false;
@@ -1091,7 +1096,7 @@ namespace WasatchNET
                 if (RawPixelData != null)
                 {
                     for (int i = 0; i < pixels; ++i)
-                        data[i] = RawPixelData[i + (sampleLine_ * 2048)];
+                        data[i] = RawPixelData[i + (sampleLine_ * 1024)];
                 }
             }
             return data;  
@@ -1099,8 +1104,23 @@ namespace WasatchNET
 
         public override ushort[] getFrame()
         {
-            lock(frameLock)
-                return lastFrame;
+            lock (frameLock)
+            {
+                ushort[] cutFrame = new ushort[lastFrame.Length / 2];
+                for (int i = 0; i < linesPerFrame; ++i)
+                {
+                    for (int j = 0; j < 1024; ++j)
+                    {
+                        
+                        if (j < 5)
+                            cutFrame[j + i * 1024] = (ushort)(lastFrame[5 + i * 2048] + j);
+                        else
+                            cutFrame[j + i * 1024] = lastFrame[j + i * 2048];
+                    }
+                }
+
+                return cutFrame;
+            }
         }
 
         public override string serialNumber
