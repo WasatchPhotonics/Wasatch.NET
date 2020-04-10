@@ -1032,8 +1032,9 @@ namespace WasatchNET
             while (!CT.IsCancellationRequested)
             {
                 lock (acquisitionLock)
+                {
                     RawPixelData = OctUsb.CaptureBitMap(iFramesTransmitted, true, firstFrame, ref readError);
-
+                }
                 if (readError == false)
                 {
                     lock (frameLock)
@@ -1053,16 +1054,17 @@ namespace WasatchNET
         {
             if (commsOpen)
             {
-                lock (acquisitionLock)
-                    _cancellationTokenSource.Cancel();
+                _cancellationTokenSource.Cancel();
 
                 FrameProcess.Wait();
+
 
                 eeprom.write();
 
                 bool closeOk = OctUsb.CloseDevice();
                 if (closeOk)
                     commsOpen = false;
+                
             }
         }
 
