@@ -1571,7 +1571,7 @@ namespace WasatchNET
 
                 if (!readOk)
                 {
-                    serialNumber = Encoding.UTF8.GetString(buffer, 0, 16);
+                    serialNumber = ParseData.toString(buffer, 0, 16);
 
                     wavecalCoeffs[0] = ParseData.toFloat(buffer, 16);
                     wavecalCoeffs[1] = ParseData.toFloat(buffer, 20);
