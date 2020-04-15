@@ -29,29 +29,30 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea10 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series10 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea11 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series11 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea12 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series12 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea13 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series13 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea14 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series14 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea15 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series15 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea16 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series16 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea17 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series17 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea18 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series18 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea5 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series5 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea6 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series6 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea7 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series7 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea8 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series8 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea9 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series9 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerControlsVsGraphs = new System.Windows.Forms.SplitContainer();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.groupBoxSelected = new System.Windows.Forms.GroupBox();
+            this.buttonClearDarkOne = new System.Windows.Forms.Button();
             this.buttonTakeDarkOne = new System.Windows.Forms.Button();
             this.checkBoxTriggerEnableOne = new System.Windows.Forms.CheckBox();
             this.label1 = new System.Windows.Forms.Label();
@@ -61,6 +62,8 @@
             this.buttonOptimizeOne = new System.Windows.Forms.Button();
             this.buttonAcquireOne = new System.Windows.Forms.Button();
             this.groupBoxSystem = new System.Windows.Forms.GroupBox();
+            this.checkBoxVerbose = new System.Windows.Forms.CheckBox();
+            this.buttonClearDark = new System.Windows.Forms.Button();
             this.buttonTakeDark = new System.Windows.Forms.Button();
             this.checkBoxFanEnable = new System.Windows.Forms.CheckBox();
             this.checkBoxTriggerEnableAll = new System.Windows.Forms.CheckBox();
@@ -110,9 +113,6 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.buttonClearDarkOne = new System.Windows.Forms.Button();
-            this.buttonClearDark = new System.Windows.Forms.Button();
-            this.checkBoxVerbose = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -248,6 +248,18 @@
             this.groupBoxSelected.TabStop = false;
             this.groupBoxSelected.Text = "Selected Spectrometer";
             // 
+            // buttonClearDarkOne
+            // 
+            this.buttonClearDarkOne.Location = new System.Drawing.Point(108, 84);
+            this.buttonClearDarkOne.Name = "buttonClearDarkOne";
+            this.buttonClearDarkOne.Size = new System.Drawing.Size(75, 23);
+            this.buttonClearDarkOne.TabIndex = 8;
+            this.buttonClearDarkOne.Text = "Clear Dark";
+            this.toolTip1.SetToolTip(this.buttonClearDarkOne, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
+        " triggering to previous state");
+            this.buttonClearDarkOne.UseVisualStyleBackColor = true;
+            this.buttonClearDarkOne.Click += new System.EventHandler(this.buttonClearDarkOne_Click);
+            // 
             // buttonTakeDarkOne
             // 
             this.buttonTakeDarkOne.Location = new System.Drawing.Point(108, 55);
@@ -346,6 +358,29 @@
             this.groupBoxSystem.TabIndex = 0;
             this.groupBoxSystem.TabStop = false;
             this.groupBoxSystem.Text = "System";
+            // 
+            // checkBoxVerbose
+            // 
+            this.checkBoxVerbose.AutoSize = true;
+            this.checkBoxVerbose.Location = new System.Drawing.Point(113, 23);
+            this.checkBoxVerbose.Name = "checkBoxVerbose";
+            this.checkBoxVerbose.Size = new System.Drawing.Size(65, 17);
+            this.checkBoxVerbose.TabIndex = 10;
+            this.checkBoxVerbose.Text = "Verbose";
+            this.checkBoxVerbose.UseVisualStyleBackColor = true;
+            this.checkBoxVerbose.CheckedChanged += new System.EventHandler(this.checkBoxVerbose_CheckedChanged);
+            // 
+            // buttonClearDark
+            // 
+            this.buttonClearDark.Location = new System.Drawing.Point(108, 100);
+            this.buttonClearDark.Name = "buttonClearDark";
+            this.buttonClearDark.Size = new System.Drawing.Size(75, 23);
+            this.buttonClearDark.TabIndex = 9;
+            this.buttonClearDark.Text = "Clear Dark";
+            this.toolTip1.SetToolTip(this.buttonClearDark, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
+        " triggering to previous state");
+            this.buttonClearDark.UseVisualStyleBackColor = true;
+            this.buttonClearDark.Click += new System.EventHandler(this.buttonClearDark_Click);
             // 
             // buttonTakeDark
             // 
@@ -512,15 +547,15 @@
             // 
             // chart1
             // 
-            chartArea10.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea10);
+            chartArea1.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea1);
             this.chart1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart1.Location = new System.Drawing.Point(0, 0);
             this.chart1.Name = "chart1";
-            series10.ChartArea = "ChartArea1";
-            series10.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series10.Name = "Series1";
-            this.chart1.Series.Add(series10);
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series1.Name = "Series1";
+            this.chart1.Series.Add(series1);
             this.chart1.Size = new System.Drawing.Size(215, 156);
             this.chart1.TabIndex = 3;
             this.chart1.Text = "chart1";
@@ -571,15 +606,15 @@
             // 
             // chart2
             // 
-            chartArea11.Name = "ChartArea1";
-            this.chart2.ChartAreas.Add(chartArea11);
+            chartArea2.Name = "ChartArea1";
+            this.chart2.ChartAreas.Add(chartArea2);
             this.chart2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart2.Location = new System.Drawing.Point(0, 0);
             this.chart2.Name = "chart2";
-            series11.ChartArea = "ChartArea1";
-            series11.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series11.Name = "Series1";
-            this.chart2.Series.Add(series11);
+            series2.ChartArea = "ChartArea1";
+            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series2.Name = "Series1";
+            this.chart2.Series.Add(series2);
             this.chart2.Size = new System.Drawing.Size(215, 156);
             this.chart2.TabIndex = 3;
             this.chart2.Text = "chart2";
@@ -630,15 +665,15 @@
             // 
             // chart3
             // 
-            chartArea12.Name = "ChartArea1";
-            this.chart3.ChartAreas.Add(chartArea12);
+            chartArea3.Name = "ChartArea1";
+            this.chart3.ChartAreas.Add(chartArea3);
             this.chart3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart3.Location = new System.Drawing.Point(0, 0);
             this.chart3.Name = "chart3";
-            series12.ChartArea = "ChartArea1";
-            series12.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series12.Name = "Series1";
-            this.chart3.Series.Add(series12);
+            series3.ChartArea = "ChartArea1";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series3.Name = "Series1";
+            this.chart3.Series.Add(series3);
             this.chart3.Size = new System.Drawing.Size(215, 156);
             this.chart3.TabIndex = 3;
             this.chart3.Text = "chart3";
@@ -689,15 +724,15 @@
             // 
             // chart4
             // 
-            chartArea13.Name = "ChartArea1";
-            this.chart4.ChartAreas.Add(chartArea13);
+            chartArea4.Name = "ChartArea1";
+            this.chart4.ChartAreas.Add(chartArea4);
             this.chart4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart4.Location = new System.Drawing.Point(0, 0);
             this.chart4.Name = "chart4";
-            series13.ChartArea = "ChartArea1";
-            series13.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series13.Name = "Series1";
-            this.chart4.Series.Add(series13);
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series4.Name = "Series1";
+            this.chart4.Series.Add(series4);
             this.chart4.Size = new System.Drawing.Size(215, 156);
             this.chart4.TabIndex = 3;
             this.chart4.Text = "chart4";
@@ -748,15 +783,15 @@
             // 
             // chart5
             // 
-            chartArea14.Name = "ChartArea1";
-            this.chart5.ChartAreas.Add(chartArea14);
+            chartArea5.Name = "ChartArea1";
+            this.chart5.ChartAreas.Add(chartArea5);
             this.chart5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart5.Location = new System.Drawing.Point(0, 0);
             this.chart5.Name = "chart5";
-            series14.ChartArea = "ChartArea1";
-            series14.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series14.Name = "Series1";
-            this.chart5.Series.Add(series14);
+            series5.ChartArea = "ChartArea1";
+            series5.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series5.Name = "Series1";
+            this.chart5.Series.Add(series5);
             this.chart5.Size = new System.Drawing.Size(215, 157);
             this.chart5.TabIndex = 3;
             this.chart5.Text = "chart5";
@@ -807,15 +842,15 @@
             // 
             // chart6
             // 
-            chartArea15.Name = "ChartArea1";
-            this.chart6.ChartAreas.Add(chartArea15);
+            chartArea6.Name = "ChartArea1";
+            this.chart6.ChartAreas.Add(chartArea6);
             this.chart6.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart6.Location = new System.Drawing.Point(0, 0);
             this.chart6.Name = "chart6";
-            series15.ChartArea = "ChartArea1";
-            series15.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series15.Name = "Series1";
-            this.chart6.Series.Add(series15);
+            series6.ChartArea = "ChartArea1";
+            series6.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series6.Name = "Series1";
+            this.chart6.Series.Add(series6);
             this.chart6.Size = new System.Drawing.Size(215, 157);
             this.chart6.TabIndex = 3;
             this.chart6.Text = "chart6";
@@ -866,15 +901,15 @@
             // 
             // chart7
             // 
-            chartArea16.Name = "ChartArea1";
-            this.chart7.ChartAreas.Add(chartArea16);
+            chartArea7.Name = "ChartArea1";
+            this.chart7.ChartAreas.Add(chartArea7);
             this.chart7.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart7.Location = new System.Drawing.Point(0, 0);
             this.chart7.Name = "chart7";
-            series16.ChartArea = "ChartArea1";
-            series16.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series16.Name = "Series1";
-            this.chart7.Series.Add(series16);
+            series7.ChartArea = "ChartArea1";
+            series7.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series7.Name = "Series1";
+            this.chart7.Series.Add(series7);
             this.chart7.Size = new System.Drawing.Size(215, 157);
             this.chart7.TabIndex = 3;
             this.chart7.Text = "chart7";
@@ -925,15 +960,15 @@
             // 
             // chart8
             // 
-            chartArea17.Name = "ChartArea1";
-            this.chart8.ChartAreas.Add(chartArea17);
+            chartArea8.Name = "ChartArea1";
+            this.chart8.ChartAreas.Add(chartArea8);
             this.chart8.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart8.Location = new System.Drawing.Point(0, 0);
             this.chart8.Name = "chart8";
-            series17.ChartArea = "ChartArea1";
-            series17.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series17.Name = "Series1";
-            this.chart8.Series.Add(series17);
+            series8.ChartArea = "ChartArea1";
+            series8.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series8.Name = "Series1";
+            this.chart8.Series.Add(series8);
             this.chart8.Size = new System.Drawing.Size(215, 157);
             this.chart8.TabIndex = 3;
             this.chart8.Text = "chart8";
@@ -975,18 +1010,18 @@
             // 
             // chartAll
             // 
-            chartArea18.Name = "ChartArea1";
-            this.chartAll.ChartAreas.Add(chartArea18);
+            chartArea9.Name = "ChartArea1";
+            this.chartAll.ChartAreas.Add(chartArea9);
             this.chartAll.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend2.Name = "Legend1";
-            this.chartAll.Legends.Add(legend2);
+            legend1.Name = "Legend1";
+            this.chartAll.Legends.Add(legend1);
             this.chartAll.Location = new System.Drawing.Point(3, 16);
             this.chartAll.Name = "chartAll";
-            series18.ChartArea = "ChartArea1";
-            series18.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series18.Legend = "Legend1";
-            series18.Name = "Series1";
-            this.chartAll.Series.Add(series18);
+            series9.ChartArea = "ChartArea1";
+            series9.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series9.Legend = "Legend1";
+            series9.Name = "Series1";
+            this.chartAll.Series.Add(series9);
             this.chartAll.Size = new System.Drawing.Size(908, 425);
             this.chartAll.TabIndex = 0;
             this.chartAll.Text = "chart9";
@@ -1011,41 +1046,6 @@
             this.textBoxEventLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.textBoxEventLog.Size = new System.Drawing.Size(1192, 77);
             this.textBoxEventLog.TabIndex = 0;
-            // 
-            // buttonClearDarkOne
-            // 
-            this.buttonClearDarkOne.Location = new System.Drawing.Point(108, 84);
-            this.buttonClearDarkOne.Name = "buttonClearDarkOne";
-            this.buttonClearDarkOne.Size = new System.Drawing.Size(75, 23);
-            this.buttonClearDarkOne.TabIndex = 8;
-            this.buttonClearDarkOne.Text = "Clear Dark";
-            this.toolTip1.SetToolTip(this.buttonClearDarkOne, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
-        " triggering to previous state");
-            this.buttonClearDarkOne.UseVisualStyleBackColor = true;
-            this.buttonClearDarkOne.Click += new System.EventHandler(this.buttonClearDarkOne_Click);
-            // 
-            // buttonClearDark
-            // 
-            this.buttonClearDark.Location = new System.Drawing.Point(108, 100);
-            this.buttonClearDark.Name = "buttonClearDark";
-            this.buttonClearDark.Size = new System.Drawing.Size(75, 23);
-            this.buttonClearDark.TabIndex = 9;
-            this.buttonClearDark.Text = "Clear Dark";
-            this.toolTip1.SetToolTip(this.buttonClearDark, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
-        " triggering to previous state");
-            this.buttonClearDark.UseVisualStyleBackColor = true;
-            this.buttonClearDark.Click += new System.EventHandler(this.buttonClearDark_Click);
-            // 
-            // checkBoxVerbose
-            // 
-            this.checkBoxVerbose.AutoSize = true;
-            this.checkBoxVerbose.Location = new System.Drawing.Point(113, 23);
-            this.checkBoxVerbose.Name = "checkBoxVerbose";
-            this.checkBoxVerbose.Size = new System.Drawing.Size(65, 17);
-            this.checkBoxVerbose.TabIndex = 10;
-            this.checkBoxVerbose.Text = "Verbose";
-            this.checkBoxVerbose.UseVisualStyleBackColor = true;
-            this.checkBoxVerbose.CheckedChanged += new System.EventHandler(this.checkBoxVerbose_CheckedChanged);
             // 
             // Form1
             // 

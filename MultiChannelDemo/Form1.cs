@@ -115,7 +115,8 @@ namespace MultiChannelDemo
         async void buttonAcquireAll_Click(object sender, EventArgs e)
         {
             enableControls(false);
-            await Task.Run(() => processSpectra(wrapper.getSpectra()));
+            var spectra = await wrapper.getSpectra();
+            processSpectra(spectra);
             enableControls(true);
         }
 
@@ -123,7 +124,8 @@ namespace MultiChannelDemo
         async void buttonTakeDark_Click(object sender, EventArgs e)
         {
             enableControls(false);
-            await Task.Run(() => processSpectra(wrapper.takeDark()));
+            var spectra = await wrapper.takeDark();
+            processSpectra(spectra);
             enableControls(true);
         }
 

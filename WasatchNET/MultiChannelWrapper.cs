@@ -308,12 +308,12 @@ namespace WasatchNET
         /// HW trigger pulse.
         /// </summary>
         /// <todo>test w/ARM spectrometers</todo>
-        public async void startAcquisition()
+    public async Task<bool> startAcquisition()
         {
             if (specTrigger is null)
             {
                 logger.error("startAcquisition: no spectrometer configured with trigger control");
-                return;
+                return false;
             }
 
             logger.debug("triggerPulse: high");
@@ -324,6 +324,8 @@ namespace WasatchNET
 
             logger.debug("triggerPulse: low");
             specTrigger.laserEnabled = false;
+
+            return true;
         }
 
         /// <summary>
@@ -340,10 +342,16 @@ namespace WasatchNET
         /// total acquisition time is close to minimal.
         /// </remarks>
         /// <param name="sendTrigger">whether to automatically raise the HW trigger (default true)</param>
-        public List<ChannelSpectrum> getSpectra(bool sendTrigger=true)
+        public async Task<List<ChannelSpectrum>> getSpectra(bool sendTrigger=true)
         {
             if (sendTrigger)
-                startAcquisition();
+            {
+                if (!await startAcquisition())
+                {
+                    logger.error("Unable to start acquisition");
+                    return null;
+                }
+            }
 
             List<ChannelSpectrum> results = new List<ChannelSpectrum>();
 
@@ -369,10 +377,10 @@ namespace WasatchNET
         /// until clearDark() is called.
         /// </remarks>
         /// <returns>The darks collected (also stored in Spectrometer)</returns>
-        public List<ChannelSpectrum> takeDark(bool sendTrigger=true)
+        public async Task<List<ChannelSpectrum>> takeDark(bool sendTrigger=true)
         {
             clearDark();
-            List<ChannelSpectrum> results = getSpectra(sendTrigger);
+            List<ChannelSpectrum> results = await getSpectra(sendTrigger);
             foreach (var cs in results)
                 specByPos[cs.pos].dark = cs.intensities;
             return results;
