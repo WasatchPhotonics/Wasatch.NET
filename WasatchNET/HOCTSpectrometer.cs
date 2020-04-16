@@ -960,7 +960,7 @@ namespace WasatchNET
 
         }
 
-        public int linesPerFrame = 200;
+        public int linesPerFrame = 500;
 
         int sampleLine_ = 100;
 
