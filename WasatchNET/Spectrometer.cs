@@ -2119,28 +2119,28 @@ namespace WasatchNET
                 try
                 {
                     int bytesToRead = chunk_size - bytesReadThisEndpoint;
-                    logger.debug("readSubspectrum: attempting to read {0} bytes of spectrum from endpoint {1} with timeout {2}ms", bytesToRead, spectralReader, timeoutMS);
+                    logger.debug("readImage: attempting to read {0} bytes of spectrum from endpoint {1} with timeout {2}ms", bytesToRead, spectralReader, timeoutMS);
                     err = spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, chunk_size, timeoutMS, out bytesRead);
-                    logger.debug("readSubspectrum: read {0} bytes of spectrum from endpoint {1} (ErrorCode {2})", bytesRead, spectralReader, err.ToString());
+                    logger.debug("readImage: read {0} bytes of spectrum from endpoint {1} (ErrorCode {2})", bytesRead, spectralReader, err.ToString());
                 }
                 catch (Exception ex)
                 {
-                    logger.error("readSubspectrum: caught exception reading endpoint: {0}", ex.Message);
-                    return null; //  break;  // should be return null;
+                    logger.error("readImage: caught exception reading endpoint: {0}", ex.Message);
+                    return null; 
                 }
 
                 bytesReadThisEndpoint += bytesRead;
-                logger.debug("readSubspectrum: bytesReadThisEndpoint now {0}", bytesReadThisEndpoint);
+                logger.debug("readImage: bytesReadThisEndpoint now {0}", bytesReadThisEndpoint);
 
                 if (bytesReadThisEndpoint == 0 && !triggerWasExternal)
                 {
-                    logger.error("readSpectrum: read nothing (timeout?)");
-                    return null; //  break; // should be return null
+                    logger.error("readImage: read nothing (timeout?)");
+                    return null; 
                 }
 
                 if (bytesReadThisEndpoint > bytesPerEndpoint)
                 {
-                    logger.error("readSubspectrum: read too many bytes on endpoint {0} (read {1} of expected {2})", spectralReader, bytesReadThisEndpoint, bytesPerEndpoint);
+                    logger.error("readImage: read too many bytes on endpoint {0} (read {1} of expected {2})", spectralReader, bytesReadThisEndpoint, bytesPerEndpoint);
                     break;
                 }
 
@@ -2149,14 +2149,14 @@ namespace WasatchNET
                     // need to do this so software can send an ACQUIRE command, else we'll
                     // loop forever
                     logger.debug("triggering switched from external to internal...resetting");
-                    return null; // break; // should probably be return null
+                    return null; 
                 }
 
                 if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
                 {
                     // we don't know how long we'll have to wait for the trigger, so just loop and hope
                     // (should probably only catch Timeout exceptions...)
-                    logger.debug("readSubspectrum: still waiting for external trigger");
+                    logger.debug("readImage: still waiting for external trigger");
                 }
             }
 
@@ -2169,7 +2169,7 @@ namespace WasatchNET
             for (int i = 0; i < pixelsPerEndpoint; i++)
                 subspectrum[i] = (uint)(subspectrumBytes[i * 2] | (subspectrumBytes[i * 2 + 1] << 8));  // LSB-MSB
 
-            logger.debug("readSubspectrum: returning subspectrum");
+            logger.debug("readImage: returning subspectrum");
             return subspectrum;
         }
 
@@ -2213,28 +2213,28 @@ namespace WasatchNET
                 try
                 {
                     int bytesToRead = chunk_size - bytesReadThisEndpoint;
-                    logger.debug("readSubspectrum: attempting to read {0} bytes of spectrum from endpoint {1} with timeout {2}ms", bytesToRead, spectralReader, timeoutMS);
+                    logger.debug("readSubspectrumStroker: attempting to read {0} bytes of spectrum from endpoint {1} with timeout {2}ms", bytesToRead, spectralReader, timeoutMS);
                     err = spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, chunk_size, timeoutMS, out bytesRead);
-                    logger.debug("readSubspectrum: read {0} bytes of spectrum from endpoint {1} (ErrorCode {2})", bytesRead, spectralReader, err.ToString());
+                    logger.debug("readSubspectrumStroker: read {0} bytes of spectrum from endpoint {1} (ErrorCode {2})", bytesRead, spectralReader, err.ToString());
                 }
                 catch (Exception ex)
                 {
-                    logger.error("readSubspectrum: caught exception reading endpoint: {0}", ex.Message);
+                    logger.error("readSubspectrumStroker: caught exception reading endpoint: {0}", ex.Message);
                     return null; //  break;  // should be return null;
                 }
 
                 bytesReadThisEndpoint += bytesRead;
-                logger.debug("readSubspectrum: bytesReadThisEndpoint now {0}", bytesReadThisEndpoint);
+                logger.debug("readSubspectrumStroker: bytesReadThisEndpoint now {0}", bytesReadThisEndpoint);
 
                 if (bytesReadThisEndpoint == 0 && !triggerWasExternal)
                 {
-                    logger.error("readSpectrum: read nothing (timeout?)");
-                    return null; //  break; // should be return null
+                    logger.error("readSubspectrumStroker: read nothing (timeout?)");
+                    return null;
                 }
 
                 if (bytesReadThisEndpoint > bytesPerEndpoint)
                 {
-                    logger.error("readSubspectrum: read too many bytes on endpoint {0} (read {1} of expected {2})", spectralReader, bytesReadThisEndpoint, bytesPerEndpoint);
+                    logger.error("readSubspectrumStroker: read too many bytes on endpoint {0} (read {1} of expected {2})", spectralReader, bytesReadThisEndpoint, bytesPerEndpoint);
                     break;
                 }
 
@@ -2242,15 +2242,15 @@ namespace WasatchNET
                 {
                     // need to do this so software can send an ACQUIRE command, else we'll
                     // loop forever
-                    logger.debug("triggering switched from external to internal...resetting");
-                    return null; // break; // should probably be return null
+                    logger.debug("readSubspectrumStroker: triggering switched from external to internal...resetting");
+                    return null; 
                 }
 
                 if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
                 {
                     // we don't know how long we'll have to wait for the trigger, so just loop and hope
                     // (should probably only catch Timeout exceptions...)
-                    logger.debug("readSubspectrum: still waiting for external trigger");
+                    logger.debug("readSubspectrumStroker: still waiting for external trigger");
                 }
             }
 
@@ -2263,7 +2263,7 @@ namespace WasatchNET
             for (int i = 0; i < pixelsPerEndpoint; i++)
                 subspectrum[i] = (uint)(subspectrumBytes[i * 2] | (subspectrumBytes[i * 2 + 1] << 8));  // LSB-MSB
 
-            logger.debug("readSubspectrum: returning subspectrum");
+            logger.debug("readSubspectrumStroker: returning subspectrum");
             return subspectrum;
         }
 
@@ -2304,7 +2304,7 @@ namespace WasatchNET
                 catch (Exception ex)
                 {
                     logger.error("readSubspectrum: caught exception reading endpoint: {0}", ex.Message);
-                    return null; //  break;  // should be return null;
+                    return null; 
                 }
 
                 bytesReadThisEndpoint += bytesRead;
@@ -2312,8 +2312,8 @@ namespace WasatchNET
 
                 if (bytesReadThisEndpoint == 0 && !triggerWasExternal)
                 {
-                    logger.error("readSpectrum: read nothing (timeout?)");
-                    return null; //  break; // should be return null
+                    logger.error("readSubspectrum: read nothing (timeout?)");
+                    return null; 
                 }
 
                 if (bytesReadThisEndpoint > bytesPerEndpoint)
@@ -2327,7 +2327,7 @@ namespace WasatchNET
                     // need to do this so software can send an ACQUIRE command, else we'll
                     // loop forever
                     logger.debug("triggering switched from external to internal...resetting");
-                    return null; // break; // should probably be return null
+                    return null; 
                 }
 
                 if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
