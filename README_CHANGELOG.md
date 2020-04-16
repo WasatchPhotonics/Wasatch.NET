@@ -1,6 +1,7 @@
 # Wasatch.NET Changelog
 - 2020-04-02 2.1.20
-    - MultiChannel testing
+    - MultiChannelWrapper: made acquisition trigger synchronous
+    - restored executable bit on scripts
 - 2020-04-02 2.1.19
     - internal build for WPSC 1.9.15
 	- initial support for HOCT units
