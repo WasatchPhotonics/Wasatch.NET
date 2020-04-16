@@ -1951,7 +1951,7 @@ namespace WasatchNET
                 wavecalCoeffs[4] = 0;
             }
 
-            if (minIntegrationTimeMS < 1 || minIntegrationTimeMS == 65535)
+            if (minIntegrationTimeMS < 1 || minIntegrationTimeMS > 1000)
             {
                 logger.error("invalid minIntegrationTimeMS found ({0}), defaulting to 1", minIntegrationTimeMS);
                 minIntegrationTimeMS = 1;
