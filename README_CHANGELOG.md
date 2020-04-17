@@ -1,5 +1,11 @@
 # Wasatch.NET Changelog
-- 2020-04-02 2.1.20
+- 2020-04-17 2.1.21
+    - WasatchNET
+        - Spectrometer.reference convenience array
+    - MultiChannelWrapper/Demo
+        - added reflectance
+        - added save
+- 2020-04-16 2.1.20
     - MultiChannelWrapper: made acquisition trigger synchronous
     - restored executable bit on scripts
 - 2020-04-02 2.1.19
