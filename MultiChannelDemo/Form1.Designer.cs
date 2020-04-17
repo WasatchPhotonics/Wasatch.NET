@@ -62,6 +62,9 @@
             this.buttonOptimizeOne = new System.Windows.Forms.Button();
             this.buttonAcquireOne = new System.Windows.Forms.Button();
             this.groupBoxSystem = new System.Windows.Forms.GroupBox();
+            this.checkBoxReflectanceEnabled = new System.Windows.Forms.CheckBox();
+            this.buttonClearRefs = new System.Windows.Forms.Button();
+            this.buttonTakeRefs = new System.Windows.Forms.Button();
             this.checkBoxVerbose = new System.Windows.Forms.CheckBox();
             this.buttonClearDark = new System.Windows.Forms.Button();
             this.buttonTakeDark = new System.Windows.Forms.Button();
@@ -113,6 +116,9 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.buttonSave = new System.Windows.Forms.Button();
+            this.checkBoxInterpolate = new System.Windows.Forms.CheckBox();
+            this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -241,7 +247,7 @@
             this.groupBoxSelected.Controls.Add(this.numericUpDownIntegrationTimeMSOne);
             this.groupBoxSelected.Controls.Add(this.buttonOptimizeOne);
             this.groupBoxSelected.Controls.Add(this.buttonAcquireOne);
-            this.groupBoxSelected.Location = new System.Drawing.Point(6, 190);
+            this.groupBoxSelected.Location = new System.Drawing.Point(6, 278);
             this.groupBoxSelected.Name = "groupBoxSelected";
             this.groupBoxSelected.Size = new System.Drawing.Size(254, 182);
             this.groupBoxSelected.TabIndex = 1;
@@ -250,7 +256,7 @@
             // 
             // buttonClearDarkOne
             // 
-            this.buttonClearDarkOne.Location = new System.Drawing.Point(108, 84);
+            this.buttonClearDarkOne.Location = new System.Drawing.Point(113, 84);
             this.buttonClearDarkOne.Name = "buttonClearDarkOne";
             this.buttonClearDarkOne.Size = new System.Drawing.Size(75, 23);
             this.buttonClearDarkOne.TabIndex = 8;
@@ -262,7 +268,7 @@
             // 
             // buttonTakeDarkOne
             // 
-            this.buttonTakeDarkOne.Location = new System.Drawing.Point(108, 55);
+            this.buttonTakeDarkOne.Location = new System.Drawing.Point(6, 84);
             this.buttonTakeDarkOne.Name = "buttonTakeDarkOne";
             this.buttonTakeDarkOne.Size = new System.Drawing.Size(75, 23);
             this.buttonTakeDarkOne.TabIndex = 7;
@@ -321,7 +327,7 @@
             // 
             // buttonOptimizeOne
             // 
-            this.buttonOptimizeOne.Location = new System.Drawing.Point(6, 84);
+            this.buttonOptimizeOne.Location = new System.Drawing.Point(113, 55);
             this.buttonOptimizeOne.Name = "buttonOptimizeOne";
             this.buttonOptimizeOne.Size = new System.Drawing.Size(75, 23);
             this.buttonOptimizeOne.TabIndex = 1;
@@ -343,6 +349,11 @@
             // 
             // groupBoxSystem
             // 
+            this.groupBoxSystem.Controls.Add(this.checkBoxInterpolate);
+            this.groupBoxSystem.Controls.Add(this.buttonSave);
+            this.groupBoxSystem.Controls.Add(this.checkBoxReflectanceEnabled);
+            this.groupBoxSystem.Controls.Add(this.buttonClearRefs);
+            this.groupBoxSystem.Controls.Add(this.buttonTakeRefs);
             this.groupBoxSystem.Controls.Add(this.checkBoxVerbose);
             this.groupBoxSystem.Controls.Add(this.buttonClearDark);
             this.groupBoxSystem.Controls.Add(this.buttonTakeDark);
@@ -354,10 +365,46 @@
             this.groupBoxSystem.Controls.Add(this.buttonInit);
             this.groupBoxSystem.Location = new System.Drawing.Point(6, 19);
             this.groupBoxSystem.Name = "groupBoxSystem";
-            this.groupBoxSystem.Size = new System.Drawing.Size(254, 165);
+            this.groupBoxSystem.Size = new System.Drawing.Size(254, 253);
             this.groupBoxSystem.TabIndex = 0;
             this.groupBoxSystem.TabStop = false;
             this.groupBoxSystem.Text = "System";
+            // 
+            // checkBoxReflectanceEnabled
+            // 
+            this.checkBoxReflectanceEnabled.AutoSize = true;
+            this.checkBoxReflectanceEnabled.Enabled = false;
+            this.checkBoxReflectanceEnabled.Location = new System.Drawing.Point(6, 160);
+            this.checkBoxReflectanceEnabled.Name = "checkBoxReflectanceEnabled";
+            this.checkBoxReflectanceEnabled.Size = new System.Drawing.Size(84, 17);
+            this.checkBoxReflectanceEnabled.TabIndex = 13;
+            this.checkBoxReflectanceEnabled.Text = "Reflectance";
+            this.checkBoxReflectanceEnabled.UseVisualStyleBackColor = true;
+            this.checkBoxReflectanceEnabled.CheckedChanged += new System.EventHandler(this.checkBoxReflectanceEnabled_CheckedChanged);
+            // 
+            // buttonClearRefs
+            // 
+            this.buttonClearRefs.Location = new System.Drawing.Point(113, 129);
+            this.buttonClearRefs.Name = "buttonClearRefs";
+            this.buttonClearRefs.Size = new System.Drawing.Size(75, 23);
+            this.buttonClearRefs.TabIndex = 12;
+            this.buttonClearRefs.Text = "Clear Refs";
+            this.toolTip1.SetToolTip(this.buttonClearRefs, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
+        " triggering to previous state");
+            this.buttonClearRefs.UseVisualStyleBackColor = true;
+            this.buttonClearRefs.Click += new System.EventHandler(this.buttonClearRefs_Click);
+            // 
+            // buttonTakeRefs
+            // 
+            this.buttonTakeRefs.Enabled = false;
+            this.buttonTakeRefs.Location = new System.Drawing.Point(6, 129);
+            this.buttonTakeRefs.Name = "buttonTakeRefs";
+            this.buttonTakeRefs.Size = new System.Drawing.Size(75, 23);
+            this.buttonTakeRefs.TabIndex = 11;
+            this.buttonTakeRefs.Text = "Take Refs";
+            this.toolTip1.SetToolTip(this.buttonTakeRefs, "Raise hardware trigger, then read all spectra");
+            this.buttonTakeRefs.UseVisualStyleBackColor = true;
+            this.buttonTakeRefs.Click += new System.EventHandler(this.buttonTakeRefs_Click);
             // 
             // checkBoxVerbose
             // 
@@ -372,11 +419,11 @@
             // 
             // buttonClearDark
             // 
-            this.buttonClearDark.Location = new System.Drawing.Point(108, 100);
+            this.buttonClearDark.Location = new System.Drawing.Point(113, 100);
             this.buttonClearDark.Name = "buttonClearDark";
             this.buttonClearDark.Size = new System.Drawing.Size(75, 23);
             this.buttonClearDark.TabIndex = 9;
-            this.buttonClearDark.Text = "Clear Dark";
+            this.buttonClearDark.Text = "Clear Darks";
             this.toolTip1.SetToolTip(this.buttonClearDark, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
         " triggering to previous state");
             this.buttonClearDark.UseVisualStyleBackColor = true;
@@ -384,11 +431,11 @@
             // 
             // buttonTakeDark
             // 
-            this.buttonTakeDark.Location = new System.Drawing.Point(108, 71);
+            this.buttonTakeDark.Location = new System.Drawing.Point(6, 100);
             this.buttonTakeDark.Name = "buttonTakeDark";
             this.buttonTakeDark.Size = new System.Drawing.Size(75, 23);
             this.buttonTakeDark.TabIndex = 8;
-            this.buttonTakeDark.Text = "Take Dark";
+            this.buttonTakeDark.Text = "Take Darks";
             this.toolTip1.SetToolTip(this.buttonTakeDark, "Raise hardware trigger, then read all spectra");
             this.buttonTakeDark.UseVisualStyleBackColor = true;
             this.buttonTakeDark.Click += new System.EventHandler(this.buttonTakeDark_Click);
@@ -418,9 +465,9 @@
             // 
             // buttonClearSelection
             // 
-            this.buttonClearSelection.Location = new System.Drawing.Point(6, 129);
+            this.buttonClearSelection.Location = new System.Drawing.Point(6, 212);
             this.buttonClearSelection.Name = "buttonClearSelection";
-            this.buttonClearSelection.Size = new System.Drawing.Size(177, 23);
+            this.buttonClearSelection.Size = new System.Drawing.Size(182, 23);
             this.buttonClearSelection.TabIndex = 5;
             this.buttonClearSelection.Text = "Clear Selection";
             this.buttonClearSelection.UseVisualStyleBackColor = true;
@@ -428,11 +475,11 @@
             // 
             // buttonOptimizeAll
             // 
-            this.buttonOptimizeAll.Location = new System.Drawing.Point(6, 100);
+            this.buttonOptimizeAll.Location = new System.Drawing.Point(113, 71);
             this.buttonOptimizeAll.Name = "buttonOptimizeAll";
             this.buttonOptimizeAll.Size = new System.Drawing.Size(75, 23);
             this.buttonOptimizeAll.TabIndex = 4;
-            this.buttonOptimizeAll.Text = "Optimize";
+            this.buttonOptimizeAll.Text = "Optimize All";
             this.buttonOptimizeAll.UseVisualStyleBackColor = true;
             this.buttonOptimizeAll.Click += new System.EventHandler(this.buttonOptimizeAll_Click);
             // 
@@ -442,7 +489,7 @@
             this.buttonAcquireAll.Name = "buttonAcquireAll";
             this.buttonAcquireAll.Size = new System.Drawing.Size(75, 23);
             this.buttonAcquireAll.TabIndex = 3;
-            this.buttonAcquireAll.Text = "Acquire";
+            this.buttonAcquireAll.Text = "Acquire All";
             this.toolTip1.SetToolTip(this.buttonAcquireAll, "Raise hardware trigger, then read all spectra");
             this.buttonAcquireAll.UseVisualStyleBackColor = true;
             this.buttonAcquireAll.Click += new System.EventHandler(this.buttonAcquireAll_Click);
@@ -1047,6 +1094,27 @@
             this.textBoxEventLog.Size = new System.Drawing.Size(1192, 77);
             this.textBoxEventLog.TabIndex = 0;
             // 
+            // buttonSave
+            // 
+            this.buttonSave.Location = new System.Drawing.Point(6, 183);
+            this.buttonSave.Name = "buttonSave";
+            this.buttonSave.Size = new System.Drawing.Size(182, 23);
+            this.buttonSave.TabIndex = 14;
+            this.buttonSave.Text = "Save All";
+            this.buttonSave.UseVisualStyleBackColor = true;
+            this.buttonSave.Click += new System.EventHandler(this.buttonSave_Click);
+            // 
+            // checkBoxInterpolate
+            // 
+            this.checkBoxInterpolate.AutoSize = true;
+            this.checkBoxInterpolate.Enabled = false;
+            this.checkBoxInterpolate.Location = new System.Drawing.Point(113, 160);
+            this.checkBoxInterpolate.Name = "checkBoxInterpolate";
+            this.checkBoxInterpolate.Size = new System.Drawing.Size(76, 17);
+            this.checkBoxInterpolate.TabIndex = 15;
+            this.checkBoxInterpolate.Text = "Interpolate";
+            this.checkBoxInterpolate.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1205,6 +1273,12 @@
         private System.Windows.Forms.Button buttonClearDarkOne;
         private System.Windows.Forms.Button buttonClearDark;
         private System.Windows.Forms.CheckBox checkBoxVerbose;
+        private System.Windows.Forms.CheckBox checkBoxReflectanceEnabled;
+        private System.Windows.Forms.Button buttonClearRefs;
+        private System.Windows.Forms.Button buttonTakeRefs;
+        private System.Windows.Forms.CheckBox checkBoxInterpolate;
+        private System.Windows.Forms.Button buttonSave;
+        private System.Windows.Forms.SaveFileDialog saveFileDialog;
     }
 }
 

@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
+using System.IO;
 using WasatchNET;
 
 namespace MultiChannelDemo
@@ -28,6 +29,10 @@ namespace MultiChannelDemo
         RadioButton[] radioButtons;
 
         Dictionary<int, Series> seriesAll = new Dictionary<int, Series>();
+
+        // whatever was last returned by "Acquire All", "Take Darks" or "Take References"
+        // (added so we'd have something to save)
+        List<ChannelSpectrum> lastSpectra;
 
         ////////////////////////////////////////////////////////////////////////
         // Lifecycle
@@ -111,12 +116,15 @@ namespace MultiChannelDemo
         // user clicked the "fan control" system checkbox
         void checkBoxFanEnable_CheckedChanged(object sender, EventArgs e) => wrapper.fanEnabled = checkBoxFanEnable.Checked;
 
+        // user clicked the "compute reflectance" system checkbox
+        private void checkBoxReflectanceEnabled_CheckedChanged(object sender, EventArgs e) => wrapper.reflectanceEnabled = checkBoxReflectanceEnabled.Checked;
+
         // user clicked the system-level "Acquire" button 
         async void buttonAcquireAll_Click(object sender, EventArgs e)
         {
             enableControls(false);
-            var spectra = await wrapper.getSpectra();
-            processSpectra(spectra);
+            lastSpectra = await wrapper.getSpectra();
+            processSpectra(lastSpectra);
             enableControls(true);
         }
 
@@ -124,12 +132,38 @@ namespace MultiChannelDemo
         async void buttonTakeDark_Click(object sender, EventArgs e)
         {
             enableControls(false);
-            var spectra = await wrapper.takeDark();
-            processSpectra(spectra);
+            lastSpectra = await wrapper.takeDark();
+            processSpectra(lastSpectra);
+
+            // only allow references after dark correction
+            buttonTakeRefs.Enabled = true;
+
             enableControls(true);
         }
 
-        private void buttonClearDark_Click(object sender, EventArgs e) => wrapper.clearDark();
+        private void buttonClearDark_Click(object sender, EventArgs e)
+        {
+            wrapper.clearDark();
+            buttonTakeRefs.Enabled = false;
+        }
+
+        async void buttonTakeRefs_Click(object sender, EventArgs e)
+        {
+            enableControls(false);
+            lastSpectra = await wrapper.takeReference();
+            processSpectra(lastSpectra);
+
+            // we have references, so can now compute reflectance
+            checkBoxReflectanceEnabled.Enabled = true;
+            enableControls(true);
+        }
+
+        private void buttonClearRefs_Click(object sender, EventArgs e)
+        {
+            wrapper.clearReference();
+            checkBoxReflectanceEnabled.Enabled = false;
+            checkBoxReflectanceEnabled.Checked = false;
+        }
 
         /// <summary>
         /// The user clicked the button to optimize integration time for all units.
@@ -382,7 +416,10 @@ namespace MultiChannelDemo
                 processSpectrum(cs);
         }
 
-        // do whatever we're gonna do with new spectra (save, dark-correct, ...)
+        // Do whatever we're gonna do with new spectra (save, dark-correct, ...).
+        // Since we encapsulated dark subtraction in WasatchNET.Spectrometer, and
+        // reflectance in MultiChannelWrapper, there's (deliberately) not a lot 
+        // to do here.
         void processSpectrum(ChannelSpectrum cs)
         {
             if (cs.intensities is null)
@@ -448,5 +485,41 @@ namespace MultiChannelDemo
             chartAll.BeginInvoke(new MethodInvoker(delegate { processSpectra(final); }));
         }
 
+        /// <summary>
+        /// Just write spectra in pixel space for now.  (Kludged-in as somehow I
+        /// didn't originally think this would be required.)
+        /// </summary>
+        /// <todo>
+        /// optionally interpolate on wavelength
+        /// </todo>
+        private void buttonSave_Click(object sender, EventArgs e)
+        {
+            if (lastSpectra is null)
+                return;
+
+            DialogResult result = saveFileDialog.ShowDialog();
+            if (result != DialogResult.OK)
+                return;
+
+            var pathname = saveFileDialog.FileName;
+            using (StreamWriter sw = new StreamWriter(pathname))
+            {
+                sw.Write("Pixel");
+                foreach (var cs in lastSpectra)
+                    sw.Write($", Pos {cs.pos}");
+                sw.WriteLine();
+
+                int pixels = lastSpectra[0].intensities.Length;
+                for (int i = 0; i < pixels; i++)
+                {
+                    sw.Write(i);
+                    foreach (var cs in lastSpectra)
+                        sw.Write($", {0:f2}", cs.intensities[i]);
+                    sw.WriteLine();
+                }
+            }
+
+            logger.info($"saved {pathname}");
+        }
     }
 }

@@ -72,6 +72,8 @@ namespace WasatchNET
         /// </summary>
         public SortedSet<int> positions { get; private set; } = new SortedSet<int>();
 
+        public bool reflectanceEnabled { get; set; }
+
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
@@ -136,8 +138,8 @@ namespace WasatchNET
                 var spec = driver.getSpectrometer(i);
                 var sn = spec.serialNumber;
 
-                logger.info("found {0} {1} with {2} pixels ({3:f2}, {4:f2})", 
-                    spec.model, sn, spec.pixels, spec.wavelengths[0], spec.wavelengths[spec.pixels-1]);
+                logger.info("found {0} {1} with {2} pixels ({3:f2}, {4:f2})",
+                    spec.model, sn, spec.pixels, spec.wavelengths[0], spec.wavelengths[spec.pixels - 1]);
 
                 ////////////////////////////////////////////////////////////////
                 // Parse EEPROM.userText
@@ -252,7 +254,7 @@ namespace WasatchNET
         /// </summary>
         public bool triggeringEnabled
         {
-            get => _triggeringEnabled; 
+            get => _triggeringEnabled;
             set
             {
                 foreach (var pair in specByPos)
@@ -300,7 +302,7 @@ namespace WasatchNET
         }
 
         ////////////////////////////////////////////////////////////////////////
-        // Acquisition
+        // Spectra
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
@@ -308,7 +310,7 @@ namespace WasatchNET
         /// HW trigger pulse.
         /// </summary>
         /// <todo>test w/ARM spectrometers</todo>
-    public async Task<bool> startAcquisition()
+        public async Task<bool> startAcquisition()
         {
             if (specTrigger is null)
             {
@@ -342,7 +344,7 @@ namespace WasatchNET
         /// total acquisition time is close to minimal.
         /// </remarks>
         /// <param name="sendTrigger">whether to automatically raise the HW trigger (default true)</param>
-        public async Task<List<ChannelSpectrum>> getSpectra(bool sendTrigger=true)
+        public async Task<List<ChannelSpectrum>> getSpectra(bool sendTrigger = true)
         {
             if (sendTrigger)
             {
@@ -353,7 +355,11 @@ namespace WasatchNET
                 }
             }
 
-            List<ChannelSpectrum> results = new List<ChannelSpectrum>();
+            // We'll want to return the ChannelSpectra in a sorted list by position
+            // for ease of debugging and deterministic behavior, but we'll be reading
+            // the spectra by integration time for speed, so temporarily store in a 
+            // dictionary.
+            SortedDictionary<int, ChannelSpectrum> temp = new SortedDictionary<int, ChannelSpectrum>();
 
             foreach (var spec in specByIntegrationTime())
             {
@@ -362,12 +368,45 @@ namespace WasatchNET
 
                 logger.info($"getting spectrum from pos {pos} {spec.serialNumber} ({spec.integrationTimeMS} ms)");
                 cs.intensities = spec.getSpectrum();
+                if (reflectanceEnabled)
+                    computeReflectance(spec, cs);
 
-                results.Add(cs);
+                temp[pos] = cs;
             }
+
+            // flatten the dictionary into a list to make things easy for LabVIEW et al
+            List<ChannelSpectrum> results = new List<ChannelSpectrum>();
+            foreach (var pair in temp)
+                results.Add(pair.Value);
+
             logger.debug($"returning {results.Count} spectra");
             return results;
         }
+
+        /// <summary>
+        /// Get a spectrum from one spectrometer.  Assumes HW triggering is disabled, or caller is providing.
+        /// </summary>
+        /// <param name="pos">spectrometer position to acquire</param>
+        /// <returns>measured spectrum</returns>
+        public ChannelSpectrum getSpectrum(int pos)
+        {
+            if (!specByPos.ContainsKey(pos))
+                return null;
+
+            Spectrometer spec = specByPos[pos];
+
+            ChannelSpectrum cs = new ChannelSpectrum(spec);
+            cs.intensities = spec.getSpectrum();
+
+            if (reflectanceEnabled)
+                computeReflectance(spec, cs);
+
+            return cs;
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Dark
+        ////////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Takes a spectrum from each spectrometer, and stores it internally as a new dark reference.
@@ -377,7 +416,7 @@ namespace WasatchNET
         /// until clearDark() is called.
         /// </remarks>
         /// <returns>The darks collected (also stored in Spectrometer)</returns>
-        public async Task<List<ChannelSpectrum>> takeDark(bool sendTrigger=true)
+        public async Task<List<ChannelSpectrum>> takeDark(bool sendTrigger = true)
         {
             clearDark();
             List<ChannelSpectrum> results = await getSpectra(sendTrigger);
@@ -395,21 +434,51 @@ namespace WasatchNET
                 pair.Value.dark = null;
         }
 
+        ////////////////////////////////////////////////////////////////////////
+        // Reference
+        ////////////////////////////////////////////////////////////////////////
+
         /// <summary>
-        /// Get a spectrum from one spectrometer.  Assumes HW triggering is disabled, or caller is providing.
+        /// Takes a spectrum from each spectrometer, and stores it internally as 
+        /// a new reference.
         /// </summary>
-        /// <param name="pos">spectrometer position to acquire</param>
-        /// <returns>measured spectrum</returns>
-        public ChannelSpectrum getSpectrum(int pos)
+        /// <returns>The collected references (also stored in Spectrometer)</returns>
+        public async Task<List<ChannelSpectrum>> takeReference(bool sendTrigger = true)
         {
-            if (!specByPos.ContainsKey(pos))
-                return null;
+            clearReference();
+            List<ChannelSpectrum> results = await getSpectra(sendTrigger);
+            foreach (var cs in results)
+                specByPos[cs.pos].reference = cs.intensities;
+            return results;
+        }
 
-            Spectrometer spec = specByPos[pos];
+        /// <summary>
+        /// Clears the stored reference from all spectrometers.
+        /// </summary>
+        public void clearReference()
+        {
+            foreach (var pair in specByPos)
+                pair.Value.reference = null;
+        }
 
-            ChannelSpectrum cs = new ChannelSpectrum(spec);
-            cs.intensities = spec.getSpectrum();
-            return cs;
+        ////////////////////////////////////////////////////////////////////////
+        // Post-Processing
+        ////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// It is assumed that either the sample and the reference were both
+        /// dark-corrected, or that neither were.
+        /// </summary>
+        void computeReflectance(Spectrometer spec, ChannelSpectrum cs)
+        {
+            if (!reflectanceEnabled || spec.reference is null)
+                return;
+
+            for (int i = 0; i < spec.pixels; i++)
+                if (spec.reference[i] != 0.0)
+                    cs.intensities[i] /= spec.reference[i];
+                else
+                    cs.intensities[i] = 0.0;
         }
     }
 }

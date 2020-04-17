@@ -178,6 +178,23 @@ namespace WasatchNET
         protected double[] dark_;
 
         /// <summary>
+        /// Simplify reference-based techniques (absorbance, reflectance, 
+        /// transmission etc) by allowing a reference to be stored with the 
+        /// Spectrometer, similar to dark.  
+        /// 
+        /// Unlike dark, which will be automatically subtracted from Raw to form
+        /// Processed, no automatic processing is performed with the Reference, 
+        /// as different techniques use it differently.  This is a convenience 
+        /// attribute for application programmers.
+        /// </summary>
+        public virtual double[] reference
+        {
+            get { return reference_; }
+            set { reference_ = value; }
+        }
+        protected double[] reference_;
+
+        /// <summary>
         /// If the spectrometer is deployed in a multi-channel configuration,
         /// this provides a place to store an integral position in the Spectrometer
         /// object.  
