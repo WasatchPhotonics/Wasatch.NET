@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -12,9 +13,16 @@ using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.IO;
 using WasatchNET;
+using System.Text.RegularExpressions;
 
 namespace MultiChannelDemo
 {
+    class Tally
+    {
+        public double total;
+        public uint count;
+    }
+
     public partial class Form1 : Form
     {
         MultiChannelWrapper wrapper = MultiChannelWrapper.getInstance();
@@ -23,16 +31,30 @@ namespace MultiChannelDemo
         bool initialized = false;
         int selectedPos = 0; // multi-channel systems assumed to be 1-indexed
 
+        const int INTEG_TIME_MS_MIN = 100;
+        const int INTEG_TIME_MS_MAX = 500;
+
         // note these are zero-indexed
         Chart[] charts;
         GroupBox[] groupBoxes;
         RadioButton[] radioButtons;
 
-        Dictionary<int, Series> seriesAll = new Dictionary<int, Series>();
+        Dictionary<int, Series> seriesCombined = new Dictionary<int, Series>();
+        Dictionary<int, Series> seriesTime = new Dictionary<int, Series>();
 
         // whatever was last returned by "Acquire All", "Take Darks" or "Take References"
         // (added so we'd have something to save)
         List<ChannelSpectrum> lastSpectra;
+
+        // Batch test
+        bool batchRunning = false;
+        string batchPathname;
+        string talliesPathname;
+        BackgroundWorker workerBatch;
+
+        // place to store intensities by integration time
+        // tallies[pos][integTimeMS].{total, count}
+        SortedDictionary<int, SortedDictionary<uint, Tally>> tallies;
 
         ////////////////////////////////////////////////////////////////////////
         // Lifecycle
@@ -61,6 +83,10 @@ namespace MultiChannelDemo
             clearSelection();
 
             Text = String.Format("MultiChannelDemo v{0}", Application.ProductVersion);
+
+            workerBatch = new BackgroundWorker() { WorkerSupportsCancellation = true };
+            workerBatch.DoWork             += backgroundWorkerBatch_DoWork;
+            workerBatch.RunWorkerCompleted += backgroundWorkerBatch_RunWorkerCompleted;
         }
 
         void initChart(Chart chart)
@@ -83,6 +109,7 @@ namespace MultiChannelDemo
 
             // per-channel initialization
             chartAll.Series.Clear();
+            chartTime.Series.Clear();
             foreach (var pos in wrapper.positions)
             {
                 var spec = wrapper.getSpectrometer(pos);
@@ -95,8 +122,14 @@ namespace MultiChannelDemo
                 // big graph
                 var s = new Series($"Pos {pos} ({sn})");
                 s.ChartType = SeriesChartType.Line;
-                seriesAll[pos - 1] = s;
+                seriesCombined[pos - 1] = s;
                 chartAll.Series.Add(s);
+
+                // time graph
+                s = new Series($"Pos {pos} ({sn})");
+                s.ChartType = SeriesChartType.Line;
+                seriesTime[pos - 1] = s;
+                chartTime.Series.Add(s);
             }
 
             initialized = true;
@@ -443,7 +476,7 @@ namespace MultiChannelDemo
         void updateChartAll(ChannelSpectrum cs)
         {
             Series s = null;
-            seriesAll.TryGetValue(cs.pos - 1, out s);
+            seriesCombined.TryGetValue(cs.pos - 1, out s);
             if (s != null)
                 chartAll.BeginInvoke(new MethodInvoker(delegate { s.Points.DataBindXY(cs.xAxis, cs.intensities); }));
         }
@@ -520,6 +553,195 @@ namespace MultiChannelDemo
             }
 
             logger.info($"saved {pathname}");
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Batch Testing
+        ////////////////////////////////////////////////////////////////////////
+
+        private void buttonBatchStart_Click(object sender, EventArgs e)
+        {
+            if (batchRunning)
+                stopBatch();
+            else
+                startBatch();
+        }
+
+        void stopBatch()
+        {
+            logger.info("stopping batch collection");
+            workerBatch.CancelAsync();
+        }
+
+        void startBatch()
+        {
+            logger.info("starting batch collection");
+
+            DialogResult result = saveFileDialog.ShowDialog();
+            if (result != DialogResult.OK)
+                return;
+
+            buttonBatchStart.Text = "Stop";
+
+            batchPathname = saveFileDialog.FileName;
+            if (batchPathname.EndsWith(".csv"))
+                talliesPathname = Regex.Replace(batchPathname, @"\.csv$", "-tallies.csv");
+            else
+                talliesPathname = batchPathname + ".tallies";
+
+            // init tallies
+            tallies = new SortedDictionary<int, SortedDictionary<uint, Tally>>();
+
+            // init graph
+            foreach (var s in seriesTime)
+                s.Value.Points.Clear();
+        }
+
+        async void backgroundWorkerBatch_DoWork(object sender, DoWorkEventArgs e)
+        {
+            var worker = sender as BackgroundWorker;
+            Random r = new Random();
+            var startTime = DateTime.Now;
+            var endTime = startTime.AddMinutes((int)numericUpDownBatchMin.Value);
+
+            using (StreamWriter sw = new StreamWriter(batchPathname))
+            {
+                logger.info($"writing {batchPathname}");
+
+                // header e.g. Count, Timestamp, ElapsedMS, Pos_1_MS, Pos_1_DegC, Pos_1_Avg, Pos_5_MS, Pos_5_DegC, Pos_5_Avg
+                sw.Write("Count, Timestamp, ElapsedMS");
+                foreach (var pos in wrapper.positions)
+                    sw.Write($", Pos_{pos}_MS, Pos_{pos}_DegC, Pos_{pos}_Avg");
+                sw.WriteLine();
+
+                // where to store graph data in memory
+                List<uint> xAxisMS = new List<uint>();
+                Dictionary<int, List<double>> intensities = new Dictionary<int, List<double>>();
+
+                // bind each series
+                foreach (var pos in wrapper.positions)
+                {
+                    Series s = null;
+                    seriesTime.TryGetValue(pos - 1, out s);
+                    if (s != null)
+                    {
+                        intensities.Add(pos, new List<double>());
+                        chartTime.BeginInvoke(new MethodInvoker(delegate { s.Points.DataBindXY(xAxisMS, intensities[pos]); }));
+                    }
+
+                    // initialize tallies
+                    tallies.Add(pos, new SortedDictionary<uint, Tally>());
+                }
+
+                uint count = 0;
+                while (DateTime.Now < endTime)
+                {
+                    if (worker.CancellationPending)
+                    {
+                        e.Cancel = true;
+                        break;
+                    }
+
+                    var now = DateTime.Now;
+                    var nowStr = now.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture);
+                    var elapsedMS = (uint)(now - startTime).TotalMilliseconds;
+                    sw.Write($"{count}, {nowStr}, {elapsedMS}");
+
+                    // randomize integration times
+                    foreach (var pos in wrapper.positions)
+                        wrapper.getSpectrometer(pos).integrationTimeMS = (uint)r.Next(INTEG_TIME_MS_MIN, INTEG_TIME_MS_MAX);
+
+                    // take measurement
+                    lastSpectra = await wrapper.getSpectra();
+
+                    // graph the spectra normally (individual and combined graphs)
+                    chartTime.BeginInvoke((MethodInvoker)delegate { processSpectra(lastSpectra); });
+
+                    ////////////////////////////////////////////////////////////////
+                    // update time graph and write to file
+                    ////////////////////////////////////////////////////////////////
+
+                    xAxisMS.Add(elapsedMS);
+                    foreach (var cs in lastSpectra)
+                    {
+                        // write to file
+                        var mean = cs.intensities.Average();
+                        sw.Write($", {cs.integrationTimeMS}, {cs.detectorTemperatureDegC:f2}, {mean:f2}");
+
+                        // update graph
+                        Series s = null;
+                        seriesTime.TryGetValue(cs.pos - 1, out s);
+                        if (s != null)
+                            intensities[cs.pos].Add(mean);
+
+                        // update tallies
+                        if (!tallies[cs.pos].ContainsKey(cs.integrationTimeMS))
+                            tallies[cs.pos].Add(cs.integrationTimeMS, new Tally());
+                        tallies[cs.pos][cs.integrationTimeMS].total += mean;
+                        tallies[cs.pos][cs.integrationTimeMS].count++;
+                    }
+                    sw.WriteLine();
+
+                    count++;
+                 }
+            }
+        }
+
+        private void backgroundWorkerBatch_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            // We create a separate tallies file so all of the intensities at
+            // different integration times can be easily graphed and visualized
+            // for all the spectrometers.  
+            //
+            // Note that we're taking an average of an average here, so anomalies 
+            // will be suppressed in the tally report.  If you wanted to explicitly
+            // check for anomalies, it would be worth reporting stdev or min/max.
+            // Some statistics would require holding more data in memory than the
+            // current Tally class however.  
+            // 
+            // Of course, since all raw data is logged in the big .csv, end-users
+            // can always generate such statistics themselves with a bit of work
+            // in Excel.
+            using (StreamWriter sw = new StreamWriter(talliesPathname))
+            {
+                logger.info($"writing {talliesPathname}");
+
+                // header e.g. IntegrationTimeMS, Pos_1, Pos_5
+                sw.Write("IntegrationTimeMS");
+                foreach (var posPair in tallies)
+                {
+                    var pos = posPair.Key;
+                    sw.Write($", Pos_{pos}");
+                }
+                sw.WriteLine();
+
+                // iterate over full range of supported random integration times
+                for (uint ms = INTEG_TIME_MS_MIN; ms <= INTEG_TIME_MS_MAX; ms++)
+                {
+                    sw.Write(ms);
+
+                    // write the average intensity for that integration time for each position
+                    foreach (var posPair in tallies)
+                    {
+                        var pos = posPair.Key;
+                        var integPair = posPair.Value;
+                        if (integPair.ContainsKey(ms))
+                        {
+                            var tally = integPair[ms];
+                            var mean = tally.total / tally.count;
+                            sw.Write($", {mean:f2}");
+                        }
+                        else
+                        {
+                            sw.Write(", ");
+                        }
+                    }
+                    sw.WriteLine();
+                }
+            }
+
+            batchRunning = false;
+            buttonBatchStart.Text = "Start";
         }
     }
 }

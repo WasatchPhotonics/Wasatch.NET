@@ -1395,8 +1395,13 @@ namespace WasatchNET
 
             regenerateWavelengths();
 
-            // by default, integration time is zero in HW
-            integrationTimeMS = eeprom.minIntegrationTimeMS;
+            // by default, integration time is zero in HW, so set to something
+            // (ignore startup value if it's unreasonable)
+            if (eeprom.startupIntegrationTimeMS >= eeprom.minIntegrationTimeMS &&
+                eeprom.startupIntegrationTimeMS < 5000)
+                integrationTimeMS = eeprom.startupIntegrationTimeMS;
+            else
+                integrationTimeMS = eeprom.minIntegrationTimeMS;
 
             // MZ: base on A/R/C?
             // use cache variable because why not
@@ -1412,6 +1417,7 @@ namespace WasatchNET
 
             if (hasLaser)
             {
+                // ENLIGHTEN doesn't do this
                 logger.debug("unlinking laser modulation from integration time");
                 laserModulationLinkedToIntegrationTime = false;
 
@@ -1424,7 +1430,7 @@ namespace WasatchNET
 
             if (eeprom.hasCooling && degC != UNINITIALIZED_TEMPERATURE_DEG_C)
             {
-                // MZ: TEC doesn't do anything unless you give it a temperature first
+                // TEC doesn't do anything unless you give it a temperature first
                 logger.debug("setting TEC setpoint to {0} deg C", degC);
                 detectorTECSetpointDegC = degC;
 
@@ -1434,12 +1440,6 @@ namespace WasatchNET
                     logger.debug("enabling detector TEC");
                     detectorTECEnabled = true;
                 }
-            }
-
-            if (isSiG)
-            {
-                logger.debug("requiring throwaway after changing integration time");
-                throwawayAfterIntegrationTime = true;
             }
 
             // if we're using a modern EEPROM format, automatically apply the stored gain/offset values

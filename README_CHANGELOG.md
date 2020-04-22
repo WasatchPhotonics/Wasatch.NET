@@ -1,4 +1,8 @@
 # Wasatch.NET Changelog
+
+- 2020-04-?? 2.1.??
+    - MultiChannelWrapper/Demo
+        - added batch collection
 - 2020-04-17 2.1.21
     - WasatchNET
         - Spectrometer.reference convenience array

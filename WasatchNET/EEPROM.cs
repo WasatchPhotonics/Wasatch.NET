@@ -8,8 +8,6 @@ namespace WasatchNET
     /// Encapsulates access to the spectrometer's writable but non-volatile EEPROM.
     /// </summary>
     /// <remarks>
-    /// In retrospect, should have been named "EEPROM."
-    /// 
     /// While users are freely encouraged to read and parse EEPROM contents, they
     /// are STRONGLY ADVISED to exercise GREAT CAUTION in changing or writing 
     /// EEPROM values. It is entirely possible that an erroneous or corrupted 

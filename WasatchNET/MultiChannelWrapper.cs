@@ -24,6 +24,10 @@ namespace WasatchNET
         public double[] xAxis;
         public double[] intensities;
 
+        // these are mainly for QC testing, but retained for convenience
+        public float detectorTemperatureDegC;
+        public uint integrationTimeMS;
+
         public ChannelSpectrum(Spectrometer spec = null)
         {
             if (spec != null)
@@ -32,6 +36,8 @@ namespace WasatchNET
                 xAxis = spec.wavenumbers is null ? spec.wavelengths : spec.wavenumbers;
                 xAxisType = spec.wavenumbers is null ? X_AXIS_TYPE.WAVELENGTH : X_AXIS_TYPE.WAVENUMBER;
                 intensities = spec.lastSpectrum;
+                detectorTemperatureDegC = spec.detectorTemperatureDegC;
+                integrationTimeMS = spec.integrationTimeMS;
             }
         }
     }
