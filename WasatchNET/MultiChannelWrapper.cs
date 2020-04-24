@@ -134,9 +134,10 @@ namespace WasatchNET
         /// and fan control, etc.
         /// </summary>
         /// <returns>true on success</returns>
-        public bool open()
+        public async Task<bool> openAsync()
         {
             reset();
+
 
             var count = driver.openAllSpectrometers();
             logger.info($"found {count} spectrometers");
@@ -147,6 +148,13 @@ namespace WasatchNET
 
                 logger.info("found {0} {1} with {2} pixels ({3:f2}, {4:f2})",
                     spec.model, sn, spec.pixels, spec.wavelengths[0], spec.wavelengths[spec.pixels - 1]);
+
+                // don't auto-generate SW triggers (we'll do it in the wrapper)
+                spec.autoTrigger = false;
+
+                // ARM units (used for triggering) seem to benefit from a throaway
+                // after changing integration time
+                spec.throwawayAfterIntegrationTime = true;
 
                 ////////////////////////////////////////////////////////////////
                 // Parse EEPROM.userText
@@ -207,8 +215,11 @@ namespace WasatchNET
                 positions.Add(pos);
             }
 
-            // default to internal triggering
+            // default to software triggering
             hardwareTriggeringEnabled = false;
+
+            // take a throwaway spectrum from everything
+            _ = await getSpectraAsync();
 
             return spectrometerCount > 0;
         }
@@ -312,6 +323,30 @@ namespace WasatchNET
         }
 
         ////////////////////////////////////////////////////////////////////////
+        // Acquisition Parameters
+        ////////////////////////////////////////////////////////////////////////
+
+        async public Task<bool> setIntegrationTimeMSAsync(uint ms)
+        {
+            logger.header($"setting all spectrometer integration times to {ms}");
+
+            foreach (var pair in specByPos)
+            {
+                var spec = pair.Value;
+                spec.throwawayAfterIntegrationTime = false;
+                spec.integrationTimeMS = ms;
+            }
+
+            // perform the throwaways in parallel
+            _ = await getSpectraAsync();
+
+            foreach (var pair in specByPos)
+                pair.Value.throwawayAfterIntegrationTime = true;
+
+            return true;
+        }
+
+        ////////////////////////////////////////////////////////////////////////
         // Spectra
         ////////////////////////////////////////////////////////////////////////
 
@@ -323,32 +358,37 @@ namespace WasatchNET
         /// <remarks>This is async so the GUI is responsive while the trigger is high</remarks>
         public async Task<bool> startAcquisitionAsync()
         {
-            if (!hardwareTriggeringEnabled)
+            if (hardwareTriggeringEnabled)
             {
-                // no need to do anything in this case; Spectrometer.getSpectrum()
-                // will internally send a software trigger unless the triggering 
-                // mode was explicitly set to external
-                logger.debug("hardware triggering disabled, so not sending");
-                return true;
-            }
+                if (specTrigger is null)
+                {
+                    logger.error("no spectrometer configured with trigger control");
+                    return false;
+                }
 
-            if (specTrigger is null)
+                logger.header("sending HW trigger");
+
+                logger.debug("trigger -> high");
+                specTrigger.laserEnabled = true;
+
+                logger.debug("trigger (wait)");
+                await Task.Delay(millisecondsDelay: triggerPulseWidthMS);
+
+                logger.debug("trigger -> low");
+                specTrigger.laserEnabled = false;
+            }
+            else
             {
-                logger.error("no spectrometer configured with trigger control");
-                return false;
+                // send a software trigger down each channel
+                foreach (var pair in specByPos)
+                {
+                    var pos = pair.Key;
+                    var spec = pair.Value;
+
+                    logger.debug($"sending SW trigger to pos {pos}");
+                    spec.sendTrigger();
+                }
             }
-
-            logger.header("Sending Trigger");
-
-            logger.debug("trigger -> high");
-            specTrigger.laserEnabled = true;
-
-            logger.debug("trigger (wait)");
-            await Task.Delay(millisecondsDelay: triggerPulseWidthMS);
-
-            logger.debug("trigger -> low");
-            specTrigger.laserEnabled = false;
-
             return true;
         }
 
@@ -379,7 +419,6 @@ namespace WasatchNET
 
             List<ChannelSpectrum> spectra = new List<ChannelSpectrum>();
 
-            // foreach (var spec in specByIntegrationTime())
             foreach (var pair in specByPos)
             {
                 var pos = pair.Key;
@@ -387,7 +426,7 @@ namespace WasatchNET
 
                 logger.header($"MultiChannelWrapper.getSpectraAsync: position {pos}");
 
-                logger.info($"getting spectrum from pos {pos} {spec.serialNumber} ({spec.integrationTimeMS} ms)");
+                logger.debug($"getting spectrum from pos {pos} {spec.serialNumber} ({spec.integrationTimeMS} ms)");
                 ChannelSpectrum cs = new ChannelSpectrum(spec);
                 cs.intensities = await Task.Run(() => spec.getSpectrum());
                 if (reflectanceEnabled)
@@ -396,7 +435,7 @@ namespace WasatchNET
                 spectra.Add(cs);
             }
 
-            logger.debug($"returning {spectra.Count} spectra");
+            logger.debug($"getSpectraAsync: returning {spectra.Count} spectra");
             return spectra;
         }
 

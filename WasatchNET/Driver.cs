@@ -399,7 +399,7 @@ namespace WasatchNET
                             UsbEndpointReader reader = sender as UsbEndpointReader;
                             if (reader != null)
                             {
-                                logger.error($"{prefix} [UsbEndpointReader]: flushing endpoint 0x{reader.EpNum:x2}",
+                                logger.error($"{prefix} [UsbEndpointReader]: flushing endpoint 0x{reader.EpNum:x2}");
                                 reader.ReadFlush();
                             }
                         }

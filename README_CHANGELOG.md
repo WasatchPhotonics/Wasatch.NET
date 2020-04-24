@@ -7,6 +7,10 @@
         - added Logger.header()
         - fixed waitForUsb()
         - updated timeout logic for multiple devices, IMX power-up
+        - added autoTrigger
+        - exposed sendTrigger()
+        - updated throwaway logic on changed integration time
+        - updated TEC default setpoint detector list
     - MultiChannelWrapper/Demo
         - fixed triggering bug
         - added Monte Carlo operation 
@@ -17,13 +21,16 @@
             - scan averaging
             - arbitrary spectrometer subsets
         - repeatability
+            - initial throwaway spectrum
             - perform all operations in positional order
         - IntegrationOptimizer
             - GUI widgets
             - list failures by channel
         - saving
             - interpolation
-
+        - enhancements
+            - update groupbox titles
+            - parallelized integration throwaways 
 - 2020-04-17 2.1.21
     - WasatchNET
         - Spectrometer.reference convenience array

@@ -143,7 +143,7 @@ namespace WasatchNET
             {
                 debug("");
                 debug("=========================================================");
-                log(LogLevel.DEBUG, fmt, obj);
+                debug(fmt, obj);
                 debug("=========================================================");
                 debug("");
             }

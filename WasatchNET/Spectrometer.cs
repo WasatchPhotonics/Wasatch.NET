@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 
@@ -80,7 +82,8 @@ namespace WasatchNET
         List<UsbEndpointReader> endpoints = new List<UsbEndpointReader>();
         int pixelsPerEndpoint = 0;
         ulong throwawaySum = 0;
-        bool throwawayAfterIntegrationTime = false;
+
+        public bool throwawayAfterIntegrationTime { get; set; }
 
         ////////////////////////////////////////////////////////////////////////
         // Convenience lookups
@@ -142,6 +145,17 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         bool throwawayADCRead { get; set; } = true;
+
+        /// <summary>
+        /// Whether the driver should automatically send a software trigger on
+        /// getSpectrum()
+        /// </summary>
+        /// <remarks>
+        /// This is provided in case the caller wishes to call sendTrigger()
+        /// explicitly, for instance to send software triggers to a series of
+        /// devices at once, before beginning reads on any of them.
+        /// </remarks>
+        public bool autoTrigger { get; set; } = true;
 
         /// <summary>
         /// How many acquisitions to average together (zero for no averaging)
@@ -732,11 +746,7 @@ namespace WasatchNET
                 }
 
                 if (throwawayAfterIntegrationTime)
-                {
-                    logger.debug("taking throwaway spectrum");
-                    _ = getSpectrumRaw();
-                }
-
+                    performThrowawaySpectrum();
             }
         }
         protected uint integrationTimeMS_;
@@ -1407,12 +1417,10 @@ namespace WasatchNET
             float degC = UNINITIALIZED_TEMPERATURE_DEG_C;
             if (featureIdentification.hasDefaultTECSetpointDegC)
                 degC = featureIdentification.defaultTECSetpointDegC;
-            else if (eeprom.detectorName.Contains("S11511"))
+            else if (Regex.IsMatch(eeprom.detectorName, @"S10141|G9214", RegexOptions.IgnoreCase))
+                degC = -15;
+            else if (Regex.IsMatch(eeprom.detectorName, @"S11511|S11850|S13971|S7031", RegexOptions.IgnoreCase))
                 degC = 10;
-            else if (eeprom.detectorName.Contains("S10141"))
-                degC = -15;
-            else if (eeprom.detectorName.Contains("G9214"))
-                degC = -15;
 
             if (hasLaser)
             {
@@ -1433,12 +1441,8 @@ namespace WasatchNET
                 logger.debug("setting TEC setpoint to {0} deg C", degC);
                 detectorTECSetpointDegC = degC;
 
-                // MZ: why don't we do this for ARM?  Is it automatic in FW?
-                if (!isARM)
-                {
-                    logger.debug("enabling detector TEC");
-                    detectorTECEnabled = true;
-                }
+                logger.debug("enabling detector TEC");
+                detectorTECEnabled = true;
             }
 
             // if we're using a modern EEPROM format, automatically apply the stored gain/offset values
@@ -1936,7 +1940,7 @@ namespace WasatchNET
         /// </summary>
         /// <param name="forceNew">not used in base class (provided for specialized subclasses)</param>
         /// <returns>The acquired spectrum as an array of doubles</returns>
-        public virtual double[] getSpectrum(bool forceNew = false)
+        public virtual double[] getSpectrum(bool forceNew=false)
         {
             lock (acquisitionLock)
             {
@@ -1984,6 +1988,31 @@ namespace WasatchNET
             }
         }
 
+        public bool sendTrigger()
+        {
+            byte[] buf = null;
+            if (isARM)
+                buf = new byte[8];
+
+            return sendCmd(Opcodes.ACQUIRE_SPECTRUM, buf: buf);
+        }
+
+        /// <summary>
+        /// Generate a throwaway spectrum, such as following a change in 
+        /// integration time on spectrometers requiring such.
+        /// </summary>
+        /// <remarks>
+        /// If the caller doesn't want to block on this, they can always change
+        /// integrationTimeMS within a Task.Run closure.
+        /// </remarks>
+        void performThrowawaySpectrum()
+        {
+            logger.debug("taking throwaway spectrum");
+            if (!autoTrigger)
+                sendTrigger();
+            getSpectrumRaw();
+        }
+
         // just the bytes, ma'am
         protected virtual double[] getSpectrumRaw()
         {
@@ -1993,9 +2022,8 @@ namespace WasatchNET
                 buf = new byte[8];
 
             // request a spectrum
-            if (triggerSource_ == TRIGGER_SOURCE.INTERNAL)
-                if (!sendCmd(Opcodes.ACQUIRE_SPECTRUM, buf: buf))
-                    return null;
+            if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger)
+                sendTrigger();
 
             if (isStroker)
                 Thread.Sleep((int)integrationTimeMS_ + 5);

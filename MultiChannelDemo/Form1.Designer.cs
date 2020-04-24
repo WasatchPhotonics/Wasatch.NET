@@ -1575,6 +1575,7 @@
             // 
             // chartAll
             // 
+            chartArea9.AxisY.Title = "Intensity (Counts)";
             chartArea9.Name = "ChartArea1";
             this.chartAll.ChartAreas.Add(chartArea9);
             this.chartAll.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -1603,6 +1604,8 @@
             // 
             // chartTime
             // 
+            chartArea10.AxisX.Title = "Elapsed Time (ms)";
+            chartArea10.AxisY.Title = "Mean Intensity (counts)";
             chartArea10.Name = "ChartArea1";
             this.chartTime.ChartAreas.Add(chartArea10);
             this.chartTime.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -1639,6 +1642,13 @@
             this.textBoxEventLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.textBoxEventLog.Size = new System.Drawing.Size(1192, 77);
             this.textBoxEventLog.TabIndex = 0;
+            // 
+            // saveFileDialog
+            // 
+            this.saveFileDialog.DefaultExt = "csv";
+            this.saveFileDialog.Filter = "CSV files (*.csv)|*.csv";
+            this.saveFileDialog.SupportMultiDottedExtensions = true;
+            this.saveFileDialog.Title = "Monte Carlo Batch Report";
             // 
             // Form1
             // 

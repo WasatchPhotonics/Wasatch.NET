@@ -32,7 +32,6 @@ namespace MultiChannelDemo
         // note these are zero-indexed
         Chart[] charts;
         GroupBox[] groupBoxes;
-        RadioButton[] radioButtons;
 
         Dictionary<int, Series> seriesCombined = new Dictionary<int, Series>();
         Dictionary<int, Series> seriesTime = new Dictionary<int, Series>();
@@ -42,7 +41,7 @@ namespace MultiChannelDemo
         List<ChannelSpectrum> lastSpectra;
 
         // Batch test
-        bool batchRunning = false;
+        bool batchRunning;
         string batchPathname;
         string talliesPathname;
         BackgroundWorker workerBatch;
@@ -80,6 +79,8 @@ namespace MultiChannelDemo
             workerBatch = new BackgroundWorker() { WorkerSupportsCancellation = true };
             workerBatch.DoWork             += backgroundWorkerBatch_DoWork;
             workerBatch.RunWorkerCompleted += backgroundWorkerBatch_RunWorkerCompleted;
+
+            AcceptButton = buttonInit;
         }
 
         void initChart(Chart chart)
@@ -89,14 +90,14 @@ namespace MultiChannelDemo
             area.AxisX.LabelStyle.Format = "{0:f2}";
         }
 
-        void buttonInit_Click(object sender, EventArgs e)
+        async void buttonInit_Click(object sender, EventArgs e)
         {
             if (initialized)
                 return;
 
             logger.header("Initializing");
 
-            if (!wrapper.open())
+            if (! await wrapper.openAsync())
             {
                 logger.error("failed to open MultiChannelWrapper");
                 return;
@@ -114,7 +115,6 @@ namespace MultiChannelDemo
 
                 var gb = groupBoxes[pos - 1];
                 gb.Enabled = true;
-                gb.Text = $"Position {pos} ({sn})";
 
                 // big graph
                 var s = new Series($"Pos {pos} ({sn})");
@@ -129,10 +129,25 @@ namespace MultiChannelDemo
                 chartTime.Series.Add(s);
             }
 
+            updateGroupBoxTitles();
+
             logger.header("Initialization Complete");
 
             initialized = true;
             buttonInit.Enabled = false;
+            AcceptButton = buttonAcquireAll;
+        }
+
+        void updateGroupBoxTitles()
+        {
+            logger.header("update group box titles");
+            foreach (var pos in wrapper.positions)
+            {
+                var spec = wrapper.getSpectrometer(pos);
+                var gb = groupBoxes[pos - 1];
+                gb.Text = string.Format("Position {0} ({1}) {2}ms {3:f2}°C",
+                    pos, spec.serialNumber, spec.integrationTimeMS, spec.detectorTemperatureDegC);
+            }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e) => logger.setTextBox(null);
@@ -211,16 +226,16 @@ namespace MultiChannelDemo
             checkBoxReflectanceEnabled.Checked = false;
         }
 
-        // applies to all of them
-        private void numericUpDownIntegrationTimeMS_ValueChanged(object sender, EventArgs e)
+        // A little more complicated than usual, in order to perform all the
+        // throwaway spectra in parallel
+        async void numericUpDownIntegrationTimeMS_ValueChanged(object sender, EventArgs e)
         {
+            enableControls(false);
             uint value = (uint)numericUpDownIntegrationTimeMS.Value;
-            logger.header($"setting all spectrometer integration times to {value}");
-            foreach (var pos in wrapper.positions)
-            {
-                var spec = wrapper.getSpectrometer(pos);
-                spec.integrationTimeMS = value;
-            }
+            _ = await wrapper.setIntegrationTimeMSAsync(value);
+
+            updateGroupBoxTitles();
+            enableControls(true);
         }
 
         private void numericUpDownScansToAverage_ValueChanged(object sender, EventArgs e)
@@ -280,12 +295,13 @@ namespace MultiChannelDemo
         }
 
         /// <todo>
-        /// enable/disable RadioButtons
+        /// enable/disable checkBoxes
         /// </todo>
         void enableControls(bool flag)
         {
             groupBoxSystem.Enabled =
-                groupBoxSelected.Enabled = flag;
+                groupBoxSelected.Enabled = 
+                groupBoxBatch.Enabled = flag;
 
             if (flag)
                 groupBoxSelected.Enabled = selectedPositions.Count > 0;
@@ -519,6 +535,8 @@ namespace MultiChannelDemo
         {
             foreach (var cs in spectra)
                 processSpectrum(cs);
+
+            updateGroupBoxTitles();
         }
 
         // Do whatever we're gonna do with new spectra (save, dark-correct, ...).
@@ -705,10 +723,18 @@ namespace MultiChannelDemo
         // Monte-Carlo Batch Testing
         ////////////////////////////////////////////////////////////////////////
 
+        private void numericUpDownIntegrationTimeMSMin_ValueChanged(object sender, EventArgs e)
+        {
+            integrationTimeMSRandomMin = (uint)numericUpDownIntegrationTimeMSMin.Value;
+        }
+
+        private void numericUpDownIntegrationTimeMSMax_ValueChanged(object sender, EventArgs e)
+        {
+            integrationTimeMSRandomMax = (uint)numericUpDownIntegrationTimeMSMax.Value;
+        }
+
         private void buttonBatchStart_Click(object sender, EventArgs e)
         {
-            logger.header("User clicked Batch Start/Stop");
-
             if (batchRunning)
                 stopBatch();
             else
@@ -717,17 +743,19 @@ namespace MultiChannelDemo
 
         void stopBatch()
         {
-            logger.info("stopping batch collection");
+            logger.header("stopping batch collection");
             workerBatch.CancelAsync();
         }
 
         void startBatch()
         {
-            logger.info("Starting Batch Collection");
+            logger.header("starting batch collection");
 
             DialogResult result = saveFileDialog.ShowDialog();
             if (result != DialogResult.OK)
                 return;
+
+            batchRunning = true;
 
             buttonBatchStart.Text = "Stop";
             groupBoxIntegrationTimeLimits.Enabled = 
@@ -740,6 +768,7 @@ namespace MultiChannelDemo
                 talliesPathname = Regex.Replace(batchPathname, @"\.csv$", "-tallies.csv");
             else
                 talliesPathname = batchPathname + ".tallies";
+            logger.debug($"will use talliesPathname {talliesPathname}");
 
             // init tallies
             tallies = new SortedDictionary<int, SortedDictionary<uint, Tally>>();
@@ -747,16 +776,18 @@ namespace MultiChannelDemo
             // init graph
             foreach (var s in seriesTime)
                 s.Value.Points.Clear();
+
+            workerBatch.RunWorkerAsync();
         }
 
-        async void backgroundWorkerBatch_DoWork(object sender, DoWorkEventArgs e)
+        void backgroundWorkerBatch_DoWork(object sender, DoWorkEventArgs e)
         {
             logger.header("Starting Monte-Carlo Worker");
 
-            var worker = sender as BackgroundWorker;
             Random r = new Random();
             var startTime = DateTime.Now;
             var endTime = startTime.AddMinutes((int)numericUpDownBatchMin.Value);
+            logger.debug($"workerBatch will end at {endTime}");
 
             using (StreamWriter sw = new StreamWriter(batchPathname))
             {
@@ -772,16 +803,9 @@ namespace MultiChannelDemo
                 List<uint> xAxisMS = new List<uint>();
                 Dictionary<int, List<double>> intensities = new Dictionary<int, List<double>>();
 
-                // bind each series
                 foreach (var pos in wrapper.positions)
                 {
-                    Series s = null;
-                    seriesTime.TryGetValue(pos - 1, out s);
-                    if (s != null)
-                    {
-                        intensities.Add(pos, new List<double>());
-                        chartTime.BeginInvoke(new MethodInvoker(delegate { s.Points.DataBindXY(xAxisMS, intensities[pos]); }));
-                    }
+                    intensities.Add(pos, new List<double>());
 
                     // initialize tallies
                     tallies.Add(pos, new SortedDictionary<uint, Tally>());
@@ -790,8 +814,9 @@ namespace MultiChannelDemo
                 uint count = 0;
                 while (DateTime.Now < endTime)
                 {
-                    if (worker.CancellationPending)
+                    if (workerBatch.CancellationPending)
                     {
+                        logger.debug("workerBatch.DoWork cancelled");
                         e.Cancel = true;
                         break;
                     }
@@ -800,8 +825,12 @@ namespace MultiChannelDemo
                     var nowStr = now.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture);
                     var elapsedMS = (uint)(now - startTime).TotalMilliseconds;
                     var timeRemaining = (endTime - now).ToString(@"hh\:mm\:ss");
+
+                    logger.header($"batch count {count}, elapsed {elapsedMS} ms, remaining {timeRemaining}");
+
+                    // update on-screen countdown
                     labelBatchStatus.BeginInvoke((MethodInvoker)delegate {
-                        labelBatchStatus.Text = "time remaining: " + timeRemaining; });
+                        labelBatchStatus.Text = timeRemaining + " remaining"; });
 
                     sw.Write($"{count}, {nowStr}, {elapsedMS}");
 
@@ -811,7 +840,7 @@ namespace MultiChannelDemo
                             (uint)r.Next((int)integrationTimeMSRandomMin, (int)integrationTimeMSRandomMax);
 
                     // take measurement
-                    lastSpectra = await wrapper.getSpectraAsync();
+                    lastSpectra = wrapper.getSpectraAsync().Result;
 
                     // graph the spectra normally (individual and combined graphs)
                     chartTime.BeginInvoke((MethodInvoker)delegate { processSpectra(lastSpectra); });
@@ -823,15 +852,20 @@ namespace MultiChannelDemo
                     xAxisMS.Add(elapsedMS);
                     foreach (var cs in lastSpectra)
                     {
+                        var pos = cs.pos;
+
                         // write to file
                         var mean = cs.intensities.Average();
                         sw.Write($", {cs.integrationTimeMS}, {cs.detectorTemperatureDegC:f2}, {mean:f2}");
 
                         // update graph
-                        Series s = null;
-                        seriesTime.TryGetValue(cs.pos - 1, out s);
-                        if (s != null)
-                            intensities[cs.pos].Add(mean);
+                        intensities[cs.pos].Add(mean);
+                        chartTime.BeginInvoke(new MethodInvoker(delegate { 
+                            Series s = null;
+                            seriesTime.TryGetValue(pos - 1, out s);
+                            if (s != null)
+                                s.Points.DataBindXY(xAxisMS, intensities[pos]); 
+                        }));
 
                         // update tallies
                         if (!tallies[cs.pos].ContainsKey(cs.integrationTimeMS))
@@ -842,8 +876,11 @@ namespace MultiChannelDemo
                     sw.WriteLine();
 
                     count++;
-                 }
+                }
+                logger.debug("workerBatch passed endTime");
             }
+
+            logger.debug("workerBatch.DoWork done");
         }
 
         private void backgroundWorkerBatch_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -908,16 +945,6 @@ namespace MultiChannelDemo
                 groupBoxSystem.Enabled =
                 groupBoxSelected.Enabled = true;
             labelBatchStatus.Text = "click to start";
-        }
-
-        private void numericUpDownIntegrationTimeMSMin_ValueChanged(object sender, EventArgs e)
-        {
-            integrationTimeMSRandomMin = (uint)numericUpDownIntegrationTimeMSMin.Value;
-        }
-
-        private void numericUpDownIntegrationTimeMSMax_ValueChanged(object sender, EventArgs e)
-        {
-            integrationTimeMSRandomMax = (uint)numericUpDownIntegrationTimeMSMax.Value;
         }
     }
 }
