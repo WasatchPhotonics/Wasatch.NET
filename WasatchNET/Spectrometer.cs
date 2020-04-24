@@ -4,8 +4,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
-using MPSSELight;
-using FTD2XX_NET;
 
 namespace WasatchNET
 {
@@ -37,7 +35,6 @@ namespace WasatchNET
         public const byte HOST_TO_DEVICE = 0x40;
         public const byte DEVICE_TO_HOST = 0xc0;
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
-        public const bool RECONNECT_ON_ERROR = true;
         public const int LEGACY_VERTICAL_PIXELS = 70;
 
         ////////////////////////////////////////////////////////////////////////
@@ -125,12 +122,14 @@ namespace WasatchNET
             get { return eeprom.model; }
         }
 
+        public string id => string.Format($"{serialNumber} (pos {multiChannelPosition})");
+
         ////////////////////////////////////////////////////////////////////////
         // Spectrometer Components
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>metadata inferred from the spectrometer's USB PID</summary>
-        public FeatureIdentification featureIdentification { get; private set; }
+        public FeatureIdentification featureIdentification { get; set; }
 
         /// <summary>set of compilation options used to compile the FPGA firmware in this spectrometer</summary>
         public FPGAOptions fpgaOptions { get; private set; }
@@ -1561,9 +1560,6 @@ namespace WasatchNET
             {
                 DateTime nextUsbTimestamp = lastUsbTimestamp.AddMilliseconds(featureIdentification.usbDelayMS);
                 int delayMS = (int)(nextUsbTimestamp - DateTime.Now).TotalMilliseconds;
-                delayMS = (int)featureIdentification.usbDelayMS;
-                logger.debug("per usbDelayMS of {0} ms, should wait {1} ms before next USB call",
-                    featureIdentification.usbDelayMS, delayMS);
                 if (delayMS > 0)
                 {
                     do
@@ -1573,9 +1569,8 @@ namespace WasatchNET
                     } while (!usbDevice.IsOpen);
                 }
             }
+            lastUsbTimestamp = DateTime.Now;
         }
-
-        void resetUsbClock() { lastUsbTimestamp = DateTime.Now; }
 
         public bool reconnect()
         {
@@ -1664,7 +1659,6 @@ namespace WasatchNET
                 waitForUsbAvailable();
                 logger.debug("getCmd: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
                 bool result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
-                resetUsbClock();
 
                 if (result != expectedSuccessResult || bytesRead < len)
                 {
@@ -1712,7 +1706,6 @@ namespace WasatchNET
                 waitForUsbAvailable();
                 logger.debug("getCmd2: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
                 result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
-                resetUsbClock();
 
                 if (result != expectedSuccessResult || bytesRead < len)
                 {
@@ -1759,12 +1752,13 @@ namespace WasatchNET
 
             lock (commsLock)
             {
-                waitForUsbAvailable();
+                // don't enforce USB delay on laser commands...that could be dangerous
+                if (opcode != Opcodes.GET_LASER_ENABLE)
+                    waitForUsbAvailable();
 
                 logger.debug("sendCmd: about to send {0} ({1})", opcode, stringifyPacket(packet));
 
                 bool result = usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
-                resetUsbClock();
 
                 if (expectedSuccessResult != result)
                 {
@@ -1940,6 +1934,7 @@ namespace WasatchNET
         /// Take a single complete spectrum, including any configured scan 
         /// averaging, boxcar and dark subtraction.
         /// </summary>
+        /// <param name="forceNew">not used in base class (provided for specialized subclasses)</param>
         /// <returns>The acquired spectrum as an array of doubles</returns>
         public virtual double[] getSpectrum(bool forceNew = false)
         {
@@ -1992,7 +1987,7 @@ namespace WasatchNET
         // just the bytes, ma'am
         protected virtual double[] getSpectrumRaw()
         {
-            logger.debug("requesting spectrum");
+            logger.debug($"getSpectrumRaw: requesting spectrum {id}");
             byte[] buf = null;
             if (isARM)
                 buf = new byte[8];
@@ -2017,70 +2012,54 @@ namespace WasatchNET
                 // read all expected pixels from the endpoint
                 uint[] subspectrum = null;
 
-                if (RECONNECT_ON_ERROR)
+                // with retry logic
+                const int maxRetries = 3;
+                int retries = 0;
+                while (true)
                 {
-                    // with retry logic
-                    const int maxRetries = 3;
-                    int retries = 0;
-                    while (true)
+                    try
                     {
-                        try
+                        // read all expected pixels from the endpoint
+                        if (isStroker && retries == 0)
                         {
-                            // read all expected pixels from the endpoint
-                            if (isStroker)
-		                    {
-                    		    subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
-                    		    if (areaScanEnabled)
-                        	        pixelsPerEndpoint *= LEGACY_VERTICAL_PIXELS;
-                    		    spec = new double[pixelsPerEndpoint];
-			                }
-			                else
-			    	            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
-                            break;
+                            subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
+                            if (areaScanEnabled)
+                                pixelsPerEndpoint *= LEGACY_VERTICAL_PIXELS;
+                            spec = new double[pixelsPerEndpoint];
                         }
-                        catch (Exception ex)
+                        else
+                            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.error($"{id} Caught exception in WasatchNET.Spectrometer.getSpectrumRaw: {ex}");
+                        retries++;
+                        if (retries >= maxRetries)
                         {
-                            logger.error($"Caught exception in WasatchNET.Spectrometer.getSpectrumRaw: {ex}");
-                            retries++;
-                            if (retries >= maxRetries)
-                            {
-                                logger.error($"giving up after {retries} retries");
-                                return null;
-                            }
+                            logger.error($"giving up after {retries} retries");
+                            return null;
+                        }
 
-                            logger.debug("reconnecting");
-                            var ok = reconnect();
-                            if (ok)
-                            {
-                                logger.debug("reconnection succeeded, retrying read");
-                                continue;
-                            }
-                            else
-                            {
-                                logger.error("reconnection failed, giving up");
-                                return null;
-                            }
+                        logger.error("reconnecting");
+                        var ok = reconnect();
+                        if (ok)
+                        {
+                            logger.error("reconnection succeeded, retrying read");
+                            continue;
+                        }
+                        else
+                        {
+                            logger.error("reconnection failed, giving up");
+                            return null;
                         }
                     }
-                }
-                else
-                {
-                    // without retry logic
-		            if (isStroker)
-	 	            {
-                        subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
-                        if (areaScanEnabled)
-                            pixelsPerEndpoint *= LEGACY_VERTICAL_PIXELS;
-                        spec = new double[pixelsPerEndpoint];
-                    }
-		            else
-                        subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
                 }
 
                 // verify that exactly the number expected were received
                 if (subspectrum == null || subspectrum.Length != pixelsPerEndpoint)
                 {
-                    logger.error("failed when reading subspectrum from {0}", spectralReader);
+                    logger.error($"failed when reading subspectrum from 0x{spectralReader.EpNum:x2} ({id})");
                     Thread.Sleep(100);
                     if (isStroker && areaScanEnabled)
                         pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
@@ -2098,6 +2077,9 @@ namespace WasatchNET
                 pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+
+            // logger.debug("getSpectrumRaw({0}): {1}", id, string.Join<double>(", ", spec));
+
             lastSpectrum = spec;
             return spec;
         }
@@ -2128,7 +2110,7 @@ namespace WasatchNET
             {
                 // compute this inside the loop, just in case (if doing external
                 // triggering), someone changes integration time during trigger wait
-                int timeoutMS = (int)(2 * integrationTimeMS_ + 100);
+                int timeoutMS = generateTimeoutMS();
 
                 // read the next block of data
                 ErrorCode err = new ErrorCode();
@@ -2222,7 +2204,7 @@ namespace WasatchNET
             {
                 // compute this inside the loop, just in case (if doing external
                 // triggering), someone changes integration time during trigger wait
-                int timeoutMS = (int)(100 * integrationTimeMS_ + 100);
+                int timeoutMS = generateTimeoutMS();
 
                 // read the next block of data
                 ErrorCode err = new ErrorCode();
@@ -2284,10 +2266,28 @@ namespace WasatchNET
             return subspectrum;
         }
 
-        // Given one endpoint (0x82 or 0x86), read exactly the number of pixels 
+        int generateTimeoutMS()
+        {
+            // give SiG more time, as it may need to do 6 internal throwaway
+            // if it's coming back from a power-save mode
+            int acquisitions = isSiG ? 8 : 2;
+
+            // give more time if we have lots of connected spectrometers, as 
+            // USB is ultimately serial
+            const int windowMS = 500;
+
+            return (int)(integrationTimeMS_ * acquisitions +
+                         windowMS * Driver.getInstance().getNumberOfSpectrometers());
+        }
+
+        // Given one endpoint (e.g. Ep02 or Ep06), read exactly the number of pixels 
         // expected on the endpoint.  Try to do it in one go, but loop around if
         // it comes out in chunks.  Log an error and return NULL if anything goes
         // wrong (timeout in non-triggering context, or reading too many bytes).
+        //
+        // MZ: I don't like that "pixelsPerEndpoint" (which is already a Spectrometer
+        //     attribute) is here being "shadowed" (overwritten) by a local parameter
+        //     name.  Recommend picking a different parameter name.
         uint[] readSubspectrum(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
         {
             ////////////////////////////////////////////////////////////////////
@@ -2302,11 +2302,12 @@ namespace WasatchNET
 
             int bytesReadThisEndpoint = 0;
             int bytesRemainingToRead = bytesPerEndpoint;
+
             while (bytesReadThisEndpoint < bytesPerEndpoint)
             {
                 // compute this inside the loop, just in case (if doing external
                 // triggering), someone changes integration time during trigger wait
-                int timeoutMS = (int)(2 * integrationTimeMS_ + 100);
+                int timeoutMS = generateTimeoutMS();
 
                 // read the next block of data
                 ErrorCode err = new ErrorCode();
@@ -2314,28 +2315,28 @@ namespace WasatchNET
                 try
                 {
                     int bytesToRead = bytesPerEndpoint - bytesReadThisEndpoint;
-                    logger.debug("readSubspectrum: attempting to read {0} bytes of spectrum from endpoint {1} with timeout {2}ms", bytesToRead, spectralReader, timeoutMS);
+                    logger.debug($"readSubspectrum: attempting to read {bytesToRead} bytes of spectrum from endpoint 0x{spectralReader.EpNum:x2} with timeout {timeoutMS}ms ({id})");
                     err = spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, bytesPerEndpoint - bytesReadThisEndpoint, timeoutMS, out bytesRead);
-                    logger.debug("readSubspectrum: read {0} bytes of spectrum from endpoint {1} (ErrorCode {2})", bytesRead, spectralReader, err.ToString());
+                    logger.debug($"readSubspectrum: read {bytesRead} bytes of spectrum from endpoint 0x{spectralReader.EpNum:x2} ({err}) ({id})");
                 }
                 catch (Exception ex)
                 {
-                    logger.error("readSubspectrum: caught exception reading endpoint: {0}", ex.Message);
+                    logger.error("readSubspectrum: caught exception reading endpoint ({id}): {0}", ex.Message);
                     return null; 
                 }
 
                 bytesReadThisEndpoint += bytesRead;
-                logger.debug("readSubspectrum: bytesReadThisEndpoint now {0}", bytesReadThisEndpoint);
+                logger.debug($"readSubspectrum: bytesReadThisEndpoint now {bytesReadThisEndpoint} ({id})");
 
                 if (bytesReadThisEndpoint == 0 && !triggerWasExternal)
                 {
-                    logger.error("readSubspectrum: read nothing (timeout?)");
+                    logger.error($"readSubspectrum: read nothing (timeout?) ({id})");
                     return null; 
                 }
 
                 if (bytesReadThisEndpoint > bytesPerEndpoint)
                 {
-                    logger.error("readSubspectrum: read too many bytes on endpoint {0} (read {1} of expected {2})", spectralReader, bytesReadThisEndpoint, bytesPerEndpoint);
+                    logger.error($"readSubspectrum: read too many bytes on endpoint 0x{spectralReader.EpNum:x2} (read {bytesReadThisEndpoint} of expected {bytesPerEndpoint}) ({id})");
                     break; 
                 }
 
@@ -2343,7 +2344,7 @@ namespace WasatchNET
                 {
                     // need to do this so software can send an ACQUIRE command, else we'll
                     // loop forever
-                    logger.debug("triggering switched from external to internal...resetting");
+                    logger.debug($"triggering switched from external to internal...resetting ({id})");
                     return null; 
                 }
 
@@ -2351,7 +2352,7 @@ namespace WasatchNET
                 {
                     // we don't know how long we'll have to wait for the trigger, so just loop and hope
                     // (should probably only catch Timeout exceptions...)
-                    logger.debug("readSubspectrum: still waiting for external trigger");
+                    logger.debug($"readSubspectrum: still waiting for external trigger ({id})");
                 }
             }
 

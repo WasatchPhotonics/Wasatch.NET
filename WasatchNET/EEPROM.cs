@@ -280,6 +280,14 @@ namespace WasatchNET
         /// the process of expanding the polynomial.
         ///
         /// user-writable
+        ///
+        /// MZ: I think the current logic in the setter which invokes the 
+        ///     EEPROMChanged event has a big hole: namely, that the getter
+        ///     returns a reference to the entire array object.  That means
+        ///     the caller (customer software) can change the values of individual
+        ///     elements within the array at-will, and neither the setter nor
+        ///     event will ever fire.  I'm not sure that's entirely a bug,
+        ///     but wanted to document it.
         /// </remarks>
         /// <see cref="Spectrometer.wavelengths"/>
         /// <see cref="Util.generateWavelengths(uint, float[])"/>
@@ -1297,7 +1305,7 @@ namespace WasatchNET
                     string test = buffer.ToString();
 
                    
-                    wavecalCoeffs = new float[] { 0, 1, 0, 0 };
+                    wavecalCoeffs = new float[] { 0, 1, 0, 0 }; // MZ: add a zero?
                     
 
                     startupIntegrationTimeMS = 0;
@@ -1926,22 +1934,20 @@ namespace WasatchNET
 
         void enforceReasonableDefaults()
         {
+            ////////////////////////////////////////////////////////////////////
+            // wavecal (only check first 4)
+            ////////////////////////////////////////////////////////////////////
+
             bool defaultWavecal = false;
             for (int i = 0; i < 4; i++)
                 if (Double.IsNaN(wavecalCoeffs[i]))
                     defaultWavecal = true;
 
-            for (int i = 0; i < 5; i++)
-                if (Double.IsNaN(linearityCoeffs[i]))
-                    linearityCoeffs[i] = 0;
-            for (int i = 0; i < 4; i++)
-                if (Double.IsNaN(laserPowerCoeffs[i]))
-                    laserPowerCoeffs[i] = 0;
-
             if (defaultWavecal || format == 0xff)
             {
                 logger.error("EEPROM appears to be default");
                 defaultValues = true;
+                wavecalCoeffs = new float[5];
                 wavecalCoeffs[0] = 0;
                 wavecalCoeffs[1] = 1;
                 wavecalCoeffs[2] = 0;
@@ -1949,10 +1955,56 @@ namespace WasatchNET
                 wavecalCoeffs[4] = 0;
             }
 
+            // if there's a 5th element, make double-sure it's not corrupt
+            if (wavecalCoeffs.Length == 5)
+            {
+                double t = wavecalCoeffs[wavecalCoeffs.Length - 1];
+                if (double.IsNaN(t) || double.IsInfinity(t))
+                    wavecalCoeffs[wavecalCoeffs.Length - 1] = 0;
+            }
+
+            ////////////////////////////////////////////////////////////////////
+            // other coeffs
+            ////////////////////////////////////////////////////////////////////
+
+            linearityCoeffs = Util.cleanNan(linearityCoeffs);
+            laserPowerCoeffs = Util.cleanNan(laserPowerCoeffs);
+
+            ////////////////////////////////////////////////////////////////////
+            // integration time
+            ////////////////////////////////////////////////////////////////////
+
             if (minIntegrationTimeMS < 1 || minIntegrationTimeMS > 1000)
             {
                 logger.error("invalid minIntegrationTimeMS found ({0}), defaulting to 1", minIntegrationTimeMS);
                 minIntegrationTimeMS = 1;
+                maxIntegrationTimeMS = 60000;
+            }
+
+            ////////////////////////////////////////////////////////////////////
+            // other min/max
+            ////////////////////////////////////////////////////////////////////
+
+            // you'd think this could be done with generics but no...
+            if (minIntegrationTimeMS > maxIntegrationTimeMS)
+            {
+                var t = minIntegrationTimeMS;
+                minIntegrationTimeMS = maxIntegrationTimeMS;
+                maxIntegrationTimeMS = t;
+            }
+
+            if (minLaserPowerMW > maxLaserPowerMW)
+            {
+                var t = minLaserPowerMW;
+                minLaserPowerMW = maxLaserPowerMW;
+                maxLaserPowerMW = t;
+            }
+
+            if (detectorTempMin > detectorTempMax)
+            {
+                var t = detectorTempMin;
+                detectorTempMin = detectorTempMax;
+                detectorTempMax = t;
             }
         }
 

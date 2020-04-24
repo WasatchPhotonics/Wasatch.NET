@@ -137,6 +137,18 @@ namespace WasatchNET
                 log(LogLevel.DEBUG, fmt, obj);
         }
 
+        public void header(string fmt, params Object[] obj)
+        {
+            if (level <= LogLevel.DEBUG)
+            {
+                debug("");
+                debug("=========================================================");
+                log(LogLevel.DEBUG, fmt, obj);
+                debug("=========================================================");
+                debug("");
+            }
+        }
+
         public void logString(LogLevel lvl, string msg)
         {
             if (level <= lvl)

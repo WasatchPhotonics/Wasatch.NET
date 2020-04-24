@@ -202,13 +202,33 @@ namespace WasatchNET
         /// <param name="spectrum">input array</param>
         /// <param name="replacement">value to replace any NaN/INF entries (default zero)</param>
         /// <returns>cleansed array with no invalid values</returns>
-        public static double[] cleanNan(double[] spectrum, double replacement = 0)
+        public static double[] cleanNan(double[] a, double replacement = 0)
         {
-            double[] clean = new double[spectrum.Length];
-            for (uint i = 0; i < spectrum.Length; i++)
-                clean[i] = (Double.IsNaN(spectrum[i]) || Double.IsInfinity(spectrum[i]))
-                         ? replacement : spectrum[i];
+            double[] clean = new double[a.Length];
+            for (uint i = 0; i < a.Length; i++)
+                clean[i] = (double.IsNaN(a[i]) || double.IsInfinity(a[i])) ? replacement : a[i];
             return clean;
+        }
+
+        // you'd think you could do this with generics :-(
+        // @see https://stackoverflow.com/q/32664/11615696
+        public static float[] cleanNan(float[] a, float replacement = 0)
+        {
+            float[] clean = new float[a.Length];
+            for (uint i = 0; i < a.Length; i++)
+                clean[i] = (float.IsNaN(a[i]) || float.IsInfinity(a[i])) ? replacement : a[i];
+            return clean;
+        }
+
+        // not usable for Properties :-(
+        public static void fixOrder<T>(ref T lo, ref T hi) where T : IComparable
+        {
+            if (hi.CompareTo(lo) < 0)
+            {
+                T tmp = lo;
+                lo = hi;
+                hi = tmp;
+            }    
         }
 
         public static byte[] truncateArray(byte[] src, int len)

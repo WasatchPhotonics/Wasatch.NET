@@ -32,12 +32,13 @@ namespace WasatchNET
         {
             if (spec != null)
             {
+                Logger.getInstance().debug($"instantiating ChannelSpectrum for {spec.id}");
                 pos = spec.multiChannelPosition;
                 xAxis = spec.wavenumbers is null ? spec.wavelengths : spec.wavenumbers;
                 xAxisType = spec.wavenumbers is null ? X_AXIS_TYPE.WAVELENGTH : X_AXIS_TYPE.WAVENUMBER;
                 intensities = spec.lastSpectrum;
-                detectorTemperatureDegC = spec.detectorTemperatureDegC;
                 integrationTimeMS = spec.integrationTimeMS;
+                detectorTemperatureDegC = spec.detectorTemperatureDegC;
             }
         }
     }
@@ -80,16 +81,16 @@ namespace WasatchNET
 
         public bool reflectanceEnabled { get; set; }
 
+        public int triggerPulseWidthMS { get; set; } = 50;
+        
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
 
-        const int TRIGGER_PULSE_WIDTH_MS = 50;
-
         static MultiChannelWrapper instance = null;
 
         Driver driver = Driver.getInstance();
-        Dictionary<int, Spectrometer> specByPos;
+        SortedDictionary<int, Spectrometer> specByPos;
         Logger logger = Logger.getInstance();
 
         Spectrometer specTrigger = null;
@@ -121,7 +122,7 @@ namespace WasatchNET
 
         void reset()
         {
-            specByPos = new Dictionary<int, Spectrometer>();
+            specByPos = new SortedDictionary<int, Spectrometer>();
             positions = new SortedSet<int>();
             specTrigger = null;
             specFan = null;
@@ -207,7 +208,7 @@ namespace WasatchNET
             }
 
             // default to internal triggering
-            triggeringEnabled = false;
+            hardwareTriggeringEnabled = false;
 
             return spectrometerCount > 0;
         }
@@ -246,7 +247,10 @@ namespace WasatchNET
         /// <param name="pos">Which channel</param>
         public Spectrometer getSpectrometer(int pos)
         {
-            return specByPos.ContainsKey(pos) ? specByPos[pos] : null;
+            if (specByPos.ContainsKey(pos))
+                return specByPos[pos];
+            logger.error($"Attempt to access spectrometer at unpopulated position {pos}");
+            return null;
         }
 
         /// <summary>
@@ -258,9 +262,9 @@ namespace WasatchNET
         /// <summary>
         /// Whether external hardware triggering is currently enabled.
         /// </summary>
-        public bool triggeringEnabled
+        public bool hardwareTriggeringEnabled
         {
-            get => _triggeringEnabled;
+            get => _hardwareTriggeringEnabled;
             set
             {
                 foreach (var pair in specByPos)
@@ -268,10 +272,10 @@ namespace WasatchNET
                     logger.debug($"pos {pair.Key}: triggerEnabled -> {value}");
                     pair.Value.triggerSource = value ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
                 }
-                _triggeringEnabled = value;
+                _hardwareTriggeringEnabled = value;
             }
         }
-        bool _triggeringEnabled;
+        bool _hardwareTriggeringEnabled;
 
         /// <summary>
         /// The position of the spectrometer configured to control the fans.
@@ -316,21 +320,33 @@ namespace WasatchNET
         /// HW trigger pulse.
         /// </summary>
         /// <todo>test w/ARM spectrometers</todo>
-        public async Task<bool> startAcquisition()
+        /// <remarks>This is async so the GUI is responsive while the trigger is high</remarks>
+        public async Task<bool> startAcquisitionAsync()
         {
+            if (!hardwareTriggeringEnabled)
+            {
+                // no need to do anything in this case; Spectrometer.getSpectrum()
+                // will internally send a software trigger unless the triggering 
+                // mode was explicitly set to external
+                logger.debug("hardware triggering disabled, so not sending");
+                return true;
+            }
+
             if (specTrigger is null)
             {
-                logger.error("startAcquisition: no spectrometer configured with trigger control");
+                logger.error("no spectrometer configured with trigger control");
                 return false;
             }
 
-            logger.debug("triggerPulse: high");
+            logger.header("Sending Trigger");
+
+            logger.debug("trigger -> high");
             specTrigger.laserEnabled = true;
 
-            logger.debug("triggerPulse: wait");
-            await Task.Delay(TRIGGER_PULSE_WIDTH_MS);
+            logger.debug("trigger (wait)");
+            await Task.Delay(millisecondsDelay: triggerPulseWidthMS);
 
-            logger.debug("triggerPulse: low");
+            logger.debug("trigger -> low");
             specTrigger.laserEnabled = false;
 
             return true;
@@ -350,43 +366,38 @@ namespace WasatchNET
         /// total acquisition time is close to minimal.
         /// </remarks>
         /// <param name="sendTrigger">whether to automatically raise the HW trigger (default true)</param>
-        public async Task<List<ChannelSpectrum>> getSpectra(bool sendTrigger = true)
+        public async Task<List<ChannelSpectrum>> getSpectraAsync(bool sendTrigger = true)
         {
             if (sendTrigger)
             {
-                if (!await startAcquisition())
+                if (!await startAcquisitionAsync())
                 {
                     logger.error("Unable to start acquisition");
                     return null;
                 }
             }
 
-            // We'll want to return the ChannelSpectra in a sorted list by position
-            // for ease of debugging and deterministic behavior, but we'll be reading
-            // the spectra by integration time for speed, so temporarily store in a 
-            // dictionary.
-            SortedDictionary<int, ChannelSpectrum> temp = new SortedDictionary<int, ChannelSpectrum>();
+            List<ChannelSpectrum> spectra = new List<ChannelSpectrum>();
 
-            foreach (var spec in specByIntegrationTime())
+            // foreach (var spec in specByIntegrationTime())
+            foreach (var pair in specByPos)
             {
-                var pos = spec.multiChannelPosition;
-                ChannelSpectrum cs = new ChannelSpectrum(spec);
+                var pos = pair.Key;
+                var spec = pair.Value;
+
+                logger.header($"MultiChannelWrapper.getSpectraAsync: position {pos}");
 
                 logger.info($"getting spectrum from pos {pos} {spec.serialNumber} ({spec.integrationTimeMS} ms)");
-                cs.intensities = spec.getSpectrum();
+                ChannelSpectrum cs = new ChannelSpectrum(spec);
+                cs.intensities = await Task.Run(() => spec.getSpectrum());
                 if (reflectanceEnabled)
                     computeReflectance(spec, cs);
 
-                temp[pos] = cs;
+                spectra.Add(cs);
             }
 
-            // flatten the dictionary into a list to make things easy for LabVIEW et al
-            List<ChannelSpectrum> results = new List<ChannelSpectrum>();
-            foreach (var pair in temp)
-                results.Add(pair.Value);
-
-            logger.debug($"returning {results.Count} spectra");
-            return results;
+            logger.debug($"returning {spectra.Count} spectra");
+            return spectra;
         }
 
         /// <summary>
@@ -394,15 +405,17 @@ namespace WasatchNET
         /// </summary>
         /// <param name="pos">spectrometer position to acquire</param>
         /// <returns>measured spectrum</returns>
-        public ChannelSpectrum getSpectrum(int pos)
+        public async Task<ChannelSpectrum> getSpectrumAsync(int pos)
         {
             if (!specByPos.ContainsKey(pos))
                 return null;
 
+            logger.header($"MultiChannelWrapper.getSpectrumAsync: position {pos}");
+
             Spectrometer spec = specByPos[pos];
 
             ChannelSpectrum cs = new ChannelSpectrum(spec);
-            cs.intensities = spec.getSpectrum();
+            cs.intensities = await Task.Run(() => spec.getSpectrum());
 
             if (reflectanceEnabled)
                 computeReflectance(spec, cs);
@@ -422,10 +435,10 @@ namespace WasatchNET
         /// until clearDark() is called.
         /// </remarks>
         /// <returns>The darks collected (also stored in Spectrometer)</returns>
-        public async Task<List<ChannelSpectrum>> takeDark(bool sendTrigger = true)
+        public async Task<List<ChannelSpectrum>> takeDarkAsync(bool sendTrigger = true)
         {
             clearDark();
-            List<ChannelSpectrum> results = await getSpectra(sendTrigger);
+            List<ChannelSpectrum> results = await getSpectraAsync(sendTrigger);
             foreach (var cs in results)
                 specByPos[cs.pos].dark = cs.intensities;
             return results;
@@ -449,10 +462,10 @@ namespace WasatchNET
         /// a new reference.
         /// </summary>
         /// <returns>The collected references (also stored in Spectrometer)</returns>
-        public async Task<List<ChannelSpectrum>> takeReference(bool sendTrigger = true)
+        public async Task<List<ChannelSpectrum>> takeReferenceAsync(bool sendTrigger = true)
         {
             clearReference();
-            List<ChannelSpectrum> results = await getSpectra(sendTrigger);
+            List<ChannelSpectrum> results = await getSpectraAsync(sendTrigger);
             foreach (var cs in results)
                 specByPos[cs.pos].reference = cs.intensities;
             return results;

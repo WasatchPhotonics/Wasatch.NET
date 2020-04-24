@@ -1,8 +1,29 @@
 # Wasatch.NET Changelog
 
 - 2020-04-?? 2.1.??
+    - WasatchNET
+        - added WasatchMath.dll
+        - tightened EEPROM coeff and range validation
+        - added Logger.header()
+        - fixed waitForUsb()
+        - updated timeout logic for multiple devices, IMX power-up
     - MultiChannelWrapper/Demo
-        - added batch collection
+        - fixed triggering bug
+        - added Monte Carlo operation 
+            - final tally
+        - increased configurability
+            - trigger width
+            - integration time
+            - scan averaging
+            - arbitrary spectrometer subsets
+        - repeatability
+            - perform all operations in positional order
+        - IntegrationOptimizer
+            - GUI widgets
+            - list failures by channel
+        - saving
+            - interpolation
+
 - 2020-04-17 2.1.21
     - WasatchNET
         - Spectrometer.reference convenience array
