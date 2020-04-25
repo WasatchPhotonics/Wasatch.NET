@@ -152,9 +152,13 @@ namespace WasatchNET
                 // don't auto-generate SW triggers (we'll do it in the wrapper)
                 spec.autoTrigger = false;
 
-                // ARM units (used for triggering) seem to benefit from a throaway
-                // after changing integration time
-                spec.throwawayAfterIntegrationTime = true;
+                // ARM units (used for triggering) seem to benefit from a 
+                // throwaway after changing integration time.  Honestly, probably
+                // all models do...
+                //
+                // YOU ARE HERE -- testing going back without this
+                //
+                // spec.throwawayAfterIntegrationTime = true;
 
                 ////////////////////////////////////////////////////////////////
                 // Parse EEPROM.userText
@@ -326,25 +330,78 @@ namespace WasatchNET
         // Acquisition Parameters
         ////////////////////////////////////////////////////////////////////////
 
+        // could refactor this to do each spectrometer in its own Task,
+        // leaving automatic throwaways in place
         async public Task<bool> setIntegrationTimeMSAsync(uint ms)
         {
             logger.header($"setting all spectrometer integration times to {ms}");
 
-            foreach (var pair in specByPos)
+            if (false)
             {
-                var spec = pair.Value;
-                spec.throwawayAfterIntegrationTime = false;
-                spec.integrationTimeMS = ms;
+                // this is fast and works, but circumvents the robustness I'm trying to test
+
+                // temporarily disable throwaways
+                foreach (var pair in specByPos)
+                {
+                    var spec = pair.Value;
+                    spec.throwawayAfterIntegrationTime = false;
+                    spec.integrationTimeMS = ms;
+                }
+
+                // perform manual throwaway in parallel
+                _ = await getSpectraAsync();
+
+                // re-enable throwaways
+                foreach (var pair in specByPos)
+                    pair.Value.throwawayAfterIntegrationTime = true;
+            }
+            else
+            {
+                foreach (var pair in specByPos)
+                {
+                    var spec = pair.Value;
+                    spec.integrationTimeMS = ms;
+                }
             }
 
-            // perform the throwaways in parallel
-            _ = await getSpectraAsync();
-
-            foreach (var pair in specByPos)
-                pair.Value.throwawayAfterIntegrationTime = true;
+            logger.debug("done setting integration times");
 
             return true;
         }
+
+        /*
+        async public Task<bool> setIntegrationTimesAsync(Dictionary<int, int> times)
+        {
+            logger.header("setting all integration times");
+
+            // temporarily disable throwaways
+            foreach (var pair in times)
+            {
+                var pos = pair.Key;
+                var ms = pair.Value;
+
+                var spec = getSpectrometer(pos);
+                spec.throwawayAfterIntegrationTime = false;
+                spec.integrationTimeMS = (uint)ms;
+            }
+
+            // perform manual throwaway in parallel
+            logger.debug("now taking throwaways (will involve sending 1 HW or 8 SW triggers)");
+            _ = await getSpectraAsync();
+
+            // re-enable throwaways
+            logger.debug("done with throwaways");
+            foreach (var pair in times)
+            {
+                var pos = pair.Key;
+
+                var spec = getSpectrometer(pos);
+                spec.throwawayAfterIntegrationTime = true;
+            }
+
+            return true;
+        }
+        */
 
         ////////////////////////////////////////////////////////////////////////
         // Spectra
@@ -410,6 +467,7 @@ namespace WasatchNET
         {
             if (sendTrigger)
             {
+                logger.debug("getSpectraAsync: starting acquisition");
                 if (!await startAcquisitionAsync())
                 {
                     logger.error("Unable to start acquisition");

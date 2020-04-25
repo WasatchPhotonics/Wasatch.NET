@@ -591,9 +591,12 @@ namespace WasatchNET
                         eeprom.adcToDegCCoeffs[1],
                         eeprom.adcToDegCCoeffs[2],
                         degC);
-                return degC;
+                return lastDetectorTemperatureDegC = degC;
             }
         }
+
+        // a cached version
+        public float lastDetectorTemperatureDegC = -999;
 
         public ushort detectorTemperatureRaw
         {
@@ -1562,16 +1565,19 @@ namespace WasatchNET
         {
             if (featureIdentification != null && featureIdentification.usbDelayMS > 0)
             {
-                DateTime nextUsbTimestamp = lastUsbTimestamp.AddMilliseconds(featureIdentification.usbDelayMS);
+                var usbDelayMS = featureIdentification.usbDelayMS;
+                DateTime nextUsbTimestamp = lastUsbTimestamp.AddMilliseconds(usbDelayMS);
                 int delayMS = (int)(nextUsbTimestamp - DateTime.Now).TotalMilliseconds;
                 if (delayMS > 0)
                 {
                     do
                     {
-                        logger.debug("sleeping {0} ms to enforce {1} ms USB interval", delayMS, featureIdentification.usbDelayMS);
+                        logger.debug("sleeping {0} ms to enforce {1} ms USB interval", delayMS, usbDelayMS);
                         Thread.Sleep(delayMS);
                     } while (!usbDevice.IsOpen);
                 }
+                // else
+                //     logger.debug($"no need to sleep, as last {lastUsbTimestamp} is more than {usbDelayMS}ms before next {nextUsbTimestamp}");
             }
             lastUsbTimestamp = DateTime.Now;
         }
@@ -1757,7 +1763,7 @@ namespace WasatchNET
             lock (commsLock)
             {
                 // don't enforce USB delay on laser commands...that could be dangerous
-                if (opcode != Opcodes.GET_LASER_ENABLE)
+                if (opcode != Opcodes.SET_LASER_ENABLE)
                     waitForUsbAvailable();
 
                 logger.debug("sendCmd: about to send {0} ({1})", opcode, stringifyPacket(packet));
@@ -1994,6 +2000,7 @@ namespace WasatchNET
             if (isARM)
                 buf = new byte[8];
 
+            logger.debug("sending SW trigger");
             return sendCmd(Opcodes.ACQUIRE_SPECTRUM, buf: buf);
         }
 
@@ -2007,9 +2014,14 @@ namespace WasatchNET
         /// </remarks>
         void performThrowawaySpectrum()
         {
-            logger.debug("taking throwaway spectrum");
+            // We will need to issue a software trigger for throwaway spectra.
+            // However, we want to make sure getSpectrumRaw won't "autoTrigger",
+            // as we don't want to send two.
             if (!autoTrigger)
+            {
+                logger.debug("requesting SW trigger for throwaway, even though autoTrigger disabled");
                 sendTrigger();
+            }
             getSpectrumRaw();
         }
 
@@ -2024,9 +2036,14 @@ namespace WasatchNET
             // request a spectrum
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger)
                 sendTrigger();
+            else
+                logger.debug("getSpectrumRaw: NOT sending SW trigger");
 
             if (isStroker)
+            {
+                logger.debug("getSpectrumRaw: extra Stroker delay");
                 Thread.Sleep((int)integrationTimeMS_ + 5);
+            }
 
             ////////////////////////////////////////////////////////////////////
             // read spectrum
@@ -2355,6 +2372,8 @@ namespace WasatchNET
 
                 bytesReadThisEndpoint += bytesRead;
                 logger.debug($"readSubspectrum: bytesReadThisEndpoint now {bytesReadThisEndpoint} ({id})");
+                if (bytesReadThisEndpoint == bytesPerEndpoint)
+                    break;
 
                 if (bytesReadThisEndpoint == 0 && !triggerWasExternal)
                 {

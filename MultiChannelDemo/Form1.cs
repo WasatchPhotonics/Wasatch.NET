@@ -81,6 +81,8 @@ namespace MultiChannelDemo
             workerBatch.RunWorkerCompleted += backgroundWorkerBatch_RunWorkerCompleted;
 
             AcceptButton = buttonInit;
+
+            groupBoxBatch.Enabled = false;
         }
 
         void initChart(Chart chart)
@@ -131,22 +133,43 @@ namespace MultiChannelDemo
 
             updateGroupBoxTitles();
 
+            checkBoxFanEnable.Checked = true;
+            checkBoxTriggerEnableAll.Checked = true;
+
             logger.header("Initialization Complete");
 
             initialized = true;
             buttonInit.Enabled = false;
             AcceptButton = buttonAcquireAll;
+
+            groupBoxBatch.Enabled = true;
         }
 
-        void updateGroupBoxTitles()
+        void updateGroupBoxTitles(List<ChannelSpectrum> spectra=null)
         {
             logger.header("update group box titles");
-            foreach (var pos in wrapper.positions)
+            if (spectra is null)
             {
-                var spec = wrapper.getSpectrometer(pos);
-                var gb = groupBoxes[pos - 1];
-                gb.Text = string.Format("Position {0} ({1}) {2}ms {3:f2}°C",
-                    pos, spec.serialNumber, spec.integrationTimeMS, spec.detectorTemperatureDegC);
+                foreach (var pos in wrapper.positions)
+                {
+                    var spec = wrapper.getSpectrometer(pos);
+                    var gb = groupBoxes[pos - 1];
+                    gb.Text = string.Format("Position {0} ({1}) {2}ms {3:f2}°C",
+                        pos, spec.serialNumber, spec.integrationTimeMS, spec.detectorTemperatureDegC);
+                }
+            }
+            else
+            {
+                // we were passed ChannelSpectra, which already contains temperature,
+                // so use that
+                foreach (var cs in spectra)
+                {
+                    var pos = cs.pos;
+                    var spec = wrapper.getSpectrometer(pos);
+                    var gb = groupBoxes[pos - 1];
+                    gb.Text = string.Format("Position {0} ({1}) {2}ms {3:f2}°C",
+                        pos, spec.serialNumber, spec.integrationTimeMS, cs.detectorTemperatureDegC);
+                }
             }
         }
 
@@ -162,7 +185,12 @@ namespace MultiChannelDemo
         private void numericUpDownTriggerWidthMS_ValueChanged(object sender, EventArgs e) => wrapper.triggerPulseWidthMS = (int)numericUpDownTriggerWidthMS.Value;
 
         // user clicked the "enable external hardware triggering" system checkbox 
-        void checkBoxTriggerEnableAll_CheckedChanged(object sender, EventArgs e) => wrapper.hardwareTriggeringEnabled = checkBoxTriggerEnableAll.Checked;
+        void checkBoxTriggerEnableAll_CheckedChanged(object sender, EventArgs e)
+        {
+            var enabled = checkBoxTriggerEnableAll.Checked;
+            logger.header("Hardware Triggering {0}", enabled ? "enabled" : "disabled");
+            wrapper.hardwareTriggeringEnabled = enabled;
+        }
 
         // user clicked the "fan control" system checkbox
         void checkBoxFanEnable_CheckedChanged(object sender, EventArgs e) => wrapper.fanEnabled = checkBoxFanEnable.Checked;
@@ -216,6 +244,7 @@ namespace MultiChannelDemo
 
             // we have references, so can now compute reflectance
             checkBoxReflectanceEnabled.Enabled = true;
+
             enableControls(true);
         }
 
@@ -531,12 +560,25 @@ namespace MultiChannelDemo
         // Graphing
         ////////////////////////////////////////////////////////////////////////
 
-        void processSpectra(List<ChannelSpectrum> spectra)
+        // Although this method isn't marked async, it does get called via a 
+        // BeginInvoke delegate from BatchWorker, which means it _does_ get run
+        // asynchronously, and IN PARALLEL with anything else going on in the
+        // worker.  Therefore, avoid talking over USB from this or subordinate
+        // methods.
+        bool processSpectra(List<ChannelSpectrum> spectra)
         {
+            if (spectra is null)
+            {
+                logger.error("Can't process missing spectra");
+                return false;
+            }
+
             foreach (var cs in spectra)
                 processSpectrum(cs);
 
-            updateGroupBoxTitles();
+            updateGroupBoxTitles(spectra);
+
+            return true;
         }
 
         // Do whatever we're gonna do with new spectra (save, dark-correct, ...).
@@ -806,8 +848,6 @@ namespace MultiChannelDemo
                 foreach (var pos in wrapper.positions)
                 {
                     intensities.Add(pos, new List<double>());
-
-                    // initialize tallies
                     tallies.Add(pos, new SortedDictionary<uint, Tally>());
                 }
 
@@ -834,13 +874,21 @@ namespace MultiChannelDemo
 
                     sw.Write($"{count}, {nowStr}, {elapsedMS}");
 
-                    // randomize integration times
+                    // We could make this faster, by performing all the throwaway
+                    // spectra in parallel, but that somewhat voids the point of the
+                    // Monte Carlo test, which is to hit the spectrometers and wrapper
+                    // as hard as possible.
+                    logger.debug("setting integration times");
                     foreach (var pos in wrapper.positions)
                         wrapper.getSpectrometer(pos).integrationTimeMS = 
-                            (uint)r.Next((int)integrationTimeMSRandomMin, (int)integrationTimeMSRandomMax);
+                            (uint)r.Next((int)integrationTimeMSRandomMin, 
+                                         (int)integrationTimeMSRandomMax);
+                    logger.debug("done setting integration times");
 
                     // take measurement
+                    logger.debug("taking measurement");
                     lastSpectra = wrapper.getSpectraAsync().Result;
+                    logger.debug("done taking measurement");
 
                     // graph the spectra normally (individual and combined graphs)
                     chartTime.BeginInvoke((MethodInvoker)delegate { processSpectra(lastSpectra); });
@@ -876,6 +924,10 @@ namespace MultiChannelDemo
                     sw.WriteLine();
 
                     count++;
+
+                    // YOU ARE HERE: a sleep might well resolve our drift issues...
+                    Thread.Sleep(200);
+
                 }
                 logger.debug("workerBatch passed endTime");
             }
