@@ -23,7 +23,6 @@ namespace MultiChannelDemo
         Logger logger = Logger.getInstance();
 
         bool initialized = false;
-        SortedSet<int> selectedPositions = new SortedSet<int>();
 
         // Monte Carlo limits
         uint integrationTimeMSRandomMin = 100;
@@ -32,6 +31,7 @@ namespace MultiChannelDemo
         // note these are zero-indexed
         Chart[] charts;
         GroupBox[] groupBoxes;
+        CheckBox[] checkBoxes;
 
         Dictionary<int, Series> seriesCombined = new Dictionary<int, Series>();
         Dictionary<int, Series> seriesTime = new Dictionary<int, Series>();
@@ -61,18 +61,28 @@ namespace MultiChannelDemo
             logger.setTextBox(textBoxEventLog);
 
             // note all are 1-indexed
-            charts = new Chart[] { chart1, chart2, chart3, chart4, chart5, chart6, chart7, chart8 };
-            groupBoxes = new GroupBox[] { groupBoxPos1, groupBoxPos2, groupBoxPos3, groupBoxPos4, groupBoxPos5, groupBoxPos6, groupBoxPos7, groupBoxPos8 };
+            charts = new Chart[] { 
+                chart1, chart2, chart3, chart4, 
+                chart5, chart6, chart7, chart8 };
+            groupBoxes = new GroupBox[] { 
+                groupBoxPos1, groupBoxPos2, groupBoxPos3, groupBoxPos4, 
+                groupBoxPos5, groupBoxPos6, groupBoxPos7, groupBoxPos8 };
+            checkBoxes = new CheckBox[] {
+                checkBoxPos1, checkBoxPos2, checkBoxPos3, checkBoxPos4, 
+                checkBoxPos5, checkBoxPos6, checkBoxPos7, checkBoxPos8 };
 
             // initialize widgets
-            foreach (var gb in groupBoxes)
-                gb.Enabled = false;
+            for (int i = 0; i < 8; i++)
+            {
+                groupBoxes[i].Enabled = false;
+                checkBoxes[i].Checked = false;
+            }
 
             initChart(chartAll);
             foreach (var chart in charts)
                 initChart(chart);
 
-            clearSelection();
+            chartAll.ChartAreas[0].AxisY.IsStartedFromZero = true;
 
             Text = String.Format("MultiChannelDemo v{0}", Application.ProductVersion);
 
@@ -105,6 +115,13 @@ namespace MultiChannelDemo
                 return;
             }
 
+            // enable hardware triggering by default IF WE FOUND a trigger spectrometer
+            if (wrapper.triggerPos > -1)
+            {
+                logger.debug("found a spectrometer with trigger control, so enabling hardware triggering");
+                checkBoxTriggerEnableAll.Checked = true;
+            }
+
             // per-channel initialization
             chartAll.Series.Clear();
             chartTime.Series.Clear();
@@ -115,8 +132,8 @@ namespace MultiChannelDemo
 
                 spec.featureIdentification.usbDelayMS = 200;
 
-                var gb = groupBoxes[pos - 1];
-                gb.Enabled = true;
+                groupBoxes[pos-1].Enabled = true;
+                checkBoxes[pos-1].Checked = true;
 
                 // big graph
                 var s = new Series($"Pos {pos} ({sn})");
@@ -130,11 +147,16 @@ namespace MultiChannelDemo
                 seriesTime[pos - 1] = s;
                 chartTime.Series.Add(s);
             }
-
             updateGroupBoxTitles();
 
-            checkBoxFanEnable.Checked = true;
-            checkBoxTriggerEnableAll.Checked = true;
+            // turn on the fan, if there is one
+            if (wrapper.fanPos > -1)
+            {
+                logger.debug("found a spectrometer with fan control, so enabling that");
+                checkBoxFanEnable.Checked = true;
+            }
+            else
+                checkBoxFanEnable.Enabled = false;
 
             logger.header("Initialization Complete");
 
@@ -290,6 +312,9 @@ namespace MultiChannelDemo
             List<IntegrationOptimizer> intOpts = new List<IntegrationOptimizer>();
             foreach (var pos in wrapper.positions)
             {
+                if (!checkBoxes[pos - 1].Checked)
+                    continue;
+
                 var spec = wrapper.getSpectrometer(pos);
                 IntegrationOptimizer intOpt = new IntegrationOptimizer(spec);
                 intOpt.targetCounts = (int)numericUpDownOptimizeTarget.Value;
@@ -323,17 +348,10 @@ namespace MultiChannelDemo
             logger.header("Optimize complete");
         }
 
-        /// <todo>
-        /// enable/disable checkBoxes
-        /// </todo>
         void enableControls(bool flag)
         {
-            groupBoxSystem.Enabled =
-                groupBoxSelected.Enabled = 
+            groupBoxSystem.Enabled = 
                 groupBoxBatch.Enabled = flag;
-
-            if (flag)
-                groupBoxSelected.Enabled = selectedPositions.Count > 0;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -344,85 +362,14 @@ namespace MultiChannelDemo
         {
             CheckBox cb = sender as CheckBox;
             int pos = int.Parse(cb.Name.Substring(cb.Name.Length - 1, 1));
-            if (cb.Checked)
-                selectedPositions.Add(pos);
-            else
-                selectedPositions.Remove(pos);
-
-            groupBoxSelected.Enabled = selectedPositions.Count > 0;
-        }
-
-        // user manually toggled triggering for a single spectrometer
-        void checkBoxTriggerEnableOne_CheckedChanged(object sender, EventArgs e)
-        {
-            foreach (var pos in selectedPositions)
+            var spec = wrapper.getSpectrometer(pos);
+            if (spec != null)
             {
-                var spec = wrapper.getSpectrometer(pos);
-                if (spec != null)
-                    spec.triggerSource = checkBoxTriggerEnableOne.Checked ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
+                var selected = cb.Checked;
+                logger.debug($"{spec.id} selected -> {selected}");
+                spec.multiChannelSelected = selected;
             }
         }
-
-        // user manually set integration time for a single spectrometer
-        void numericUpDownIntegrationTimeMSOne_ValueChanged(object sender, EventArgs e) 
-        {
-            foreach (var pos in selectedPositions)
-            {
-                var spec = wrapper.getSpectrometer(pos);
-                if (spec is null)
-                    return;
-
-                var old = spec.integrationTimeMS;
-                var ms = (uint)numericUpDownIntegrationTimeMSOne.Value;
-                logger.info($"{spec.serialNumber}: changing integration time from {old} to {ms}");
-                spec.integrationTimeMS = ms;
-            }
-        }
-
-        void clearSelection()
-        {
-            groupBoxSelected.Enabled = false;
-            labelSelectedPos.Text = labelSelectedNotes.Text = "";
-        }
-
-        /*
-        /// <summary>
-        /// The user has clicked one of the "Selected" checkboxes on the GUI,
-        /// so select that spectrometer for subsequent "single-device" operations.
-        /// Alternatively, they clicked the "Clear Selection" button, so do that.
-        /// </summary>
-        void updateSelection()
-        {
-            if (selectedPositions.Count == 0)
-            {
-                groupBoxSelected.Enabled = false;
-                return;
-            }
-
-            ////////////////////////////////////////////////////////////////////
-            // We have a valid selection
-            ////////////////////////////////////////////////////////////////////
-
-            int selectedPos = -1;
-            if (selectedPositions.Count == 1)
-                selectedPos = selectedPositions.Min();
-
-            groupBoxSelected.Enabled = true;
-
-            labelSelectedPos.Text = $"Selected {selectedPositions.Count} units";
-
-            labelSelectedNotes.Text = "";
-            if (selectedPos > -1)
-            {
-                if (selectedPos == wrapper.triggerPos)
-                    labelSelectedNotes.Text = "Trigger Master";
-                else if (selectedPos == wrapper.fanPos)
-                    labelSelectedNotes.Text = "Fan Master";
-            }
-
-            updateIntegrationTimeControl();
-        }
-        */
 
         // The GUI exposes a control to set the integration time for any
         // currently-selected spectrometer.  Ergo, the min/max of that control
@@ -433,9 +380,12 @@ namespace MultiChannelDemo
             int max = 0x10000;
             int value = -1;
 
-            foreach (int pos in selectedPositions)
+            foreach (int pos in wrapper.positions)
             {
                 var spec = wrapper.getSpectrometer(pos);
+                if (!spec.multiChannelSelected)
+                    continue;
+
                 if (spec is null)
                     return;
                 min = (int)Math.Max(min, spec.eeprom.minIntegrationTimeMS);
@@ -443,117 +393,11 @@ namespace MultiChannelDemo
                 value = (int)Math.Max(value, spec.integrationTimeMS);
             }
 
-            numericUpDownIntegrationTimeMSOne.ValueChanged -= numericUpDownIntegrationTimeMSOne_ValueChanged;
-            numericUpDownIntegrationTimeMSOne.Minimum = max;
-            numericUpDownIntegrationTimeMSOne.Maximum = min;
-            numericUpDownIntegrationTimeMSOne.Value = value;
-            numericUpDownIntegrationTimeMSOne.ValueChanged += numericUpDownIntegrationTimeMSOne_ValueChanged;
-        }
-
-        // This method is provided if we need to quickly grab one spectrum
-        // from a given spectrometer, even if external triggering was normally
-        // enabled.
-        async Task<ChannelSpectrum> takeOneSpectrum(Spectrometer spec)
-        {
-            int selectedPos = spec.multiChannelPosition;
-            logger.header($"takeOneSpectrum({selectedPos})");
-
-            bool restoreExternal = false;
-            if (spec.triggerSource != TRIGGER_SOURCE.INTERNAL)
-            {
-                logger.debug($"disabling triggering on {selectedPos}");
-                spec.triggerSource = TRIGGER_SOURCE.INTERNAL;
-                restoreExternal = true;
-            }
-
-            logger.info($"getting spectrum from {selectedPos}");
-            ChannelSpectrum cs = await wrapper.getSpectrumAsync(selectedPos);
-            logger.debug($"recieved spectrum from {selectedPos}");
-
-            if (restoreExternal)
-            {
-                logger.debug($"restoring triggering on {selectedPos}");
-                spec.triggerSource = TRIGGER_SOURCE.EXTERNAL;
-            }
-
-            return cs;
-        }
-
-        // User clicked the "Acquire one spectrum from selected spectrometer",
-        // so do that.  Note we take the spectrum immediately, w/o triggering
-        // (if they want to test triggering, that is done with the standard
-        // system-level "Acquire" button).
-        async void buttonAcquireOne_Click(object sender, EventArgs e)
-        {
-            logger.header("User clicked Acquire Selected");
-
-            foreach (int pos in selectedPositions)
-            {
-                var spec = wrapper.getSpectrometer(pos);
-                if (spec is null)
-                    return;
-
-                enableControls(false);
-                var cs = await takeOneSpectrum(spec);
-                processSpectrum(cs);
-                enableControls(true);
-            }
-
-            logger.header("Acquire Selected Complete");
-        }
-        
-        // User clicked the "Take Dark" button for an individual spectrometer
-        async void buttonTakeDarkOne_Click(object sender, EventArgs e)
-        {
-            foreach (int pos in selectedPositions)
-            {
-                var spec = wrapper.getSpectrometer(pos);
-                if (spec is null)
-                    return;
-
-                enableControls(false);
-                var cs = await takeOneSpectrum(spec);
-                spec.dark = cs.intensities;
-                processSpectrum(cs);
-                enableControls(true);
-            }
-        }
-
-        private void buttonClearDarkOne_Click(object sender, EventArgs e)
-        {
-            foreach (var pos in selectedPositions)
-            {
-                var spec = wrapper.getSpectrometer(pos);
-                if (spec is null)
-                    return;
-
-                spec.dark = null;
-            }
-        }
-
-        async void buttonOptimizeOne_Click(object sender, EventArgs e)
-        {
-            foreach (var pos in selectedPositions)
-            {
-                Spectrometer spec = wrapper.getSpectrometer(pos);
-                if (spec is null)
-                    return;
-
-                enableControls(false);
-
-                // kick-off optimization in a background thread
-                var intOpt = new IntegrationOptimizer(spec);
-                intOpt.start();
-
-                // graph spectra during optimization
-                await Task.Run(() => graphActiveOptimizers(new IntegrationOptimizer[] { intOpt }.ToList()));
-
-                // all done
-                logger.info($"Optimization completed with status {intOpt.status}, integration time {spec.integrationTimeMS}ms");
-
-                updateIntegrationTimeControl();
-                enableControls(true);
-            }
+            numericUpDownIntegrationTimeMS.ValueChanged -= numericUpDownIntegrationTimeMS_ValueChanged;
+            numericUpDownIntegrationTimeMS.Minimum = max;
+            numericUpDownIntegrationTimeMS.Maximum = min;
+            numericUpDownIntegrationTimeMS.Value = value;
+            numericUpDownIntegrationTimeMS.ValueChanged += numericUpDownIntegrationTimeMS_ValueChanged;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -802,8 +646,7 @@ namespace MultiChannelDemo
             buttonBatchStart.Text = "Stop";
             groupBoxIntegrationTimeLimits.Enabled = 
                 numericUpDownBatchMin.Enabled =
-                groupBoxSystem.Enabled =
-                groupBoxSelected.Enabled = false;
+                groupBoxSystem.Enabled = false;
 
             batchPathname = saveFileDialog.FileName;
             if (batchPathname.EndsWith(".csv"))
@@ -838,7 +681,8 @@ namespace MultiChannelDemo
                 // header e.g. Count, Timestamp, ElapsedMS, Pos_1_MS, Pos_1_DegC, Pos_1_Avg, Pos_5_MS, Pos_5_DegC, Pos_5_Avg
                 sw.Write("Count, Timestamp, ElapsedMS");
                 foreach (var pos in wrapper.positions)
-                    sw.Write($", Pos_{pos}_MS, Pos_{pos}_DegC, Pos_{pos}_Avg");
+                    if (wrapper.getSpectrometer(pos).multiChannelSelected)
+                        sw.Write($", Pos_{pos}_MS, Pos_{pos}_DegC, Pos_{pos}_Avg");
                 sw.WriteLine();
 
                 // where to store graph data in memory
@@ -847,8 +691,11 @@ namespace MultiChannelDemo
 
                 foreach (var pos in wrapper.positions)
                 {
-                    intensities.Add(pos, new List<double>());
-                    tallies.Add(pos, new SortedDictionary<uint, Tally>());
+                    if (wrapper.getSpectrometer(pos).multiChannelSelected)
+                    {
+                        intensities.Add(pos, new List<double>());
+                        tallies.Add(pos, new SortedDictionary<uint, Tally>());
+                    }
                 }
 
                 uint count = 0;
@@ -880,9 +727,13 @@ namespace MultiChannelDemo
                     // as hard as possible.
                     logger.debug("setting integration times");
                     foreach (var pos in wrapper.positions)
-                        wrapper.getSpectrometer(pos).integrationTimeMS = 
-                            (uint)r.Next((int)integrationTimeMSRandomMin, 
-                                         (int)integrationTimeMSRandomMax);
+                    {
+                        var spec = wrapper.getSpectrometer(pos);
+                        if (spec.multiChannelSelected)
+                            spec.integrationTimeMS =
+                                (uint)r.Next((int)integrationTimeMSRandomMin,
+                                             (int)integrationTimeMSRandomMax);
+                    }
                     logger.debug("done setting integration times");
 
                     // take measurement
@@ -994,9 +845,14 @@ namespace MultiChannelDemo
             buttonBatchStart.Text = "Start";
             groupBoxIntegrationTimeLimits.Enabled = 
                 numericUpDownBatchMin.Enabled =
-                groupBoxSystem.Enabled =
-                groupBoxSelected.Enabled = true;
+                groupBoxSystem.Enabled = true;
             labelBatchStatus.Text = "click to start";
+        }
+
+        private void buttonUnselectAll_Click(object sender, EventArgs e)
+        {
+            foreach (var cb in checkBoxes)
+                cb.Checked = false;
         }
     }
 }

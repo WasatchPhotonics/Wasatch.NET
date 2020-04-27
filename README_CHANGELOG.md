@@ -12,7 +12,7 @@
         - updated throwaway logic on changed integration time
         - updated TEC default setpoint detector list
     - MultiChannelWrapper/Demo
-        - fixed triggering bug
+        - lots of debugs related to triggering bug (walking spectra, multiple triggers)
         - added Monte Carlo operation 
             - final tally
         - increased configurability
@@ -20,6 +20,7 @@
             - integration time
             - scan averaging
             - arbitrary spectrometer subsets
+            - refactored checkboxes
         - repeatability
             - initial throwaway spectrum
             - perform all operations in positional order

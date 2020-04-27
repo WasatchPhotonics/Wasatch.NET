@@ -36,9 +36,8 @@ namespace WasatchNET
                 pos = spec.multiChannelPosition;
                 xAxis = spec.wavenumbers is null ? spec.wavelengths : spec.wavenumbers;
                 xAxisType = spec.wavenumbers is null ? X_AXIS_TYPE.WAVELENGTH : X_AXIS_TYPE.WAVENUMBER;
-                intensities = spec.lastSpectrum;
-                integrationTimeMS = spec.integrationTimeMS;
-                detectorTemperatureDegC = spec.detectorTemperatureDegC;
+                // integrationTimeMS = spec.integrationTimeMS;
+                // detectorTemperatureDegC = spec.detectorTemperatureDegC;
             }
         }
     }
@@ -138,27 +137,28 @@ namespace WasatchNET
         {
             reset();
 
-
             var count = driver.openAllSpectrometers();
-            logger.info($"found {count} spectrometers");
+            logger.header($"openAsync: initializing {count} spectrometers");
             for (var i = 0; i < count; i++)
             {
                 var spec = driver.getSpectrometer(i);
                 var sn = spec.serialNumber;
 
-                logger.info("found {0} {1} with {2} pixels ({3:f2}, {4:f2})",
+                logger.info("initializing {0} {1} with {2} pixels ({3:f2}, {4:f2})",
                     spec.model, sn, spec.pixels, spec.wavelengths[0], spec.wavelengths[spec.pixels - 1]);
 
-                // don't auto-generate SW triggers (we'll do it in the wrapper)
+                // select by default
+                spec.multiChannelSelected = true;
+
+                // don't auto-generate SW triggers (we'll do it in the wrapper, 
+                // for speed and control)
                 spec.autoTrigger = false;
 
                 // ARM units (used for triggering) seem to benefit from a 
-                // throwaway after changing integration time.  Honestly, probably
-                // all models do...
-                //
-                // YOU ARE HERE -- testing going back without this
-                //
-                // spec.throwawayAfterIntegrationTime = true;
+                // throwaway after changing integration time.  (Honestly, 
+                // probably all models do.)  However, we're going to control
+                // that in the wrapper for certainty.
+                spec.throwawayAfterIntegrationTime = false;
 
                 ////////////////////////////////////////////////////////////////
                 // Parse EEPROM.userText
@@ -178,7 +178,7 @@ namespace WasatchNET
                         if (name.Contains("pos"))
                         {
                             if (Int32.TryParse(value, out pos))
-                                logger.info($"{sn} has position {pos}");
+                                logger.info($"  {sn} has position {pos}");
                             else
                                 logger.error($"{sn}: failed to parse {attr}");
                         }
@@ -186,12 +186,12 @@ namespace WasatchNET
                         {
                             if (value.Contains("trigger"))
                             {
-                                logger.info($"{sn} has trigger feature");
+                                logger.info($"  {sn} has trigger feature");
                                 specTrigger = spec;
                             }
                             else if (value.Contains("fan"))
                             {
-                                logger.info($"{sn} has fan feature");
+                                logger.info($"  {sn} has fan feature");
                                 specFan = spec;
                             }
                             else
@@ -213,19 +213,28 @@ namespace WasatchNET
                 // make sure we have no duplicates
                 while (specByPos.ContainsKey(pos))
                     pos++;
-                logger.info($"storing {sn} as position {pos}");
+                logger.info($"  storing {sn} as position {pos}");
                 specByPos[pos] = spec;
                 spec.multiChannelPosition = pos;
                 positions.Add(pos);
             }
 
-            // default to software triggering
+            // Default to system-wide software triggering, regardless of
+            // whether we found a specTrigger or not; let the app decide to
+            // override that (not all MultiChannel apps will use hardware
+            // triggering).
+            logger.header("openAsync: defaulting to software triggering");
             hardwareTriggeringEnabled = false;
 
+            if (spectrometerCount <= 0)
+                return logger.error("no spectrometers found");
+
             // take a throwaway spectrum from everything
+            logger.header("taking initial throwaway stability spectra (SW triggered)");
             _ = await getSpectraAsync();
 
-            return spectrometerCount > 0;
+            logger.header("initialization completed successfully");
+            return true;
         }
 
         /// <summary>
@@ -284,8 +293,12 @@ namespace WasatchNET
             {
                 foreach (var pair in specByPos)
                 {
+                    var spec = pair.Value;
+                    if (!spec.multiChannelSelected)
+                        continue;
+
                     logger.debug($"pos {pair.Key}: triggerEnabled -> {value}");
-                    pair.Value.triggerSource = value ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
+                    spec.triggerSource = value ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
                 }
                 _hardwareTriggeringEnabled = value;
             }
@@ -344,6 +357,9 @@ namespace WasatchNET
                 foreach (var pair in specByPos)
                 {
                     var spec = pair.Value;
+                    if (!spec.multiChannelSelected)
+                        continue;
+
                     spec.throwawayAfterIntegrationTime = false;
                     spec.integrationTimeMS = ms;
                 }
@@ -353,14 +369,21 @@ namespace WasatchNET
 
                 // re-enable throwaways
                 foreach (var pair in specByPos)
-                    pair.Value.throwawayAfterIntegrationTime = true;
+                {
+                    var spec = pair.Value;
+                    if (!spec.multiChannelSelected)
+                        continue;
+
+                    spec.throwawayAfterIntegrationTime = true;
+                }
             }
             else
             {
                 foreach (var pair in specByPos)
                 {
                     var spec = pair.Value;
-                    spec.integrationTimeMS = ms;
+                    if (spec.multiChannelSelected)
+                        spec.integrationTimeMS = ms;
                 }
             }
 
@@ -369,8 +392,14 @@ namespace WasatchNET
             return true;
         }
 
-        /*
-        async public Task<bool> setIntegrationTimesAsync(Dictionary<int, int> times)
+        /// <summary>
+        /// This was considered as a faster way to set all integration times quickly,
+        /// performing a single throwaway acquisition on all devices in parallel, but
+        /// is not currently being tested.
+        /// </summary>
+        /// <param name="times"></param>
+        /// <returns></returns>
+        async public Task<bool> setIntegrationTimesAsync_NOT_USED(Dictionary<int, int> times)
         {
             logger.header("setting all integration times");
 
@@ -401,7 +430,6 @@ namespace WasatchNET
 
             return true;
         }
-        */
 
         ////////////////////////////////////////////////////////////////////////
         // Spectra
@@ -441,11 +469,14 @@ namespace WasatchNET
                 {
                     var pos = pair.Key;
                     var spec = pair.Value;
+                    if (!spec.multiChannelSelected)
+                        continue;
 
                     logger.debug($"sending SW trigger to pos {pos}");
                     spec.sendTrigger();
                 }
             }
+            logger.debug("startAcquisitionAsync DONE");
             return true;
         }
 
@@ -465,6 +496,29 @@ namespace WasatchNET
         /// <param name="sendTrigger">whether to automatically raise the HW trigger (default true)</param>
         public async Task<List<ChannelSpectrum>> getSpectraAsync(bool sendTrigger = true)
         {
+            logger.header("getSpectraAsync: start");
+
+            uint firstIntegTime = 0;
+            foreach (var pair in specByPos)
+            {
+                var spec = pair.Value;
+                if (!spec.multiChannelSelected)
+                    continue;
+
+                if (firstIntegTime == 0)
+                {
+                    firstIntegTime = spec.integrationTimeMS;
+                    logger.debug($"using firstIntegTime {firstIntegTime} from {spec.id}");
+                }
+                spec.flushReaders();
+            }
+
+            if (firstIntegTime == 0)
+            {
+                logger.error("no spectrometers selected");
+                return null;
+            }
+
             if (sendTrigger)
             {
                 logger.debug("getSpectraAsync: starting acquisition");
@@ -473,7 +527,12 @@ namespace WasatchNET
                     logger.error("Unable to start acquisition");
                     return null;
                 }
+                logger.debug("getSpectraAsync: started acquisition");
             }
+
+            logger.debug($"waiting {firstIntegTime}ms for first integration to complete");
+            await Task.Delay((int)firstIntegTime);
+            logger.debug("done waiting");
 
             List<ChannelSpectrum> spectra = new List<ChannelSpectrum>();
 
@@ -482,18 +541,21 @@ namespace WasatchNET
                 var pos = pair.Key;
                 var spec = pair.Value;
 
+                if (!spec.multiChannelSelected)
+                    continue;
+
                 logger.header($"MultiChannelWrapper.getSpectraAsync: position {pos}");
 
                 logger.debug($"getting spectrum from pos {pos} {spec.serialNumber} ({spec.integrationTimeMS} ms)");
-                ChannelSpectrum cs = new ChannelSpectrum(spec);
-                cs.intensities = await Task.Run(() => spec.getSpectrum());
+                double[] intensities = await Task.Run(() => spec.getSpectrum());
+                ChannelSpectrum cs = new ChannelSpectrum(spec) { intensities = intensities };
                 if (reflectanceEnabled)
                     computeReflectance(spec, cs);
 
                 spectra.Add(cs);
             }
 
-            logger.debug($"getSpectraAsync: returning {spectra.Count} spectra");
+            logger.header($"getSpectraAsync: returning {spectra.Count} spectra");
             return spectra;
         }
 
@@ -547,7 +609,11 @@ namespace WasatchNET
         public void clearDark()
         {
             foreach (var pair in specByPos)
-                pair.Value.dark = null;
+            {
+                var spec = pair.Value;
+                if (spec.multiChannelSelected)
+                    spec.dark = null;
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -574,7 +640,11 @@ namespace WasatchNET
         public void clearReference()
         {
             foreach (var pair in specByPos)
-                pair.Value.reference = null;
+            {
+                var spec = pair.Value;
+                if (spec.multiChannelSelected)
+                    spec.reference = null;
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////

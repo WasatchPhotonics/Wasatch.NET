@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -125,7 +126,16 @@ namespace WasatchNET
             get { return eeprom.model; }
         }
 
-        public string id => string.Format($"{serialNumber} (pos {multiChannelPosition})");
+        public string id
+        {
+            get
+            {
+                if (multiChannelPosition > -1)
+                    return $"{serialNumber} (pos {multiChannelPosition})";
+                else
+                    return serialNumber;
+            }
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // Spectrometer Components
@@ -155,7 +165,16 @@ namespace WasatchNET
         /// explicitly, for instance to send software triggers to a series of
         /// devices at once, before beginning reads on any of them.
         /// </remarks>
-        public bool autoTrigger { get; set; } = true;
+        public bool autoTrigger 
+        {
+            get => _autoTrigger;
+            set
+            {
+                logger.debug($"Spectrometer.autoTrigger -> {value}");
+                _autoTrigger = value;
+            }
+        }
+        bool _autoTrigger = true;
 
         /// <summary>
         /// How many acquisitions to average together (zero for no averaging)
@@ -218,6 +237,11 @@ namespace WasatchNET
         /// end-user code.
         /// </remarks>
         public int multiChannelPosition = -1;
+
+        /// <summary>
+        /// Multichannel convenience accessor
+        /// </summary>
+        public bool multiChannelSelected { get; set; }
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -1763,10 +1787,14 @@ namespace WasatchNET
             lock (commsLock)
             {
                 // don't enforce USB delay on laser commands...that could be dangerous
-                if (opcode != Opcodes.SET_LASER_ENABLE)
+                if (opcode == Opcodes.SET_LASER_ENABLE)
+                    logger.header("Sending SET_LASER_ENABLE ==> {0} ({1})", wValue == 0 ? "off" : "ON", id);
+                else if (opcode == Opcodes.ACQUIRE_SPECTRUM)
+                    logger.header("Sending ACQUIRE_SPECTRUM ({0})", id);
+                else
                     waitForUsbAvailable();
 
-                logger.debug("sendCmd: about to send {0} ({1})", opcode, stringifyPacket(packet));
+                logger.debug("sendCmd: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
 
                 bool result = usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
 
@@ -2023,6 +2051,15 @@ namespace WasatchNET
                 sendTrigger();
             }
             getSpectrumRaw();
+        }
+
+        public void flushReaders()
+        {
+            foreach (UsbEndpointReader spectralReader in endpoints)
+            {
+                logger.debug($"flushing 0x{spectralReader.EpNum:x2} on {id}");
+                spectralReader.ReadFlush();
+            }
         }
 
         // just the bytes, ma'am

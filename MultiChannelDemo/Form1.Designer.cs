@@ -87,16 +87,6 @@
             this.buttonOptimizeAll = new System.Windows.Forms.Button();
             this.buttonAcquireAll = new System.Windows.Forms.Button();
             this.buttonInit = new System.Windows.Forms.Button();
-            this.groupBoxSelected = new System.Windows.Forms.GroupBox();
-            this.buttonClearDarkOne = new System.Windows.Forms.Button();
-            this.buttonTakeDarkOne = new System.Windows.Forms.Button();
-            this.checkBoxTriggerEnableOne = new System.Windows.Forms.CheckBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.labelSelectedNotes = new System.Windows.Forms.Label();
-            this.labelSelectedPos = new System.Windows.Forms.Label();
-            this.numericUpDownIntegrationTimeMSOne = new System.Windows.Forms.NumericUpDown();
-            this.buttonOptimizeOne = new System.Windows.Forms.Button();
-            this.buttonAcquireOne = new System.Windows.Forms.Button();
             this.groupBoxBatch = new System.Windows.Forms.GroupBox();
             this.labelBatchStatus = new System.Windows.Forms.Label();
             this.groupBoxIntegrationTimeLimits = new System.Windows.Forms.GroupBox();
@@ -152,6 +142,7 @@
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            this.buttonUnselectAll = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -173,8 +164,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpStep)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpMax)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpMin)).BeginInit();
-            this.groupBoxSelected.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegrationTimeMSOne)).BeginInit();
             this.groupBoxBatch.SuspendLayout();
             this.groupBoxIntegrationTimeLimits.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegrationTimeMSMin)).BeginInit();
@@ -290,7 +279,6 @@
             // 
             this.flowLayoutPanelControls.AutoScroll = true;
             this.flowLayoutPanelControls.Controls.Add(this.groupBoxSystem);
-            this.flowLayoutPanelControls.Controls.Add(this.groupBoxSelected);
             this.flowLayoutPanelControls.Controls.Add(this.groupBoxBatch);
             this.flowLayoutPanelControls.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanelControls.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
@@ -302,6 +290,7 @@
             // 
             // groupBoxSystem
             // 
+            this.groupBoxSystem.Controls.Add(this.buttonUnselectAll);
             this.groupBoxSystem.Controls.Add(this.label12);
             this.groupBoxSystem.Controls.Add(this.numericUpDownTriggerWidthMS);
             this.groupBoxSystem.Controls.Add(this.label11);
@@ -774,117 +763,6 @@
             this.buttonInit.UseVisualStyleBackColor = true;
             this.buttonInit.Click += new System.EventHandler(this.buttonInit_Click);
             // 
-            // groupBoxSelected
-            // 
-            this.groupBoxSelected.Controls.Add(this.buttonClearDarkOne);
-            this.groupBoxSelected.Controls.Add(this.buttonTakeDarkOne);
-            this.groupBoxSelected.Controls.Add(this.checkBoxTriggerEnableOne);
-            this.groupBoxSelected.Controls.Add(this.label1);
-            this.groupBoxSelected.Controls.Add(this.labelSelectedNotes);
-            this.groupBoxSelected.Controls.Add(this.labelSelectedPos);
-            this.groupBoxSelected.Controls.Add(this.numericUpDownIntegrationTimeMSOne);
-            this.groupBoxSelected.Controls.Add(this.buttonOptimizeOne);
-            this.groupBoxSelected.Controls.Add(this.buttonAcquireOne);
-            this.groupBoxSelected.Location = new System.Drawing.Point(3, 485);
-            this.groupBoxSelected.Name = "groupBoxSelected";
-            this.groupBoxSelected.Size = new System.Drawing.Size(201, 141);
-            this.groupBoxSelected.TabIndex = 0;
-            this.groupBoxSelected.TabStop = false;
-            this.groupBoxSelected.Text = "Selected Spectrometer";
-            // 
-            // buttonClearDarkOne
-            // 
-            this.buttonClearDarkOne.Location = new System.Drawing.Point(113, 84);
-            this.buttonClearDarkOne.Name = "buttonClearDarkOne";
-            this.buttonClearDarkOne.Size = new System.Drawing.Size(75, 23);
-            this.buttonClearDarkOne.TabIndex = 6;
-            this.buttonClearDarkOne.Text = "Clear Dark";
-            this.toolTip1.SetToolTip(this.buttonClearDarkOne, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
-        " triggering to previous state");
-            this.buttonClearDarkOne.UseVisualStyleBackColor = true;
-            this.buttonClearDarkOne.Click += new System.EventHandler(this.buttonClearDarkOne_Click);
-            // 
-            // buttonTakeDarkOne
-            // 
-            this.buttonTakeDarkOne.Location = new System.Drawing.Point(6, 84);
-            this.buttonTakeDarkOne.Name = "buttonTakeDarkOne";
-            this.buttonTakeDarkOne.Size = new System.Drawing.Size(75, 23);
-            this.buttonTakeDarkOne.TabIndex = 5;
-            this.buttonTakeDarkOne.Text = "Take Dark";
-            this.toolTip1.SetToolTip(this.buttonTakeDarkOne, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
-        " triggering to previous state");
-            this.buttonTakeDarkOne.UseVisualStyleBackColor = true;
-            this.buttonTakeDarkOne.Click += new System.EventHandler(this.buttonTakeDarkOne_Click);
-            // 
-            // checkBoxTriggerEnableOne
-            // 
-            this.checkBoxTriggerEnableOne.AutoSize = true;
-            this.checkBoxTriggerEnableOne.Location = new System.Drawing.Point(6, 32);
-            this.checkBoxTriggerEnableOne.Name = "checkBoxTriggerEnableOne";
-            this.checkBoxTriggerEnableOne.Size = new System.Drawing.Size(95, 17);
-            this.checkBoxTriggerEnableOne.TabIndex = 2;
-            this.checkBoxTriggerEnableOne.Text = "Trigger Enable";
-            this.toolTip1.SetToolTip(this.checkBoxTriggerEnableOne, "Turn hardware triggering on or off for THIS spectrometer");
-            this.checkBoxTriggerEnableOne.UseVisualStyleBackColor = true;
-            this.checkBoxTriggerEnableOne.CheckedChanged += new System.EventHandler(this.checkBoxTriggerEnableOne_CheckedChanged);
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(87, 115);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(20, 13);
-            this.label1.TabIndex = 8;
-            this.label1.Text = "ms";
-            // 
-            // labelSelectedNotes
-            // 
-            this.labelSelectedNotes.AutoSize = true;
-            this.labelSelectedNotes.Location = new System.Drawing.Point(105, 16);
-            this.labelSelectedNotes.Name = "labelSelectedNotes";
-            this.labelSelectedNotes.Size = new System.Drawing.Size(68, 13);
-            this.labelSelectedNotes.TabIndex = 1;
-            this.labelSelectedNotes.Text = "Pos n Notes:";
-            // 
-            // labelSelectedPos
-            // 
-            this.labelSelectedPos.AutoSize = true;
-            this.labelSelectedPos.Location = new System.Drawing.Point(6, 16);
-            this.labelSelectedPos.Name = "labelSelectedPos";
-            this.labelSelectedPos.Size = new System.Drawing.Size(82, 13);
-            this.labelSelectedPos.TabIndex = 0;
-            this.labelSelectedPos.Text = "Selected Pos: n";
-            // 
-            // numericUpDownIntegrationTimeMSOne
-            // 
-            this.numericUpDownIntegrationTimeMSOne.Location = new System.Drawing.Point(6, 113);
-            this.numericUpDownIntegrationTimeMSOne.Name = "numericUpDownIntegrationTimeMSOne";
-            this.numericUpDownIntegrationTimeMSOne.Size = new System.Drawing.Size(75, 20);
-            this.numericUpDownIntegrationTimeMSOne.TabIndex = 7;
-            this.numericUpDownIntegrationTimeMSOne.ValueChanged += new System.EventHandler(this.numericUpDownIntegrationTimeMSOne_ValueChanged);
-            // 
-            // buttonOptimizeOne
-            // 
-            this.buttonOptimizeOne.Location = new System.Drawing.Point(113, 55);
-            this.buttonOptimizeOne.Name = "buttonOptimizeOne";
-            this.buttonOptimizeOne.Size = new System.Drawing.Size(75, 23);
-            this.buttonOptimizeOne.TabIndex = 4;
-            this.buttonOptimizeOne.Text = "Optimize";
-            this.buttonOptimizeOne.UseVisualStyleBackColor = true;
-            this.buttonOptimizeOne.Click += new System.EventHandler(this.buttonOptimizeOne_Click);
-            // 
-            // buttonAcquireOne
-            // 
-            this.buttonAcquireOne.Location = new System.Drawing.Point(6, 55);
-            this.buttonAcquireOne.Name = "buttonAcquireOne";
-            this.buttonAcquireOne.Size = new System.Drawing.Size(75, 23);
-            this.buttonAcquireOne.TabIndex = 3;
-            this.buttonAcquireOne.Text = "Acquire";
-            this.toolTip1.SetToolTip(this.buttonAcquireOne, "Temporarily disables hardware triggering, gets a spectrum, then restores hardware" +
-        " triggering to previous state");
-            this.buttonAcquireOne.UseVisualStyleBackColor = true;
-            this.buttonAcquireOne.Click += new System.EventHandler(this.buttonAcquireOne_Click);
-            // 
             // groupBoxBatch
             // 
             this.groupBoxBatch.Controls.Add(this.labelBatchStatus);
@@ -892,7 +770,7 @@
             this.groupBoxBatch.Controls.Add(this.label2);
             this.groupBoxBatch.Controls.Add(this.buttonBatchStart);
             this.groupBoxBatch.Controls.Add(this.numericUpDownBatchMin);
-            this.groupBoxBatch.Location = new System.Drawing.Point(3, 632);
+            this.groupBoxBatch.Location = new System.Drawing.Point(3, 485);
             this.groupBoxBatch.Name = "groupBoxBatch";
             this.groupBoxBatch.Size = new System.Drawing.Size(201, 151);
             this.groupBoxBatch.TabIndex = 1;
@@ -1650,6 +1528,16 @@
             this.saveFileDialog.SupportMultiDottedExtensions = true;
             this.saveFileDialog.Title = "Monte Carlo Batch Report";
             // 
+            // buttonUnselectAll
+            // 
+            this.buttonUnselectAll.Location = new System.Drawing.Point(113, 183);
+            this.buttonUnselectAll.Name = "buttonUnselectAll";
+            this.buttonUnselectAll.Size = new System.Drawing.Size(75, 23);
+            this.buttonUnselectAll.TabIndex = 21;
+            this.buttonUnselectAll.Text = "Unselect All";
+            this.buttonUnselectAll.UseVisualStyleBackColor = true;
+            this.buttonUnselectAll.Click += new System.EventHandler(this.buttonUnselectAll_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1683,9 +1571,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpStep)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpMax)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpMin)).EndInit();
-            this.groupBoxSelected.ResumeLayout(false);
-            this.groupBoxSelected.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegrationTimeMSOne)).EndInit();
             this.groupBoxBatch.ResumeLayout(false);
             this.groupBoxBatch.PerformLayout();
             this.groupBoxIntegrationTimeLimits.ResumeLayout(false);
@@ -1782,7 +1667,6 @@
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.TextBox textBoxEventLog;
         private System.Windows.Forms.GroupBox groupBoxSystem;
-        private System.Windows.Forms.GroupBox groupBoxSelected;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPageIndividual;
         private System.Windows.Forms.TabPage tabPageCombined;
@@ -1791,13 +1675,6 @@
         private System.Windows.Forms.Button buttonInit;
         private System.Windows.Forms.Button buttonOptimizeAll;
         private System.Windows.Forms.Button buttonAcquireAll;
-        private System.Windows.Forms.NumericUpDown numericUpDownIntegrationTimeMSOne;
-        private System.Windows.Forms.Button buttonOptimizeOne;
-        private System.Windows.Forms.Button buttonAcquireOne;
-        private System.Windows.Forms.CheckBox checkBoxTriggerEnableOne;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.Label labelSelectedNotes;
-        private System.Windows.Forms.Label labelSelectedPos;
         private System.Windows.Forms.CheckBox checkBoxFanEnable;
         private System.Windows.Forms.CheckBox checkBoxTriggerEnableAll;
         private System.Windows.Forms.SplitContainer splitContainer1;
@@ -1817,9 +1694,7 @@
         private System.Windows.Forms.SplitContainer splitContainer8;
         private System.Windows.Forms.DataVisualization.Charting.Chart chart8;
         private System.Windows.Forms.ToolTip toolTip1;
-        private System.Windows.Forms.Button buttonTakeDarkOne;
         private System.Windows.Forms.Button buttonTakeDark;
-        private System.Windows.Forms.Button buttonClearDarkOne;
         private System.Windows.Forms.Button buttonClearDark;
         private System.Windows.Forms.CheckBox checkBoxVerbose;
         private System.Windows.Forms.CheckBox checkBoxReflectanceEnabled;
@@ -1867,6 +1742,7 @@
         private System.Windows.Forms.CheckBox checkBoxPos8;
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.NumericUpDown numericUpDownTriggerWidthMS;
+        private System.Windows.Forms.Button buttonUnselectAll;
     }
 }
 

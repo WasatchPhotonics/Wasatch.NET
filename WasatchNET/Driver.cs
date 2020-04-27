@@ -49,6 +49,8 @@ namespace WasatchNET
         /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
         public int openAllSpectrometers()
         {
+            logger.header("openAllSpectrometers: start");
+
             logger.info("Wasatch.NET v{0}", Assembly.GetExecutingAssembly().GetName().Version.ToString());
 
             SortedDictionary<string, List<Spectrometer>> sorted = new SortedDictionary<string, List<Spectrometer>>();
@@ -125,12 +127,13 @@ namespace WasatchNET
 
             // add to final list in sorted order
             spectrometers.Clear();
+            logger.debug("openAllSpectrometers: sorting indices for deterministic behavior");
             foreach (KeyValuePair<string, List<Spectrometer>> pair in sorted)
             {
                 foreach (Spectrometer s in pair.Value)
                 {
                     spectrometers.Add(s);
-                    logger.debug("openAllSpectrometers: index {0}: {1} {2}", spectrometers.Count - 1, s.model, s.serialNumber);
+                    logger.debug("  index {0}: {1} {2}", spectrometers.Count - 1, s.model, s.serialNumber);
                 }
             }
 
@@ -211,6 +214,7 @@ namespace WasatchNET
                 }
             }
 
+            logger.debug($"OpenAllSpectrometers: returning {spectrometers.Count}");
             return spectrometers.Count;
         }
 
