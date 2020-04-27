@@ -378,7 +378,7 @@ namespace WasatchNET
                 if (e.Win32ErrorNumber == 31)
                 {
                     UsbDevice usb = sender as UsbDevice;
-                    if (usb.IsOpen)
+                    if (usb != null && usb.IsOpen)
                     {
                         UsbEndpointBase baseDevice = sender as UsbEndpointBase;
                         // UsbEndpointInfo uei = baseDevice.EndpointInfo;

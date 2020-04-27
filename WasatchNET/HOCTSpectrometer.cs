@@ -1004,6 +1004,7 @@ namespace WasatchNET
                 }
 
                 commsOpen = openOk;
+                regenerateWavelengths();
                 return openOk;
             }
 
@@ -1244,6 +1245,12 @@ namespace WasatchNET
         }
 
         public override bool isARM => false;
+
+        public override float excitationWavelengthNM
+        {
+            get => 840f;
+            set { }
+        }
 
         public override bool laserEnabled // dangerous one to cache...
         {
