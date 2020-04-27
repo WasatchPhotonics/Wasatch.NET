@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using System.Text;
 
 namespace WasatchNET
 {
@@ -976,6 +977,21 @@ namespace WasatchNET
 
             }
 
+            else if (spectrometer is HOCTSpectrometer)
+            {
+                byte[] buffer = new byte[32];
+
+                if (!ParseData.writeString(serialNumber, buffer, 0, 16)) return false;
+                if (!ParseData.writeFloat(wavecalCoeffs[0], buffer, 16)) return false;
+                if (!ParseData.writeFloat(wavecalCoeffs[1], buffer, 20)) return false;
+                if (!ParseData.writeFloat(wavecalCoeffs[2], buffer, 24)) return false;
+                if (!ParseData.writeFloat(wavecalCoeffs[3], buffer, 28)) return false;
+
+                bool writeOK = HOCTSpectrometer.OctUsb.WriteCalibration(0, buffer);
+                return writeOK;
+
+            }
+
             else
             {
                 if (pages == null || pages.Count != MAX_PAGES)
@@ -1550,7 +1566,19 @@ namespace WasatchNET
 
                 slitSizeUM = 0;
 
-                byte[] buffer = new byte[16];
+                bool readOk = false;
+                byte[] buffer = HOCTSpectrometer.OctUsb.ReadCalibration(ref readOk);
+
+                if (!readOk)
+                {
+                    serialNumber = ParseData.toString(buffer, 0, 16);
+
+                    wavecalCoeffs[0] = ParseData.toFloat(buffer, 16);
+                    wavecalCoeffs[1] = ParseData.toFloat(buffer, 20);
+                    wavecalCoeffs[2] = ParseData.toFloat(buffer, 24);
+                    wavecalCoeffs[3] = ParseData.toFloat(buffer, 28);
+                }
+
                 int errorReader = 0;
 
                 string test = buffer.ToString();
