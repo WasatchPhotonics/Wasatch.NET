@@ -633,6 +633,18 @@ namespace WasatchNET
             }
         }
 
+        // a simple way to set expectedTriggerTimeoutTimestamp
+        public uint expectedTriggerTimeoutMS
+        {
+            set
+            {
+                expectedTriggerTimeoutTimestamp = DateTime.Now.AddMilliseconds(value);
+            }
+        }
+
+        // This allows getSpectrum() to throw timeouts even when externally triggered
+        public DateTime? expectedTriggerTimeoutTimestamp { get; set; } = null;
+
         public virtual string firmwareRevision
         {
             get
@@ -770,10 +782,10 @@ namespace WasatchNET
                     sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf);
                     integrationTimeMS_ = ms;
                     readOnce.Add(Opcodes.GET_INTEGRATION_TIME);
-                }
 
-                if (throwawayAfterIntegrationTime)
-                    performThrowawaySpectrum();
+                    if (throwawayAfterIntegrationTime)
+                        performThrowawaySpectrum();
+                }
             }
         }
         protected uint integrationTimeMS_;
@@ -1295,6 +1307,10 @@ namespace WasatchNET
         }
         TRIGGER_SOURCE triggerSource_ = TRIGGER_SOURCE.INTERNAL; // not ERROR
 
+        // MZ: I'm not sure what GPIO pin would support this triggerOutput...
+        //     on one recent "outbound" triggering project, we ended up using
+        //     laserEnable as the outbound trigger because we couldn't find a
+        //     usable GPIO.
         public EXTERNAL_TRIGGER_OUTPUT triggerOutput
         {
             get
@@ -2424,9 +2440,18 @@ namespace WasatchNET
 
                 if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
                 {
-                    // we don't know how long we'll have to wait for the trigger, so just loop and hope
-                    // (should probably only catch Timeout exceptions...)
-                    logger.debug($"readSubspectrum: still waiting for external trigger ({id})");
+                    if (expectedTriggerTimeoutTimestamp != null &&
+                        expectedTriggerTimeoutTimestamp >= DateTime.Now)
+                    {
+                        logger.error("failed to receive externally-triggered spectrum by {0} so timing-out",
+                            expectedTriggerTimeoutTimestamp);
+                        expectedTriggerTimeoutTimestamp = null;
+                        return null;
+                    }
+                    else
+                    {
+                        logger.debug($"readSubspectrum: still waiting for external trigger ({id})");
+                    }
                 }
             }
 

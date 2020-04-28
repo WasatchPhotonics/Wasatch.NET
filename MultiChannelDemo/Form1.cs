@@ -38,6 +38,7 @@ namespace MultiChannelDemo
 
         // Batch test
         bool batchRunning;
+        bool batchShuttingDown;
         string batchPathname;
         string talliesPathname;
         BackgroundWorker workerBatch;
@@ -154,6 +155,45 @@ namespace MultiChannelDemo
             groupBoxBatch.Enabled = true;
         }
 
+        protected override void OnFormClosing(FormClosingEventArgs e) => logger.setTextBox(null);
+
+        ////////////////////////////////////////////////////////////////////////
+        // Utility methods
+        ////////////////////////////////////////////////////////////////////////
+
+        // user dis/enabled verbose logging
+        private void checkBoxVerbose_CheckedChanged(object sender, EventArgs e) => logger.level = checkBoxVerbose.Checked ? LogLevel.DEBUG : LogLevel.INFO;
+
+        void enableControls(bool flag)
+        {
+            groupBoxSystem.Enabled = 
+            groupBoxBatch.Enabled = flag;
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Spectrometer Selection
+        ////////////////////////////////////////////////////////////////////////
+
+        // user unselected all spectrometers
+        private void buttonUnselectAll_Click(object sender, EventArgs e)
+        {
+            foreach (var cb in checkBoxes)
+                cb.Checked = false;
+        }
+
+        private void checkBoxPosX_CheckedChanged(object sender, EventArgs e)
+        {
+            CheckBox cb = sender as CheckBox;
+            int pos = int.Parse(cb.Name.Substring(cb.Name.Length - 1, 1));
+            var spec = wrapper.getSpectrometer(pos);
+            if (spec != null)
+            {
+                var selected = cb.Checked;
+                logger.debug($"{spec.id} selected -> {selected}");
+                spec.multiChannelSelected = selected;
+            }
+        }
+
         void updateGroupBoxTitles(List<ChannelSpectrum> spectra=null)
         {
             if (spectra is null)
@@ -180,10 +220,6 @@ namespace MultiChannelDemo
                 }
             }
         }
-
-        protected override void OnFormClosing(FormClosingEventArgs e) => logger.setTextBox(null);
-
-        private void checkBoxVerbose_CheckedChanged(object sender, EventArgs e) => logger.level = checkBoxVerbose.Checked ? LogLevel.DEBUG : LogLevel.INFO;
 
         ////////////////////////////////////////////////////////////////////////
         // System-Level Control (all spectrometers)
@@ -263,13 +299,12 @@ namespace MultiChannelDemo
             checkBoxReflectanceEnabled.Checked = false;
         }
 
-        // A little more complicated than usual, in order to perform all the
-        // throwaway spectra in parallel
-        async void numericUpDownIntegrationTimeMS_ValueChanged(object sender, EventArgs e)
+        // user set all spectrometers to one integration time
+        void numericUpDownIntegrationTimeMS_ValueChanged(object sender, EventArgs e)
         {
             enableControls(false);
             uint value = (uint)numericUpDownIntegrationTimeMS.Value;
-            _ = await wrapper.setIntegrationTimeMSAsync(value);
+            wrapper.setIntegrationTimeMS(value);
 
             updateGroupBoxTitles();
             enableControls(true);
@@ -332,29 +367,6 @@ namespace MultiChannelDemo
             enableControls(true);
 
             logger.header("Optimize complete");
-        }
-
-        void enableControls(bool flag)
-        {
-            groupBoxSystem.Enabled = 
-                groupBoxBatch.Enabled = flag;
-        }
-
-        ////////////////////////////////////////////////////////////////////////
-        // Individual Spectrometer Control (for testing/troubleshooting)
-        ////////////////////////////////////////////////////////////////////////
-
-        private void checkBoxPosX_CheckedChanged(object sender, EventArgs e)
-        {
-            CheckBox cb = sender as CheckBox;
-            int pos = int.Parse(cb.Name.Substring(cb.Name.Length - 1, 1));
-            var spec = wrapper.getSpectrometer(pos);
-            if (spec != null)
-            {
-                var selected = cb.Checked;
-                logger.debug($"{spec.id} selected -> {selected}");
-                spec.multiChannelSelected = selected;
-            }
         }
 
         // The GUI exposes a control to set the integration time for any
@@ -595,6 +607,41 @@ namespace MultiChannelDemo
         // Monte-Carlo Batch Testing
         ////////////////////////////////////////////////////////////////////////
 
+        // @todo move to a MonteCarlo class
+        //
+        // Okay, this is the proposed structure of this process, given our desire
+        // to "allow but count" double-triggered acquisitions if they happen to 
+        // occur.
+        //
+        // BackgroundWorkerBatch drives the Monte Carlo test.  This worker runs 
+        // from startTime to endTime, in deliberately-sedate 2sec increments.
+        // Every 2sec, it generates a hardware trigger.  That trigger may or may
+        // not be intentionally doubled (lo-hi-lo-hi-lo) if forceDoubleTrigger
+        // is set.  At the BEGINNING of each iteration (before the new trigger is
+        // sent), it outputs a record containing the LAST positional integration 
+        // times, spectral counts and means.  Besides outputing records and
+        // generating triggers, it doesn't do anything.  All acquisitions are
+        // in the per-position threads.
+        //
+        // The spectrometers themselves run in essentially free-running async 
+        // methods.  All they do is loop over:
+        //      - exit if shuttingDown
+        //      - randomize integration time
+        //      - update timeout
+        //      - acquire
+        //      - increment spectralCount unless error
+        // This way, each spectrometer has plenty of time to fully execute and
+        // acquire one expected integration (up to 500ms), with a whole 1.5sec
+        // to acquire any misfires as well.
+
+        async Task<bool> freeRunningSpectrometer(Spectrometer spec)
+        {
+            logger.header($"starting freeRunningSpectrometer({spec.id})");
+
+            logger.header($"freeRunningSpectrometer({spec.id}) done");
+            return true;
+        }
+
         private void numericUpDownIntegrationTimeMSMin_ValueChanged(object sender, EventArgs e)
         {
             integrationTimeMSRandomMin = (uint)numericUpDownIntegrationTimeMSMin.Value;
@@ -603,6 +650,16 @@ namespace MultiChannelDemo
         private void numericUpDownIntegrationTimeMSMax_ValueChanged(object sender, EventArgs e)
         {
             integrationTimeMSRandomMax = (uint)numericUpDownIntegrationTimeMSMax.Value;
+        }
+
+        private void checkBoxDoubleTriggerEnable_CheckedChanged(object sender, EventArgs e)
+        {
+            wrapper.forceDoubleTrigger = checkBoxDoubleTriggerEnable.Checked;
+        }
+
+        private void numericUpDownDoubleTriggerProbability_ValueChanged(object sender, EventArgs e)
+        {
+            wrapper.doubleTriggerPercentage = ((double)numericUpDownDoubleTriggerProbability.Value) / 100.0;
         }
 
         private void buttonBatchStart_Click(object sender, EventArgs e)
@@ -616,6 +673,7 @@ namespace MultiChannelDemo
         void stopBatch()
         {
             logger.header("stopping batch collection");
+            batchShuttingDown = true;
             workerBatch.CancelAsync();
         }
 
@@ -628,6 +686,7 @@ namespace MultiChannelDemo
                 return;
 
             batchRunning = true;
+            batchShuttingDown = false;
 
             buttonBatchStart.Text = "Stop";
             groupBoxIntegrationTimeLimits.Enabled = 
@@ -664,8 +723,8 @@ namespace MultiChannelDemo
             {
                 logger.info($"writing {batchPathname}");
 
-                // header e.g. Count, Timestamp, ElapsedMS, Pos_1_MS, Pos_1_DegC, Pos_1_Avg, Pos_5_MS, Pos_5_DegC, Pos_5_Avg
-                sw.Write("Count, Timestamp, ElapsedMS");
+                // header e.g. Count, Timestamp, Remaining, ElapsedMS, TriggerMS, Pos_1_MS, Pos_1_DegC, Pos_1_Avg, Pos_5_MS, Pos_5_DegC, Pos_5_Avg
+                sw.Write("Count, Timestamp, Remaining, ElapsedMS, TriggerMS");
                 foreach (var pos in wrapper.positions)
                     if (wrapper.getSpectrometer(pos).multiChannelSelected)
                         sw.Write($", Pos_{pos}_MS, Pos_{pos}_DegC, Pos_{pos}_Avg");
@@ -700,12 +759,16 @@ namespace MultiChannelDemo
                     var timeRemaining = (endTime - now).ToString(@"hh\:mm\:ss");
 
                     // update on-screen countdown
-                    logger.info($"batch count {count}, elapsed {elapsedMS} ms, remaining {timeRemaining}");
                     labelBatchStatus.BeginInvoke((MethodInvoker)delegate {
                         labelBatchStatus.Text = timeRemaining + " remaining"; });
 
+                    // randomize trigger pulse width (see MultiChannelWrapper.forceDoubleTrigger
+                    // docs for logic on max trigger length)
+                    var triggerMS = r.Next(1, (int)(0.25 * integrationTimeMSRandomMin));
+                    wrapper.triggerPulseWidthMS = triggerMS;
+
                     // start file row
-                    sw.Write($"{count}, {nowStr}, {elapsedMS}");
+                    sw.Write($"{count}, {nowStr}, {timeRemaining}, {elapsedMS}, {triggerMS}");
 
                     // randomize integration times
                     Dictionary<int, uint> integrationTimes = new Dictionary<int, uint>();
@@ -716,7 +779,7 @@ namespace MultiChannelDemo
                                              (int)integrationTimeMSRandomMax));
 
                     // set integration times
-                    var ok = wrapper.setIntegrationTimesAsync(integrationTimes).Result;
+                    var ok = wrapper.setIntegrationTimesMS(integrationTimes);
 
                     // take measurement
                     lastSpectra = wrapper.getSpectraAsync().Result;
@@ -744,6 +807,10 @@ namespace MultiChannelDemo
                         tallies[pos][cs.integrationTimeMS].count++;
                     }
                     sw.WriteLine();
+
+                    // added in test
+                    Thread.Sleep(100);
+
                     count++;
                 }
                 logger.debug("workerBatch passed endTime");
@@ -812,12 +879,6 @@ namespace MultiChannelDemo
                 numericUpDownBatchMin.Enabled =
                 groupBoxSystem.Enabled = true;
             labelBatchStatus.Text = "click to start";
-        }
-
-        private void buttonUnselectAll_Click(object sender, EventArgs e)
-        {
-            foreach (var cb in checkBoxes)
-                cb.Checked = false;
         }
     }
 }

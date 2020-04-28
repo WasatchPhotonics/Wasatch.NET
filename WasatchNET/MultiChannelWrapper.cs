@@ -78,7 +78,49 @@ namespace WasatchNET
 
         public bool reflectanceEnabled { get; set; }
 
-        public int triggerPulseWidthMS { get; set; } = 50;
+        /// <summary>
+        /// How long the triggerSpec's laserEnable signal is raised high to
+        /// generate an acquisition trigger to all spectrometers.
+        /// </summary>
+        /// <remarks>
+        /// Per Nicolas Baron, minimum width is probably > 1ms.  Note that
+        /// CSharp timing is not particularly precise, so the value entered
+        /// here is really more of a floor (even values of zero may work).
+        /// </remarks>
+        public int triggerPulseWidthMS 
+        {
+            get => _triggerPulseWidthMS;
+            set
+            {
+                // if (value < 5)
+                //     logger.error("triggerPulseWidthMS has only been tested >=5ms");
+                _triggerPulseWidthMS = value;
+            }
+        }
+        int _triggerPulseWidthMS = 25;
+
+        /// <summary>
+        /// force double triggers to occur (QC testing only)
+        /// </summary> 
+        /// <remarks>
+        /// TriggerPulseWidthMS is also used as the intra-trigger delay. If used, 
+        /// recommend that triggerPulseWidthMS be set no higher than 25% of the 
+        /// LOWEST integration time in the system's channels.  That way, assuming 
+        /// integration starts on the leading edge, there is room for:
+        /// 
+        /// ----------+----------+----------+----------+
+        /// [trigger 1]
+        /// [integration starts and runs until it stops]
+        ///           [trig delay]
+        ///                      [trigger 2]
+        /// </remarks>
+        public bool forceDoubleTrigger { get; set; }
+
+        /// <summary>
+        /// if double triggering is enabled, it will occur this often 
+        /// (1.0 = 100% of the time)
+        /// </summary> 
+        public double doubleTriggerPercentage { get; set; } = 0.05;
         
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
@@ -92,6 +134,8 @@ namespace WasatchNET
 
         Spectrometer specTrigger = null;
         Spectrometer specFan = null;
+
+        Random r = new Random();
 
         static object mut = new object();
 
@@ -154,9 +198,11 @@ namespace WasatchNET
 
                 // ARM units (used for triggering) seem to benefit from a 
                 // throwaway after changing integration time.  (Honestly, 
-                // probably all models do.)  However, we're going to do this 
-                // manually for extra parallelism and speed.
-                spec.throwawayAfterIntegrationTime = false;
+                // probably all models do.)  
+                spec.throwawayAfterIntegrationTime = true;
+
+                // ARM units seem susceptible to hanging if commanded too rapidly
+                spec.featureIdentification.usbDelayMS = 50;
 
                 ////////////////////////////////////////////////////////////////
                 // Parse EEPROM.userText
@@ -343,19 +389,20 @@ namespace WasatchNET
 
         // could refactor this to do each spectrometer in its own Task,
         // leaving automatic throwaways in place
-        async public Task<bool> setIntegrationTimeMSAsync(uint ms)
+        public bool setIntegrationTimeMS(uint ms)
         {
             logger.header($"setting all spectrometer integration times to {ms}");
+
+            List<Task> settors = new List<Task>();
 
             foreach (var pair in specByPos)
             {
                 var spec = pair.Value;
                 if (spec.multiChannelSelected)
-                    spec.integrationTimeMS = ms;
+                    settors.Add(Task.Run(() => { spec.integrationTimeMS = ms; }));
             }
 
-            // perform manual throwaway in parallel
-            _ = await getSpectraAsync();
+            Task.WaitAll(settors.ToArray());
 
             return true;
         }
@@ -367,15 +414,22 @@ namespace WasatchNET
         /// </summary>
         /// <param name="times"></param>
         /// <returns></returns>
-        async public Task<bool> setIntegrationTimesAsync(Dictionary<int, uint> times)
+        public bool setIntegrationTimesMS(Dictionary<int, uint> times)
         {
-            logger.header("setting all integration times");
-            foreach (var pair in times)
-                getSpectrometer(pair.Key).integrationTimeMS = pair.Value;
+            List<Task> settors = new List<Task>();
 
-            // perform manual throwaway in parallel
-            logger.debug("now taking throwaways (will involve sending 1 HW or 8 SW triggers)");
-            _ = await getSpectraAsync();
+            logger.header("setting all integration times");
+
+            foreach (var pair in times)
+            {
+                var spec = getSpectrometer(pair.Key);
+                settors.Add(Task.Run(() => { spec.integrationTimeMS = pair.Value; }));
+            }
+
+            logger.debug("waiting for all tasks to complete");
+            Task.WaitAll(settors.ToArray());
+
+            logger.header("setIntegrationTimesMS complete");
 
             return true;
         }
@@ -400,7 +454,22 @@ namespace WasatchNET
                     return false;
                 }
 
-                logger.debug($"sending {triggerPulseWidthMS} HW trigger via {specTrigger.id}");
+                // configure each spectrometer's "even when externally triggered" timeout
+                foreach (var pair in specByPos)
+                {
+                    var spec = pair.Value;
+                    if (!spec.multiChannelSelected)
+                        continue;
+
+                    // this seems sufficiently generous
+                    var ms = (uint) ( 500 
+                                    + triggerPulseWidthMS 
+                                    + spec.integrationTimeMS * 2);
+                    logger.debug($"setting {spec.id} timeout to {ms}");
+                    spec.expectedTriggerTimeoutMS = ms;
+                }
+
+                logger.debug($"sending {triggerPulseWidthMS}ms HW trigger via {specTrigger.id}");
                 specTrigger.laserEnabled = true;
                 await Task.Delay(millisecondsDelay: triggerPulseWidthMS);
                 specTrigger.laserEnabled = false;
@@ -452,6 +521,20 @@ namespace WasatchNET
                 {
                     logger.error("Unable to start acquisition");
                     return null;
+                }
+
+                if (forceDoubleTrigger)
+                {
+                    if (r.NextDouble() < doubleTriggerPercentage)
+                    {
+                        logger.error("generating double-trigger");
+
+                        // give the previous "trigger-low" state time to settle
+                        await Task.Delay(triggerPulseWidthMS);
+
+                        // raise a 2nd trigger
+                        _ = startAcquisitionAsync();
+                    }
                 }
             }
 

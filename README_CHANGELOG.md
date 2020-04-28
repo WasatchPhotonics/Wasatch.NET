@@ -11,10 +11,15 @@
         - exposed sendTrigger()
         - updated throwaway logic on changed integration time
         - updated TEC default setpoint detector list
+        - added expectedTriggerTimeout (MS and Timestamp)
     - MultiChannelWrapper/Demo
         - lots of debugs related to triggering bug (walking spectra, multiple triggers)
         - added Monte Carlo operation 
+            - randomized integration time
+            - randomized trigger pulse width
             - final tally
+            - injected double-triggers
+            - async free-running workers to collect and count double acquisitions
         - increased configurability
             - trigger width
             - integration time

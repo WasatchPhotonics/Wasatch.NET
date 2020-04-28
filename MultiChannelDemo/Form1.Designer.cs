@@ -29,25 +29,25 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea5 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series5 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea6 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series6 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea7 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series7 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea8 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series8 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea9 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series9 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea19 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series19 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea20 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series20 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea21 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series21 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea22 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series22 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea23 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series23 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea24 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series24 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea25 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series25 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea26 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series26 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea27 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend3 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series27 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerControlsVsGraphs = new System.Windows.Forms.SplitContainer();
             this.groupBoxControls = new System.Windows.Forms.GroupBox();
@@ -138,6 +138,10 @@
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.checkBoxDoubleTriggerEnable = new System.Windows.Forms.CheckBox();
+            this.numericUpDownDoubleTriggerProbability = new System.Windows.Forms.NumericUpDown();
+            this.label1 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -220,6 +224,8 @@
             this.groupBox12.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chartAll)).BeginInit();
             this.groupBox1.SuspendLayout();
+            this.groupBox2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDoubleTriggerProbability)).BeginInit();
             this.SuspendLayout();
             // 
             // splitContainerTopVsLog
@@ -768,6 +774,7 @@
             // 
             // groupBoxBatch
             // 
+            this.groupBoxBatch.Controls.Add(this.groupBox2);
             this.groupBoxBatch.Controls.Add(this.labelBatchStatus);
             this.groupBoxBatch.Controls.Add(this.groupBoxIntegrationTimeLimits);
             this.groupBoxBatch.Controls.Add(this.label2);
@@ -775,7 +782,7 @@
             this.groupBoxBatch.Controls.Add(this.numericUpDownBatchMin);
             this.groupBoxBatch.Location = new System.Drawing.Point(3, 485);
             this.groupBoxBatch.Name = "groupBoxBatch";
-            this.groupBoxBatch.Size = new System.Drawing.Size(201, 151);
+            this.groupBoxBatch.Size = new System.Drawing.Size(201, 229);
             this.groupBoxBatch.TabIndex = 1;
             this.groupBoxBatch.TabStop = false;
             this.groupBoxBatch.Text = "Monte Carlo";
@@ -1000,15 +1007,15 @@
             // 
             // chart1
             // 
-            chartArea1.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea1);
+            chartArea19.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea19);
             this.chart1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart1.Location = new System.Drawing.Point(0, 0);
             this.chart1.Name = "chart1";
-            series1.ChartArea = "ChartArea1";
-            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series1.Name = "Series1";
-            this.chart1.Series.Add(series1);
+            series19.ChartArea = "ChartArea1";
+            series19.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series19.Name = "Series1";
+            this.chart1.Series.Add(series19);
             this.chart1.Size = new System.Drawing.Size(222, 156);
             this.chart1.TabIndex = 3;
             this.chart1.Text = "chart1";
@@ -1058,15 +1065,15 @@
             // 
             // chart2
             // 
-            chartArea2.Name = "ChartArea1";
-            this.chart2.ChartAreas.Add(chartArea2);
+            chartArea20.Name = "ChartArea1";
+            this.chart2.ChartAreas.Add(chartArea20);
             this.chart2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart2.Location = new System.Drawing.Point(0, 0);
             this.chart2.Name = "chart2";
-            series2.ChartArea = "ChartArea1";
-            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series2.Name = "Series1";
-            this.chart2.Series.Add(series2);
+            series20.ChartArea = "ChartArea1";
+            series20.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series20.Name = "Series1";
+            this.chart2.Series.Add(series20);
             this.chart2.Size = new System.Drawing.Size(222, 156);
             this.chart2.TabIndex = 3;
             this.chart2.Text = "chart2";
@@ -1116,15 +1123,15 @@
             // 
             // chart3
             // 
-            chartArea3.Name = "ChartArea1";
-            this.chart3.ChartAreas.Add(chartArea3);
+            chartArea21.Name = "ChartArea1";
+            this.chart3.ChartAreas.Add(chartArea21);
             this.chart3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart3.Location = new System.Drawing.Point(0, 0);
             this.chart3.Name = "chart3";
-            series3.ChartArea = "ChartArea1";
-            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series3.Name = "Series1";
-            this.chart3.Series.Add(series3);
+            series21.ChartArea = "ChartArea1";
+            series21.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series21.Name = "Series1";
+            this.chart3.Series.Add(series21);
             this.chart3.Size = new System.Drawing.Size(222, 156);
             this.chart3.TabIndex = 3;
             this.chart3.Text = "chart3";
@@ -1174,15 +1181,15 @@
             // 
             // chart4
             // 
-            chartArea4.Name = "ChartArea1";
-            this.chart4.ChartAreas.Add(chartArea4);
+            chartArea22.Name = "ChartArea1";
+            this.chart4.ChartAreas.Add(chartArea22);
             this.chart4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart4.Location = new System.Drawing.Point(0, 0);
             this.chart4.Name = "chart4";
-            series4.ChartArea = "ChartArea1";
-            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series4.Name = "Series1";
-            this.chart4.Series.Add(series4);
+            series22.ChartArea = "ChartArea1";
+            series22.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series22.Name = "Series1";
+            this.chart4.Series.Add(series22);
             this.chart4.Size = new System.Drawing.Size(224, 156);
             this.chart4.TabIndex = 3;
             this.chart4.Text = "chart4";
@@ -1232,15 +1239,15 @@
             // 
             // chart5
             // 
-            chartArea5.Name = "ChartArea1";
-            this.chart5.ChartAreas.Add(chartArea5);
+            chartArea23.Name = "ChartArea1";
+            this.chart5.ChartAreas.Add(chartArea23);
             this.chart5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart5.Location = new System.Drawing.Point(0, 0);
             this.chart5.Name = "chart5";
-            series5.ChartArea = "ChartArea1";
-            series5.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series5.Name = "Series1";
-            this.chart5.Series.Add(series5);
+            series23.ChartArea = "ChartArea1";
+            series23.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series23.Name = "Series1";
+            this.chart5.Series.Add(series23);
             this.chart5.Size = new System.Drawing.Size(222, 157);
             this.chart5.TabIndex = 3;
             this.chart5.Text = "chart5";
@@ -1290,15 +1297,15 @@
             // 
             // chart6
             // 
-            chartArea6.Name = "ChartArea1";
-            this.chart6.ChartAreas.Add(chartArea6);
+            chartArea24.Name = "ChartArea1";
+            this.chart6.ChartAreas.Add(chartArea24);
             this.chart6.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart6.Location = new System.Drawing.Point(0, 0);
             this.chart6.Name = "chart6";
-            series6.ChartArea = "ChartArea1";
-            series6.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series6.Name = "Series1";
-            this.chart6.Series.Add(series6);
+            series24.ChartArea = "ChartArea1";
+            series24.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series24.Name = "Series1";
+            this.chart6.Series.Add(series24);
             this.chart6.Size = new System.Drawing.Size(222, 157);
             this.chart6.TabIndex = 3;
             this.chart6.Text = "chart6";
@@ -1348,15 +1355,15 @@
             // 
             // chart7
             // 
-            chartArea7.Name = "ChartArea1";
-            this.chart7.ChartAreas.Add(chartArea7);
+            chartArea25.Name = "ChartArea1";
+            this.chart7.ChartAreas.Add(chartArea25);
             this.chart7.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart7.Location = new System.Drawing.Point(0, 0);
             this.chart7.Name = "chart7";
-            series7.ChartArea = "ChartArea1";
-            series7.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series7.Name = "Series1";
-            this.chart7.Series.Add(series7);
+            series25.ChartArea = "ChartArea1";
+            series25.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series25.Name = "Series1";
+            this.chart7.Series.Add(series25);
             this.chart7.Size = new System.Drawing.Size(222, 157);
             this.chart7.TabIndex = 3;
             this.chart7.Text = "chart7";
@@ -1406,15 +1413,15 @@
             // 
             // chart8
             // 
-            chartArea8.Name = "ChartArea1";
-            this.chart8.ChartAreas.Add(chartArea8);
+            chartArea26.Name = "ChartArea1";
+            this.chart8.ChartAreas.Add(chartArea26);
             this.chart8.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chart8.Location = new System.Drawing.Point(0, 0);
             this.chart8.Name = "chart8";
-            series8.ChartArea = "ChartArea1";
-            series8.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series8.Name = "Series1";
-            this.chart8.Series.Add(series8);
+            series26.ChartArea = "ChartArea1";
+            series26.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series26.Name = "Series1";
+            this.chart8.Series.Add(series26);
             this.chart8.Size = new System.Drawing.Size(224, 157);
             this.chart8.TabIndex = 3;
             this.chart8.Text = "chart8";
@@ -1455,19 +1462,19 @@
             // 
             // chartAll
             // 
-            chartArea9.AxisY.Title = "Intensity (Counts)";
-            chartArea9.Name = "ChartArea1";
-            this.chartAll.ChartAreas.Add(chartArea9);
+            chartArea27.AxisY.Title = "Intensity (Counts)";
+            chartArea27.Name = "ChartArea1";
+            this.chartAll.ChartAreas.Add(chartArea27);
             this.chartAll.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend1.Name = "Legend1";
-            this.chartAll.Legends.Add(legend1);
+            legend3.Name = "Legend1";
+            this.chartAll.Legends.Add(legend3);
             this.chartAll.Location = new System.Drawing.Point(3, 16);
             this.chartAll.Name = "chartAll";
-            series9.ChartArea = "ChartArea1";
-            series9.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series9.Legend = "Legend1";
-            series9.Name = "Series1";
-            this.chartAll.Series.Add(series9);
+            series27.ChartArea = "ChartArea1";
+            series27.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series27.Legend = "Legend1";
+            series27.Name = "Series1";
+            this.chartAll.Series.Add(series27);
             this.chartAll.Size = new System.Drawing.Size(938, 425);
             this.chartAll.TabIndex = 0;
             this.chartAll.Text = "chart9";
@@ -1499,6 +1506,52 @@
             this.saveFileDialog.Filter = "CSV files (*.csv)|*.csv";
             this.saveFileDialog.SupportMultiDottedExtensions = true;
             this.saveFileDialog.Title = "Monte Carlo Batch Report";
+            // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.label1);
+            this.groupBox2.Controls.Add(this.numericUpDownDoubleTriggerProbability);
+            this.groupBox2.Controls.Add(this.checkBoxDoubleTriggerEnable);
+            this.groupBox2.Location = new System.Drawing.Point(6, 143);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(187, 76);
+            this.groupBox2.TabIndex = 5;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Double Triggering";
+            // 
+            // checkBoxDoubleTriggerEnable
+            // 
+            this.checkBoxDoubleTriggerEnable.AutoSize = true;
+            this.checkBoxDoubleTriggerEnable.Location = new System.Drawing.Point(7, 20);
+            this.checkBoxDoubleTriggerEnable.Name = "checkBoxDoubleTriggerEnable";
+            this.checkBoxDoubleTriggerEnable.Size = new System.Drawing.Size(58, 17);
+            this.checkBoxDoubleTriggerEnable.TabIndex = 0;
+            this.checkBoxDoubleTriggerEnable.Text = "enable";
+            this.checkBoxDoubleTriggerEnable.UseVisualStyleBackColor = true;
+            this.checkBoxDoubleTriggerEnable.CheckedChanged += new System.EventHandler(this.checkBoxDoubleTriggerEnable_CheckedChanged);
+            // 
+            // numericUpDownDoubleTriggerProbability
+            // 
+            this.numericUpDownDoubleTriggerProbability.Location = new System.Drawing.Point(6, 43);
+            this.numericUpDownDoubleTriggerProbability.Name = "numericUpDownDoubleTriggerProbability";
+            this.numericUpDownDoubleTriggerProbability.Size = new System.Drawing.Size(57, 20);
+            this.numericUpDownDoubleTriggerProbability.TabIndex = 1;
+            this.numericUpDownDoubleTriggerProbability.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.numericUpDownDoubleTriggerProbability.Value = new decimal(new int[] {
+            5,
+            0,
+            0,
+            0});
+            this.numericUpDownDoubleTriggerProbability.ValueChanged += new System.EventHandler(this.numericUpDownDoubleTriggerProbability_ValueChanged);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(69, 45);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(71, 13);
+            this.label1.TabIndex = 2;
+            this.label1.Text = "probability (%)";
             // 
             // Form1
             // 
@@ -1605,6 +1658,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.chartAll)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDoubleTriggerProbability)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -1701,6 +1757,10 @@
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.NumericUpDown numericUpDownTriggerWidthMS;
         private System.Windows.Forms.Button buttonUnselectAll;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.NumericUpDown numericUpDownDoubleTriggerProbability;
+        private System.Windows.Forms.CheckBox checkBoxDoubleTriggerEnable;
     }
 }
 
