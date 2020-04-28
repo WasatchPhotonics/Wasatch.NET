@@ -48,14 +48,12 @@
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea9 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series9 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea10 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series10 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerControlsVsGraphs = new System.Windows.Forms.SplitContainer();
             this.groupBoxControls = new System.Windows.Forms.GroupBox();
             this.flowLayoutPanelControls = new System.Windows.Forms.FlowLayoutPanel();
             this.groupBoxSystem = new System.Windows.Forms.GroupBox();
+            this.buttonUnselectAll = new System.Windows.Forms.Button();
             this.label12 = new System.Windows.Forms.Label();
             this.numericUpDownTriggerWidthMS = new System.Windows.Forms.NumericUpDown();
             this.label11 = new System.Windows.Forms.Label();
@@ -136,13 +134,10 @@
             this.tabPageCombined = new System.Windows.Forms.TabPage();
             this.groupBox12 = new System.Windows.Forms.GroupBox();
             this.chartAll = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            this.tabPageTime = new System.Windows.Forms.TabPage();
-            this.chartTime = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
-            this.buttonUnselectAll = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -224,8 +219,6 @@
             this.tabPageCombined.SuspendLayout();
             this.groupBox12.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chartAll)).BeginInit();
-            this.tabPageTime.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.chartTime)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -318,6 +311,16 @@
             this.groupBoxSystem.TabIndex = 0;
             this.groupBoxSystem.TabStop = false;
             this.groupBoxSystem.Text = "System";
+            // 
+            // buttonUnselectAll
+            // 
+            this.buttonUnselectAll.Location = new System.Drawing.Point(113, 183);
+            this.buttonUnselectAll.Name = "buttonUnselectAll";
+            this.buttonUnselectAll.Size = new System.Drawing.Size(75, 23);
+            this.buttonUnselectAll.TabIndex = 21;
+            this.buttonUnselectAll.Text = "Unselect All";
+            this.buttonUnselectAll.UseVisualStyleBackColor = true;
+            this.buttonUnselectAll.Click += new System.EventHandler(this.buttonUnselectAll_Click);
             // 
             // label12
             // 
@@ -911,7 +914,6 @@
             // 
             this.tabControl1.Controls.Add(this.tabPageIndividual);
             this.tabControl1.Controls.Add(this.tabPageCombined);
-            this.tabControl1.Controls.Add(this.tabPageTime);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
@@ -1470,36 +1472,6 @@
             this.chartAll.TabIndex = 0;
             this.chartAll.Text = "chart9";
             // 
-            // tabPageTime
-            // 
-            this.tabPageTime.Controls.Add(this.chartTime);
-            this.tabPageTime.Location = new System.Drawing.Point(4, 22);
-            this.tabPageTime.Name = "tabPageTime";
-            this.tabPageTime.Size = new System.Drawing.Size(950, 450);
-            this.tabPageTime.TabIndex = 2;
-            this.tabPageTime.Text = "Time";
-            this.tabPageTime.UseVisualStyleBackColor = true;
-            // 
-            // chartTime
-            // 
-            chartArea10.AxisX.Title = "Elapsed Time (ms)";
-            chartArea10.AxisY.Title = "Mean Intensity (counts)";
-            chartArea10.Name = "ChartArea1";
-            this.chartTime.ChartAreas.Add(chartArea10);
-            this.chartTime.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend2.Name = "Legend1";
-            this.chartTime.Legends.Add(legend2);
-            this.chartTime.Location = new System.Drawing.Point(0, 0);
-            this.chartTime.Name = "chartTime";
-            series10.ChartArea = "ChartArea1";
-            series10.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series10.Legend = "Legend1";
-            series10.Name = "Series1";
-            this.chartTime.Series.Add(series10);
-            this.chartTime.Size = new System.Drawing.Size(950, 450);
-            this.chartTime.TabIndex = 0;
-            this.chartTime.Text = "chart9";
-            // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.textBoxEventLog);
@@ -1527,16 +1499,6 @@
             this.saveFileDialog.Filter = "CSV files (*.csv)|*.csv";
             this.saveFileDialog.SupportMultiDottedExtensions = true;
             this.saveFileDialog.Title = "Monte Carlo Batch Report";
-            // 
-            // buttonUnselectAll
-            // 
-            this.buttonUnselectAll.Location = new System.Drawing.Point(113, 183);
-            this.buttonUnselectAll.Name = "buttonUnselectAll";
-            this.buttonUnselectAll.Size = new System.Drawing.Size(75, 23);
-            this.buttonUnselectAll.TabIndex = 21;
-            this.buttonUnselectAll.Text = "Unselect All";
-            this.buttonUnselectAll.UseVisualStyleBackColor = true;
-            this.buttonUnselectAll.Click += new System.EventHandler(this.buttonUnselectAll_Click);
             // 
             // Form1
             // 
@@ -1641,8 +1603,6 @@
             this.tabPageCombined.ResumeLayout(false);
             this.groupBox12.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.chartAll)).EndInit();
-            this.tabPageTime.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.chartTime)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
@@ -1703,12 +1663,10 @@
         private System.Windows.Forms.CheckBox checkBoxInterpolate;
         private System.Windows.Forms.Button buttonSave;
         private System.Windows.Forms.SaveFileDialog saveFileDialog;
-        private System.Windows.Forms.TabPage tabPageTime;
         private System.Windows.Forms.GroupBox groupBoxBatch;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button buttonBatchStart;
         private System.Windows.Forms.NumericUpDown numericUpDownBatchMin;
-        private System.Windows.Forms.DataVisualization.Charting.Chart chartTime;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelControls;
         private System.Windows.Forms.Label labelBatchStatus;
         private System.Windows.Forms.GroupBox groupBoxIntegrationTimeLimits;

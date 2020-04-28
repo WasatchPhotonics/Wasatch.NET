@@ -1,19 +1,15 @@
 ﻿using System;
-using System.Globalization;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Reflection;
+using System.Globalization;
+using System.ComponentModel;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
-using System.IO;
-using WasatchNET;
 using System.Text.RegularExpressions;
+using WasatchNET;
 
 namespace MultiChannelDemo
 {
@@ -82,8 +78,6 @@ namespace MultiChannelDemo
             foreach (var chart in charts)
                 initChart(chart);
 
-            chartAll.ChartAreas[0].AxisY.IsStartedFromZero = true;
-
             Text = String.Format("MultiChannelDemo v{0}", Application.ProductVersion);
 
             workerBatch = new BackgroundWorker() { WorkerSupportsCancellation = true };
@@ -95,11 +89,11 @@ namespace MultiChannelDemo
             groupBoxBatch.Enabled = false;
         }
 
-        void initChart(Chart chart)
+        void initChart(Chart chart, string xAxisLabelFormat = "{0:f2}")
         {
             var area = chart.ChartAreas[0];
             area.AxisY.IsStartedFromZero = false;
-            area.AxisX.LabelStyle.Format = "{0:f2}";
+            area.AxisX.LabelStyle.Format = xAxisLabelFormat;
         }
 
         async void buttonInit_Click(object sender, EventArgs e)
@@ -124,13 +118,12 @@ namespace MultiChannelDemo
 
             // per-channel initialization
             chartAll.Series.Clear();
-            chartTime.Series.Clear();
             foreach (var pos in wrapper.positions)
             {
                 var spec = wrapper.getSpectrometer(pos);
                 var sn = spec.serialNumber;
 
-                spec.featureIdentification.usbDelayMS = 200;
+                // spec.featureIdentification.usbDelayMS = 200;
 
                 groupBoxes[pos-1].Enabled = true;
                 checkBoxes[pos-1].Checked = true;
@@ -140,12 +133,6 @@ namespace MultiChannelDemo
                 s.ChartType = SeriesChartType.Line;
                 seriesCombined[pos - 1] = s;
                 chartAll.Series.Add(s);
-
-                // time graph
-                s = new Series($"Pos {pos} ({sn})");
-                s.ChartType = SeriesChartType.Line;
-                seriesTime[pos - 1] = s;
-                chartTime.Series.Add(s);
             }
             updateGroupBoxTitles();
 
@@ -169,7 +156,6 @@ namespace MultiChannelDemo
 
         void updateGroupBoxTitles(List<ChannelSpectrum> spectra=null)
         {
-            logger.header("update group box titles");
             if (spectra is null)
             {
                 foreach (var pos in wrapper.positions)
@@ -489,7 +475,7 @@ namespace MultiChannelDemo
                     break;
 
                 chartAll.BeginInvoke(new MethodInvoker(delegate { processSpectra(spectra); }));
-                Thread.Sleep(200);
+                Thread.Sleep(100);
             }
 
             // just to make things pretty, one final update with the latest 
@@ -713,39 +699,33 @@ namespace MultiChannelDemo
                     var elapsedMS = (uint)(now - startTime).TotalMilliseconds;
                     var timeRemaining = (endTime - now).ToString(@"hh\:mm\:ss");
 
-                    logger.header($"batch count {count}, elapsed {elapsedMS} ms, remaining {timeRemaining}");
-
                     // update on-screen countdown
+                    logger.info($"batch count {count}, elapsed {elapsedMS} ms, remaining {timeRemaining}");
                     labelBatchStatus.BeginInvoke((MethodInvoker)delegate {
                         labelBatchStatus.Text = timeRemaining + " remaining"; });
 
+                    // start file row
                     sw.Write($"{count}, {nowStr}, {elapsedMS}");
 
-                    // We could make this faster, by performing all the throwaway
-                    // spectra in parallel, but that somewhat voids the point of the
-                    // Monte Carlo test, which is to hit the spectrometers and wrapper
-                    // as hard as possible.
-                    logger.debug("setting integration times");
+                    // randomize integration times
+                    Dictionary<int, uint> integrationTimes = new Dictionary<int, uint>();
                     foreach (var pos in wrapper.positions)
-                    {
-                        var spec = wrapper.getSpectrometer(pos);
-                        if (spec.multiChannelSelected)
-                            spec.integrationTimeMS =
+                        if (wrapper.getSpectrometer(pos).multiChannelSelected)
+                            integrationTimes.Add(pos,
                                 (uint)r.Next((int)integrationTimeMSRandomMin,
-                                             (int)integrationTimeMSRandomMax);
-                    }
-                    logger.debug("done setting integration times");
+                                             (int)integrationTimeMSRandomMax));
+
+                    // set integration times
+                    var ok = wrapper.setIntegrationTimesAsync(integrationTimes).Result;
 
                     // take measurement
-                    logger.debug("taking measurement");
                     lastSpectra = wrapper.getSpectraAsync().Result;
-                    logger.debug("done taking measurement");
 
                     // graph the spectra normally (individual and combined graphs)
-                    chartTime.BeginInvoke((MethodInvoker)delegate { processSpectra(lastSpectra); });
+                    chartAll.BeginInvoke((MethodInvoker)delegate { processSpectra(lastSpectra); });
 
                     ////////////////////////////////////////////////////////////////
-                    // update time graph and write to file
+                    // write to file
                     ////////////////////////////////////////////////////////////////
 
                     xAxisMS.Add(elapsedMS);
@@ -757,32 +737,17 @@ namespace MultiChannelDemo
                         var mean = cs.intensities.Average();
                         sw.Write($", {cs.integrationTimeMS}, {cs.detectorTemperatureDegC:f2}, {mean:f2}");
 
-                        // update graph
-                        intensities[cs.pos].Add(mean);
-                        chartTime.BeginInvoke(new MethodInvoker(delegate { 
-                            Series s = null;
-                            seriesTime.TryGetValue(pos - 1, out s);
-                            if (s != null)
-                                s.Points.DataBindXY(xAxisMS, intensities[pos]); 
-                        }));
-
                         // update tallies
-                        if (!tallies[cs.pos].ContainsKey(cs.integrationTimeMS))
-                            tallies[cs.pos].Add(cs.integrationTimeMS, new Tally());
-                        tallies[cs.pos][cs.integrationTimeMS].total += mean;
-                        tallies[cs.pos][cs.integrationTimeMS].count++;
+                        if (!tallies[pos].ContainsKey(cs.integrationTimeMS))
+                            tallies[pos].Add(cs.integrationTimeMS, new Tally());
+                        tallies[pos][cs.integrationTimeMS].total += mean;
+                        tallies[pos][cs.integrationTimeMS].count++;
                     }
                     sw.WriteLine();
-
                     count++;
-
-                    // YOU ARE HERE: a sleep might well resolve our drift issues...
-                    Thread.Sleep(200);
-
                 }
                 logger.debug("workerBatch passed endTime");
             }
-
             logger.debug("workerBatch.DoWork done");
         }
 
@@ -809,9 +774,9 @@ namespace MultiChannelDemo
 
                 // header e.g. IntegrationTimeMS, Pos_1, Pos_5
                 sw.Write("IntegrationTimeMS");
-                foreach (var posPair in tallies)
+                foreach (var pair in tallies)
                 {
-                    var pos = posPair.Key;
+                    var pos = pair.Key;
                     sw.Write($", Pos_{pos}");
                 }
                 sw.WriteLine();
@@ -822,10 +787,10 @@ namespace MultiChannelDemo
                     sw.Write(ms);
 
                     // write the average intensity for that integration time for each position
-                    foreach (var posPair in tallies)
+                    foreach (var pair in tallies)
                     {
-                        var pos = posPair.Key;
-                        var integPair = posPair.Value;
+                        var pos = pair.Key;
+                        var integPair = pair.Value;
                         if (integPair.ContainsKey(ms))
                         {
                             var tally = integPair[ms];

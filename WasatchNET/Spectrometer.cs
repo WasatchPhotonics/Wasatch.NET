@@ -1787,11 +1787,9 @@ namespace WasatchNET
             lock (commsLock)
             {
                 // don't enforce USB delay on laser commands...that could be dangerous
-                if (opcode == Opcodes.SET_LASER_ENABLE)
-                    logger.header("Sending SET_LASER_ENABLE ==> {0} ({1})", wValue == 0 ? "off" : "ON", id);
-                else if (opcode == Opcodes.ACQUIRE_SPECTRUM)
-                    logger.header("Sending ACQUIRE_SPECTRUM ({0})", id);
-                else
+                // or on acquire commands, which would disrupt integration throwaways 
+                // and soft synchronization
+                if (opcode != Opcodes.SET_LASER_ENABLE && opcode != Opcodes.ACQUIRE_SPECTRUM)
                     waitForUsbAvailable();
 
                 logger.debug("sendCmd: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
@@ -2046,20 +2044,14 @@ namespace WasatchNET
             // However, we want to make sure getSpectrumRaw won't "autoTrigger",
             // as we don't want to send two.
             if (!autoTrigger)
-            {
-                logger.debug("requesting SW trigger for throwaway, even though autoTrigger disabled");
                 sendTrigger();
-            }
             getSpectrumRaw();
         }
 
         public void flushReaders()
         {
             foreach (UsbEndpointReader spectralReader in endpoints)
-            {
-                logger.debug($"flushing 0x{spectralReader.EpNum:x2} on {id}");
                 spectralReader.ReadFlush();
-            }
         }
 
         // just the bytes, ma'am
@@ -2073,8 +2065,6 @@ namespace WasatchNET
             // request a spectrum
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger)
                 sendTrigger();
-            else
-                logger.debug("getSpectrumRaw: NOT sending SW trigger");
 
             if (isStroker)
             {
