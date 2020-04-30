@@ -132,6 +132,11 @@ namespace WasatchNET
         public bool forceDoubleTrigger { get; set; }
 
         /// <summary>
+        /// How many extra random triggers were generated via forceDoubleTrigger
+        /// </summary>
+        public int doubleTriggersSent { get; set; }
+
+        /// <summary>
         /// if double triggering is enabled, it will occur this often 
         /// (1.0 = 100% of the time)
         /// </summary> 
@@ -522,6 +527,9 @@ namespace WasatchNET
                 specTrigger.laserEnabled = true;
                 await Task.Delay(millisecondsDelay: triggerPulseWidthMS);
                 specTrigger.laserEnabled = false;
+
+                if (i > 0)
+                    doubleTriggersSent++;
 
                 // on multiple triggers, leave a gap
                 if (i + 1 < triggersToSend)

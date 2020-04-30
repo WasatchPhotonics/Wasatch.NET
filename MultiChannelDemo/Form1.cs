@@ -21,13 +21,6 @@ namespace MultiChannelDemo
 
         bool initialized = false;
 
-        // Monte Carlo limits
-        Random r = new Random();
-        uint integrationTimeMSRandomMin = 100;
-        uint integrationTimeMSRandomMax = 500;
-        uint maxPulseWidthMS = 25; 
-        Dictionary<int, int> acquisitionCounts;
-
         // note these are zero-indexed
         Chart[] charts;
         GroupBox[] groupBoxes;
@@ -40,14 +33,21 @@ namespace MultiChannelDemo
         // (added so we'd have something to save)
         List<ChannelSpectrum> lastSpectra;
 
-        // Batch test
+        // Monte Carlo 
+        Random r = new Random();
+        uint integrationTimeMSRandomMin = 100;
+        uint integrationTimeMSRandomMax = 500;
+        uint maxPulseWidthMS = 25; 
+        Dictionary<int, int> acquisitionCounts;
         bool batchRunning;
         bool batchShuttingDown;
         string batchPathname;
         string talliesPathname;
-        const int WORKER_PERIOD_MS = 2000;
+        const int WORKER_PERIOD_MS = 3000;
         BackgroundWorker workerBatch;
         int triggerCount;
+        int failuresToReadFirstSpectrum;
+        int secondSpectraRead;
 
         // place to store intensities by integration time
         // tallies[pos][integTimeMS].{total, count}
@@ -690,6 +690,9 @@ namespace MultiChannelDemo
             batchRunning = true;
             batchShuttingDown = false;
             triggerCount = 0;
+            failuresToReadFirstSpectrum = 0;
+            secondSpectraRead = 0;
+            wrapper.doubleTriggersSent = 0;
 
             buttonBatchStart.Text = "Stop";
             groupBoxIntegrationTimeLimits.Enabled = 
@@ -782,7 +785,7 @@ namespace MultiChannelDemo
                 // try to read the "first" (and ideally only) spectrum generated 
                 // by the HW trigger
 
-                var timeoutMS = (uint)(WORKER_PERIOD_MS - spec.integrationTimeMS);
+                var timeoutMS = (uint)WORKER_PERIOD_MS;
                 logger.debug($"{prefix}: setting timeout to {timeoutMS}");
                 spec.acquisitionTimeoutMS = timeoutMS;
 
@@ -804,7 +807,10 @@ namespace MultiChannelDemo
                     }
 
                     if (firstTriggerReceived)
+                    {
                         logger.error($"{prefix}: [BAD] failed to read FIRST spectrum (trigger {triggerCount}) ");
+                        failuresToReadFirstSpectrum++;
+                    }
                     else
                         logger.debug($"{prefix}: failed to read FIRST spectrum (okay), trying again");
 
@@ -844,6 +850,7 @@ namespace MultiChannelDemo
                 {
                     logger.error($"{prefix}: [BAD] actually read (non-existent) second trigger (trigger {triggerCount})");
                     acquisitionCounts[pos]++;
+                    secondSpectraRead++;
                 }
 
                 if (batchShuttingDown)
@@ -912,6 +919,9 @@ namespace MultiChannelDemo
                 foreach (var pos in wrapper.positions)
                     if (wrapper.getSpectrometer(pos).multiChannelSelected)
                         headers.Add($"Pos{pos}_DegC");
+                foreach (var pos in wrapper.positions)
+                    if (wrapper.getSpectrometer(pos).multiChannelSelected)
+                        headers.Add($"Pos{pos}_Spectra");
                 sw.WriteLine(string.Join<string>(", ", headers));
 
                 while (DateTime.Now < endTime)
@@ -941,9 +951,10 @@ namespace MultiChannelDemo
                     // write to file
                     ////////////////////////////////////////////////////////////////
 
-                    List<string> specMS = new List<string>();
-                    List<string> specAvg = new List<string>();
-                    List<string> specDegC = new List<string>();
+                    List<string> specInteg   = new List<string>();
+                    List<string> specAvg     = new List<string>();
+                    List<string> specDegC    = new List<string>();
+                    List<string> specSpectra = new List<string>();
                     foreach (var pos in wrapper.positions)
                     {
                         var spec = wrapper.getSpectrometer(pos);
@@ -953,9 +964,10 @@ namespace MultiChannelDemo
                         var avg = spec.lastSpectrum.Average();
                         var ms = spec.integrationTimeMS;
 
-                        specMS.Add(string.Format("{0}", ms));
+                        specInteg.Add(string.Format("{0}", ms));
                         specAvg.Add(string.Format("{0:f2}", avg));
                         specDegC.Add(string.Format("{0:f2}", spec.detectorTemperatureDegC));
+                        specSpectra.Add(string.Format("{0}", acquisitionCounts[pos]));
 
                         // update tallies
                         if (!tallies[pos].ContainsKey(ms))
@@ -965,10 +977,11 @@ namespace MultiChannelDemo
                     }
 
                     // output record
-                    sw.Write($"{triggerCount}, {nowStr}, {timeRemaining}, {elapsedMS}, {wrapper.triggerPulseWidthMS}");
-                    sw.Write(string.Join<string>(", ", specMS) + ", ");
+                    sw.Write($"{triggerCount}, {nowStr}, {timeRemaining}, {elapsedMS}, {wrapper.triggerPulseWidthMS}, ");
+                    sw.Write(string.Join<string>(", ", specInteg) + ", ");
                     sw.Write(string.Join<string>(", ", specAvg) + ", ");
-                    sw.WriteLine(string.Join<string>(", ", specDegC));
+                    sw.Write(string.Join<string>(", ", specDegC) + ", ");
+                    sw.WriteLine(string.Join<string>(", ", specSpectra));
 
                     // generate trigger
                     logger.header($"workerBatch: generating trigger {triggerCount}");
@@ -979,7 +992,7 @@ namespace MultiChannelDemo
                     // presumably the FRS are ALREADY in a blocking acquire
                     var ok = wrapper.startAcquisitionAsync(false).Result;
 
-                    // for now, just run batch at 2sec increments
+                    // run batch at evenly-stepped increments
                     int iterationElapsedMS = (int)(DateTime.Now - iterationStart).TotalMilliseconds;
                     int sleepMS = WORKER_PERIOD_MS - iterationElapsedMS;
                     logger.debug($"workerBatch: sleeping {sleepMS}ms");
@@ -1017,6 +1030,12 @@ namespace MultiChannelDemo
             using (StreamWriter sw = new StreamWriter(talliesPathname))
             {
                 logger.info($"writing {talliesPathname}");
+
+                // metadata
+                sw.WriteLine($"Failures to read first triggered spectrum, {failuresToReadFirstSpectrum}");
+                sw.WriteLine($"Second triggers sent, {wrapper.doubleTriggersSent}");
+                sw.WriteLine($"Second spectra read, {secondSpectraRead}");
+                sw.WriteLine();
 
                 // header e.g. IntegrationTimeMS, Pos_1, Pos_5
                 sw.Write("IntegrationTimeMS");
