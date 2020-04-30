@@ -1,8 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Globalization;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace WasatchNET
@@ -205,12 +207,22 @@ namespace WasatchNET
 
         string getTimestamp()
         {
-            return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff: ", CultureInfo.InvariantCulture);
+            return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffffff", CultureInfo.InvariantCulture);
         }
 
         void log(LogLevel lvl, string fmt, params Object[] obj)
         {
-            string msg = getTimestamp() + " " + lvl + ": " + String.Format(fmt, obj);
+            string threadName = null;
+            if (Thread.CurrentThread.Name != null)
+                threadName = $"[{Thread.CurrentThread.Name}] ";
+            else if (Task.CurrentId != null)
+                threadName = $"[Task 0x{Task.CurrentId:x4}] ";
+
+            string msg = string.Format("{0}: {1}{2}: {3}",
+                getTimestamp(),
+                threadName,
+                lvl,
+                string.Format(fmt, obj));
 
             lock (instance)
             {

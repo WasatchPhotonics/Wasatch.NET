@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Text.RegularExpressions;
 using WasatchNET;
+using System.Security.Cryptography;
 
 namespace MultiChannelDemo
 {
@@ -21,8 +22,11 @@ namespace MultiChannelDemo
         bool initialized = false;
 
         // Monte Carlo limits
+        Random r = new Random();
         uint integrationTimeMSRandomMin = 100;
         uint integrationTimeMSRandomMax = 500;
+        uint maxPulseWidthMS = 25; 
+        Dictionary<int, int> acquisitionCounts;
 
         // note these are zero-indexed
         Chart[] charts;
@@ -41,7 +45,9 @@ namespace MultiChannelDemo
         bool batchShuttingDown;
         string batchPathname;
         string talliesPathname;
+        const int WORKER_PERIOD_MS = 2000;
         BackgroundWorker workerBatch;
+        int triggerCount;
 
         // place to store intensities by integration time
         // tallies[pos][integTimeMS].{total, count}
@@ -54,6 +60,8 @@ namespace MultiChannelDemo
         public Form1()
         {
             InitializeComponent();
+
+            Thread.CurrentThread.Name = "MainProcess";
 
             logger.setTextBox(textBoxEventLog);
 
@@ -88,6 +96,8 @@ namespace MultiChannelDemo
             AcceptButton = buttonInit;
 
             groupBoxBatch.Enabled = false;
+            
+            maxPulseWidthMS = (uint)(0.25 * integrationTimeMSRandomMin);
         }
 
         void initChart(Chart chart, string xAxisLabelFormat = "{0:f2}")
@@ -184,14 +194,12 @@ namespace MultiChannelDemo
         private void checkBoxPosX_CheckedChanged(object sender, EventArgs e)
         {
             CheckBox cb = sender as CheckBox;
+
+            // take position from last character of control name
             int pos = int.Parse(cb.Name.Substring(cb.Name.Length - 1, 1));
             var spec = wrapper.getSpectrometer(pos);
             if (spec != null)
-            {
-                var selected = cb.Checked;
-                logger.debug($"{spec.id} selected -> {selected}");
-                spec.multiChannelSelected = selected;
-            }
+                spec.multiChannelSelected = cb.Checked;
         }
 
         void updateGroupBoxTitles(List<ChannelSpectrum> spectra=null)
@@ -430,10 +438,8 @@ namespace MultiChannelDemo
         void processSpectrum(ChannelSpectrum cs)
         {
             if (cs.intensities is null)
-            {
-                logger.error($"can't graph null spectrum from pos {cs.pos}");
                 return;
-            }
+
             updateChartAll(cs);
             updateChartSmall(cs);
         }
@@ -625,26 +631,20 @@ namespace MultiChannelDemo
         //
         // The spectrometers themselves run in essentially free-running async 
         // methods.  All they do is loop over:
+        //
         //      - exit if shuttingDown
-        //      - randomize integration time
-        //      - update timeout
-        //      - acquire
+        //      - acquire FIRST (real) trigger
+        //      - acquire SECOND (fake) trigger
         //      - increment spectralCount unless error
+        //
         // This way, each spectrometer has plenty of time to fully execute and
         // acquire one expected integration (up to 500ms), with a whole 1.5sec
-        // to acquire any misfires as well.
-
-        async Task<bool> freeRunningSpectrometer(Spectrometer spec)
-        {
-            logger.header($"starting freeRunningSpectrometer({spec.id})");
-
-            logger.header($"freeRunningSpectrometer({spec.id}) done");
-            return true;
-        }
+        // to acquire any misfires as well.  
 
         private void numericUpDownIntegrationTimeMSMin_ValueChanged(object sender, EventArgs e)
         {
             integrationTimeMSRandomMin = (uint)numericUpDownIntegrationTimeMSMin.Value;
+            maxPulseWidthMS = (uint)(0.25 * integrationTimeMSRandomMin);
         }
 
         private void numericUpDownIntegrationTimeMSMax_ValueChanged(object sender, EventArgs e)
@@ -667,7 +667,7 @@ namespace MultiChannelDemo
             if (batchRunning)
                 stopBatch();
             else
-                startBatch();
+                startBatchAsync();
         }
 
         void stopBatch()
@@ -677,7 +677,7 @@ namespace MultiChannelDemo
             workerBatch.CancelAsync();
         }
 
-        void startBatch()
+        async void startBatchAsync()
         {
             logger.header("starting batch collection");
 
@@ -685,8 +685,11 @@ namespace MultiChannelDemo
             if (result != DialogResult.OK)
                 return;
 
+            enableControls(false);
+
             batchRunning = true;
             batchShuttingDown = false;
+            triggerCount = 0;
 
             buttonBatchStart.Text = "Stop";
             groupBoxIntegrationTimeLimits.Enabled = 
@@ -702,16 +705,186 @@ namespace MultiChannelDemo
 
             // init tallies
             tallies = new SortedDictionary<int, SortedDictionary<uint, Tally>>();
+            acquisitionCounts = new Dictionary<int, int>();
 
             // init graph
             foreach (var s in seriesTime)
                 s.Value.Points.Clear();
 
+            foreach (var pos in wrapper.positions)
+                if (wrapper.getSpectrometer(pos).multiChannelSelected)
+                    tallies.Add(pos, new SortedDictionary<uint, Tally>());
+
+            logger.header("Creating freeRunningSpectrometers");
+            List<Task> tasks = new List<Task>();
+            foreach (var pos in wrapper.positions)
+            {
+                var spec = wrapper.getSpectrometer(pos);
+                if (!spec.multiChannelSelected)
+                    continue;
+
+                logger.debug($"creating freeRunningSpectrometer({pos})");
+                tasks.Add(Task.Run(() => { var ok = freeRunningSpectrometer(pos); }));
+            }
+
+            logger.debug("waiting 1sec for FRS to randomize integration time and take throwaways");
+            await Task.Delay(1000);
+
+            logger.debug("spawning worker");
             workerBatch.RunWorkerAsync();
+
+            logger.debug("Waiting for all FRS to exit");
+            Task.WaitAll(tasks.ToArray());
+
+            enableControls(true);
+        }
+
+        // Eight (8) Tasks run this function asynchronously on different
+        // spectrometers...it's basically a poor man's BackgroundWorker.  
+        // Compare to WasatchDeviceWrapper.continuous_poll.
+        //
+        // Its purpose is to loop over workerBatch triggers.  After each
+        // trigger, it should successfully acquire ONE spectra, and then
+        // FAIL to acquire a SECOND spectra (confirming no "double-triggers").
+        //
+        // Note that this function doesn't do any graphing...batchWorker
+        // takes care of GUI updates.
+        async Task<bool> freeRunningSpectrometer(int pos)
+        {
+            var spec = wrapper.getSpectrometer(pos);
+            if (spec is null)
+                return false;
+
+            string prefix = $"frs({pos})";
+            Thread.CurrentThread.Name = prefix;
+
+            logger.header($"{prefix} starting");
+
+            if (!acquisitionCounts.ContainsKey(pos))
+                acquisitionCounts[pos] = 0;
+            bool firstTriggerReceived = false;
+
+            // everyone starts at 100ms
+            setIntegrationTimeMS(spec, 100, prefix);
+
+            while (true)
+            {
+                if (batchShuttingDown)
+                {
+                    logger.debug($"{prefix}: shutting down");
+                    break;
+                }
+
+                ////////////////////////////////////////////////////////////////
+                // block on HW trigger 
+                ////////////////////////////////////////////////////////////////
+
+                // try to read the "first" (and ideally only) spectrum generated 
+                // by the HW trigger
+
+                var timeoutMS = (uint)(WORKER_PERIOD_MS - spec.integrationTimeMS);
+                logger.debug($"{prefix}: setting timeout to {timeoutMS}");
+                spec.acquisitionTimeoutMS = timeoutMS;
+
+                logger.debug($"{prefix}: trying to read FIRST spectrum (trigger {triggerCount})");
+                var cs = await wrapper.getSpectrumAsync(pos);
+                if (cs != null)
+                {
+                    logger.debug($"{prefix}: read FIRST spectrum (trigger {triggerCount})");
+                    firstTriggerReceived = true;
+                    acquisitionCounts[pos]++;
+                    chartAll.BeginInvoke((MethodInvoker)delegate { processSpectrum(cs); });
+                }
+                else
+                {
+                    if (batchShuttingDown)
+                    {
+                        logger.debug($"{prefix}: shutting down");
+                        break;
+                    }
+
+                    if (firstTriggerReceived)
+                        logger.error($"{prefix}: [BAD] failed to read FIRST spectrum (trigger {triggerCount}) ");
+                    else
+                        logger.debug($"{prefix}: failed to read FIRST spectrum (okay), trying again");
+
+                    continue;
+                }
+
+                if (batchShuttingDown)
+                {
+                    logger.debug($"{prefix}: shutting down");
+                    break;
+                }
+
+                ////////////////////////////////////////////////////////////////
+                // try to read results of SECOND TRIGGER 
+                ////////////////////////////////////////////////////////////////
+
+                // This is to try to prove that no second triggers are being 
+                // generated or detected. Ideally none will occur, and this read
+                // will always fail.
+
+
+                // make sure the pulse which triggered the FIRST spectrum is
+                // actually complete
+                await Task.Delay((int)maxPulseWidthMS);
+
+                logger.header($"{prefix}: trying to read (non-existant) SECOND spectrum (trigger {triggerCount})");
+
+                // 100ms more than integration time should be plenty
+                timeoutMS = spec.integrationTimeMS + 100;
+                logger.debug($"{prefix}: setting timeout to {timeoutMS}");
+                spec.acquisitionTimeoutMS = timeoutMS;
+
+                cs = await wrapper.getSpectrumAsync(pos);
+                if (cs is null)
+                    logger.debug($"{prefix}: correctly timed-out on non-existent second trigger (trigger {triggerCount})");
+                else
+                {
+                    logger.error($"{prefix}: [BAD] actually read (non-existent) second trigger (trigger {triggerCount})");
+                    acquisitionCounts[pos]++;
+                }
+
+                if (batchShuttingDown)
+                {
+                    logger.debug($"{prefix}: shutting down");
+                    break;
+                }
+
+                ////////////////////////////////////////////////////////////////
+                // scramble integration time for next intended read 
+                ////////////////////////////////////////////////////////////////
+
+                var ms = (uint)r.Next((int)integrationTimeMSRandomMin,
+                                      (int)integrationTimeMSRandomMax + 1);
+                setIntegrationTimeMS(spec, ms, prefix);
+            }
+
+            logger.header($"{prefix}: done");
+            return true;
+        }
+
+        // This function is provided to ensure the new timeout is set along with
+        // (just before, actually) the new integration time, and to let 
+        // freeRunningSpectrometer easily use it twice.
+        void setIntegrationTimeMS(Spectrometer spec, uint ms, string prefix="setIntegrationTimeMS")
+        {
+            logger.debug($"{prefix}: setting randomized integration time to {ms}");
+
+            var timeoutMS = ms + 100;
+            logger.debug($"{prefix}: setting acquisitionTimeoutMS to {timeoutMS}");
+            spec.acquisitionTimeoutMS = timeoutMS;
+
+            logger.debug($"{prefix}: setting integrationTimeMS (will generate SW throwaway)");
+            spec.integrationTimeMS = ms; // will generate SW-triggered throwaway
+            logger.debug($"{prefix}: back from setting integration time");
         }
 
         void backgroundWorkerBatch_DoWork(object sender, DoWorkEventArgs e)
         {
+            Thread.CurrentThread.Name = "workerBatch";
+
             logger.header("Starting Monte-Carlo Worker");
 
             Random r = new Random();
@@ -723,30 +896,29 @@ namespace MultiChannelDemo
             {
                 logger.info($"writing {batchPathname}");
 
-                // header e.g. Count, Timestamp, Remaining, ElapsedMS, TriggerMS, Pos_1_MS, Pos_1_DegC, Pos_1_Avg, Pos_5_MS, Pos_5_DegC, Pos_5_Avg
-                sw.Write("Count, Timestamp, Remaining, ElapsedMS, TriggerMS");
+                // header e.g. Count, Timestamp, Remaining, ElapsedMS, TriggerMS, Pos_1_MS, Pos_5_MS, Pos_1_DegC, Pos_5_DegC, Pos_1_Avg, Pos_5_Avg
+                List<string> headers = new List<string>();
+                headers.Add("Count");
+                headers.Add("Timestamp");
+                headers.Add("Remaining");
+                headers.Add("ElapsedMS");
+                headers.Add("TriggerMS");
                 foreach (var pos in wrapper.positions)
                     if (wrapper.getSpectrometer(pos).multiChannelSelected)
-                        sw.Write($", Pos_{pos}_MS, Pos_{pos}_DegC, Pos_{pos}_Avg");
-                sw.WriteLine();
-
-                // where to store graph data in memory
-                List<uint> xAxisMS = new List<uint>();
-                Dictionary<int, List<double>> intensities = new Dictionary<int, List<double>>();
-
+                        headers.Add($"Pos{pos}_MS");
                 foreach (var pos in wrapper.positions)
-                {
                     if (wrapper.getSpectrometer(pos).multiChannelSelected)
-                    {
-                        intensities.Add(pos, new List<double>());
-                        tallies.Add(pos, new SortedDictionary<uint, Tally>());
-                    }
-                }
+                        headers.Add($"Pos{pos}_Avg");
+                foreach (var pos in wrapper.positions)
+                    if (wrapper.getSpectrometer(pos).multiChannelSelected)
+                        headers.Add($"Pos{pos}_DegC");
+                sw.WriteLine(string.Join<string>(", ", headers));
 
-                uint count = 0;
                 while (DateTime.Now < endTime)
                 {
-                    if (workerBatch.CancellationPending)
+                    DateTime iterationStart = DateTime.Now;
+
+                    if (workerBatch.CancellationPending || batchShuttingDown)
                     {
                         logger.debug("workerBatch.DoWork cancelled");
                         e.Cancel = true;
@@ -759,62 +931,69 @@ namespace MultiChannelDemo
                     var timeRemaining = (endTime - now).ToString(@"hh\:mm\:ss");
 
                     // update on-screen countdown
-                    labelBatchStatus.BeginInvoke((MethodInvoker)delegate {
-                        labelBatchStatus.Text = timeRemaining + " remaining"; });
+                    labelBatchStatus.BeginInvoke((MethodInvoker)delegate { labelBatchStatus.Text = timeRemaining + " remaining"; });
 
                     // randomize trigger pulse width (see MultiChannelWrapper.forceDoubleTrigger
                     // docs for logic on max trigger length)
-                    var triggerMS = r.Next(1, (int)(0.25 * integrationTimeMSRandomMin));
-                    wrapper.triggerPulseWidthMS = triggerMS;
-
-                    // start file row
-                    sw.Write($"{count}, {nowStr}, {timeRemaining}, {elapsedMS}, {triggerMS}");
-
-                    // randomize integration times
-                    Dictionary<int, uint> integrationTimes = new Dictionary<int, uint>();
-                    foreach (var pos in wrapper.positions)
-                        if (wrapper.getSpectrometer(pos).multiChannelSelected)
-                            integrationTimes.Add(pos,
-                                (uint)r.Next((int)integrationTimeMSRandomMin,
-                                             (int)integrationTimeMSRandomMax));
-
-                    // set integration times
-                    var ok = wrapper.setIntegrationTimesMS(integrationTimes);
-
-                    // take measurement
-                    lastSpectra = wrapper.getSpectraAsync().Result;
-
-                    // graph the spectra normally (individual and combined graphs)
-                    chartAll.BeginInvoke((MethodInvoker)delegate { processSpectra(lastSpectra); });
+                    wrapper.triggerPulseWidthMS = r.Next(1, (int)maxPulseWidthMS);
 
                     ////////////////////////////////////////////////////////////////
                     // write to file
                     ////////////////////////////////////////////////////////////////
 
-                    xAxisMS.Add(elapsedMS);
-                    foreach (var cs in lastSpectra)
+                    List<string> specMS = new List<string>();
+                    List<string> specAvg = new List<string>();
+                    List<string> specDegC = new List<string>();
+                    foreach (var pos in wrapper.positions)
                     {
-                        var pos = cs.pos;
+                        var spec = wrapper.getSpectrometer(pos);
+                        if (!spec.multiChannelSelected)
+                            continue;
 
-                        // write to file
-                        var mean = cs.intensities.Average();
-                        sw.Write($", {cs.integrationTimeMS}, {cs.detectorTemperatureDegC:f2}, {mean:f2}");
+                        var avg = spec.lastSpectrum.Average();
+                        var ms = spec.integrationTimeMS;
+
+                        specMS.Add(string.Format("{0}", ms));
+                        specAvg.Add(string.Format("{0:f2}", avg));
+                        specDegC.Add(string.Format("{0:f2}", spec.detectorTemperatureDegC));
 
                         // update tallies
-                        if (!tallies[pos].ContainsKey(cs.integrationTimeMS))
-                            tallies[pos].Add(cs.integrationTimeMS, new Tally());
-                        tallies[pos][cs.integrationTimeMS].total += mean;
-                        tallies[pos][cs.integrationTimeMS].count++;
+                        if (!tallies[pos].ContainsKey(ms))
+                            tallies[pos].Add(ms, new Tally());
+                        tallies[pos][ms].total += avg;
+                        tallies[pos][ms].count++;
                     }
-                    sw.WriteLine();
 
-                    // added in test
-                    Thread.Sleep(100);
+                    // output record
+                    sw.Write($"{triggerCount}, {nowStr}, {timeRemaining}, {elapsedMS}, {wrapper.triggerPulseWidthMS}");
+                    sw.Write(string.Join<string>(", ", specMS) + ", ");
+                    sw.Write(string.Join<string>(", ", specAvg) + ", ");
+                    sw.WriteLine(string.Join<string>(", ", specDegC));
 
-                    count++;
+                    // generate trigger
+                    logger.header($"workerBatch: generating trigger {triggerCount}");
+
+                    // Although startAcquisitionAsync is declared async, we're 
+                    // calling it synchronously, so it runs within the worker's 
+                    // thread. Also note we are not configuring timeouts here, as
+                    // presumably the FRS are ALREADY in a blocking acquire
+                    var ok = wrapper.startAcquisitionAsync(false).Result;
+
+                    // for now, just run batch at 2sec increments
+                    int iterationElapsedMS = (int)(DateTime.Now - iterationStart).TotalMilliseconds;
+                    int sleepMS = WORKER_PERIOD_MS - iterationElapsedMS;
+                    logger.debug($"workerBatch: sleeping {sleepMS}ms");
+                    Thread.Sleep(sleepMS);
+
+                    triggerCount++;
                 }
-                logger.debug("workerBatch passed endTime");
             }
+
+            logger.header("closing all freeRunningSpectrometers");
+            batchShuttingDown = true;
+            foreach (var pos in wrapper.positions)
+                wrapper.getSpectrometer(pos).cancelCurrentAcquisition();
+
             logger.debug("workerBatch.DoWork done");
         }
 

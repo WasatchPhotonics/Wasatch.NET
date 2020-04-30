@@ -161,7 +161,7 @@ namespace WasatchNET
         /// getSpectrum()
         /// </summary>
         /// <remarks>
-        /// This is provided in case the caller wishes to call sendTrigger()
+        /// This is provided in case the caller wishes to call sendSWTrigger()
         /// explicitly, for instance to send software triggers to a series of
         /// devices at once, before beginning reads on any of them.
         /// </remarks>
@@ -264,6 +264,22 @@ namespace WasatchNET
         /// at instantiation.
         /// </summary>
         // private bool kludgedOut = false;
+
+        public uint? acquisitionTimeoutMS { get; set; }
+
+        public uint acquisitionTimeoutRelativeMS
+        {
+            set
+            {
+                if (value > 0)
+                    acquisitionTimeoutTimestamp = DateTime.Now.AddMilliseconds(value);
+                else
+                    acquisitionTimeoutTimestamp = null;
+            }
+        }
+
+        // This allows getSpectrum() to throw timeouts even when externally triggered
+        public DateTime? acquisitionTimeoutTimestamp{ get; set; } = null;
 
         public ushort actualFrames
         {
@@ -632,18 +648,6 @@ namespace WasatchNET
                 return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
             }
         }
-
-        // a simple way to set expectedTriggerTimeoutTimestamp
-        public uint expectedTriggerTimeoutMS
-        {
-            set
-            {
-                expectedTriggerTimeoutTimestamp = DateTime.Now.AddMilliseconds(value);
-            }
-        }
-
-        // This allows getSpectrum() to throw timeouts even when externally triggered
-        public DateTime? expectedTriggerTimeoutTimestamp { get; set; } = null;
 
         public virtual string firmwareRevision
         {
@@ -1992,10 +1996,13 @@ namespace WasatchNET
         {
             lock (acquisitionLock)
             {
+                currentAcquisitionCancelled = false;
+
                 double[] sum = getSpectrumRaw();
                 if (sum == null)
                 {
-                    logger.error("getSpectrum: getSpectrumRaw returned null");
+                    if (!currentAcquisitionCancelled)
+                        logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
                     return null;
                 }
                 logger.debug("getSpectrum: received {0} pixels", sum.Length);
@@ -2036,7 +2043,7 @@ namespace WasatchNET
             }
         }
 
-        public bool sendTrigger()
+        public bool sendSWTrigger()
         {
             byte[] buf = null;
             if (isARM)
@@ -2060,7 +2067,7 @@ namespace WasatchNET
             // However, we want to make sure getSpectrumRaw won't "autoTrigger",
             // as we don't want to send two.
             if (!autoTrigger)
-                sendTrigger();
+                sendSWTrigger();
             getSpectrumRaw();
         }
 
@@ -2080,7 +2087,7 @@ namespace WasatchNET
 
             // request a spectrum
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger)
-                sendTrigger();
+                sendSWTrigger();
 
             if (isStroker)
             {
@@ -2147,7 +2154,8 @@ namespace WasatchNET
                 // verify that exactly the number expected were received
                 if (subspectrum == null || subspectrum.Length != pixelsPerEndpoint)
                 {
-                    logger.error($"failed when reading subspectrum from 0x{spectralReader.EpNum:x2} ({id})");
+                    if (!currentAcquisitionCancelled)
+                        logger.error($"failed when reading subspectrum from 0x{spectralReader.EpNum:x2} ({id})");
                     Thread.Sleep(100);
                     if (isStroker && areaScanEnabled)
                         pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
@@ -2356,6 +2364,24 @@ namespace WasatchNET
 
         int generateTimeoutMS()
         {
+            ////////////////////////////////////////////////////////////////////
+            // if an explicit timeout was provided, use that
+            ////////////////////////////////////////////////////////////////////
+
+            if (acquisitionTimeoutMS != null)
+                return (int)acquisitionTimeoutMS;
+            else if (acquisitionTimeoutTimestamp != null)
+            {
+                var now = DateTime.Now;
+                DateTime then = (DateTime)acquisitionTimeoutTimestamp;
+                if (acquisitionTimeoutTimestamp > now)
+                    return (int)(then - now).TotalMilliseconds;
+            }
+
+            ////////////////////////////////////////////////////////////////////
+            // compute a default timeout
+            ////////////////////////////////////////////////////////////////////
+
             // give SiG more time, as it may need to do 6 internal throwaway
             // if it's coming back from a power-save mode
             int acquisitions = isSiG ? 8 : 2;
@@ -2438,14 +2464,19 @@ namespace WasatchNET
                     return null; 
                 }
 
+                if (currentAcquisitionCancelled)
+                {
+                    logger.debug("readSubspectrum: current acquisition cancelled");
+                    return null;
+                }
+
                 if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
                 {
-                    if (expectedTriggerTimeoutTimestamp != null &&
-                        expectedTriggerTimeoutTimestamp >= DateTime.Now)
+                    // if we were given an explicit timeout, give up
+                    if (acquisitionTimeoutMS != null || acquisitionTimeoutTimestamp != null)
                     {
-                        logger.error("failed to receive externally-triggered spectrum by {0} so timing-out",
-                            expectedTriggerTimeoutTimestamp);
-                        expectedTriggerTimeoutTimestamp = null;
+                        logger.error("failed to receive externally-triggered spectrum within explicit timeout");
+                        acquisitionTimeoutTimestamp = null;
                         return null;
                     }
                     else
@@ -2467,5 +2498,8 @@ namespace WasatchNET
             logger.debug("readSubspectrum: returning subspectrum");
             return subspectrum;
         }
+
+        public void cancelCurrentAcquisition() => currentAcquisitionCancelled = true;
+        private bool currentAcquisitionCancelled;
     }
 }

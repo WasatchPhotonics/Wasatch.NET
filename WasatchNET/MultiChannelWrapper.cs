@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Windows.Markup;
 
 namespace WasatchNET
 {
@@ -21,23 +22,37 @@ namespace WasatchNET
         public int pos = -1;
         public X_AXIS_TYPE xAxisType;
         public double[] xAxis;
-        public double[] intensities;
 
         // these are mainly for QC testing, but retained for convenience
         public float detectorTemperatureDegC;
         public uint integrationTimeMS;
 
+        Spectrometer spec;
+
         public ChannelSpectrum(Spectrometer spec = null)
         {
+            this.spec = spec;
             if (spec != null)
             {
                 pos = spec.multiChannelPosition;
                 xAxis = spec.wavenumbers is null ? spec.wavelengths : spec.wavenumbers;
                 xAxisType = spec.wavenumbers is null ? X_AXIS_TYPE.WAVELENGTH : X_AXIS_TYPE.WAVENUMBER;
                 integrationTimeMS = spec.integrationTimeMS;
-                detectorTemperatureDegC = spec.detectorTemperatureDegC;
             }
         }
+
+        public double[] intensities
+        {
+            get => _intensities;
+            set
+            {
+                // only bother reading the detector temperature on successful acquisitions
+                _intensities = value;
+                if (spec != null)
+                    detectorTemperatureDegC = spec.detectorTemperatureDegC;
+            }
+        }
+        double[] _intensities;
     }
 
     /// <summary>
@@ -442,9 +457,8 @@ namespace WasatchNET
         /// Use the configured spectrometer's laserEnable output to raise a brief 
         /// HW trigger pulse.
         /// </summary>
-        /// <todo>test w/ARM spectrometers</todo>
         /// <remarks>This is async so the GUI is responsive while the trigger is high</remarks>
-        public async Task<bool> startAcquisitionAsync()
+        public async Task<bool> startAcquisitionAsync(bool configureTimeouts=true)
         {
             if (hardwareTriggeringEnabled)
             {
@@ -455,24 +469,24 @@ namespace WasatchNET
                 }
 
                 // configure each spectrometer's "even when externally triggered" timeout
-                foreach (var pair in specByPos)
+                if (configureTimeouts)
                 {
-                    var spec = pair.Value;
-                    if (!spec.multiChannelSelected)
-                        continue;
+                    foreach (var pair in specByPos)
+                    {
+                        var spec = pair.Value;
+                        if (!spec.multiChannelSelected)
+                            continue;
 
-                    // this seems sufficiently generous
-                    var ms = (uint) ( 500 
-                                    + triggerPulseWidthMS 
-                                    + spec.integrationTimeMS * 2);
-                    logger.debug($"setting {spec.id} timeout to {ms}");
-                    spec.expectedTriggerTimeoutMS = ms;
+                        // this seems sufficiently generous
+                        var ms = (uint)(500
+                                        + triggerPulseWidthMS
+                                        + spec.integrationTimeMS * 2);
+                        logger.debug($"startAcquisitionAsync: setting {spec.id} timeout to {ms}");
+                        spec.acquisitionTimeoutMS = ms;
+                    }
                 }
 
-                logger.debug($"sending {triggerPulseWidthMS}ms HW trigger via {specTrigger.id}");
-                specTrigger.laserEnabled = true;
-                await Task.Delay(millisecondsDelay: triggerPulseWidthMS);
-                specTrigger.laserEnabled = false;
+                await sendHWTrigger();
             }
             else
             {
@@ -485,10 +499,35 @@ namespace WasatchNET
                         continue;
 
                     logger.debug($"sending SW trigger to pos {pos}");
-                    spec.sendTrigger();
+                    spec.sendSWTrigger();
                 }
             }
             logger.debug("startAcquisitionAsync DONE");
+            return true;
+        }
+
+        public async Task<bool> sendHWTrigger()
+        {
+            if (specTrigger is null)
+                return false;
+
+            int triggersToSend = 1;
+            if (forceDoubleTrigger && r.NextDouble() < doubleTriggerPercentage)
+                triggersToSend = 2;
+
+            logger.debug($"sendHWTrigger: going to send {triggersToSend} triggers");
+            for (int i = 0; i < triggersToSend; i++)
+            { 
+                logger.debug($"sending {triggerPulseWidthMS}ms HW trigger via {specTrigger.id}");
+                specTrigger.laserEnabled = true;
+                await Task.Delay(millisecondsDelay: triggerPulseWidthMS);
+                specTrigger.laserEnabled = false;
+
+                // on multiple triggers, leave a gap
+                if (i + 1 < triggersToSend)
+                    await Task.Delay(triggerPulseWidthMS);
+            }
+
             return true;
         }
 
@@ -521,20 +560,6 @@ namespace WasatchNET
                 {
                     logger.error("Unable to start acquisition");
                     return null;
-                }
-
-                if (forceDoubleTrigger)
-                {
-                    if (r.NextDouble() < doubleTriggerPercentage)
-                    {
-                        logger.error("generating double-trigger");
-
-                        // give the previous "trigger-low" state time to settle
-                        await Task.Delay(triggerPulseWidthMS);
-
-                        // raise a 2nd trigger
-                        _ = startAcquisitionAsync();
-                    }
                 }
             }
 
@@ -572,8 +597,11 @@ namespace WasatchNET
 
             Spectrometer spec = specByPos[pos];
 
-            ChannelSpectrum cs = new ChannelSpectrum(spec);
-            cs.intensities = await Task.Run(() => spec.getSpectrum());
+            var intensities = await Task.Run(() => spec.getSpectrum());
+            if (intensities is null)
+                return null;
+
+            ChannelSpectrum cs = new ChannelSpectrum(spec) { intensities = intensities };
 
             if (reflectanceEnabled)
                 computeReflectance(spec, cs);
