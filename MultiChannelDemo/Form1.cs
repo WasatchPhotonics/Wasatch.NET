@@ -39,6 +39,7 @@ namespace MultiChannelDemo
         uint integrationTimeMSRandomMax = 500;
         uint maxPulseWidthMS = 25; 
         Dictionary<int, int> acquisitionCounts;
+        Dictionary<int, int> secondTriggerCounts;
         bool batchRunning;
         bool batchShuttingDown;
         string batchPathname;
@@ -47,7 +48,6 @@ namespace MultiChannelDemo
         BackgroundWorker workerBatch;
         int triggerCount;
         int failuresToReadFirstSpectrum;
-        int secondSpectraRead;
 
         // place to store intensities by integration time
         // tallies[pos][integTimeMS].{total, count}
@@ -437,7 +437,7 @@ namespace MultiChannelDemo
         // to do here.
         void processSpectrum(ChannelSpectrum cs)
         {
-            if (cs.intensities is null)
+            if (cs is null || cs.intensities is null)
                 return;
 
             updateChartAll(cs);
@@ -514,12 +514,8 @@ namespace MultiChannelDemo
         }
 
         /// <summary>
-        /// Just write spectra in pixel space for now.  (Kludged-in as somehow I
-        /// didn't originally think this would be required.)
+        /// Write spectra by pixel or interpolated x-axis.
         /// </summary>
-        /// <todo>
-        /// optionally interpolate on wavelength
-        /// </todo>
         private void buttonSave_Click(object sender, EventArgs e)
         {
             if (lastSpectra is null)
@@ -615,31 +611,50 @@ namespace MultiChannelDemo
 
         // @todo move to a MonteCarlo class
         //
-        // Okay, this is the proposed structure of this process, given our desire
-        // to "allow but count" double-triggered acquisitions if they happen to 
-        // occur.
+        // This ended up getting more complicated than expected due to scope
+        // creep.  Originally we were just going to take HW-triggered spectra
+        // for 5hr, essentially wrapping a loop around wrapper.getSpectraAsync().
+        //
+        // Then requirements evolved to include checking that double-triggers
+        // weren't being read, and then to actively injecting double-triggers.
+        // Things also complicated a bit when we determined the need for 
+        // throwaway spectra after changing integration time.
+        //
+        // The current implementation is probably more complicated than it needs
+        // to be, by maintaining 8 distinct "free-running spectra" tasks.  A
+        // simpler design would probably have no free-running loops, and just
+        // execute the following events at a fixed schedule:
+        //
+        //      1. randomize integration time on all spectrometers
+        //      2. perform one throwaway spectrum on each (SW or HW triggered)
+        //      3. attempt to read a 2nd trigger, confirm fails
+        //      4. generate official HW trigger
+        //      5. collect one spectrum from each
+        //      6. attempt to read a 2nd trigger, confirm fails
         //
         // BackgroundWorkerBatch drives the Monte Carlo test.  This worker runs 
-        // from startTime to endTime, in deliberately-sedate 2sec increments.
-        // Every 2sec, it generates a hardware trigger.  That trigger may or may
-        // not be intentionally doubled (lo-hi-lo-hi-lo) if forceDoubleTrigger
-        // is set.  At the BEGINNING of each iteration (before the new trigger is
-        // sent), it outputs a record containing the LAST positional integration 
-        // times, spectral counts and means.  Besides outputing records and
-        // generating triggers, it doesn't do anything.  All acquisitions are
-        // in the per-position threads.
+        // from startTime to endTime, in deliberately-sedate 3sec increments
+        // (2sec works for fewer spectrometers, went to 3sec for all 8).
+        //
+        // Every iteration, it generates a hardware trigger.  That trigger may or
+        // may not be intentionally doubled (_n_n_) if forceDoubleTrigger is set.
+        //
+        // At the end of each iteration it outputs a record of test state. 
+        // Besides outputing records and generating triggers, it doesn't do 
+        // anything.  All acquisitions are in the per-position threads.
         //
         // The spectrometers themselves run in essentially free-running async 
         // methods.  All they do is loop over:
         //
-        //      - exit if shuttingDown
-        //      - acquire FIRST (real) trigger
-        //      - acquire SECOND (fake) trigger
-        //      - increment spectralCount unless error
+        //      - randomize integration time
+        //      - attempt acquire FIRST (real) trigger (should succeed)
+        //      - attempt to SECOND (fake) trigger (should fail)
         //
-        // This way, each spectrometer has plenty of time to fully execute and
-        // acquire one expected integration (up to 500ms), with a whole 1.5sec
-        // to acquire any misfires as well.  
+        // Since a great deal of the attempted acquisitions will DELIBERATELY
+        // fail (that's how we're confirming there are no double-triggers),
+        // the log will fill with "ERROR" results even on a successful run.
+        // Therefore, the token "[BAD]" is used in log statements indicating
+        // something genuinely unintended / unwanted has occurred.
 
         private void numericUpDownIntegrationTimeMSMin_ValueChanged(object sender, EventArgs e)
         {
@@ -691,7 +706,6 @@ namespace MultiChannelDemo
             batchShuttingDown = false;
             triggerCount = 0;
             failuresToReadFirstSpectrum = 0;
-            secondSpectraRead = 0;
             wrapper.doubleTriggersSent = 0;
 
             buttonBatchStart.Text = "Stop";
@@ -709,6 +723,7 @@ namespace MultiChannelDemo
             // init tallies
             tallies = new SortedDictionary<int, SortedDictionary<uint, Tally>>();
             acquisitionCounts = new Dictionary<int, int>();
+            secondTriggerCounts = new Dictionary<int, int>();
 
             // init graph
             foreach (var s in seriesTime)
@@ -759,24 +774,21 @@ namespace MultiChannelDemo
                 return false;
 
             string prefix = $"frs({pos})";
-            Thread.CurrentThread.Name = prefix;
-
             logger.header($"{prefix} starting");
 
-            if (!acquisitionCounts.ContainsKey(pos))
-                acquisitionCounts[pos] = 0;
-            bool firstTriggerReceived = false;
+            // initialize storage
+            acquisitionCounts[pos] = 0;
+            secondTriggerCounts[pos] = 0;
 
             // everyone starts at 100ms
             setIntegrationTimeMS(spec, 100, prefix);
 
+            // enter acquisition loop
+            bool firstTriggerReceived = false;
             while (true)
             {
                 if (batchShuttingDown)
-                {
-                    logger.debug($"{prefix}: shutting down");
                     break;
-                }
 
                 ////////////////////////////////////////////////////////////////
                 // block on HW trigger 
@@ -801,10 +813,7 @@ namespace MultiChannelDemo
                 else
                 {
                     if (batchShuttingDown)
-                    {
-                        logger.debug($"{prefix}: shutting down");
                         break;
-                    }
 
                     if (firstTriggerReceived)
                     {
@@ -814,14 +823,13 @@ namespace MultiChannelDemo
                     else
                         logger.debug($"{prefix}: failed to read FIRST spectrum (okay), trying again");
 
+                    // for whatever reason, haven't read the FIRST trigger yet,
+                    // so keep trying
                     continue;
                 }
 
                 if (batchShuttingDown)
-                {
-                    logger.debug($"{prefix}: shutting down");
                     break;
-                }
 
                 ////////////////////////////////////////////////////////////////
                 // try to read results of SECOND TRIGGER 
@@ -829,8 +837,18 @@ namespace MultiChannelDemo
 
                 // This is to try to prove that no second triggers are being 
                 // generated or detected. Ideally none will occur, and this read
-                // will always fail.
-
+                // will always fail.  Although the phrase "non-existent" is used
+                // in log messages, if we are deliberately injecting double-
+                // triggers via wrapper.forceDoubleTrigger, then sometimes those
+                // double-triggers will be genuine.  In that case, our goal is to
+                // count whether they generated new spectra or not.  
+                //
+                // Older firmware was known to allow double-triggers (even within 
+                // a period less than the configured integration time) to 
+                // generate multiple acquisitions (or worse, a single corrupted 
+                // acquisition).  New FW under test should silently ignore new
+                // triggers received while the spectrometer is already in the
+                // midst of an acquisition.
 
                 // make sure the pulse which triggered the FIRST spectrum is
                 // actually complete
@@ -845,19 +863,22 @@ namespace MultiChannelDemo
 
                 cs = await wrapper.getSpectrumAsync(pos);
                 if (cs is null)
+                {
                     logger.debug($"{prefix}: correctly timed-out on non-existent second trigger (trigger {triggerCount})");
+                }
                 else
                 {
                     logger.error($"{prefix}: [BAD] actually read (non-existent) second trigger (trigger {triggerCount})");
                     acquisitionCounts[pos]++;
-                    secondSpectraRead++;
+                    secondTriggerCounts[pos]++;
+
+                    // make sure the pulse which triggered the SECOND spectrum is
+                    // actually complete
+                    await Task.Delay((int)maxPulseWidthMS);
                 }
 
                 if (batchShuttingDown)
-                {
-                    logger.debug($"{prefix}: shutting down");
                     break;
-                }
 
                 ////////////////////////////////////////////////////////////////
                 // scramble integration time for next intended read 
@@ -886,6 +907,11 @@ namespace MultiChannelDemo
             logger.debug($"{prefix}: setting integrationTimeMS (will generate SW throwaway)");
             spec.integrationTimeMS = ms; // will generate SW-triggered throwaway
             logger.debug($"{prefix}: back from setting integration time");
+
+            // KLUDGE: Graph integration throwaway.  This serves no real point except
+            // to help debug some buggy FPGA firmware.
+            var cs = new ChannelSpectrum(spec) { intensities = spec.lastSpectrum };
+            chartAll.BeginInvoke((MethodInvoker)delegate { processSpectrum(cs); });
         }
 
         void backgroundWorkerBatch_DoWork(object sender, DoWorkEventArgs e)
@@ -1034,16 +1060,21 @@ namespace MultiChannelDemo
                 // metadata
                 sw.WriteLine($"Failures to read first triggered spectrum, {failuresToReadFirstSpectrum}");
                 sw.WriteLine($"Second triggers sent, {wrapper.doubleTriggersSent}");
-                sw.WriteLine($"Second spectra read, {secondSpectraRead}");
+                sw.WriteLine();
+
+                sw.WriteLine("[Second Triggers Read]");
+                foreach (var pair in tallies)
+                    sw.Write($", Pos{pair.Key}_2ndTrig");
+                sw.WriteLine();
+                foreach (var pair in tallies)
+                    sw.Write($", {secondTriggerCounts[pair.Key]}");
+                sw.WriteLine();
                 sw.WriteLine();
 
                 // header e.g. IntegrationTimeMS, Pos_1, Pos_5
                 sw.Write("IntegrationTimeMS");
                 foreach (var pair in tallies)
-                {
-                    var pos = pair.Key;
-                    sw.Write($", Pos_{pos}");
-                }
+                    sw.Write($", Pos{pair.Key}_Mean");
                 sw.WriteLine();
 
                 // iterate over full range of supported random integration times

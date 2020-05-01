@@ -11,11 +11,12 @@ namespace WasatchNET
     /// <summary>
     /// Return type used by MultiChannelWrapper acquisitions, primarily provided
     /// to bundle x-axis and position number, as different channels will presumably
-    /// have different settings.
+    /// have different settings.  
     /// </summary>
     /// <remarks>
-    /// Populates "intensities" with last spectrum, but many callers will promptly
-    /// overwrite with getSpectrum().
+    /// Automatically populates detector temperature if/when a valid intensities
+    /// is set.  That way we don't hammer the spectrometer with temperature reads
+    /// while looping over null spectra because we're waiting on a trigger.
     /// </remarks>
     public class ChannelSpectrum
     {
@@ -23,7 +24,6 @@ namespace WasatchNET
         public X_AXIS_TYPE xAxisType;
         public double[] xAxis;
 
-        // these are mainly for QC testing, but retained for convenience
         public float detectorTemperatureDegC;
         public uint integrationTimeMS;
 
@@ -46,7 +46,6 @@ namespace WasatchNET
             get => _intensities;
             set
             {
-                // only bother reading the detector temperature on successful acquisitions
                 _intensities = value;
                 if (spec != null)
                     detectorTemperatureDegC = spec.detectorTemperatureDegC;
@@ -66,19 +65,19 @@ namespace WasatchNET
     /// acquisitions at the same time (simultaneous measurements of a single event), 
     /// typically via hardware triggering.
     /// </summary>
+    ///
     /// <remarks>
     /// - "Position" and "Channel" are used interchangeably.
     /// - all testing was done with 8-channel system of WP-OEM (ARM) spectrometers,
     ///   but should apply to other configurations
-    /// - Position is generally assumed to be 1-indexed, given typical customer 
-    ///   tendencies and user labeling requirements.  However, negatives are
-    ///   definitely considered invalid.
+    /// - Position is 1-indexed, given typical customer tendencies and user 
+    ///   labeling requirements.
     /// 
     /// As WP-OEM spectrometers do not currently expose an accessory connector 
     /// with an obvious GPIO output useable as a trigger source, and as the 
-    /// immediate customer is using non-laser models with external light sources,
-    /// the laserEnable output is being used as a quasi-GPIO, both for raising
-    /// trigger signals and to control connected fans (if found).
+    /// immediate customer is using non-laser models excited via external light 
+    /// sources, the laserEnable output is being used as a quasi-GPIO, both for 
+    /// raising trigger signals and to control connected fans.
     /// </remarks>
     public class MultiChannelWrapper
     {
@@ -91,6 +90,11 @@ namespace WasatchNET
         /// </summary>
         public SortedSet<int> positions { get; private set; } = new SortedSet<int>();
 
+        /// <summary>
+        /// If enabled, and if reference measurements have been recorded, will
+        /// populate ChannelSpectrum objects with computed reflectance rather 
+        /// than raw intensity.
+        /// </summary>
         public bool reflectanceEnabled { get; set; }
 
         /// <summary>
@@ -98,30 +102,22 @@ namespace WasatchNET
         /// generate an acquisition trigger to all spectrometers.
         /// </summary>
         /// <remarks>
-        /// Per Nicolas Baron, minimum width is probably > 1ms.  Note that
+        /// Per Nicolas Baron, minimum width is probably 1ms.  Note that
         /// CSharp timing is not particularly precise, so the value entered
         /// here is really more of a floor (even values of zero may work).
         /// </remarks>
-        public int triggerPulseWidthMS 
-        {
-            get => _triggerPulseWidthMS;
-            set
-            {
-                // if (value < 5)
-                //     logger.error("triggerPulseWidthMS has only been tested >=5ms");
-                _triggerPulseWidthMS = value;
-            }
-        }
-        int _triggerPulseWidthMS = 25;
+        public int triggerPulseWidthMS { get; set; } = 5;
 
         /// <summary>
         /// force double triggers to occur (QC testing only)
         /// </summary> 
         /// <remarks>
-        /// TriggerPulseWidthMS is also used as the intra-trigger delay. If used, 
+        /// triggerPulseWidthMS is also used as the intra-trigger delay. If used, 
         /// recommend that triggerPulseWidthMS be set no higher than 25% of the 
         /// LOWEST integration time in the system's channels.  That way, assuming 
-        /// integration starts on the leading edge, there is room for:
+        /// integration starts on the leading edge, there is room for the 
+        /// following sequence during even a minimum-length acquisition (giving
+        /// room for a double-trigger event to occur inside a measurement).
         /// 
         /// ----------+----------+----------+----------+
         /// [trigger 1]
@@ -132,15 +128,15 @@ namespace WasatchNET
         public bool forceDoubleTrigger { get; set; }
 
         /// <summary>
-        /// How many extra random triggers were generated via forceDoubleTrigger
+        /// How many extra random triggers were generated via forceDoubleTrigger.
         /// </summary>
         public int doubleTriggersSent { get; set; }
 
         /// <summary>
-        /// if double triggering is enabled, it will occur this often 
+        /// if forced double triggering is enabled, it will occur this often 
         /// (1.0 = 100% of the time)
         /// </summary> 
-        public double doubleTriggerPercentage { get; set; } = 0.05;
+        public double doubleTriggerPercentage { get; set; } = 0.2;
         
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
@@ -150,14 +146,18 @@ namespace WasatchNET
 
         Driver driver = Driver.getInstance();
         SortedDictionary<int, Spectrometer> specByPos;
-        Logger logger = Logger.getInstance();
 
+        // which spectrometer generates the external trigger
         Spectrometer specTrigger = null;
+
+        // which spectrometer controls the fan
         Spectrometer specFan = null;
 
         Random r = new Random();
 
         static object mut = new object();
+
+        Logger logger = Logger.getInstance();
 
         ////////////////////////////////////////////////////////////////////////
         // Lifecycle
@@ -212,8 +212,8 @@ namespace WasatchNET
                 // select by default
                 spec.multiChannelSelected = true;
 
-                // don't auto-generate SW triggers (we'll do it in the wrapper, 
-                // for speed and control)
+                // don't auto-generate SW triggers on calls to Spectrometer.getSpectrum
+                // (most of our acquisitions will use hardware triggers)
                 spec.autoTrigger = false;
 
                 // ARM units (used for triggering) seem to benefit from a 
@@ -222,7 +222,7 @@ namespace WasatchNET
                 spec.throwawayAfterIntegrationTime = true;
 
                 // ARM units seem susceptible to hanging if commanded too rapidly
-                spec.featureIdentification.usbDelayMS = 50;
+                spec.featureIdentification.usbDelayMS = 10;
 
                 ////////////////////////////////////////////////////////////////
                 // Parse EEPROM.userText
@@ -230,15 +230,28 @@ namespace WasatchNET
 
                 var pos = spectrometerCount + 1;
 
+                // by convention, multi-channel spectrometers will use the
+                // EEPROM's userData text field to configure semicolon-delimited
+                // name=value pairs, such as the following 3 lines (each a 
+                // different nominal spectrometer):
+                //
+                //   pos=1; feature=trigger
+                //   pos=2; feature=fan
+                //   pos=3
+
+                // iterate over semi-colon delimited attributes
                 var attributes = spec.eeprom.userText.Split(';');
                 foreach (var attr in attributes)
                 {
+                    // assume each attribute is a name=value pair
                     var pair = attr.Split('=');
                     if (pair.Length == 2)
                     {
                         var name = pair[0].ToLower().Trim();
                         var value = pair[1].ToLower().Trim();
 
+                        // currently the only supported attributes
+                        // are "pos" and "feature"
                         if (name.Contains("pos"))
                         {
                             if (Int32.TryParse(value, out pos))
@@ -248,6 +261,8 @@ namespace WasatchNET
                         }
                         else if (name == "feature")
                         {
+                            // currently the only supported features
+                            // are "trigger" and "fan"
                             if (value.Contains("trigger"))
                             {
                                 logger.info($"  {sn} has trigger feature");
@@ -274,13 +289,17 @@ namespace WasatchNET
                     }
                 }
 
-                // make sure we have no duplicates
+                // if duplicate positions are defined in the EEPROMs,
+                // ignore them and generate unique values
                 while (specByPos.ContainsKey(pos))
                     pos++;
                 logger.info($"  storing {sn} as position {pos}");
                 specByPos[pos] = spec;
-                spec.multiChannelPosition = pos;
                 positions.Add(pos);
+
+                // let the Spectrometer know its own position as a 
+                // convenient back-reference
+                spec.multiChannelPosition = pos;
             }
 
             // Default to system-wide software triggering, regardless of
@@ -293,7 +312,7 @@ namespace WasatchNET
             if (spectrometerCount <= 0)
                 return logger.error("no spectrometers found");
 
-            // take a throwaway spectrum from everything
+            // take a throwaway stability spectrum 
             logger.header("taking initial throwaway stability spectra (SW triggered)");
             _ = await getSpectraAsync();
 
@@ -322,7 +341,7 @@ namespace WasatchNET
         // private utility method to sort spectrometers by integration time
         // in increasing order, so we can process the "soonest-done" first,
         // grab the longest at the end and save time.
-        IEnumerable<Spectrometer> specByIntegrationTime()
+        IEnumerable<Spectrometer> specByIntegrationTime_NOT_USED()
         {
             return from pair in specByPos
                    orderby pair.Value.integrationTimeMS ascending
@@ -330,7 +349,7 @@ namespace WasatchNET
         }
 
         /// <summary>
-        /// Lets the caller directly control the spectrometer at a given position.
+        /// Get a handle to the spectrometer at a given position.
         /// </summary>
         /// <param name="pos">Which channel</param>
         public Spectrometer getSpectrometer(int pos)
@@ -342,7 +361,8 @@ namespace WasatchNET
         }
 
         /// <summary>
-        /// The position of the spectrometer configured to generate the external hardware trigger.
+        /// The position of the spectrometer configured to generate the external
+        /// hardware trigger.
         /// </summary>
         /// <returns>-1 if none found</returns>
         public int triggerPos => specTrigger != null ? specTrigger.multiChannelPosition : -1;
@@ -350,6 +370,25 @@ namespace WasatchNET
         /// <summary>
         /// Whether external hardware triggering is currently enabled.
         /// </summary>
+        /// <remarks>
+        /// Note that with ARM spectrometers, whether hardware triggering is enabled
+        /// or not may seem somewhat philosophical; after all, ARM spectrometers 
+        /// ALWAYS respond to both HW and SW triggers, so this value doesn't actually
+        /// change anything inside the spectrometer.
+        /// 
+        /// What it does do is change behavior within WasatchNET, as normally a 
+        /// spectrometer in SW-triggered mode will automatically generate a SW 
+        /// trigger when Spectrometer.getSpectrum() is called.  Likewise, timeout
+        /// behavior changes depending on this setting, as a HW-triggered acquisition
+        /// should generally continue to block until a HW trigger is detected.
+        ///
+        /// Of course, things are actually more complicated than that, as 
+        /// Spectrometer.autoTrigger also feeds into whether the spectrometer 
+        /// will internally generate a SW trigger, and there are various explicit
+        /// timeouts which can be applied even to HW-triggered spectrometers 
+        /// (such as used by MultiChannelDemo's Monte Carlo mode to check for 
+        /// spurious double-triggers).
+        /// </remarks>
         public bool hardwareTriggeringEnabled
         {
             get => _hardwareTriggeringEnabled;
