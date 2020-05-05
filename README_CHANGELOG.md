@@ -1,6 +1,6 @@
 # Wasatch.NET Changelog
 
-- 2020-04-?? 2.1.??
+- 2020-05-05 2.1.22
     - WasatchNET
         - added WasatchMath.dll
         - tightened EEPROM coeff and range validation
