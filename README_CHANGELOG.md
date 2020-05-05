@@ -11,7 +11,7 @@
         - exposed sendTrigger()
         - updated throwaway logic on changed integration time
         - updated TEC default setpoint detector list
-        - added expectedTriggerTimeout (MS and Timestamp)
+        - added acquisitionTriggerTimeout (MS and Timestamp)
     - MultiChannelWrapper/Demo
         - lots of debugs related to triggering bug (walking spectra, multiple triggers)
         - added Monte Carlo operation 

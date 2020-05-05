@@ -130,7 +130,7 @@ namespace WasatchNET
         /// <summary>
         /// How many extra random triggers were generated via forceDoubleTrigger.
         /// </summary>
-        public int doubleTriggersSent { get; set; }
+        public int doubleTriggerCount { get; set; }
 
         /// <summary>
         /// if forced double triggering is enabled, it will occur this often 
@@ -338,16 +338,6 @@ namespace WasatchNET
         /// </summary>
         public int spectrometerCount => specByPos.Count;
 
-        // private utility method to sort spectrometers by integration time
-        // in increasing order, so we can process the "soonest-done" first,
-        // grab the longest at the end and save time.
-        IEnumerable<Spectrometer> specByIntegrationTime_NOT_USED()
-        {
-            return from pair in specByPos
-                   orderby pair.Value.integrationTimeMS ascending
-                   select pair.Value;
-        }
-
         /// <summary>
         /// Get a handle to the spectrometer at a given position.
         /// </summary>
@@ -366,6 +356,40 @@ namespace WasatchNET
         /// </summary>
         /// <returns>-1 if none found</returns>
         public int triggerPos => specTrigger != null ? specTrigger.multiChannelPosition : -1;
+
+        /// <summary>
+        /// The position of the spectrometer configured to control the fans.
+        /// </summary>
+        /// <returns>-1 if none found</returns>
+        public int fanPos => specFan != null ? specFan.multiChannelPosition : -1;
+
+        /// <summary>
+        /// Use the configured spectrometer's laserEnable output to turn the system fans on or off.
+        /// </summary>
+        /// <remarks>Obviously dangerous on spectrometers with physical lasers.</remarks>
+        /// <todo>move to GPIO</todo>
+        public bool fanEnabled
+        {
+            get
+            {
+                if (specFan is null)
+                {
+                    logger.error("no spectrometer configured with fan control");
+                    return false;
+                }
+                return specFan.laserEnabled;
+            }
+
+            set
+            {
+                if (specFan is null)
+                {
+                    logger.error("no spectrometer configured with fan control");
+                    return;
+                }
+                specFan.laserEnabled = value;
+            }
+        }
 
         /// <summary>
         /// Whether external hardware triggering is currently enabled.
@@ -407,40 +431,6 @@ namespace WasatchNET
             }
         }
         bool _hardwareTriggeringEnabled;
-
-        /// <summary>
-        /// The position of the spectrometer configured to control the fans.
-        /// </summary>
-        /// <returns>-1 if none found</returns>
-        public int fanPos => specFan != null ? specFan.multiChannelPosition : -1;
-
-        /// <summary>
-        /// Use the configured spectrometer's laserEnable output to turn the system fans on or off.
-        /// </summary>
-        /// <remarks>Obviously dangerous on spectrometers with physical lasers.</remarks>
-        /// <todo>move to GPIO</todo>
-        public bool fanEnabled
-        {
-            get
-            {
-                if (specFan is null)
-                {
-                    logger.error("no spectrometer configured with fan control");
-                    return false;
-                }
-                return specFan.laserEnabled;
-            }
-
-            set
-            {
-                if (specFan is null)
-                {
-                    logger.error("no spectrometer configured with fan control");
-                    return;
-                }
-                specFan.laserEnabled = value;
-            }
-        }
 
         ////////////////////////////////////////////////////////////////////////
         // Acquisition Parameters
@@ -568,7 +558,7 @@ namespace WasatchNET
                 specTrigger.laserEnabled = false;
 
                 if (i > 0)
-                    doubleTriggersSent++;
+                    doubleTriggerCount++;
 
                 // on multiple triggers, leave a gap
                 if (i + 1 < triggersToSend)

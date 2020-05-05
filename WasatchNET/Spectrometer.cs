@@ -243,6 +243,11 @@ namespace WasatchNET
         /// </summary>
         public bool multiChannelSelected { get; set; }
 
+        /// <summary>
+        /// Whether an ERROR should be logged on a timeout event
+        /// </summary>
+        public bool errorOnTimeout { get; set; } = true;
+
         ////////////////////////////////////////////////////////////////////////
         // property caching 
         ////////////////////////////////////////////////////////////////////////
@@ -1423,6 +1428,9 @@ namespace WasatchNET
             fpgaOptions = new FPGAOptions(this);
             logger.debug("back from FPGA Options");
 
+            logger.debug($"firmwareRevision = {firmwareRevision}");
+            logger.debug($"fpgaRevision = {fpgaRevision}");
+
             // MustardTree uses 2048-pixel version of the S11510, and all InGaAs are 512
             pixels = (uint)eeprom.activePixelsHoriz;
             if (pixels > 2048)
@@ -2001,7 +2009,7 @@ namespace WasatchNET
                 double[] sum = getSpectrumRaw();
                 if (sum == null)
                 {
-                    if (!currentAcquisitionCancelled)
+                    if (!currentAcquisitionCancelled && errorOnTimeout)
                         logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
                     return null;
                 }
@@ -2154,9 +2162,9 @@ namespace WasatchNET
                 // verify that exactly the number expected were received
                 if (subspectrum == null || subspectrum.Length != pixelsPerEndpoint)
                 {
-                    if (!currentAcquisitionCancelled)
+                    if (!currentAcquisitionCancelled && errorOnTimeout)
                         logger.error($"failed when reading subspectrum from 0x{spectralReader.EpNum:x2} ({id})");
-                    Thread.Sleep(100);
+                    Thread.Sleep(10);
                     if (isStroker && areaScanEnabled)
                         pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
                     return null;
@@ -2475,7 +2483,8 @@ namespace WasatchNET
                     // if we were given an explicit timeout, give up
                     if (acquisitionTimeoutMS != null || acquisitionTimeoutTimestamp != null)
                     {
-                        logger.error("failed to receive externally-triggered spectrum within explicit timeout");
+                        if (errorOnTimeout)
+                            logger.error("failed to receive externally-triggered spectrum within explicit timeout");
                         acquisitionTimeoutTimestamp = null;
                         return null;
                     }
