@@ -222,7 +222,7 @@ namespace WasatchNET
                 spec.throwawayAfterIntegrationTime = true;
 
                 // ARM units seem susceptible to hanging if commanded too rapidly
-                spec.featureIdentification.usbDelayMS = 10;
+                spec.featureIdentification.usbDelayMS = 100;
 
                 ////////////////////////////////////////////////////////////////
                 // Parse EEPROM.userText

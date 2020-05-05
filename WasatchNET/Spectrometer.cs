@@ -84,8 +84,6 @@ namespace WasatchNET
         int pixelsPerEndpoint = 0;
         ulong throwawaySum = 0;
 
-        public bool throwawayAfterIntegrationTime { get; set; }
-
         ////////////////////////////////////////////////////////////////////////
         // Convenience lookups
         ////////////////////////////////////////////////////////////////////////
@@ -108,10 +106,23 @@ namespace WasatchNET
         /// </summary>
         public double[] lastSpectrum { get; protected set; }
 
+        /// <summary>
+        /// Whether the spectrometer uses Serial Peripheral Interface
+        /// (as opposed to USB for instance).
+        /// </summary>
         public bool isSPI { get; protected set; } = false;
 
-        //Stroker is a legacy board firmware without PID conforming to FID and no EEPROM
+        /// <summary>
+        /// Stroker is a legacy board firmware with older PID (not 0x1000, 0x2000 
+        /// or 0x4000), doesn't conform to Feature Identification Device (FID) 
+        /// Protocol, and lacking an EEPROM.
+        /// </summary>
         public bool isStroker { get; protected set; } = false;
+
+        /// <summary>
+        /// Optical Coherence Tomography (OCT) spectrometers differ from "standard"
+        /// spectrometers in several respects, such as producing both 2D and 3D imagery.
+        /// </summary>
         public bool isOCT { get; protected set; } = false;
 
         /// <summary>spectrometer serial number</summary>
@@ -126,6 +137,7 @@ namespace WasatchNET
             get { return eeprom.model; }
         }
 
+        /// <summary>couples serial number with channel position</summary>
         public string id
         {
             get
@@ -154,7 +166,14 @@ namespace WasatchNET
         // internal driver attributes (no direct corresponding HW component)
         ////////////////////////////////////////////////////////////////////////
 
+        // make const?  Do subclasses change this?
         bool throwawayADCRead { get; set; } = true;
+
+        /// <summary>
+        /// Whether the driver should automatically generate a throwaway 
+        /// "stability" measurement after changing integration time.
+        /// </summary>
+        public bool throwawayAfterIntegrationTime { get; set; }
 
         /// <summary>
         /// Whether the driver should automatically send a software trigger on
@@ -263,15 +282,32 @@ namespace WasatchNET
         // device properties (please maintain in alphabetical order)
         ////////////////////////////////////////////////////////////////////////
 
-        /// <summary>
-        /// Used for quickly turning on/off a group of accessors for 
-        /// troubleshooting .NET clients that iteratively call every accessor
-        /// at instantiation.
-        /// </summary>
+        // <summary>
+        // Used for quickly turning on/off a group of accessors for 
+        // troubleshooting .NET clients that iteratively call every accessor
+        // at instantiation.
+        // </summary>
         // private bool kludgedOut = false;
 
+        /// <summary>
+        /// Convenience accessor to set an explicit acquisition timeout.  
+        /// </summary>
+        /// <remarks>
+        /// - If no timeout is set by the user, an internal timeout will be 
+        ///   dynamically generated for software-triggered acquisitions.
+        /// </remarks>
         public uint? acquisitionTimeoutMS { get; set; }
 
+        /// <summary>
+        /// Allows the NEXT acquisition timeout to be set relative to "now" as an
+        /// offiset in milliseconds.
+        /// </summary>
+        /// <remarks>
+        /// - If no timeout is set by the user, an internal timeout will be 
+        ///   dynamically generated for software-triggered acquisitions.
+        /// - This timeout applies to external hardware triggers as well (which
+        ///   have no default internal timeout.)
+        /// </remarks>
         public uint acquisitionTimeoutRelativeMS
         {
             set
@@ -283,8 +319,17 @@ namespace WasatchNET
             }
         }
 
-        // This allows getSpectrum() to throw timeouts even when externally triggered
-        public DateTime? acquisitionTimeoutTimestamp{ get; set; } = null;
+        /// <summary>
+        /// Allows the NEXT acquisition timeout to be set to an explicit objective
+        /// future timestamp.
+        /// </summary>
+        /// <remarks>
+        /// - If no timeout is set by the user, an internal timeout will be 
+        ///   dynamically generated for software-triggered acquisitions.
+        /// - This timeout applies to external hardware triggers as well (which
+        ///   have no default internal timeout.)
+        /// </remarks>
+        public DateTime? acquisitionTimeoutTimestamp { get; set; } = null;
 
         public ushort actualFrames
         {
