@@ -53,7 +53,7 @@ namespace WasatchNET
         public bool isSupported { get; private set; } = true;
         public uint defaultPixels { get; private set; } = 1024;
         public uint spectraBlockSize { get; private set; }  = 1024 * 2;
-        public uint usbDelayMS { get; private set; } = 0;
+        public uint usbDelayMS { get; set; } = 0;
         public bool hasDefaultTECSetpointDegC { get; private set; } = false;
         public int defaultTECSetpointDegC { get; private set; } = 0;
 

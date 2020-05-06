@@ -83,8 +83,8 @@ namespace WinFormDemo
                 s.triggerSource = TRIGGER_SOURCE.INTERNAL;
 
             s.integrationTimeMS = s.eeprom.minIntegrationTimeMS;
-            numericUpDownIntegTimeMS.Value = s.eeprom.minIntegrationTimeMS;
             numericUpDownIntegTimeMS.Minimum = s.eeprom.minIntegrationTimeMS;
+            numericUpDownIntegTimeMS.Value = s.eeprom.minIntegrationTimeMS;
             // numericUpDownIntegTimeMS.Maximum = s.eeprom.maxIntegrationTimeMS; // disabled to allow long integration times
 
             if (s.pixels > 0)

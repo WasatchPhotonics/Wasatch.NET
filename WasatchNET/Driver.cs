@@ -49,6 +49,8 @@ namespace WasatchNET
         /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
         public int openAllSpectrometers()
         {
+            logger.header("openAllSpectrometers: start");
+
             logger.info("Wasatch.NET v{0}", Assembly.GetExecutingAssembly().GetName().Version.ToString());
 
             SortedDictionary<string, List<Spectrometer>> sorted = new SortedDictionary<string, List<Spectrometer>>();
@@ -97,7 +99,6 @@ namespace WasatchNET
                             sorted.Add(key, new List<Spectrometer>());
                         sorted[key].Add(spectrometer);
                     }
-
                 }
                 else if (usbRegistry.Vid == 0x24aa)
                 {
@@ -126,12 +127,13 @@ namespace WasatchNET
 
             // add to final list in sorted order
             spectrometers.Clear();
+            logger.debug("openAllSpectrometers: sorting indices for deterministic behavior");
             foreach (KeyValuePair<string, List<Spectrometer>> pair in sorted)
             {
                 foreach (Spectrometer s in pair.Value)
                 {
                     spectrometers.Add(s);
-                    logger.debug("openAllSpectrometers: index {0}: {1} {2}", spectrometers.Count - 1, s.model, s.serialNumber);
+                    logger.debug("  index {0}: {1} {2}", spectrometers.Count - 1, s.model, s.serialNumber);
                 }
             }
 
@@ -214,6 +216,7 @@ namespace WasatchNET
                 }
             }
 
+            logger.debug($"OpenAllSpectrometers: returning {spectrometers.Count}");
             return spectrometers.Count;
         }
 
@@ -383,32 +386,31 @@ namespace WasatchNET
                         UsbEndpointBase baseDevice = sender as UsbEndpointBase;
                         // UsbEndpointInfo uei = baseDevice.EndpointInfo;
                         // LibUsbDotNet.Descriptors.UsbEndpointDescriptor ued = uei.Descriptor;
-                        logger.error("{0} [UsbEndPointBase]: usb device still open on endpoint {1}", prefix, baseDevice.EpNum);
-
-                        if (baseDevice.Reset())
-                        {
-                            // docs say to set e.Handled = true here, but UsbError has no such field;
-                            // was commented out here:
-                            // https://github.com/GeorgeHahn/LibUsbDotNet/blob/master/LibWinUsb/UsbDevice.Error.cs#L49
-                            return;
-                        }
+                        logger.error($"{prefix} [UsbEndPointBase]: usb device still open on endpoint 0x{baseDevice.EpNum}, so resetting endpoint");
+                        baseDevice.Reset();
                     }
                     else
                     {
                         // probably need to reconnect, per https://stackoverflow.com/questions/20822869/libusbdotnet-strange-errors-after-working-with-usb-device-for-awhile
-                        logger.error("YOU ARE HERE -- add disconnect / reconnect logic?");
                         // except the reconnect recommended by the above SO link is basically
                         // what we already have in Spectrometer.reconnect(), so maybe we want
                         // to continue to "silently ignore" here and handle this from
                         // Spectrometer.getSpectrum()?
                         // Perhaps this would be a good place to throw a custom exception
                         // that could be caught in getSpectrum, which could then trigger reconnect()?
+                        logger.error("YOU ARE HERE -- add disconnect / reconnect logic?");
+
+                        // UsbEndpointReader reader = sender as UsbEndpointReader;
+                        // if (reader != null)
+                        // {
+                        //     logger.error($"{prefix} [UsbEndpointReader]: flushing endpoint 0x{reader.EpNum:x2}");
+                        //     reader.ReadFlush();
+                        // }
                     }
                 }
                 else
                 {
                     // silently ignore Endpoint errors other than Win32Error
-                    // could 
                 }
             }
             else if (sender is UsbTransfer)
@@ -437,7 +439,7 @@ namespace WasatchNET
     //          ep = ((UsbTransfer) mSender).EndpointBase;
     //      else
     //          ep = mSender as UsbEndpointBase;
-
+    //
     //      if (ep.mEpNum != 0)
     //      {
     //          senderText = senderText+=string.Format(" Ep 0x{0:X2} ", ep.mEpNum);

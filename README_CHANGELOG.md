@@ -1,5 +1,51 @@
 # Wasatch.NET Changelog
-- 2020-04-02 2.1.20
+
+- 2020-05-05 2.2.1
+    - WasatchNET
+        - added WasatchMath.dll
+        - tightened EEPROM coeff and range validation
+        - added Logger.header()
+        - fixed waitForUsb()
+        - updated timeout logic for multiple devices, IMX power-up
+        - added autoTrigger
+        - exposed sendTrigger()
+        - updated throwaway logic on changed integration time
+        - updated TEC default setpoint detector list
+        - added acquisitionTriggerTimeout (MS and Timestamp)
+    - MultiChannelWrapper/Demo
+        - lots of debugs related to triggering bug (walking spectra, multiple triggers)
+        - added Monte Carlo operation 
+            - randomized integration time
+            - randomized trigger pulse width
+            - final tally
+            - injected double-triggers
+            - async free-running workers to collect and count double acquisitions
+        - increased configurability
+            - trigger width
+            - integration time
+            - scan averaging
+            - arbitrary spectrometer subsets
+            - refactored checkboxes
+        - repeatability
+            - initial throwaway spectrum
+            - perform all operations in positional order
+        - IntegrationOptimizer
+            - GUI widgets
+            - list failures by channel
+        - saving
+            - interpolation
+        - enhancements
+            - update groupbox titles
+            - parallelized integration throwaways 
+- 2020-??-?? 2.2.0
+    - Trent to backfill
+- 2020-04-17 2.1.21
+    - WasatchNET
+        - Spectrometer.reference convenience array
+    - MultiChannelWrapper/Demo
+        - added reflectance
+        - added save
+- 2020-04-16 2.1.20
     - MultiChannelWrapper: made acquisition trigger synchronous
     - restored executable bit on scripts
 - 2020-04-02 2.1.19

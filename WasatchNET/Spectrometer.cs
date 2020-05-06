@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
-using MPSSELight;
-using FTD2XX_NET;
 
 namespace WasatchNET
 {
@@ -37,7 +38,6 @@ namespace WasatchNET
         public const byte HOST_TO_DEVICE = 0x40;
         public const byte DEVICE_TO_HOST = 0xc0;
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
-        public const bool RECONNECT_ON_ERROR = true;
         public const int LEGACY_VERTICAL_PIXELS = 70;
 
         ////////////////////////////////////////////////////////////////////////
@@ -83,7 +83,6 @@ namespace WasatchNET
         List<UsbEndpointReader> endpoints = new List<UsbEndpointReader>();
         int pixelsPerEndpoint = 0;
         ulong throwawaySum = 0;
-        bool throwawayAfterIntegrationTime = false;
 
         ////////////////////////////////////////////////////////////////////////
         // Convenience lookups
@@ -107,10 +106,23 @@ namespace WasatchNET
         /// </summary>
         public double[] lastSpectrum { get; protected set; }
 
+        /// <summary>
+        /// Whether the spectrometer uses Serial Peripheral Interface
+        /// (as opposed to USB for instance).
+        /// </summary>
         public bool isSPI { get; protected set; } = false;
 
-        //Stroker is a legacy board firmware without PID conforming to FID and no EEPROM
+        /// <summary>
+        /// Stroker is a legacy board firmware with older PID (not 0x1000, 0x2000 
+        /// or 0x4000), doesn't conform to Feature Identification Device (FID) 
+        /// Protocol, and lacking an EEPROM.
+        /// </summary>
         public bool isStroker { get; protected set; } = false;
+
+        /// <summary>
+        /// Optical Coherence Tomography (OCT) spectrometers differ from "standard"
+        /// spectrometers in several respects, such as producing both 2D and 3D imagery.
+        /// </summary>
         public bool isOCT { get; protected set; } = false;
 
         /// <summary>spectrometer serial number</summary>
@@ -125,12 +137,24 @@ namespace WasatchNET
             get { return eeprom.model; }
         }
 
+        /// <summary>couples serial number with channel position</summary>
+        public string id
+        {
+            get
+            {
+                if (multiChannelPosition > -1)
+                    return $"{serialNumber} (pos {multiChannelPosition})";
+                else
+                    return serialNumber;
+            }
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Spectrometer Components
         ////////////////////////////////////////////////////////////////////////
 
         /// <summary>metadata inferred from the spectrometer's USB PID</summary>
-        public FeatureIdentification featureIdentification { get; private set; }
+        public FeatureIdentification featureIdentification { get; set; }
 
         /// <summary>set of compilation options used to compile the FPGA firmware in this spectrometer</summary>
         public FPGAOptions fpgaOptions { get; private set; }
@@ -142,7 +166,34 @@ namespace WasatchNET
         // internal driver attributes (no direct corresponding HW component)
         ////////////////////////////////////////////////////////////////////////
 
+        // make const?  Do subclasses change this?
         bool throwawayADCRead { get; set; } = true;
+
+        /// <summary>
+        /// Whether the driver should automatically generate a throwaway 
+        /// "stability" measurement after changing integration time.
+        /// </summary>
+        public bool throwawayAfterIntegrationTime { get; set; }
+
+        /// <summary>
+        /// Whether the driver should automatically send a software trigger on
+        /// getSpectrum()
+        /// </summary>
+        /// <remarks>
+        /// This is provided in case the caller wishes to call sendSWTrigger()
+        /// explicitly, for instance to send software triggers to a series of
+        /// devices at once, before beginning reads on any of them.
+        /// </remarks>
+        public bool autoTrigger 
+        {
+            get => _autoTrigger;
+            set
+            {
+                logger.debug($"Spectrometer.autoTrigger -> {value}");
+                _autoTrigger = value;
+            }
+        }
+        bool _autoTrigger = true;
 
         /// <summary>
         /// How many acquisitions to average together (zero for no averaging)
@@ -178,6 +229,23 @@ namespace WasatchNET
         protected double[] dark_;
 
         /// <summary>
+        /// Simplify reference-based techniques (absorbance, reflectance, 
+        /// transmission etc) by allowing a reference to be stored with the 
+        /// Spectrometer, similar to dark.  
+        /// 
+        /// Unlike dark, which will be automatically subtracted from Raw to form
+        /// Processed, no automatic processing is performed with the Reference, 
+        /// as different techniques use it differently.  This is a convenience 
+        /// attribute for application programmers.
+        /// </summary>
+        public virtual double[] reference
+        {
+            get { return reference_; }
+            set { reference_ = value; }
+        }
+        protected double[] reference_;
+
+        /// <summary>
         /// If the spectrometer is deployed in a multi-channel configuration,
         /// this provides a place to store an integral position in the Spectrometer
         /// object.  
@@ -188,6 +256,16 @@ namespace WasatchNET
         /// end-user code.
         /// </remarks>
         public int multiChannelPosition = -1;
+
+        /// <summary>
+        /// Multichannel convenience accessor
+        /// </summary>
+        public bool multiChannelSelected { get; set; }
+
+        /// <summary>
+        /// Whether an ERROR should be logged on a timeout event
+        /// </summary>
+        public bool errorOnTimeout { get; set; } = true;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -204,12 +282,54 @@ namespace WasatchNET
         // device properties (please maintain in alphabetical order)
         ////////////////////////////////////////////////////////////////////////
 
-        /// <summary>
-        /// Used for quickly turning on/off a group of accessors for 
-        /// troubleshooting .NET clients that iteratively call every accessor
-        /// at instantiation.
-        /// </summary>
+        // <summary>
+        // Used for quickly turning on/off a group of accessors for 
+        // troubleshooting .NET clients that iteratively call every accessor
+        // at instantiation.
+        // </summary>
         // private bool kludgedOut = false;
+
+        /// <summary>
+        /// Convenience accessor to set an explicit acquisition timeout.  
+        /// </summary>
+        /// <remarks>
+        /// - If no timeout is set by the user, an internal timeout will be 
+        ///   dynamically generated for software-triggered acquisitions.
+        /// </remarks>
+        public uint? acquisitionTimeoutMS { get; set; }
+
+        /// <summary>
+        /// Allows the NEXT acquisition timeout to be set relative to "now" as an
+        /// offiset in milliseconds.
+        /// </summary>
+        /// <remarks>
+        /// - If no timeout is set by the user, an internal timeout will be 
+        ///   dynamically generated for software-triggered acquisitions.
+        /// - This timeout applies to external hardware triggers as well (which
+        ///   have no default internal timeout.)
+        /// </remarks>
+        public uint acquisitionTimeoutRelativeMS
+        {
+            set
+            {
+                if (value > 0)
+                    acquisitionTimeoutTimestamp = DateTime.Now.AddMilliseconds(value);
+                else
+                    acquisitionTimeoutTimestamp = null;
+            }
+        }
+
+        /// <summary>
+        /// Allows the NEXT acquisition timeout to be set to an explicit objective
+        /// future timestamp.
+        /// </summary>
+        /// <remarks>
+        /// - If no timeout is set by the user, an internal timeout will be 
+        ///   dynamically generated for software-triggered acquisitions.
+        /// - This timeout applies to external hardware triggers as well (which
+        ///   have no default internal timeout.)
+        /// </remarks>
+        public DateTime? acquisitionTimeoutTimestamp { get; set; } = null;
 
         public ushort actualFrames
         {
@@ -561,9 +681,12 @@ namespace WasatchNET
                         eeprom.adcToDegCCoeffs[1],
                         eeprom.adcToDegCCoeffs[2],
                         degC);
-                return degC;
+                return lastDetectorTemperatureDegC = degC;
             }
         }
+
+        // a cached version
+        public float lastDetectorTemperatureDegC = -999;
 
         public ushort detectorTemperatureRaw
         {
@@ -713,14 +836,10 @@ namespace WasatchNET
                     sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf);
                     integrationTimeMS_ = ms;
                     readOnce.Add(Opcodes.GET_INTEGRATION_TIME);
-                }
 
-                if (throwawayAfterIntegrationTime)
-                {
-                    logger.debug("taking throwaway spectrum");
-                    _ = getSpectrumRaw();
+                    if (throwawayAfterIntegrationTime)
+                        performThrowawaySpectrum();
                 }
-
             }
         }
         protected uint integrationTimeMS_;
@@ -1242,6 +1361,10 @@ namespace WasatchNET
         }
         TRIGGER_SOURCE triggerSource_ = TRIGGER_SOURCE.INTERNAL; // not ERROR
 
+        // MZ: I'm not sure what GPIO pin would support this triggerOutput...
+        //     on one recent "outbound" triggering project, we ended up using
+        //     laserEnable as the outbound trigger because we couldn't find a
+        //     usable GPIO.
         public EXTERNAL_TRIGGER_OUTPUT triggerOutput
         {
             get
@@ -1350,6 +1473,9 @@ namespace WasatchNET
             fpgaOptions = new FPGAOptions(this);
             logger.debug("back from FPGA Options");
 
+            logger.debug($"firmwareRevision = {firmwareRevision}");
+            logger.debug($"fpgaRevision = {fpgaRevision}");
+
             // MustardTree uses 2048-pixel version of the S11510, and all InGaAs are 512
             pixels = (uint)eeprom.activePixelsHoriz;
             if (pixels > 2048)
@@ -1378,23 +1504,27 @@ namespace WasatchNET
 
             regenerateWavelengths();
 
-            // by default, integration time is zero in HW
-            integrationTimeMS = eeprom.minIntegrationTimeMS;
+            // by default, integration time is zero in HW, so set to something
+            // (ignore startup value if it's unreasonable)
+            if (eeprom.startupIntegrationTimeMS >= eeprom.minIntegrationTimeMS &&
+                eeprom.startupIntegrationTimeMS < 5000)
+                integrationTimeMS = eeprom.startupIntegrationTimeMS;
+            else
+                integrationTimeMS = eeprom.minIntegrationTimeMS;
 
             // MZ: base on A/R/C?
             // use cache variable because why not
             float degC = UNINITIALIZED_TEMPERATURE_DEG_C;
             if (featureIdentification.hasDefaultTECSetpointDegC)
                 degC = featureIdentification.defaultTECSetpointDegC;
-            else if (eeprom.detectorName.Contains("S11511"))
+            else if (Regex.IsMatch(eeprom.detectorName, @"S10141|G9214", RegexOptions.IgnoreCase))
+                degC = -15;
+            else if (Regex.IsMatch(eeprom.detectorName, @"S11511|S11850|S13971|S7031", RegexOptions.IgnoreCase))
                 degC = 10;
-            else if (eeprom.detectorName.Contains("S10141"))
-                degC = -15;
-            else if (eeprom.detectorName.Contains("G9214"))
-                degC = -15;
 
             if (hasLaser)
             {
+                // ENLIGHTEN doesn't do this
                 logger.debug("unlinking laser modulation from integration time");
                 laserModulationLinkedToIntegrationTime = false;
 
@@ -1407,22 +1537,12 @@ namespace WasatchNET
 
             if (eeprom.hasCooling && degC != UNINITIALIZED_TEMPERATURE_DEG_C)
             {
-                // MZ: TEC doesn't do anything unless you give it a temperature first
+                // TEC doesn't do anything unless you give it a temperature first
                 logger.debug("setting TEC setpoint to {0} deg C", degC);
                 detectorTECSetpointDegC = degC;
 
-                // MZ: why don't we do this for ARM?  Is it automatic in FW?
-                if (!isARM)
-                {
-                    logger.debug("enabling detector TEC");
-                    detectorTECEnabled = true;
-                }
-            }
-
-            if (isSiG)
-            {
-                logger.debug("requiring throwaway after changing integration time");
-                throwawayAfterIntegrationTime = true;
+                logger.debug("enabling detector TEC");
+                detectorTECEnabled = true;
             }
 
             // if we're using a modern EEPROM format, automatically apply the stored gain/offset values
@@ -1542,23 +1662,22 @@ namespace WasatchNET
         {
             if (featureIdentification != null && featureIdentification.usbDelayMS > 0)
             {
-                DateTime nextUsbTimestamp = lastUsbTimestamp.AddMilliseconds(featureIdentification.usbDelayMS);
+                var usbDelayMS = featureIdentification.usbDelayMS;
+                DateTime nextUsbTimestamp = lastUsbTimestamp.AddMilliseconds(usbDelayMS);
                 int delayMS = (int)(nextUsbTimestamp - DateTime.Now).TotalMilliseconds;
-                delayMS = (int)featureIdentification.usbDelayMS;
-                logger.debug("per usbDelayMS of {0} ms, should wait {1} ms before next USB call",
-                    featureIdentification.usbDelayMS, delayMS);
                 if (delayMS > 0)
                 {
                     do
                     {
-                        logger.debug("sleeping {0} ms to enforce {1} ms USB interval", delayMS, featureIdentification.usbDelayMS);
+                        logger.debug("sleeping {0} ms to enforce {1} ms USB interval", delayMS, usbDelayMS);
                         Thread.Sleep(delayMS);
                     } while (!usbDevice.IsOpen);
                 }
+                // else
+                //     logger.debug($"no need to sleep, as last {lastUsbTimestamp} is more than {usbDelayMS}ms before next {nextUsbTimestamp}");
             }
+            lastUsbTimestamp = DateTime.Now;
         }
-
-        void resetUsbClock() { lastUsbTimestamp = DateTime.Now; }
 
         public bool reconnect()
         {
@@ -1647,7 +1766,6 @@ namespace WasatchNET
                 waitForUsbAvailable();
                 logger.debug("getCmd: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
                 bool result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
-                resetUsbClock();
 
                 if (result != expectedSuccessResult || bytesRead < len)
                 {
@@ -1695,7 +1813,6 @@ namespace WasatchNET
                 waitForUsbAvailable();
                 logger.debug("getCmd2: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
                 result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
-                resetUsbClock();
 
                 if (result != expectedSuccessResult || bytesRead < len)
                 {
@@ -1742,12 +1859,15 @@ namespace WasatchNET
 
             lock (commsLock)
             {
-                waitForUsbAvailable();
+                // don't enforce USB delay on laser commands...that could be dangerous
+                // or on acquire commands, which would disrupt integration throwaways 
+                // and soft synchronization
+                if (opcode != Opcodes.SET_LASER_ENABLE && opcode != Opcodes.ACQUIRE_SPECTRUM)
+                    waitForUsbAvailable();
 
-                logger.debug("sendCmd: about to send {0} ({1})", opcode, stringifyPacket(packet));
+                logger.debug("sendCmd: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
 
                 bool result = usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
-                resetUsbClock();
 
                 if (expectedSuccessResult != result)
                 {
@@ -1923,15 +2043,19 @@ namespace WasatchNET
         /// Take a single complete spectrum, including any configured scan 
         /// averaging, boxcar and dark subtraction.
         /// </summary>
+        /// <param name="forceNew">not used in base class (provided for specialized subclasses)</param>
         /// <returns>The acquired spectrum as an array of doubles</returns>
-        public virtual double[] getSpectrum(bool forceNew = false)
+        public virtual double[] getSpectrum(bool forceNew=false)
         {
             lock (acquisitionLock)
             {
+                currentAcquisitionCancelled = false;
+
                 double[] sum = getSpectrumRaw();
                 if (sum == null)
                 {
-                    logger.error("getSpectrum: getSpectrumRaw returned null");
+                    if (!currentAcquisitionCancelled && errorOnTimeout)
+                        logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
                     return null;
                 }
                 logger.debug("getSpectrum: received {0} pixels", sum.Length);
@@ -1972,21 +2096,57 @@ namespace WasatchNET
             }
         }
 
+        public bool sendSWTrigger()
+        {
+            byte[] buf = null;
+            if (isARM)
+                buf = new byte[8];
+
+            logger.debug("sending SW trigger");
+            return sendCmd(Opcodes.ACQUIRE_SPECTRUM, buf: buf);
+        }
+
+        /// <summary>
+        /// Generate a throwaway spectrum, such as following a change in 
+        /// integration time on spectrometers requiring such.
+        /// </summary>
+        /// <remarks>
+        /// If the caller doesn't want to block on this, they can always change
+        /// integrationTimeMS within a Task.Run closure.
+        /// </remarks>
+        void performThrowawaySpectrum()
+        {
+            // We will need to issue a software trigger for throwaway spectra.
+            // However, we want to make sure getSpectrumRaw won't "autoTrigger",
+            // as we don't want to send two.
+            if (!autoTrigger)
+                sendSWTrigger();
+            getSpectrumRaw();
+        }
+
+        public void flushReaders()
+        {
+            foreach (UsbEndpointReader spectralReader in endpoints)
+                spectralReader.ReadFlush();
+        }
+
         // just the bytes, ma'am
         protected virtual double[] getSpectrumRaw()
         {
-            logger.debug("requesting spectrum");
+            logger.debug($"getSpectrumRaw: requesting spectrum {id}");
             byte[] buf = null;
             if (isARM)
                 buf = new byte[8];
 
             // request a spectrum
-            if (triggerSource_ == TRIGGER_SOURCE.INTERNAL)
-                if (!sendCmd(Opcodes.ACQUIRE_SPECTRUM, buf: buf))
-                    return null;
+            if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger)
+                sendSWTrigger();
 
             if (isStroker)
+            {
+                logger.debug("getSpectrumRaw: extra Stroker delay");
                 Thread.Sleep((int)integrationTimeMS_ + 5);
+            }
 
             ////////////////////////////////////////////////////////////////////
             // read spectrum
@@ -2000,71 +2160,56 @@ namespace WasatchNET
                 // read all expected pixels from the endpoint
                 uint[] subspectrum = null;
 
-                if (RECONNECT_ON_ERROR)
+                // with retry logic
+                const int maxRetries = 3;
+                int retries = 0;
+                while (true)
                 {
-                    // with retry logic
-                    const int maxRetries = 3;
-                    int retries = 0;
-                    while (true)
+                    try
                     {
-                        try
+                        // read all expected pixels from the endpoint
+                        if (isStroker && retries == 0)
                         {
-                            // read all expected pixels from the endpoint
-                            if (isStroker)
-		                    {
-                    		    subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
-                    		    if (areaScanEnabled)
-                        	        pixelsPerEndpoint *= LEGACY_VERTICAL_PIXELS;
-                    		    spec = new double[pixelsPerEndpoint];
-			                }
-			                else
-			    	            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
-                            break;
+                            subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
+                            if (areaScanEnabled)
+                                pixelsPerEndpoint *= LEGACY_VERTICAL_PIXELS;
+                            spec = new double[pixelsPerEndpoint];
                         }
-                        catch (Exception ex)
+                        else
+                            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.error($"{id} Caught exception in WasatchNET.Spectrometer.getSpectrumRaw: {ex}");
+                        retries++;
+                        if (retries >= maxRetries)
                         {
-                            logger.error($"Caught exception in WasatchNET.Spectrometer.getSpectrumRaw: {ex}");
-                            retries++;
-                            if (retries >= maxRetries)
-                            {
-                                logger.error($"giving up after {retries} retries");
-                                return null;
-                            }
+                            logger.error($"giving up after {retries} retries");
+                            return null;
+                        }
 
-                            logger.debug("reconnecting");
-                            var ok = reconnect();
-                            if (ok)
-                            {
-                                logger.debug("reconnection succeeded, retrying read");
-                                continue;
-                            }
-                            else
-                            {
-                                logger.error("reconnection failed, giving up");
-                                return null;
-                            }
+                        logger.error("reconnecting");
+                        var ok = reconnect();
+                        if (ok)
+                        {
+                            logger.error("reconnection succeeded, retrying read");
+                            continue;
+                        }
+                        else
+                        {
+                            logger.error("reconnection failed, giving up");
+                            return null;
                         }
                     }
-                }
-                else
-                {
-                    // without retry logic
-		            if (isStroker)
-	 	            {
-                        subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
-                        if (areaScanEnabled)
-                            pixelsPerEndpoint *= LEGACY_VERTICAL_PIXELS;
-                        spec = new double[pixelsPerEndpoint];
-                    }
-		            else
-                        subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
                 }
 
                 // verify that exactly the number expected were received
                 if (subspectrum == null || subspectrum.Length != pixelsPerEndpoint)
                 {
-                    logger.error("failed when reading subspectrum from {0}", spectralReader);
-                    Thread.Sleep(100);
+                    if (!currentAcquisitionCancelled && errorOnTimeout)
+                        logger.error($"failed when reading subspectrum from 0x{spectralReader.EpNum:x2} ({id})");
+                    Thread.Sleep(10);
                     if (isStroker && areaScanEnabled)
                         pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
                     return null;
@@ -2081,6 +2226,9 @@ namespace WasatchNET
                 pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+
+            // logger.debug("getSpectrumRaw({0}): {1}", id, string.Join<double>(", ", spec));
+
             lastSpectrum = spec;
             return spec;
         }
@@ -2111,7 +2259,7 @@ namespace WasatchNET
             {
                 // compute this inside the loop, just in case (if doing external
                 // triggering), someone changes integration time during trigger wait
-                int timeoutMS = (int)(2 * integrationTimeMS_ + 100);
+                int timeoutMS = generateTimeoutMS();
 
                 // read the next block of data
                 ErrorCode err = new ErrorCode();
@@ -2205,7 +2353,7 @@ namespace WasatchNET
             {
                 // compute this inside the loop, just in case (if doing external
                 // triggering), someone changes integration time during trigger wait
-                int timeoutMS = (int)(100 * integrationTimeMS_ + 100);
+                int timeoutMS = generateTimeoutMS();
 
                 // read the next block of data
                 ErrorCode err = new ErrorCode();
@@ -2267,10 +2415,46 @@ namespace WasatchNET
             return subspectrum;
         }
 
-        // Given one endpoint (0x82 or 0x86), read exactly the number of pixels 
+        int generateTimeoutMS()
+        {
+            ////////////////////////////////////////////////////////////////////
+            // if an explicit timeout was provided, use that
+            ////////////////////////////////////////////////////////////////////
+
+            if (acquisitionTimeoutMS != null)
+                return (int)acquisitionTimeoutMS;
+            else if (acquisitionTimeoutTimestamp != null)
+            {
+                var now = DateTime.Now;
+                DateTime then = (DateTime)acquisitionTimeoutTimestamp;
+                if (acquisitionTimeoutTimestamp > now)
+                    return (int)(then - now).TotalMilliseconds;
+            }
+
+            ////////////////////////////////////////////////////////////////////
+            // compute a default timeout
+            ////////////////////////////////////////////////////////////////////
+
+            // give SiG more time, as it may need to do 6 internal throwaway
+            // if it's coming back from a power-save mode
+            int acquisitions = isSiG ? 8 : 2;
+
+            // give more time if we have lots of connected spectrometers, as 
+            // USB is ultimately serial
+            const int windowMS = 500;
+
+            return (int)(integrationTimeMS_ * acquisitions +
+                         windowMS * Driver.getInstance().getNumberOfSpectrometers());
+        }
+
+        // Given one endpoint (e.g. Ep02 or Ep06), read exactly the number of pixels 
         // expected on the endpoint.  Try to do it in one go, but loop around if
         // it comes out in chunks.  Log an error and return NULL if anything goes
         // wrong (timeout in non-triggering context, or reading too many bytes).
+        //
+        // MZ: I don't like that "pixelsPerEndpoint" (which is already a Spectrometer
+        //     attribute) is here being "shadowed" (overwritten) by a local parameter
+        //     name.  Recommend picking a different parameter name.
         uint[] readSubspectrum(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
         {
             ////////////////////////////////////////////////////////////////////
@@ -2285,11 +2469,12 @@ namespace WasatchNET
 
             int bytesReadThisEndpoint = 0;
             int bytesRemainingToRead = bytesPerEndpoint;
+
             while (bytesReadThisEndpoint < bytesPerEndpoint)
             {
                 // compute this inside the loop, just in case (if doing external
                 // triggering), someone changes integration time during trigger wait
-                int timeoutMS = (int)(2 * integrationTimeMS_ + 100);
+                int timeoutMS = generateTimeoutMS();
 
                 // read the next block of data
                 ErrorCode err = new ErrorCode();
@@ -2297,28 +2482,30 @@ namespace WasatchNET
                 try
                 {
                     int bytesToRead = bytesPerEndpoint - bytesReadThisEndpoint;
-                    logger.debug("readSubspectrum: attempting to read {0} bytes of spectrum from endpoint {1} with timeout {2}ms", bytesToRead, spectralReader, timeoutMS);
+                    logger.debug($"readSubspectrum: attempting to read {bytesToRead} bytes of spectrum from endpoint 0x{spectralReader.EpNum:x2} with timeout {timeoutMS}ms ({id})");
                     err = spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, bytesPerEndpoint - bytesReadThisEndpoint, timeoutMS, out bytesRead);
-                    logger.debug("readSubspectrum: read {0} bytes of spectrum from endpoint {1} (ErrorCode {2})", bytesRead, spectralReader, err.ToString());
+                    logger.debug($"readSubspectrum: read {bytesRead} bytes of spectrum from endpoint 0x{spectralReader.EpNum:x2} ({err}) ({id})");
                 }
                 catch (Exception ex)
                 {
-                    logger.error("readSubspectrum: caught exception reading endpoint: {0}", ex.Message);
+                    logger.error("readSubspectrum: caught exception reading endpoint ({id}): {0}", ex.Message);
                     return null; 
                 }
 
                 bytesReadThisEndpoint += bytesRead;
-                logger.debug("readSubspectrum: bytesReadThisEndpoint now {0}", bytesReadThisEndpoint);
+                logger.debug($"readSubspectrum: bytesReadThisEndpoint now {bytesReadThisEndpoint} ({id})");
+                if (bytesReadThisEndpoint == bytesPerEndpoint)
+                    break;
 
                 if (bytesReadThisEndpoint == 0 && !triggerWasExternal)
                 {
-                    logger.error("readSubspectrum: read nothing (timeout?)");
+                    logger.error($"readSubspectrum: read nothing (timeout?) ({id})");
                     return null; 
                 }
 
                 if (bytesReadThisEndpoint > bytesPerEndpoint)
                 {
-                    logger.error("readSubspectrum: read too many bytes on endpoint {0} (read {1} of expected {2})", spectralReader, bytesReadThisEndpoint, bytesPerEndpoint);
+                    logger.error($"readSubspectrum: read too many bytes on endpoint 0x{spectralReader.EpNum:x2} (read {bytesReadThisEndpoint} of expected {bytesPerEndpoint}) ({id})");
                     break; 
                 }
 
@@ -2326,15 +2513,30 @@ namespace WasatchNET
                 {
                     // need to do this so software can send an ACQUIRE command, else we'll
                     // loop forever
-                    logger.debug("triggering switched from external to internal...resetting");
+                    logger.debug($"triggering switched from external to internal...resetting ({id})");
                     return null; 
+                }
+
+                if (currentAcquisitionCancelled)
+                {
+                    logger.debug("readSubspectrum: current acquisition cancelled");
+                    return null;
                 }
 
                 if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
                 {
-                    // we don't know how long we'll have to wait for the trigger, so just loop and hope
-                    // (should probably only catch Timeout exceptions...)
-                    logger.debug("readSubspectrum: still waiting for external trigger");
+                    // if we were given an explicit timeout, give up
+                    if (acquisitionTimeoutMS != null || acquisitionTimeoutTimestamp != null)
+                    {
+                        if (errorOnTimeout)
+                            logger.error("failed to receive externally-triggered spectrum within explicit timeout");
+                        acquisitionTimeoutTimestamp = null;
+                        return null;
+                    }
+                    else
+                    {
+                        logger.debug($"readSubspectrum: still waiting for external trigger ({id})");
+                    }
                 }
             }
 
@@ -2350,5 +2552,8 @@ namespace WasatchNET
             logger.debug("readSubspectrum: returning subspectrum");
             return subspectrum;
         }
+
+        public void cancelCurrentAcquisition() => currentAcquisitionCancelled = true;
+        private bool currentAcquisitionCancelled;
     }
 }
