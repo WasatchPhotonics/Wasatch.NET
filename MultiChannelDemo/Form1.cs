@@ -806,6 +806,7 @@ namespace MultiChannelDemo
 
             // don't throw errors until we've received our first trigger
             spec.errorOnTimeout = false;
+            var consecutiveReadFailures = 0;
 
             // everyone starts at 100ms
             setIntegrationTimeMS(spec, 100, prefix);
@@ -835,6 +836,7 @@ namespace MultiChannelDemo
                     logger.debug($"{prefix}: read FIRST spectrum (trigger {triggerCount})");
                     firstTriggerReceived = true;
                     acquisitionCounts[pos]++;
+                    consecutiveReadFailures = 0;
 
                     // henceforth, log errors on timeout, UNLESS we're deliberately courting
                     // timeouts
@@ -851,6 +853,13 @@ namespace MultiChannelDemo
                     {
                         logger.error($"{prefix}: [BAD] failed to read FIRST spectrum (trigger {triggerCount}) ");
                         readFailureCount++;
+
+                        consecutiveReadFailures++;
+                        if (consecutiveReadFailures > 10)
+                        {
+                            logger.error($"{prefix}: giving up after {consecutiveReadFailures} consecutive failures");
+                            break;
+                        }
                     }
                     else
                     {
