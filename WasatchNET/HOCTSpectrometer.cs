@@ -405,13 +405,14 @@ namespace WasatchNET
 
                     if (iFifoProcessingCount > 0)
                     {
-                        for (int x = 0; x < iFifoProcessingCount; x++)
+                        for (int x = 0; x < (iFifoProcessingCount - 1); x++)
                         {
                             Console.WriteLine("ClearProcessingBuffer: Clearing Line " + x);
 
                             if ((eReturn = b2_reader.Read(bReturnBuffer, LONG_TIMEOUT_MS, out int uiTransmitted)) != ErrorCode.None)
                             {
                                 Console.WriteLine("ERROR: Removing Line " + x);
+                                b2_reader.Reset();
                                 return false;
                             }
 
@@ -911,6 +912,22 @@ namespace WasatchNET
 
                     Console.WriteLine("Write Calibration - Page 0: " + BitConverter.ToString(bDataArray));
                     b1_writer.Write(CmdWriteCalibration, LONG_TIMEOUT_MS, out int uiTransmitted);
+
+                    ErrorCode eReturn;
+                    int uiTemp;
+                    byte[] bReturnBuffer = new byte[iNumOfPixels * NUM_OF_BYTES_PER_PIXEL * NUM_OF_LINES_PER_USB]; //  
+
+
+                    if ((eReturn = b1_reader.Read(bReturnBuffer, LONG_TIMEOUT_MS, out uiTemp)) == ErrorCode.None)
+                    {
+                        Console.WriteLine("USB Read Back from EEPROM Write, Success?");
+                    }
+
+                    else
+                        Console.WriteLine("USB Read Back from EEPROM Write, Failure?");
+
+
+
                 }
                 catch (Exception e)
                 {
