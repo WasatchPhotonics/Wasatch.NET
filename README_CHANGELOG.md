@@ -1,5 +1,10 @@
 # Wasatch.NET Changelog
 
+- 2020-05-08 2.2.2
+    - added readback to fix issue with HOCT eeprom write
+	- added USB reset on HOCT buffer clear errors (may or may not be needed)
+	- added some attempted error logging and handling for HOCT
+
 - 2020-05-05 2.2.1
     - WasatchNET
         - added WasatchMath.dll
@@ -37,8 +42,12 @@
         - enhancements
             - update groupbox titles
             - parallelized integration throwaways 
-- 2020-??-?? 2.2.0
-    - Trent to backfill
+- 2020-04-27 2.2.0
+    - fixed HOCT excitation
+	- removed frame counter and "bad pixels" at beginning of lines in HOCT
+	- added frame "cutting" (removing pixels 1025 - 2048) for HOCT
+	- added automatic eeprom write to HOCT close
+	- added wavelength generation to constructor (caused downstream issues)
 - 2020-04-17 2.1.21
     - WasatchNET
         - Spectrometer.reference convenience array

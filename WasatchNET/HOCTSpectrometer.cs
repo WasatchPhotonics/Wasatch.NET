@@ -409,7 +409,7 @@ namespace WasatchNET
 
                     if (iFifoProcessingCount > 0)
                     {
-                        for (int x = 0; x < (iFifoProcessingCount - 1); x++)
+                        for (int x = 0; x < iFifoProcessingCount; x++)
                         {
                             Console.WriteLine("ClearProcessingBuffer: Clearing Line " + x);
 
