@@ -315,6 +315,10 @@ namespace WasatchNET
                     }
                     else
                     {
+                        if (GetFifoStatus())
+                        {
+                            Console.WriteLine("buh buh buh {0}", iFifoProcessingCount);
+                        }
                         Console.WriteLine("ERROR: Reading Line " + j);
                         bError = true;
                     }
