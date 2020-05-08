@@ -1108,7 +1108,7 @@ namespace WasatchNET
                     wait = minWait;
 
                 //give time for loop wait and usb read back
-                wait += 70;
+                wait += 150;
 
                 Thread.Sleep(wait);
             }
