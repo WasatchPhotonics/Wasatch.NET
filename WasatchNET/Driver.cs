@@ -403,7 +403,7 @@ namespace WasatchNET
                         UsbEndpointReader reader = sender as UsbEndpointReader;
                         if (reader != null)
                         {
-                             logger.error($"{prefix} [UsbEndpointReader]: flushing endpoint 0x{reader.EpNum:x2}");
+                             logger.error($"{prefix} [UsbEndpointReader]: hit error at endpoint 0x{reader.EpNum:x2}");
                              //reader.Reset();
                              //reader.Flush();
                         }

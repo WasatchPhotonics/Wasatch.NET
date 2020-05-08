@@ -317,7 +317,7 @@ namespace WasatchNET
                     {
                         if (GetFifoStatus())
                         {
-                            Console.WriteLine("buh buh buh {0}", iFifoProcessingCount);
+                            Console.WriteLine("Failure on readback, last status of FIFO buffer: {0}", iFifoProcessingCount);
                         }
                         Console.WriteLine("ERROR: Reading Line " + j);
                         bError = true;
