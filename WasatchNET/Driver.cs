@@ -400,12 +400,13 @@ namespace WasatchNET
                         // that could be caught in getSpectrum, which could then trigger reconnect()?
                         logger.error("YOU ARE HERE -- add disconnect / reconnect logic?");
 
-                        // UsbEndpointReader reader = sender as UsbEndpointReader;
-                        // if (reader != null)
-                        // {
-                        //     logger.error($"{prefix} [UsbEndpointReader]: flushing endpoint 0x{reader.EpNum:x2}");
-                        //     reader.ReadFlush();
-                        // }
+                        UsbEndpointReader reader = sender as UsbEndpointReader;
+                        if (reader != null)
+                        {
+                             logger.error($"{prefix} [UsbEndpointReader]: hit error at endpoint 0x{reader.EpNum:x2}");
+                             //reader.Reset();
+                             //reader.Flush();
+                        }
                     }
                 }
                 else
