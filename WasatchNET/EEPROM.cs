@@ -320,48 +320,7 @@ namespace WasatchNET
         }
 
         float[] _wavecalCoeffs;
-
-
-        public float[] intensityCorrectionCoeffs
-        {
-            get { return _intensityCorrectionCoeffs; }
-            set
-            {
-                EventHandler handler = EEPROMChanged;
-                _intensityCorrectionCoeffs = value;
-                handler?.Invoke(this, new EventArgs());
-            }
-        }
-
-
-        float[] _intensityCorrectionCoeffs;
-
-        public byte intensityCorrectionOrder
-        {
-            get { return _intensityCorrectionOrder; }
-            set
-            {
-                EventHandler handler = EEPROMChanged;
-                _intensityCorrectionOrder = value;
-                handler?.Invoke(this, new EventArgs());
-            }
-        }
-
-        byte _intensityCorrectionOrder;
-
-        public PAGE_SUBFORMAT subformat
-        {
-            get { return _subformat; }
-            set
-            {
-                EventHandler handler = EEPROMChanged;
-                _subformat = value;
-                handler?.Invoke(this, new EventArgs());
-            }
-        }
-
-        PAGE_SUBFORMAT _subformat;
-
+        
         /// <summary>
         /// These are used to convert the user's desired setpoint in degrees 
         /// Celsius to raw 12-bit DAC inputs for passing to the detector's 
@@ -795,9 +754,67 @@ namespace WasatchNET
         }
 
         string _productConfiguration;
+
+        public PAGE_SUBFORMAT subformat
+        {
+            get { return _subformat; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _subformat = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        PAGE_SUBFORMAT _subformat;
+
         /////////////////////////////////////////////////////////////////////////       
-        // Pages 6-7 unallocated
+        // Page 6
+        /////////////////////////////////////////////////////////////////////////  
+        public float[] intensityCorrectionCoeffs
+        {
+            get { return _intensityCorrectionCoeffs; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _intensityCorrectionCoeffs = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        float[] _intensityCorrectionCoeffs;
+
+        public byte intensityCorrectionOrder
+        {
+            get { return _intensityCorrectionOrder; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _intensityCorrectionOrder = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        byte _intensityCorrectionOrder;
+
         /////////////////////////////////////////////////////////////////////////       
+        // Page 7 unallocated
+        /////////////////////////////////////////////////////////////////////////  
+
+        /////////////////////////////////////////////////////////////////////////
+        // Compound Fields
+        /////////////////////////////////////////////////////////////////////////
+
+        public string fullModel
+        {
+            get { return _model + _productConfiguration; }
+            set
+            {
+                _model = value.Substring(0, 16);
+                _productConfiguration = value.Substring(16);
+            }
+        }
+
 
         /////////////////////////////////////////////////////////////////////////       
         //
