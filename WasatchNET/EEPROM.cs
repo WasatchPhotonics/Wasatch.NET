@@ -810,8 +810,14 @@ namespace WasatchNET
             get { return _model + _productConfiguration; }
             set
             {
-                _model = value.Substring(0, 16);
-                _productConfiguration = value.Substring(16);
+                if (value.Length > 16)
+                {
+                    _model = value.Substring(0, 16);
+                    _productConfiguration = value.Substring(16);
+                }
+
+                else
+                    _model = value;
             }
         }
 
