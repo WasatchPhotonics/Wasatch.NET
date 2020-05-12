@@ -1,5 +1,9 @@
 # Wasatch.NET Changelog
 
+- 2020-05-12 2.2.3
+    - added full model compound EEPROM field for bigger model number support
+	- reorganized some EEPROM fields
+
 - 2020-05-08 2.2.2
     - added readback to fix issue with HOCT eeprom write
 	- added USB reset on HOCT buffer clear errors (may or may not be needed)
