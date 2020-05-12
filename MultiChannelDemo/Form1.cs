@@ -146,11 +146,6 @@ namespace MultiChannelDemo
                 s.ChartType = SeriesChartType.Line;
                 seriesCombined[pos - 1] = s;
                 chartAll.Series.Add(s);
-
-                logger.info("Pos {0} ({1}) wavecal: {2}",
-                    pos,
-                    spec.serialNumber,
-                    string.Join<float>(", ", spec.eeprom.wavecalCoeffs));
             }
             updateGroupBoxTitles();
 
@@ -223,7 +218,7 @@ namespace MultiChannelDemo
                         pos, 
                         spec.serialNumber, 
                         spec.integrationTimeMS, 
-                        spec.detectorTemperatureDegC);
+                        spec.lastDetectorTemperatureDegC);
                 }
             }
             else
@@ -937,6 +932,13 @@ namespace MultiChannelDemo
                 var ms = (uint)r.Next((int)integrationTimeMSRandomMin,
                                       (int)integrationTimeMSRandomMax + 1);
                 setIntegrationTimeMS(spec, ms, prefix);
+
+                // this should not be necessary (both setIntegrationTimeMS and
+                // the Spectrometer setter are synchronous), but make extra-sure
+                // we've given time for the SW-triggered throwaway spectrum to 
+                // complete, so there can be no possibility of interaction 
+                // between the throwaway and subsequent HW trigger.
+                await Task.Delay((int)(ms + 100));
             }
 
             logger.info($"freeRunningSpectrometer on pos {pos} done");
@@ -992,6 +994,9 @@ namespace MultiChannelDemo
                 foreach (var pos in wrapper.positions)
                     if (wrapper.getSpectrometer(pos).multiChannelSelected)
                         headers.Add($"Pos{pos}_Spectra");
+                foreach (var pos in wrapper.positions)
+                    if (wrapper.getSpectrometer(pos).multiChannelSelected)
+                        headers.Add($"Pos{pos}_ShiftedMarkers");
                 sw.WriteLine(string.Join<string>(", ", headers));
 
                 while (DateTime.Now < endTime)
@@ -1030,6 +1035,7 @@ namespace MultiChannelDemo
                         List<string> specAvg = new List<string>();
                         List<string> specDegC = new List<string>();
                         List<string> specSpectra = new List<string>();
+                        List<string> specShifts = new List<string>();
                         foreach (var pos in wrapper.positions)
                         {
                             var spec = wrapper.getSpectrometer(pos);
@@ -1041,8 +1047,9 @@ namespace MultiChannelDemo
 
                             specInteg.Add(string.Format("{0}", ms));
                             specAvg.Add(string.Format("{0:f2}", avg));
-                            specDegC.Add(string.Format("{0:f2}", spec.detectorTemperatureDegC));
+                            specDegC.Add(string.Format("{0:f2}", spec.lastDetectorTemperatureDegC));
                             specSpectra.Add(string.Format("{0}", acquisitionCounts[pos]));
+                            specShifts.Add(string.Format("{0}", spec.shiftedMarkerCount));
 
                             // update tallies
                             if (!tallies[pos].ContainsKey(ms))
@@ -1057,6 +1064,7 @@ namespace MultiChannelDemo
                         sw.Write(string.Join<string>(", ", specAvg) + ", ");
                         sw.Write(string.Join<string>(", ", specDegC) + ", ");
                         sw.Write(string.Join<string>(", ", specSpectra));
+                        sw.Write(string.Join<string>(", ", specShifts));
                         sw.WriteLine();
                     }
 
@@ -1162,6 +1170,11 @@ namespace MultiChannelDemo
                 numericUpDownBatchMin.Enabled =
                 groupBoxSystem.Enabled = true;
             labelBatchStatus.Text = "click to start";
+        }
+
+        private void checkBoxIntegThrowaways_CheckedChanged(object sender, EventArgs e)
+        {
+            wrapper.integrationThrowaways = checkBoxIntegThrowaways.Checked;
         }
     }
 }

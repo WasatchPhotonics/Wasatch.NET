@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Windows.Markup;
 
 namespace WasatchNET
 {
@@ -48,7 +46,7 @@ namespace WasatchNET
             {
                 _intensities = value;
                 if (spec != null)
-                    detectorTemperatureDegC = spec.detectorTemperatureDegC;
+                    detectorTemperatureDegC = spec.lastDetectorTemperatureDegC;
             }
         }
         double[] _intensities;
@@ -84,6 +82,18 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
         // Public attributes
         ////////////////////////////////////////////////////////////////////////
+
+        public bool integrationThrowaways
+        {
+            get => _integrationThrowaways;
+            set
+            {
+                foreach (var pair in specByPos)
+                    pair.Value.throwawayAfterIntegrationTime = value;
+                _integrationThrowaways = value;
+            }
+        }
+        bool _integrationThrowaways = true;
 
         /// <summary>
         /// A convenience accessor to iterate over valid positions (channels).
@@ -216,13 +226,10 @@ namespace WasatchNET
                 // (most of our acquisitions will use hardware triggers)
                 spec.autoTrigger = false;
 
-                // ARM units (used for triggering) seem to benefit from a 
-                // throwaway after changing integration time.  (Honestly, 
-                // probably all models do.)  
-                spec.throwawayAfterIntegrationTime = true;
-
                 // ARM units seem susceptible to hanging if commanded too rapidly
                 spec.featureIdentification.usbDelayMS = 100;
+
+                spec.readTemperatureAfterSpectrum = true;
 
                 ////////////////////////////////////////////////////////////////
                 // Parse EEPROM.userText
@@ -300,7 +307,14 @@ namespace WasatchNET
                 // let the Spectrometer know its own position as a 
                 // convenient back-reference
                 spec.multiChannelPosition = pos;
+
+                spec.syncResetBehavior = Spectrometer.SyncResetBehavior.LOG;
             }
+
+            // ARM units (used for triggering) seem to benefit from a 
+            // throwaway after changing integration time.  (Honestly, 
+            // probably all models do.)  
+            integrationThrowaways = true;
 
             // Default to system-wide software triggering, regardless of
             // whether we found a specTrigger or not; let the app decide to

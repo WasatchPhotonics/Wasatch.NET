@@ -39,6 +39,7 @@ namespace WasatchNET
         public const byte DEVICE_TO_HOST = 0xc0;
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
         public const int LEGACY_VERTICAL_PIXELS = 70;
+        public const ushort SPECTRUM_START_MARKER = 0xffff;
 
         ////////////////////////////////////////////////////////////////////////
         // data types
@@ -55,6 +56,12 @@ namespace WasatchNET
         /// - MANUAL = "use whatever laserModulationPulseWidth has been set by the caller"
         /// </remarks>
         public enum LaserPowerResolution { LASER_POWER_RESOLUTION_100, LASER_POWER_RESOLUTION_1000, LASER_POWER_RESOLUTION_MANUAL }
+
+        /// <summary>
+        /// How to handle detected cases where spectra is no longer aligned with
+        /// detector start.
+        /// </summary>
+        public enum SyncResetBehavior { NONE, LOG, THROWAWAY, RESET };
 
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
@@ -124,6 +131,21 @@ namespace WasatchNET
         /// spectrometers in several respects, such as producing both 2D and 3D imagery.
         /// </summary>
         public bool isOCT { get; protected set; } = false;
+
+        /// <summary>
+        /// Some spectrometers send a "start of spectrum" marker in the first pixel of
+        /// the spectrum.
+        /// </summary>
+        public bool hasMarker
+        {
+            get
+            {
+                // if we decide to keep this, change to EEPROM.featureMask.hasMarker
+                return eeprom.model == "WPX-8CHANNEL";
+            }
+        }
+
+        public int shiftedMarkerCount = 0;
 
         /// <summary>spectrometer serial number</summary>
         public virtual string serialNumber
@@ -266,6 +288,32 @@ namespace WasatchNET
         /// Whether an ERROR should be logged on a timeout event
         /// </summary>
         public bool errorOnTimeout { get; set; } = true;
+
+        /// <summary>
+        /// If the spectrum does not match the expected framing bits, reset the
+        /// device.
+        /// </summary>
+        /// <remarks>
+        /// Experimental and not recommended for customer use at this time.
+        /// </remarks>
+        public SyncResetBehavior syncResetBehavior = SyncResetBehavior.NONE;
+
+        /// <summary>
+        /// If enabled, Wasatch.NET will automatically read the detector temperature
+        /// following every successful call to getSpectrum().  That temperature 
+        /// can then be read from lastDetectorTemperatureDegC, without inducing
+        /// any spectrometer communications.
+        /// </summary>
+        /// <remarks>
+        /// Many customer applications wish to monitor detector temperature.
+        /// However, attempting to read temperature asynchronously from the 
+        /// spectrometer over USB can complicate timing in the midst of 
+        /// acquisitions.  This provides a controlled process to obtain fairly-
+        /// current temperature without adding interrupts to the USB 
+        /// communciation cycle.  (It's also very similar to what ENLIGHTEN does)
+        /// </remarks>
+        /// lastDetectorTemperatureDegC = -999;
+        public bool readTemperatureAfterSpectrum = false;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -816,6 +864,11 @@ namespace WasatchNET
             }
             set
             {
+                // noop if already set 
+                const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
+                if (haveCache(op) && integrationTimeMS_ == value)
+                    return;
+
                 lock (acquisitionLock)
                 {
                     // temporarily disabled EEPROM range-checking by customer 
@@ -835,7 +888,7 @@ namespace WasatchNET
                         buf = new byte[8];
                     sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf);
                     integrationTimeMS_ = ms;
-                    readOnce.Add(Opcodes.GET_INTEGRATION_TIME);
+                    readOnce.Add(op);
 
                     if (throwawayAfterIntegrationTime)
                         performThrowawaySpectrum();
@@ -1952,6 +2005,13 @@ namespace WasatchNET
             return sendCmd(Opcodes.SET_DFU_MODE);
         }
 
+        // this is not a Property because it has no value and cannot be undone
+        public bool resetFPGA()
+        {
+            logger.info("Resetting FPGA");
+            return sendCmd(Opcodes.FPGA_RESET);
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // getSpectrum
         ////////////////////////////////////////////////////////////////////////
@@ -2083,6 +2143,10 @@ namespace WasatchNET
                     for (int px = 0; px < pixels; px++)
                         sum[px] -= dark_[px];
 
+                // this should be enough to update the cached value
+                if (readTemperatureAfterSpectrum)
+                    _ = detectorTemperatureDegC;
+
                 if (boxcarHalfWidth_ > 0)
                 {
                     // logger.debug("getSpectrum: returning boxcar");
@@ -2209,7 +2273,7 @@ namespace WasatchNET
                 {
                     if (!currentAcquisitionCancelled && errorOnTimeout)
                         logger.error($"failed when reading subspectrum from 0x{spectralReader.EpNum:x2} ({id})");
-                    Thread.Sleep(10);
+                    Thread.Sleep(100);
                     if (isStroker && areaScanEnabled)
                         pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
                     return null;
@@ -2224,6 +2288,62 @@ namespace WasatchNET
 
             if (isStroker && areaScanEnabled)
                 pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
+
+            if (hasMarker)
+            {
+                shiftedMarkerCount = 0;
+                if (syncResetBehavior != SyncResetBehavior.NONE)
+                {
+                    if (spec[0] != SPECTRUM_START_MARKER)
+                    {
+                        logger.error($"MARKER: first pixel does not match marker ({id})");
+                        int lastMarkerPos = -1;
+                        for (int i = 1; i < spec.Length; i++)
+                        {
+                            if (spec[i] == SPECTRUM_START_MARKER)
+                            {
+                                logger.error($"MARKER found at pixel {i} ({id})");
+                                lastMarkerPos = i;
+                                shiftedMarkerCount++;
+                            }
+                        }
+
+                        if (syncResetBehavior == SyncResetBehavior.LOG)
+                        {
+                            // we're done
+                        }
+                        else if (syncResetBehavior == SyncResetBehavior.THROWAWAY)
+                        {
+                            var ep = endpoints[0];
+                            logger.error($"MARKER: attempting throwaway of {lastMarkerPos-1} from endpoint 0x{ep.EpNum:x2} to resynchronize ({id})");
+                            var throwaway = readSubspectrum(ep, lastMarkerPos-1);
+                            if (throwaway != null)
+                            {
+                                var first = throwaway[0];
+                                logger.error($"MARKER: read throwaway of {throwaway.Length} pixels, with first pixel 0x{first:x4} ({id})");
+                                if (first == SPECTRUM_START_MARKER)
+                                    logger.error($"MARKER: resynchronization successful ({id})");
+                                else
+                                    logger.error($"MARKER: resynchronization failed (didn't hit marker) ({id})");
+                            }
+                            else
+                                logger.error($"MARKER: resynchronization failed (throwaway null) ({id})");
+                        }
+                        else if (syncResetBehavior == SyncResetBehavior.RESET)
+                        {
+                            // I honestly don't know what will happen here
+                            logger.error($"MARKER: resetting device ({id})");
+                            resetFPGA();
+                            return null;
+                        }
+                        else
+                            logger.error($"MARKER: unimplemented syncResetBehavior {syncResetBehavior} ({id})");
+                    }
+                }
+
+                // regardless, overwrite the marker now that we've processed it
+                spec[0] = spec[1];
+            }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
 
@@ -2525,6 +2645,12 @@ namespace WasatchNET
 
                 if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
                 {
+                    // Note that we may fall down this path following a SW-triggered
+                    // throwaway initiated by integration time change, even if the overall
+                    // triggering strategy is external.  In that case the following error
+                    // is misleading (it wasn't externally-triggered) but valid (it did
+                    // timeout).
+
                     // if we were given an explicit timeout, give up
                     if (acquisitionTimeoutMS != null || acquisitionTimeoutTimestamp != null)
                     {

@@ -1785,7 +1785,6 @@ namespace WasatchNET
                         {
                             intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
                         }
-
                     }
                     else
                     {
@@ -1835,8 +1834,6 @@ namespace WasatchNET
                         else
                             subformat = PAGE_SUBFORMAT.USER_DATA;
                     }
-
-
                 }
                 catch (Exception ex)
                 {
@@ -1857,10 +1854,7 @@ namespace WasatchNET
         {
             model = "";
 
-
-
             serialNumber = a.serialNumber;
-
 
             baudRate = 0;
 

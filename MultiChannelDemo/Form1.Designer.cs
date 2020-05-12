@@ -86,6 +86,8 @@
             this.buttonAcquireAll = new System.Windows.Forms.Button();
             this.buttonInit = new System.Windows.Forms.Button();
             this.groupBoxBatch = new System.Windows.Forms.GroupBox();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.checkBoxIntegThrowaways = new System.Windows.Forms.CheckBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.checkBoxDoubleTriggerAttempt = new System.Windows.Forms.CheckBox();
             this.label1 = new System.Windows.Forms.Label();
@@ -165,6 +167,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpMax)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpMin)).BeginInit();
             this.groupBoxBatch.SuspendLayout();
+            this.groupBox4.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDoubleTriggerProbability)).BeginInit();
             this.groupBoxIntegrationTimeLimits.SuspendLayout();
@@ -775,6 +778,7 @@
             // 
             // groupBoxBatch
             // 
+            this.groupBoxBatch.Controls.Add(this.groupBox4);
             this.groupBoxBatch.Controls.Add(this.groupBox2);
             this.groupBoxBatch.Controls.Add(this.labelBatchStatus);
             this.groupBoxBatch.Controls.Add(this.groupBoxIntegrationTimeLimits);
@@ -783,10 +787,33 @@
             this.groupBoxBatch.Controls.Add(this.numericUpDownBatchMin);
             this.groupBoxBatch.Location = new System.Drawing.Point(3, 485);
             this.groupBoxBatch.Name = "groupBoxBatch";
-            this.groupBoxBatch.Size = new System.Drawing.Size(201, 229);
+            this.groupBoxBatch.Size = new System.Drawing.Size(201, 300);
             this.groupBoxBatch.TabIndex = 1;
             this.groupBoxBatch.TabStop = false;
             this.groupBoxBatch.Text = "Monte Carlo";
+            // 
+            // groupBox4
+            // 
+            this.groupBox4.Controls.Add(this.checkBoxIntegThrowaways);
+            this.groupBox4.Location = new System.Drawing.Point(6, 225);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(187, 65);
+            this.groupBox4.TabIndex = 6;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "Misc";
+            // 
+            // checkBoxIntegThrowaways
+            // 
+            this.checkBoxIntegThrowaways.AutoSize = true;
+            this.checkBoxIntegThrowaways.Checked = true;
+            this.checkBoxIntegThrowaways.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBoxIntegThrowaways.Location = new System.Drawing.Point(6, 19);
+            this.checkBoxIntegThrowaways.Name = "checkBoxIntegThrowaways";
+            this.checkBoxIntegThrowaways.Size = new System.Drawing.Size(108, 17);
+            this.checkBoxIntegThrowaways.TabIndex = 1;
+            this.checkBoxIntegThrowaways.Text = "integ throwaways";
+            this.checkBoxIntegThrowaways.UseVisualStyleBackColor = true;
+            this.checkBoxIntegThrowaways.CheckedChanged += new System.EventHandler(this.checkBoxIntegThrowaways_CheckedChanged);
             // 
             // groupBox2
             // 
@@ -1605,6 +1632,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpMin)).EndInit();
             this.groupBoxBatch.ResumeLayout(false);
             this.groupBoxBatch.PerformLayout();
+            this.groupBox4.ResumeLayout(false);
+            this.groupBox4.PerformLayout();
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDoubleTriggerProbability)).EndInit();
@@ -1779,6 +1808,8 @@
         private System.Windows.Forms.NumericUpDown numericUpDownDoubleTriggerProbability;
         private System.Windows.Forms.CheckBox checkBoxDoubleTriggerEnable;
         private System.Windows.Forms.CheckBox checkBoxDoubleTriggerAttempt;
+        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.CheckBox checkBoxIntegThrowaways;
     }
 }
 
