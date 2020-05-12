@@ -812,12 +812,12 @@ namespace WasatchNET
             {
                 if (value.Length > 16)
                 {
-                    _model = value.Substring(0, 16);
-                    _productConfiguration = value.Substring(16);
+                    model = value.Substring(0, 16);
+                    productConfiguration = value.Substring(16);
                 }
 
                 else
-                    _model = value;
+                    model = value;
             }
         }
 
