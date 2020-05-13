@@ -1,5 +1,11 @@
 # Wasatch.NET Changelog
 
+- 2020-05-?? 2.2.?
+    - WasatchNET
+        - added FeatureMask
+    - MultiChannel
+        - support serial or parallel Monte Carlo
+        - add FW to groupBox titles
 - 2020-05-05 2.2.1
     - WasatchNET
         - added WasatchMath.dll

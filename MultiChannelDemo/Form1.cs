@@ -37,6 +37,9 @@ namespace MultiChannelDemo
         BackgroundWorker workerBatch;
         Dictionary<int, int> acquisitionCounts;
         Dictionary<int, int> secondTriggerCounts;
+        Dictionary<int, int> consecutiveReadFailures;
+        Dictionary<int, bool> firstTriggerReceived;
+        Dictionary<int, bool> gaveUp;
         Random r = new Random();
         string batchPathname;
         string talliesPathname;
@@ -45,10 +48,12 @@ namespace MultiChannelDemo
         uint maxPulseWidthMS = 25; 
         bool batchRunning;
         bool batchShuttingDown;
+        bool usingFreeRunning;
         int triggerCount;
         int readFailureCount;
         bool doubleTriggerAttemptRead;
         int WORKER_PERIOD_MS = 2000;
+        const int MAX_CONSECUTIVE_FAILURES = 5;
 
         // place to store intensities by integration time
         // tallies[pos][integTimeMS].{total, count}
@@ -204,38 +209,21 @@ namespace MultiChannelDemo
                 spec.multiChannelSelected = cb.Checked;
         }
 
-        void updateGroupBoxTitles(List<ChannelSpectrum> spectra=null)
+        void updateGroupBoxTitles(int position=-1)
         {
-            if (spectra is null)
+            foreach (var pos in wrapper.positions)
             {
-                // we weren't passed any spectra, so don't know temperature, so 
-                // dynamically query them
-                foreach (var pos in wrapper.positions)
-                {
-                    var spec = wrapper.getSpectrometer(pos);
-                    var gb = groupBoxes[pos - 1];
-                    gb.Text = string.Format("Position {0} ({1}) {2}ms {3:f2}°C",
-                        pos, 
-                        spec.serialNumber, 
-                        spec.integrationTimeMS, 
-                        spec.lastDetectorTemperatureDegC);
-                }
-            }
-            else
-            {
-                // we were passed ChannelSpectra, which already contains temperature,
-                // so use that
-                foreach (var cs in spectra)
-                {
-                    var pos = cs.pos;
-                    var spec = wrapper.getSpectrometer(pos);
-                    var gb = groupBoxes[pos - 1];
-                    gb.Text = string.Format("Position {0} ({1}) {2}ms {3:f2}°C",
-                        pos, 
-                        spec.serialNumber, 
-                        spec.integrationTimeMS, 
-                        cs.detectorTemperatureDegC);
-                }
+                if (position > -1 && position != pos)
+                    continue;
+
+                var spec = wrapper.getSpectrometer(pos);
+                var gb = groupBoxes[pos - 1];
+                gb.Text = string.Format("#{0} ({1}) {2}ms {3:f2}°C {4}",
+                    pos, 
+                    spec.serialNumber, 
+                    spec.integrationTimeMS, 
+                    spec.lastDetectorTemperatureDegC,
+                    spec.firmwareRevision);
             }
         }
 
@@ -418,8 +406,6 @@ namespace MultiChannelDemo
             foreach (var cs in spectra)
                 processSpectrum(cs);
 
-            updateGroupBoxTitles(spectra);
-
             return true;
         }
 
@@ -433,6 +419,7 @@ namespace MultiChannelDemo
 
             updateChartAll(cs);
             updateChartSmall(cs);
+            updateGroupBoxTitles(cs.pos);
         }
 
         // update the little graph
@@ -735,6 +722,9 @@ namespace MultiChannelDemo
             // init success/failure buckets
             acquisitionCounts = new Dictionary<int, int>();
             secondTriggerCounts = new Dictionary<int, int>();
+            consecutiveReadFailures = new Dictionary<int, int>();
+            firstTriggerReceived = new Dictionary<int, bool>();
+            gaveUp = new Dictionary<int, bool>();
 
             // init graph
             foreach (var s in seriesTime)
@@ -748,12 +738,31 @@ namespace MultiChannelDemo
                 if (!spec.multiChannelSelected)
                     continue;
 
-                logger.debug($"creating freeRunningSpectrometerAsync({pos})");
-                tasks.Add(Task.Run(() => { var ok = freeRunningSpectrometerAsync(pos); }));
+                acquisitionCounts[pos] = 0;
+                secondTriggerCounts[pos] = 0;
+                consecutiveReadFailures[pos] = 0;
+                firstTriggerReceived[pos] = false;
+                gaveUp[pos] = false;
+
+                // don't throw errors until we've received our first trigger
+                spec.errorOnTimeout = false;
+
+                // everyone starts at 100ms
+                setIntegrationTimeMS(spec, 100);
+
+                if (usingFreeRunning)
+                {
+                    logger.debug($"creating freeRunningSpectrometerAsync({pos})");
+                    tasks.Add(Task.Run(() => { var ok = freeRunningSpectrometerAsync(pos); }));
+                }
             }
 
-            logger.debug("waiting 1sec for FRS to randomize integration time and take throwaways");
-            await Task.Delay(1000);
+            if (usingFreeRunning)
+            {
+                const int secDelay = 3;
+                logger.debug($"waiting {secDelay}sec for FRS to randomize integration time and take throwaways");
+                await Task.Delay(secDelay * 1000);
+            }
 
             logger.debug("spawning worker");
             workerBatch.RunWorkerAsync();
@@ -762,8 +771,12 @@ namespace MultiChannelDemo
             // triggered by batchShuttingDown, itself raised at the end of
             // the BackgroundWorker's DoWork (NOT Completed, though it could
             // have been).
-            logger.debug("Waiting for all FRS to exit");
-            Task.WaitAll(tasks.ToArray());
+            if (usingFreeRunning)
+            {
+                logger.debug("Waiting for all FRS to exit");
+                Task.WaitAll(tasks.ToArray());
+                logger.debug("all FRS exited");
+            }
 
             enableControls(true);
         }
@@ -795,153 +808,151 @@ namespace MultiChannelDemo
             string prefix = $"frs({pos})";
             logger.info($"freeRunningSpectrometer starting on pos {pos}");
 
-            // initialize storage
-            acquisitionCounts[pos] = 0;
-            secondTriggerCounts[pos] = 0;
-
-            // don't throw errors until we've received our first trigger
-            spec.errorOnTimeout = false;
-            var consecutiveReadFailures = 0;
-
-            // everyone starts at 100ms
-            setIntegrationTimeMS(spec, 100, prefix);
-
-            // enter acquisition loop
-            bool firstTriggerReceived = false;
             while (true)
             {
                 if (batchShuttingDown)
                     break;
 
-                ////////////////////////////////////////////////////////////////
-                // block on HW trigger 
-                ////////////////////////////////////////////////////////////////
-
-                // try to read the "first" (and ideally only) spectrum generated 
-                // by the HW trigger
-
-                var timeoutMS = (uint)WORKER_PERIOD_MS;
-                logger.debug($"{prefix}: setting timeout to {timeoutMS}");
-                spec.acquisitionTimeoutMS = timeoutMS;
-
-                logger.debug($"{prefix}: trying to read FIRST spectrum (trigger {triggerCount})");
-                var cs = await wrapper.getSpectrumAsync(pos);
-                if (cs != null)
+                if (!await performIteration(pos))
                 {
-                    logger.debug($"{prefix}: read FIRST spectrum (trigger {triggerCount})");
-                    firstTriggerReceived = true;
-                    acquisitionCounts[pos]++;
-                    consecutiveReadFailures = 0;
-
-                    // henceforth, log errors on timeout, UNLESS we're deliberately courting
-                    // timeouts
-                    spec.errorOnTimeout = !doubleTriggerAttemptRead;
-
-                    chartAll.BeginInvoke((MethodInvoker)delegate { processSpectrum(cs); });
-                }
-                else
-                {
-                    if (batchShuttingDown)
+                    if (consecutiveReadFailures[pos]++ >= MAX_CONSECUTIVE_FAILURES)
+                    {
+                        logger.error($"{prefix}: giving up after {consecutiveReadFailures[pos]} consecutive failures");
+                        gaveUp[pos] = true;
                         break;
-
-                    if (firstTriggerReceived)
-                    {
-                        logger.error($"{prefix}: [BAD] failed to read FIRST spectrum (trigger {triggerCount}) ");
-                        readFailureCount++;
-
-                        consecutiveReadFailures++;
-                        if (consecutiveReadFailures > 10)
-                        {
-                            logger.error($"{prefix}: giving up after {consecutiveReadFailures} consecutive failures");
-                            break;
-                        }
                     }
-                    else
-                    {
-                        // Special logic for reading the VERY FIRST trigger of the whole
-                        // Monte Carlo operation: we don't know exactly how long it will
-                        // take between when the FRS is spun-up, to when the BackgroundWorker
-                        // will get going and emit the first trigger, so just wait patiently.
-                        logger.debug($"{prefix}: failed to read FIRST spectrum (okay), trying again");
-                    }
-
-                    // for whatever reason, haven't read the FIRST trigger yet,
-                    // so keep trying
-                    continue;
                 }
-
-                if (batchShuttingDown)
-                    break;
-
-                // make sure the pulse which triggered the FIRST spectrum is
-                // actually complete
-                await Task.Delay((int)maxPulseWidthMS);
-
-                ////////////////////////////////////////////////////////////////
-                // try to read results of SECOND TRIGGER 
-                ////////////////////////////////////////////////////////////////
-
-                if (doubleTriggerAttemptRead)
-                {
-                    // This is to try to prove that no second triggers are being 
-                    // generated or detected. Ideally none will occur, and this read
-                    // will always fail.  Although the phrase "non-existent" is used
-                    // in log messages, if we are deliberately injecting double-
-                    // triggers via wrapper.forceDoubleTrigger, then sometimes those
-                    // double-triggers will be genuine.  In that case, our goal is to
-                    // count whether they generated new spectra or not.  
-                    //
-                    // Older firmware was known to allow double-triggers (even within 
-                    // a period less than the configured integration time) to 
-                    // generate multiple acquisitions (or worse, a single corrupted 
-                    // acquisition).  New FW under test should silently ignore new
-                    // triggers received while the spectrometer is already in the
-                    // midst of an acquisition.
-
-                    logger.header($"{prefix}: trying to read (non-existant) SECOND spectrum (trigger {triggerCount})");
-
-                    // 100ms more than integration time should be plenty
-                    timeoutMS = spec.integrationTimeMS + 100;
-                    logger.debug($"{prefix}: setting timeout to {timeoutMS}");
-                    spec.acquisitionTimeoutMS = timeoutMS;
-
-                    cs = await wrapper.getSpectrumAsync(pos);
-                    if (cs is null)
-                    {
-                        logger.debug($"{prefix}: correctly timed-out on non-existent second trigger (trigger {triggerCount})");
-                    }
-                    else
-                    {
-                        logger.error($"{prefix}: [BAD] actually read (non-existent) second trigger (trigger {triggerCount})");
-                        acquisitionCounts[pos]++;
-                        secondTriggerCounts[pos]++;
-
-                        // make sure the pulse which triggered the SECOND spectrum is
-                        // actually complete
-                        await Task.Delay((int)maxPulseWidthMS);
-                    }
-
-                    if (batchShuttingDown)
-                        break;
-                }
-
-                ////////////////////////////////////////////////////////////////
-                // scramble integration time for next intended read 
-                ////////////////////////////////////////////////////////////////
-
-                var ms = (uint)r.Next((int)integrationTimeMSRandomMin,
-                                      (int)integrationTimeMSRandomMax + 1);
-                setIntegrationTimeMS(spec, ms, prefix);
-
-                // this should not be necessary (both setIntegrationTimeMS and
-                // the Spectrometer setter are synchronous), but make extra-sure
-                // we've given time for the SW-triggered throwaway spectrum to 
-                // complete, so there can be no possibility of interaction 
-                // between the throwaway and subsequent HW trigger.
-                await Task.Delay((int)(ms + 100));
             }
 
             logger.info($"freeRunningSpectrometer on pos {pos} done");
+            return true;
+        }
+
+        /// <returns>
+        /// false if spectrometer should no longer be used in subsequent iterations
+        /// (free-running spectrometer should shutdown).
+        /// </returns>
+        async Task<bool> performIteration(int pos)
+        {
+            string prefix = $"performIteration(pos {pos})";
+
+            if (gaveUp[pos])
+                return false;
+
+            if (batchShuttingDown)
+                return false;
+
+            var spec = wrapper.getSpectrometer(pos);
+            if (spec is null)
+                return false;
+
+            ////////////////////////////////////////////////////////////////
+            // block on HW trigger 
+            ////////////////////////////////////////////////////////////////
+
+            // try to read the "first" (and ideally only) spectrum generated 
+            // by the HW trigger
+
+            var timeoutMS = (uint)WORKER_PERIOD_MS;
+            logger.debug($"{prefix}: setting timeout to {timeoutMS}");
+            spec.acquisitionTimeoutMS = timeoutMS;
+
+            logger.debug($"{prefix}: trying to read FIRST spectrum (trigger {triggerCount})");
+            var cs = await wrapper.getSpectrumAsync(pos);
+            if (cs is null)
+            {
+                if (batchShuttingDown)
+                    return false;
+
+                logger.error($"{prefix}: [BAD] failed to read FIRST spectrum (trigger {triggerCount}) ");
+                readFailureCount++; // global
+                return false;
+            }
+
+            // received the FIRST trigger
+            logger.debug($"{prefix}: read FIRST spectrum (trigger {triggerCount})");
+            firstTriggerReceived[pos] = true;
+            acquisitionCounts[pos]++;
+            consecutiveReadFailures[pos] = 0;
+
+            // henceforth, log errors on timeout, UNLESS we're deliberately courting
+            // timeouts
+            spec.errorOnTimeout = !doubleTriggerAttemptRead;
+
+            chartAll.BeginInvoke((MethodInvoker)delegate { processSpectrum(cs); });
+
+            if (batchShuttingDown)
+                return false;
+
+            // make sure the pulse which triggered the FIRST spectrum is
+            // actually complete
+            if (usingFreeRunning)
+                await Task.Delay((int)maxPulseWidthMS);
+
+            ////////////////////////////////////////////////////////////////
+            // try to read results of SECOND TRIGGER 
+            ////////////////////////////////////////////////////////////////
+
+            if (doubleTriggerAttemptRead)
+            {
+                // This is to try to prove that no second triggers are being 
+                // generated or detected. Ideally none will occur, and this read
+                // will always fail.  Although the phrase "non-existent" is used
+                // in log messages, if we are deliberately injecting double-
+                // triggers via wrapper.forceDoubleTrigger, then sometimes those
+                // double-triggers will be genuine.  In that case, our goal is to
+                // count whether they generated new spectra or not.  
+                //
+                // Older firmware was known to allow double-triggers (even within 
+                // a period less than the configured integration time) to 
+                // generate multiple acquisitions (or worse, a single corrupted 
+                // acquisition).  New FW under test should silently ignore new
+                // triggers received while the spectrometer is already in the
+                // midst of an acquisition.
+
+                logger.header($"{prefix}: trying to read (non-existant) SECOND spectrum (trigger {triggerCount})");
+
+                // 100ms more than integration time should be plenty
+                timeoutMS = spec.integrationTimeMS + 100;
+                logger.debug($"{prefix}: setting timeout to {timeoutMS}");
+                spec.acquisitionTimeoutMS = timeoutMS;
+
+                cs = await wrapper.getSpectrumAsync(pos);
+                if (cs is null)
+                {
+                    logger.debug($"{prefix}: correctly timed-out on non-existent second trigger (trigger {triggerCount})");
+                }
+                else
+                {
+                    logger.error($"{prefix}: [BAD] actually read (non-existent) second trigger (trigger {triggerCount})");
+                    acquisitionCounts[pos]++;
+                    secondTriggerCounts[pos]++;
+
+                    // make sure the pulse which triggered the SECOND spectrum is
+                    // actually complete
+                    await Task.Delay((int)maxPulseWidthMS);
+                }
+
+                if (batchShuttingDown)
+                    return false;
+            }
+
+            ////////////////////////////////////////////////////////////////
+            // scramble integration time for next intended read 
+            ////////////////////////////////////////////////////////////////
+
+            var ms = (uint)r.Next((int)integrationTimeMSRandomMin,
+                                  (int)integrationTimeMSRandomMax + 1);
+            setIntegrationTimeMS(spec, ms, prefix);
+
+            // this should not be necessary (both setIntegrationTimeMS and
+            // the Spectrometer setter are synchronous), but make extra-sure
+            // we've given time for the SW-triggered throwaway spectrum to 
+            // complete, so there can be no possibility of interaction 
+            // between the throwaway and subsequent HW trigger.
+            //
+            // await Task.Delay((int)(ms + 100));
+
             return true;
         }
 
@@ -1063,7 +1074,7 @@ namespace MultiChannelDemo
                         sw.Write(string.Join<string>(", ", specInteg) + ", ");
                         sw.Write(string.Join<string>(", ", specAvg) + ", ");
                         sw.Write(string.Join<string>(", ", specDegC) + ", ");
-                        sw.Write(string.Join<string>(", ", specSpectra));
+                        sw.Write(string.Join<string>(", ", specSpectra) + ", ");
                         sw.Write(string.Join<string>(", ", specShifts));
                         sw.WriteLine();
                     }
@@ -1078,14 +1089,34 @@ namespace MultiChannelDemo
                     // calling it synchronously, so it runs within the worker's 
                     // thread. Also note we are not configuring timeouts here, as
                     // presumably the FRS are ALREADY in a blocking acquire
-                    var ok = wrapper.startAcquisitionAsync(false).Result;
+                    _ = wrapper.startAcquisitionAsync(configureTimeouts: false).Result;
+
+                    if (!usingFreeRunning)
+                    {
+                        foreach (var pos in wrapper.positions)
+                        {
+                            if (!performIteration(pos).Result)
+                            {
+                                logger.error($"workerBatch: error on pos {pos}");
+                                if (consecutiveReadFailures[pos]++ >= MAX_CONSECUTIVE_FAILURES)
+                                {
+                                    logger.error($"workerBatch: giving up after {consecutiveReadFailures[pos]} consecutive failures");
+                                    gaveUp[pos] = true;
+                                }
+                            }
+                        }
+                    }
+
 
                     // run batch at evenly-stepped increments
                     int iterationElapsedMS = (int)(DateTime.Now - iterationStart).TotalMilliseconds;
                     int sleepMS = WORKER_PERIOD_MS - iterationElapsedMS;
 
-                    logger.debug($"workerBatch: sleeping {sleepMS}ms");
-                    Thread.Sleep(sleepMS);
+                    if (sleepMS > 0)
+                    {
+                        logger.debug($"workerBatch: sleeping {sleepMS}ms");
+                        Thread.Sleep(sleepMS);
+                    }
                     triggerCount++;
                 }
             }
@@ -1175,6 +1206,11 @@ namespace MultiChannelDemo
         private void checkBoxIntegThrowaways_CheckedChanged(object sender, EventArgs e)
         {
             wrapper.integrationThrowaways = checkBoxIntegThrowaways.Checked;
+        }
+
+        private void checkBoxUsingFreeRunning_CheckedChanged(object sender, EventArgs e)
+        {
+            usingFreeRunning = checkBoxUsingFreeRunning.Checked;
         }
     }
 }

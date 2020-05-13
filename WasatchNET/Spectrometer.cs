@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -2343,6 +2344,18 @@ namespace WasatchNET
 
                 // regardless, overwrite the marker now that we've processed it
                 spec[0] = spec[1];
+            }
+
+            if (eeprom.featureMask.invertXAxis)
+                Array.Reverse(spec);
+
+            if (eeprom.featureMask.bin2x2)
+            {
+                var smoothed = new double[spec.Length];
+                for (int i = 0; i < spec.Length - 1; i++)
+                    smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
+                smoothed[spec.Length - 1] = spec[spec.Length - 1];
+                spec = smoothed;
             }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);

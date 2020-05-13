@@ -145,6 +145,7 @@
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            this.checkBoxUsingFreeRunning = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -794,6 +795,7 @@
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.checkBoxUsingFreeRunning);
             this.groupBox4.Controls.Add(this.checkBoxIntegThrowaways);
             this.groupBox4.Location = new System.Drawing.Point(6, 225);
             this.groupBox4.Name = "groupBox4";
@@ -1597,6 +1599,17 @@
             this.saveFileDialog.SupportMultiDottedExtensions = true;
             this.saveFileDialog.Title = "Monte Carlo Batch Report";
             // 
+            // checkBoxUsingFreeRunning
+            // 
+            this.checkBoxUsingFreeRunning.AutoSize = true;
+            this.checkBoxUsingFreeRunning.Location = new System.Drawing.Point(6, 42);
+            this.checkBoxUsingFreeRunning.Name = "checkBoxUsingFreeRunning";
+            this.checkBoxUsingFreeRunning.Size = new System.Drawing.Size(124, 17);
+            this.checkBoxUsingFreeRunning.TabIndex = 2;
+            this.checkBoxUsingFreeRunning.Text = "free-running (parallel)";
+            this.checkBoxUsingFreeRunning.UseVisualStyleBackColor = true;
+            this.checkBoxUsingFreeRunning.CheckedChanged += new System.EventHandler(this.checkBoxUsingFreeRunning_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1810,6 +1823,7 @@
         private System.Windows.Forms.CheckBox checkBoxDoubleTriggerAttempt;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.CheckBox checkBoxIntegThrowaways;
+        private System.Windows.Forms.CheckBox checkBoxUsingFreeRunning;
     }
 }
 
