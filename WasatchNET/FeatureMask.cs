@@ -10,6 +10,26 @@ namespace WasatchNET
 {
     public class FeatureMask
     {
+        enum Flags 
+        { 
+            INVERT_X_AXIS   = 0x0001, 
+            BIN_2X2         = 0x0002 
+        }
+
+        public FeatureMask(ushort value = 0)
+        {
+            invertXAxis = 0 != (value & (ushort)Flags.INVERT_X_AXIS);
+            bin2x2      = 0 != (value & (ushort)Flags.BIN_2X2);
+        }
+
+        public ushort toUInt16()
+        {
+            ushort value = 0;
+            if (invertXAxis) value |= (ushort)Flags.INVERT_X_AXIS;
+            if (bin2x2)      value |= (ushort)Flags.BIN_2X2;
+            return value;
+        }
+
         /// <summary>
         /// The orientations of the grating and detector in this spectrometer are 
         /// rotated such that spectra are read-out "red-to-blue" rather than the
@@ -40,19 +60,5 @@ namespace WasatchNET
         /// Spectrometer.getSpectrumRaw.
         /// </summary>
         public bool bin2x2 { get; set; }
-
-        public FeatureMask(ushort value = 0)
-        {
-            invertXAxis = 0 != (value & 0x0001);
-            bin2x2      = 0 != (value & 0x0002);
-        }
-
-        public ushort toUInt16()
-        {
-            ushort value = 0;
-            if (invertXAxis) value |= 0x0001;
-            if (bin2x2)      value |= 0x0002;
-            return value;
-        }
     }
 }
