@@ -205,8 +205,7 @@ namespace WasatchNET
                 spec.multiChannelSelected = true;
 
                 // ARM units seem susceptible to hanging if commanded too rapidly
-                // TODO: TUNE
-                spec.featureIdentification.usbDelayMS = 10;
+                // spec.featureIdentification.usbDelayMS = 10;
 
                 // to minimize USB comm collisions, automatically capture the 
                 // temperature right after acquisition, so it can be later read
