@@ -8,12 +8,18 @@ using System.Threading.Tasks;
 
 namespace WasatchNET
 {
+    /// <summary>
+    /// This class encapsulates a 16-bit set of boolean flags which indicate
+    /// whether a given spectrometer has a particular feature or not, without
+    /// expending quite as much storage as, for instance, legacy hasCooling,
+    /// hasLaser or hasBattery bytes.
+    /// </summary>
     public class FeatureMask
     {
         enum Flags 
         { 
-            INVERT_X_AXIS   = 0x0001, 
-            BIN_2X2         = 0x0002 
+            INVERT_X_AXIS   = 0x0001, // 2^0 
+            BIN_2X2         = 0x0002  // 2^1
         }
 
         public FeatureMask(ushort value = 0)

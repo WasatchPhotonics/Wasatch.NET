@@ -58,12 +58,6 @@ namespace WasatchNET
         /// </remarks>
         public enum LaserPowerResolution { LASER_POWER_RESOLUTION_100, LASER_POWER_RESOLUTION_1000, LASER_POWER_RESOLUTION_MANUAL }
 
-        /// <summary>
-        /// How to handle detected cases where spectra is no longer aligned with
-        /// detector start.
-        /// </summary>
-        public enum SyncResetBehavior { NONE, LOG, THROWAWAY, RESET };
-
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
@@ -108,6 +102,24 @@ namespace WasatchNET
         public double[] wavenumbers { get; protected set; }
 
         /// <summary>
+        /// convenience accesor for pixel axis (lazy-loaded), for parallelism
+        /// with wavelengths and wavenumbers
+        /// </summary>
+        public double[] pixelAxis
+        {
+            get
+            {
+                if (_pixelAxis != null)
+                    return _pixelAxis;
+                _pixelAxis = new double[pixels];
+                for (int i = 0; i < pixels; i++)
+                    _pixelAxis[i] = i;
+                return _pixelAxis;
+            }
+        }
+        double[] _pixelAxis = null;
+
+        /// <summary>
         /// Useful if you lost the results of getSpectrum, or if you want to 
         /// peek into ongoing multi-acquisition tasks like scan averaging or 
         /// optimization.
@@ -134,18 +146,23 @@ namespace WasatchNET
         public bool isOCT { get; protected set; } = false;
 
         /// <summary>
-        /// Some spectrometers send a "start of spectrum" marker in the first pixel of
+        /// Some spectrometers send a start-of-frame marker in the first pixel of
         /// the spectrum.
         /// </summary>
         public bool hasMarker
         {
             get
             {
-                // if we decide to keep this, change to EEPROM.featureMask.hasMarker
+                // if we decide to keep this, change to EEPROM.featureMask.hasFraming
                 return eeprom.model == "WPX-8CHANNEL";
             }
         }
 
+        /// <summary>
+        /// For spectrometer firmware providing "start of spectrum markers", 
+        /// provides a count of how many INCORRECT markers were found in the MOST
+        /// RECENT spectrum.
+        /// </summary>
         public int shiftedMarkerCount = 0;
 
         /// <summary>spectrometer serial number</summary>
@@ -200,8 +217,9 @@ namespace WasatchNET
 
         /// <summary>
         /// Whether the driver should automatically send a software trigger on
-        /// getSpectrum()
+        /// getSpectrum() when triggerSource is set to INTERNAL.
         /// </summary>
+        ///
         /// <remarks>
         /// This is provided in case the caller wishes to call sendSWTrigger()
         /// explicitly, for instance to send software triggers to a series of
@@ -289,15 +307,6 @@ namespace WasatchNET
         /// Whether an ERROR should be logged on a timeout event
         /// </summary>
         public bool errorOnTimeout { get; set; } = true;
-
-        /// <summary>
-        /// If the spectrum does not match the expected framing bits, reset the
-        /// device.
-        /// </summary>
-        /// <remarks>
-        /// Experimental and not recommended for customer use at this time.
-        /// </remarks>
-        public SyncResetBehavior syncResetBehavior = SyncResetBehavior.NONE;
 
         /// <summary>
         /// If enabled, Wasatch.NET will automatically read the detector temperature
@@ -1496,6 +1505,8 @@ namespace WasatchNET
 
         virtual internal bool open()
         {
+            logger.header($"Spectrometer.open: VID = 0x{usbRegistry.Vid:x4}, PID = 0x{usbRegistry.Pid:x4}");
+
             // clear cache
             readOnce.Clear();
 
@@ -1611,6 +1622,7 @@ namespace WasatchNET
                 }
             }
 
+            logger.debug("Spectrometer.open: complete");
             return true;
         }
 
@@ -2175,16 +2187,15 @@ namespace WasatchNET
         /// Generate a throwaway spectrum, such as following a change in 
         /// integration time on spectrometers requiring such.
         /// </summary>
+        ///
         /// <remarks>
         /// If the caller doesn't want to block on this, they can always change
         /// integrationTimeMS within a Task.Run closure.
         /// </remarks>
         void performThrowawaySpectrum()
         {
-            // We will need to issue a software trigger for throwaway spectra.
-            // However, we want to make sure getSpectrumRaw won't "autoTrigger",
-            // as we don't want to send two.
-            if (!autoTrigger)
+            // send a trigger if getSpectrumRaw won't
+            if (!autoTrigger || triggerSource_ != TRIGGER_SOURCE.INTERNAL)
                 sendSWTrigger();
             getSpectrumRaw();
         }
@@ -2293,52 +2304,15 @@ namespace WasatchNET
             if (hasMarker)
             {
                 shiftedMarkerCount = 0;
-                if (syncResetBehavior != SyncResetBehavior.NONE)
-                {
-                    if (spec[0] != SPECTRUM_START_MARKER)
-                    {
-                        logger.error($"MARKER: first pixel does not match marker ({id})");
-                        int lastMarkerPos = -1;
-                        for (int i = 1; i < spec.Length; i++)
-                        {
-                            if (spec[i] == SPECTRUM_START_MARKER)
-                            {
-                                logger.error($"MARKER found at pixel {i} ({id})");
-                                lastMarkerPos = i;
-                                shiftedMarkerCount++;
-                            }
-                        }
+                if (spec[0] != SPECTRUM_START_MARKER)
+                    logger.error($"MARKER: first pixel does not match marker ({id})");
 
-                        if (syncResetBehavior == SyncResetBehavior.LOG)
-                        {
-                            // we're done
-                        }
-                        else if (syncResetBehavior == SyncResetBehavior.THROWAWAY)
-                        {
-                            var ep = endpoints[0];
-                            logger.error($"MARKER: attempting throwaway of {lastMarkerPos-1} from endpoint 0x{ep.EpNum:x2} to resynchronize ({id})");
-                            var throwaway = readSubspectrum(ep, lastMarkerPos-1);
-                            if (throwaway != null)
-                            {
-                                var first = throwaway[0];
-                                logger.error($"MARKER: read throwaway of {throwaway.Length} pixels, with first pixel 0x{first:x4} ({id})");
-                                if (first == SPECTRUM_START_MARKER)
-                                    logger.error($"MARKER: resynchronization successful ({id})");
-                                else
-                                    logger.error($"MARKER: resynchronization failed (didn't hit marker) ({id})");
-                            }
-                            else
-                                logger.error($"MARKER: resynchronization failed (throwaway null) ({id})");
-                        }
-                        else if (syncResetBehavior == SyncResetBehavior.RESET)
-                        {
-                            // I honestly don't know what will happen here
-                            logger.error($"MARKER: resetting device ({id})");
-                            resetFPGA();
-                            return null;
-                        }
-                        else
-                            logger.error($"MARKER: unimplemented syncResetBehavior {syncResetBehavior} ({id})");
+                for (int i = 1; i < spec.Length; i++)
+                {
+                    if (spec[i] == SPECTRUM_START_MARKER)
+                    {
+                        logger.error($"MARKER found at pixel {i} ({id})");
+                        shiftedMarkerCount++;
                     }
                 }
 

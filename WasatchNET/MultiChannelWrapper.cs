@@ -1,55 +1,47 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace WasatchNET
 {
     public enum X_AXIS_TYPE { PIXEL, WAVELENGTH, WAVENUMBER };
 
     /// <summary>
-    /// Return type used by MultiChannelWrapper acquisitions, primarily provided
-    /// to bundle x-axis and position number, as different channels will presumably
-    /// have different settings.  
+    /// Return type used by MultiChannelWrapper acquisitions, provided to bundle
+    /// x-axis and position number.  Also snapshots integration time and temperature
+    /// at time of construction.
     /// </summary>
-    /// <remarks>
-    /// Automatically populates detector temperature if/when a valid intensities
-    /// is set.  That way we don't hammer the spectrometer with temperature reads
-    /// while looping over null spectra because we're waiting on a trigger.
-    /// </remarks>
     public class ChannelSpectrum
     {
         public int pos = -1;
-        public X_AXIS_TYPE xAxisType;
-        public double[] xAxis;
-
-        public float detectorTemperatureDegC;
         public uint integrationTimeMS;
-
+        public float detectorTemperatureDegC;
+        public double[] intensities;
+        public X_AXIS_TYPE xAxisType;
         Spectrometer spec;
 
-        public ChannelSpectrum(Spectrometer spec = null)
+        public ChannelSpectrum(Spectrometer spec)
         {
             this.spec = spec;
-            if (spec != null)
-            {
-                pos = spec.multiChannelPosition;
-                xAxis = spec.wavenumbers is null ? spec.wavelengths : spec.wavenumbers;
-                xAxisType = spec.wavenumbers is null ? X_AXIS_TYPE.WAVELENGTH : X_AXIS_TYPE.WAVENUMBER;
-                integrationTimeMS = spec.integrationTimeMS;
-            }
+            pos = spec.multiChannelPosition;
+            xAxisType = spec.wavenumbers is null ? X_AXIS_TYPE.WAVELENGTH : X_AXIS_TYPE.WAVENUMBER;
+            integrationTimeMS = spec.integrationTimeMS;
+            detectorTemperatureDegC = spec.lastDetectorTemperatureDegC;
         }
 
-        public double[] intensities
+        public double[] xAxis
         {
-            get => _intensities;
-            set
+            get
             {
-                _intensities = value;
-                if (spec != null)
-                    detectorTemperatureDegC = spec.lastDetectorTemperatureDegC;
+                switch (xAxisType)
+                {
+                    case X_AXIS_TYPE.WAVELENGTH: return spec.wavelengths;
+                    case X_AXIS_TYPE.WAVENUMBER: return spec.wavenumbers;
+                    default:  return spec.pixelAxis;
+                }
             }
         }
-        double[] _intensities;
     }
 
     /// <summary>
@@ -83,6 +75,10 @@ namespace WasatchNET
         // Public attributes
         ////////////////////////////////////////////////////////////////////////
 
+        /// <summary>
+        /// Whether spectrometers in the system should automatically take 
+        /// "throwaway" acquisitions after changing integration time (default).
+        /// </summary>
         public bool integrationThrowaways
         {
             get => _integrationThrowaways;
@@ -96,14 +92,15 @@ namespace WasatchNET
         bool _integrationThrowaways = true;
 
         /// <summary>
-        /// A convenience accessor to iterate over valid positions (channels).
+        /// A convenience accessor to iterate over populated positions (channels).
         /// </summary>
         public SortedSet<int> positions { get; private set; } = new SortedSet<int>();
 
         /// <summary>
-        /// If enabled, and if reference measurements have been recorded, will
-        /// populate ChannelSpectrum objects with computed reflectance rather 
-        /// than raw intensity.
+        /// If enabled, and if reference measurements have been recorded, calls
+        /// to getSpectraAsync() and getSpectrumAsync() will populate 
+        /// ChannelSpectrum intensities with computed reflectance rather than raw 
+        /// counts.
         /// </summary>
         public bool reflectanceEnabled { get; set; }
 
@@ -111,6 +108,7 @@ namespace WasatchNET
         /// How long the triggerSpec's laserEnable signal is raised high to
         /// generate an acquisition trigger to all spectrometers.
         /// </summary>
+        ///
         /// <remarks>
         /// Per Nicolas Baron, minimum width is probably 1ms.  Note that
         /// CSharp timing is not particularly precise, so the value entered
@@ -119,35 +117,11 @@ namespace WasatchNET
         public int triggerPulseWidthMS { get; set; } = 5;
 
         /// <summary>
-        /// force double triggers to occur (QC testing only)
-        /// </summary> 
-        /// <remarks>
-        /// triggerPulseWidthMS is also used as the intra-trigger delay. If used, 
-        /// recommend that triggerPulseWidthMS be set no higher than 25% of the 
-        /// LOWEST integration time in the system's channels.  That way, assuming 
-        /// integration starts on the leading edge, there is room for the 
-        /// following sequence during even a minimum-length acquisition (giving
-        /// room for a double-trigger event to occur inside a measurement).
-        /// 
-        /// ----------+----------+----------+----------+
-        /// [trigger 1]
-        /// [integration starts and runs until it stops]
-        ///           [trig delay]
-        ///                      [trigger 2]
-        /// </remarks>
-        public bool forceDoubleTrigger { get; set; }
-
-        /// <summary>
-        /// How many extra random triggers were generated via forceDoubleTrigger.
+        /// Configure how the whole system will report spectra, so it doesn't 
+        /// vary per-channel.
         /// </summary>
-        public int doubleTriggerCount { get; set; }
+        public X_AXIS_TYPE xAxisType = X_AXIS_TYPE.WAVELENGTH;
 
-        /// <summary>
-        /// if forced double triggering is enabled, it will occur this often 
-        /// (1.0 = 100% of the time)
-        /// </summary> 
-        public double doubleTriggerPercentage { get; set; } = 0.2;
-        
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
@@ -163,7 +137,8 @@ namespace WasatchNET
         // which spectrometer controls the fan
         Spectrometer specFan = null;
 
-        Random r = new Random();
+        // when the last trigger sent
+        DateTime? lastTriggerSent = null;
 
         static object mut = new object();
 
@@ -204,6 +179,13 @@ namespace WasatchNET
         /// system, find out which are configured to provide the external hardware trigger
         /// and fan control, etc.
         /// </summary>
+        ///
+        /// <todo>
+        /// could provide some "filter" options to let the caller determine which
+        /// connected spectrometers should be considered valid channels, e.g. 
+        /// regex patterns for model, serial and/or userData.
+        /// </todo>
+        ///
         /// <returns>true on success</returns>
         public async Task<bool> openAsync()
         {
@@ -222,13 +204,13 @@ namespace WasatchNET
                 // select by default
                 spec.multiChannelSelected = true;
 
-                // don't auto-generate SW triggers on calls to Spectrometer.getSpectrum
-                // (most of our acquisitions will use hardware triggers)
-                spec.autoTrigger = false;
-
                 // ARM units seem susceptible to hanging if commanded too rapidly
-                spec.featureIdentification.usbDelayMS = 100;
+                // TODO: TUNE
+                spec.featureIdentification.usbDelayMS = 10;
 
+                // to minimize USB comm collisions, automatically capture the 
+                // temperature right after acquisition, so it can be later read
+                // from cache if desired
                 spec.readTemperatureAfterSpectrum = true;
 
                 ////////////////////////////////////////////////////////////////
@@ -300,15 +282,13 @@ namespace WasatchNET
                 // ignore them and generate unique values
                 while (specByPos.ContainsKey(pos))
                     pos++;
-                logger.info($"  storing {sn} as position {pos}");
+                logger.debug($"  storing {sn} as position {pos}");
                 specByPos[pos] = spec;
                 positions.Add(pos);
 
                 // let the Spectrometer know its own position as a 
                 // convenient back-reference
                 spec.multiChannelPosition = pos;
-
-                spec.syncResetBehavior = Spectrometer.SyncResetBehavior.LOG;
             }
 
             // ARM units (used for triggering) seem to benefit from a 
@@ -327,8 +307,12 @@ namespace WasatchNET
                 return logger.error("no spectrometers found");
 
             // take a throwaway stability spectrum 
+            // we do this WITHOUT sending a "system-level" trigger (either SW or HW)
+            // because at this point in initialization, the spectrometer is still in
+            // the defaul software-triggered mode.  It will automatically generate a
+            // SW trigger when Spectrometer.getSpectrum() is called.
             logger.header("taking initial throwaway stability spectra (SW triggered)");
-            _ = await getSpectraAsync();
+            _ = await getSpectraAsync(sendTrigger: false);
 
             logger.header("initialization completed successfully");
             return true;
@@ -408,24 +392,24 @@ namespace WasatchNET
         /// <summary>
         /// Whether external hardware triggering is currently enabled.
         /// </summary>
+        ///
         /// <remarks>
-        /// Note that with ARM spectrometers, whether hardware triggering is enabled
-        /// or not may seem somewhat philosophical; after all, ARM spectrometers 
-        /// ALWAYS respond to both HW and SW triggers, so this value doesn't actually
-        /// change anything inside the spectrometer.
+        /// Note that with ARM spectrometers, whether hardware triggering is 
+        /// enabled or not may seem somewhat philosophical; after all, ARM 
+        /// spectrometers ALWAYS respond to both HW and SW triggers, so this 
+        /// value doesn't actually change anything inside the spectrometer.
         /// 
-        /// What it does do is change behavior within WasatchNET, as normally a 
-        /// spectrometer in SW-triggered mode will automatically generate a SW 
-        /// trigger when Spectrometer.getSpectrum() is called.  Likewise, timeout
-        /// behavior changes depending on this setting, as a HW-triggered acquisition
-        /// should generally continue to block until a HW trigger is detected.
+        /// What it does is change behavior within WasatchNET, as normally a 
+        /// spectrometer with TriggerSource.INTERNAL (and autoTrigger) will 
+        /// automatically generate a SW /trigger whenever Spectrometer.getSpectrum() 
+        /// is called.  Likewise, timeout behavior changes depending on this 
+        /// setting, as a HW-triggered acquisition should generally continue to 
+        /// block until a HW trigger is detected.
         ///
         /// Of course, things are actually more complicated than that, as 
         /// Spectrometer.autoTrigger also feeds into whether the spectrometer 
         /// will internally generate a SW trigger, and there are various explicit
-        /// timeouts which can be applied even to HW-triggered spectrometers 
-        /// (such as used by MultiChannelDemo's Monte Carlo mode to check for 
-        /// spurious double-triggers).
+        /// timeouts which can be applied even to HW-triggered spectrometers.
         /// </remarks>
         public bool hardwareTriggeringEnabled
         {
@@ -450,50 +434,31 @@ namespace WasatchNET
         // Acquisition Parameters
         ////////////////////////////////////////////////////////////////////////
 
-        // could refactor this to do each spectrometer in its own Task,
-        // leaving automatic throwaways in place
+        /// <summary>
+        /// A convenience method to set all spectrometers in the system to a common
+        /// integration time.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// Would run faster if parallized with Tasks and WaitAll, but reducing
+        /// opportunities for bus collisions.
+        /// </remarks>
+        ///
+        /// <param name="ms">desired integration time</param>
+        ///
+        /// <returns>true on success</returns>
         public bool setIntegrationTimeMS(uint ms)
         {
-            logger.header($"setting all spectrometer integration times to {ms}");
-
-            List<Task> settors = new List<Task>();
-
+            logger.header($"setting all spectrometers to {ms}ms integration time");
             foreach (var pair in specByPos)
             {
                 var spec = pair.Value;
-                if (spec.multiChannelSelected)
-                    settors.Add(Task.Run(() => { spec.integrationTimeMS = ms; }));
+                if (!spec.multiChannelSelected)
+                    continue;
+
+                spec.acquisitionTimeoutMS = null;
+                spec.integrationTimeMS = ms;
             }
-
-            Task.WaitAll(settors.ToArray());
-
-            return true;
-        }
-
-        /// <summary>
-        /// This was considered as a faster way to set all integration times quickly,
-        /// performing a single throwaway acquisition on all devices in parallel, but
-        /// is not currently being tested.
-        /// </summary>
-        /// <param name="times"></param>
-        /// <returns></returns>
-        public bool setIntegrationTimesMS(Dictionary<int, uint> times)
-        {
-            List<Task> settors = new List<Task>();
-
-            logger.header("setting all integration times");
-
-            foreach (var pair in times)
-            {
-                var spec = getSpectrometer(pair.Key);
-                settors.Add(Task.Run(() => { spec.integrationTimeMS = pair.Value; }));
-            }
-
-            logger.debug("waiting for all tasks to complete");
-            Task.WaitAll(settors.ToArray());
-
-            logger.header("setIntegrationTimesMS complete");
-
             return true;
         }
 
@@ -505,8 +470,7 @@ namespace WasatchNET
         /// Use the configured spectrometer's laserEnable output to raise a brief 
         /// HW trigger pulse.
         /// </summary>
-        /// <remarks>This is async so the GUI is responsive while the trigger is high</remarks>
-        public async Task<bool> startAcquisitionAsync(bool configureTimeouts=true)
+        public async Task<bool> startAcquisitionAsync()
         {
             if (hardwareTriggeringEnabled)
             {
@@ -515,25 +479,6 @@ namespace WasatchNET
                     logger.error("no spectrometer configured with trigger control");
                     return false;
                 }
-
-                // configure each spectrometer's "even when externally triggered" timeout
-                if (configureTimeouts)
-                {
-                    foreach (var pair in specByPos)
-                    {
-                        var spec = pair.Value;
-                        if (!spec.multiChannelSelected)
-                            continue;
-
-                        // this seems sufficiently generous
-                        var ms = (uint)(500
-                                        + triggerPulseWidthMS
-                                        + spec.integrationTimeMS * 2);
-                        logger.debug($"startAcquisitionAsync: setting {spec.id} timeout to {ms}");
-                        spec.acquisitionTimeoutMS = ms;
-                    }
-                }
-
                 await sendHWTrigger();
             }
             else
@@ -550,61 +495,69 @@ namespace WasatchNET
                     spec.sendSWTrigger();
                 }
             }
-            logger.debug("startAcquisitionAsync DONE");
+            lastTriggerSent = DateTime.Now;
             return true;
         }
 
+        /// <summary>
+        /// Sends a hardware trigger using the configured spectrometer.
+        /// </summary>
+        /// <returns>true on success</returns>
         public async Task<bool> sendHWTrigger()
         {
             if (specTrigger is null)
                 return false;
 
-            int triggersToSend = 1;
-            if (forceDoubleTrigger && r.NextDouble() < doubleTriggerPercentage)
-                triggersToSend = 2;
-
-            logger.debug($"sendHWTrigger: going to send {triggersToSend} triggers");
-            for (int i = 0; i < triggersToSend; i++)
-            { 
-                logger.debug($"sending {triggerPulseWidthMS}ms HW trigger via {specTrigger.id}");
-                specTrigger.laserEnabled = true;
-                await Task.Delay(millisecondsDelay: triggerPulseWidthMS);
-                specTrigger.laserEnabled = false;
-
-                if (i > 0)
-                    doubleTriggerCount++;
-
-                // on multiple triggers, leave a gap
-                if (i + 1 < triggersToSend)
-                    await Task.Delay(triggerPulseWidthMS);
-            }
+            logger.debug($"sending {triggerPulseWidthMS}ms HW trigger via {specTrigger.id}");
+            specTrigger.laserEnabled = true;
+            await Task.Delay(millisecondsDelay: triggerPulseWidthMS);
+            specTrigger.laserEnabled = false;
+            logger.debug("sendHWTrigger done");
 
             return true;
         }
 
         /// <summary>
-        /// Get spectra from each populated position.
+        /// Provide a list of spectrometer positions, sorted in ascending order 
+        /// by integration time.
         /// </summary>
-        /// <returns>
-        /// A map of spectra for each position.  Each spectrum is itself a tuple of x- and y-axes.  
-        /// Choice of x-axis is determined by useWavenumbers.
-        /// </returns>
+        ///
         /// <remarks>
-        /// This is not executed in parallel because it doesn't really need to be.
-        /// The USB bus is serial anyway, and communication latencies are minimal
-        /// compared to integration time.  Sorting by integration time should ensure
-        /// total acquisition time is close to minimal.
+        /// This is provided so that operations which sequentially iterate over each
+        /// spectrometer as they complete an acquisition can complete in the shortest
+        /// possible time, without actually being parallel.
         /// </remarks>
-        /// <param name="sendTrigger">whether to automatically raise the HW trigger (default true)</param>
-        public async Task<List<ChannelSpectrum>> getSpectraAsync(bool sendTrigger = true)
+        public List<int> positionsByIntegTime()
         {
-            foreach (var pair in specByPos)
-            {
-                var spec = pair.Value;
-                if (!spec.multiChannelSelected)
-                    continue;
-            }
+            var sortedPos = from pair in specByPos
+                            orderby pair.Value.integrationTimeMS ascending
+                            select pair.Key;
+            return sortedPos.ToList();
+        }
 
+        /// <summary>
+        /// Get one spectrum from each populated position.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// This reads one spectrum from each selected device.  The reads are 
+        /// performed in serial for two reasons.  First, the USB bus is itself 
+        /// physically serial, so truely parallel communication isn't technically
+        /// possible.  Secondly, the attempt to interleave spectral packets over
+        /// bulk endpoints, and the randomized inter-packet timing and buffer 
+        /// sizing thus introduced, has been observed to confuse some hardware USB 
+        /// controllers. 
+        /// 
+        /// Sorting by integration time should ensure total read-out time is close 
+        /// to minimal.
+        /// </remarks>
+        ///
+        /// <param name="sendTrigger">whether to automatically send trigger(s) to
+        ///     start the acquisitions</param>
+        ///
+        /// <returns>a list of ChannelSpectra in position order</returns>
+        public async Task<List<ChannelSpectrum>> getSpectraAsync(bool sendTrigger=true)
+        {
             if (sendTrigger)
             {
                 if (!await startAcquisitionAsync())
@@ -614,45 +567,84 @@ namespace WasatchNET
                 }
             }
 
-            List<ChannelSpectrum> spectra = new List<ChannelSpectrum>();
-
-            foreach (var pair in specByPos)
+            // for a slight speedup, read spectra in ascending order by
+            // integration time
+            SortedDictionary<int, ChannelSpectrum> spectraByPos = new SortedDictionary<int, ChannelSpectrum>();
+            foreach (var pos in positionsByIntegTime())
             {
-                var pos = pair.Key;
-                var spec = pair.Value;
-
+                var spec = specByPos[pos];
                 if (!spec.multiChannelSelected)
                     continue;
 
-                logger.debug($"getting spectrum from pos {pos} {spec.serialNumber} ({spec.integrationTimeMS} ms)");
-                double[] intensities = await Task.Run(() => spec.getSpectrum());
-                ChannelSpectrum cs = new ChannelSpectrum(spec) { intensities = intensities };
-                if (reflectanceEnabled)
-                    computeReflectance(spec, cs);
-
-                spectra.Add(cs);
+                logger.debug($"getSpectraAsync: calling getSpectrumAsync({pos})");
+                var cs = await getSpectrumAsync(pos);
+                logger.debug($"getSpectraAsync: back from getSpectrumAsync({pos})");
+                spectraByPos.Add(pos, cs);
             }
 
-            return spectra;
+            // re-sort results by position, for caller convenience
+            List<ChannelSpectrum> result = new List<ChannelSpectrum>();
+            foreach (var pair in spectraByPos)
+                result.Add(pair.Value);
+
+            return result;
         }
 
         /// <summary>
-        /// Get a spectrum from one spectrometer.  Assumes HW triggering is disabled, or caller is providing.
+        /// Get a spectrum from one spectrometer.  Does not call startAcquisition,
+        /// and assumes that EITHER a hardware trigger has been initiated through
+        /// other means, or that the system is in software triggered mode.
         /// </summary>
+        ///
+        /// <remarks>
+        /// The intended use-case for "computeTimeout" is to ensure that, when 
+        /// the higher-level getSpectraAsync() is called and generates a 
+        /// startAcquisition trigger, we don't completely throw the notion of 
+        /// "reasonable timeouts" out the window.  That is, even though 
+        /// getSpectraAsync is reading spectra in serial, and therefore spectrometers
+        /// further down the line will actually have had more time to complete 
+        /// their acquisitions, we don't unfairly "penalize" earlier spectrometers 
+        /// by holding them to strict timeouts, to which later spectrometers avoided
+        /// by happenstance.  Partially this is so we can continue to use timeouts 
+        /// as for their intended purpose, to correctly alert the user and system
+        /// developers when a component is failing to meet specified tolerances and
+        /// expectations of performance.  Timeouts are there to tell us when a 
+        /// component is failing to perform as intended, and we don't want to lose
+        /// that important feedback even when measurements are artificially slowed
+        /// by having to read back spectra from numerous devices.
+        /// </remarks>
+        ///
         /// <param name="pos">spectrometer position to acquire</param>
-        /// <returns>measured spectrum</returns>
-        public async Task<ChannelSpectrum> getSpectrumAsync(int pos)
+        /// <param name="computeTimeout">compute a dynamic timeout from lastTriggerSent</param>
+        public async Task<ChannelSpectrum> getSpectrumAsync(int pos, bool computeTimeout=true)
         {
             if (!specByPos.ContainsKey(pos))
                 return null;
-
             Spectrometer spec = specByPos[pos];
 
+            if (computeTimeout && lastTriggerSent != null)
+            {
+                // make some effort to enforce reasonable timeouts, ensuring all 
+                // spectrometers are held to a fair standard (even those late on
+                // the bus)
+                logger.debug($"computing timeout for pos {pos}");
+                var now = DateTime.Now;
+                var elapsedMS = (now - lastTriggerSent.Value).TotalMilliseconds;
+                var multiDeviceOverheadMS = 200 * driver.getNumberOfSpectrometers();
+                var defaultTimeoutMS = spec.integrationTimeMS * 2 + multiDeviceOverheadMS;
+                var remainingMS = defaultTimeoutMS - elapsedMS;
+                var timeoutMS = Math.Max(remainingMS, multiDeviceOverheadMS);
+                logger.debug($"applying timeout of {timeoutMS}");
+                spec.acquisitionTimeoutMS = (uint)timeoutMS;
+            }
+
+            logger.debug($"getSpectrumAsync({pos}): calling getSpectrum");
             var intensities = await Task.Run(() => spec.getSpectrum());
+            logger.debug($"getSpectrumAsync({pos}): back from getSpectrum");
             if (intensities is null)
                 return null;
 
-            ChannelSpectrum cs = new ChannelSpectrum(spec) { intensities = intensities };
+            ChannelSpectrum cs = new ChannelSpectrum(spec) { intensities = intensities, xAxisType = xAxisType };
 
             if (reflectanceEnabled)
                 computeReflectance(spec, cs);

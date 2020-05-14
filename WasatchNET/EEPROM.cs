@@ -1325,7 +1325,6 @@ namespace WasatchNET
                     slitSizeUM = 0;
 
                     byte[] buffer = new byte[16];
-                    int errorReader = 0;
 
                     string test = buffer.ToString();
 
@@ -1594,8 +1593,6 @@ namespace WasatchNET
                     wavecalCoeffs[3] = ParseData.toFloat(buffer, 28);
                 }
 
-                int errorReader = 0;
-
                 string test = buffer.ToString();
 
                 startupIntegrationTimeMS = (ushort)HOCTSpectrometer.OctUsb.DefaultIntegrationTime();
@@ -1682,7 +1679,7 @@ namespace WasatchNET
                         {
                             setDefault(spectrometer);
                         }
-                        catch (Exception e)
+                        catch
                         {
                             return false;
                         }
@@ -1890,7 +1887,6 @@ namespace WasatchNET
             slitSizeUM = 0;
 
             byte[] buffer = new byte[16];
-            int errorReader = 0;
 
             string test = buffer.ToString();
 

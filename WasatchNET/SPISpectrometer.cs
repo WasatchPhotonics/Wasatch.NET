@@ -258,7 +258,7 @@ namespace WasatchNET
             {
                 mpsse = new FT232H(devSerialNumber, mpsseParams);
             }
-            catch (Exception e)
+            catch 
             {
                 logger.debug("Unable to create MPSSE connection with board. May be missing drivers");
                 return false;
@@ -274,7 +274,7 @@ namespace WasatchNET
                              ChipSelectPolicy = SpiDevice.CsPolicy.CsActiveLow
                          });
             }
-            catch (Exception e)
+            catch
             {
                 logger.debug("Unable to create SPI connection with board. May be missing drivers");
                 return false;

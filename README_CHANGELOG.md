@@ -4,7 +4,7 @@
     - WasatchNET
         - added FeatureMask
     - MultiChannel
-        - support serial or parallel Monte Carlo
+        - took out all the parallel bits that contribute to async failures
         - add FW to groupBox titles
 - 2020-05-05 2.2.1
     - WasatchNET
