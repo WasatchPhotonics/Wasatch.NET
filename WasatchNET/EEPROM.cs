@@ -301,7 +301,7 @@ namespace WasatchNET
             set
             {
                 EventHandler handler = EEPROMChanged;
-                if (wavecalCoeffs == null || value.Length == wavecalCoeffs.Length)
+                if (wavecalCoeffs is null || value.Length == wavecalCoeffs.Length)
                     _wavecalCoeffs = value;
                 else
                 {
@@ -845,7 +845,7 @@ namespace WasatchNET
 
             else if (spectrometer is SPISpectrometer)
             {
-                if (pages == null || pages.Count != MAX_PAGES)
+                if (pages is null || pages.Count != MAX_PAGES)
                 {
                     logger.error("EEPROM.write: need to perform a read first");
                     return false;
@@ -1009,7 +1009,7 @@ namespace WasatchNET
                 //                                                            //
                 ////////////////////////////////////////////////////////////////
 
-                if (pages == null || pages.Count != MAX_PAGES)
+                if (pages is null || pages.Count != MAX_PAGES)
                 {
                     logger.error("EEPROM.write: need to perform a read first");
                     return false;
@@ -1673,7 +1673,7 @@ namespace WasatchNET
                 for (ushort page = 0; page < MAX_PAGES; page++)
                 {
                     byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
-                    if (buf == null)
+                    if (buf is null)
                     {
                         try
                         {
@@ -1971,7 +1971,7 @@ namespace WasatchNET
             if (maxLaserPowerMW <= 0)
                 return false;
 
-            if (laserPowerCoeffs == null || laserPowerCoeffs.Length < 4)
+            if (laserPowerCoeffs is null || laserPowerCoeffs.Length < 4)
                 return false;
 
             foreach (double d in laserPowerCoeffs)

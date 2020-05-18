@@ -833,7 +833,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return firmwareRevision_;
                 byte[] buf = getCmd(op, 4);
-                if (buf == null)
+                if (buf is null)
                     return "ERROR";
                 string s = "";
                 for (int i = 3; i >= 0; i--)
@@ -856,7 +856,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return fpgaRevision_;
                 byte[] buf = getCmd(op, 7);
-                if (buf == null)
+                if (buf is null)
                     return "UNKNOWN";
                 string s = "";
                 for (uint i = 0; i < 7; i++)
@@ -930,7 +930,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return integrationTimeMS_;
                 byte[] buf = getCmd(op, 3, fullLen: 6);
-                if (buf == null)
+                if (buf is null)
                     return 0;
                 readOnce.Add(op);
                 return integrationTimeMS_ = Unpack.toUint(buf);
@@ -1443,7 +1443,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return triggerSource_;
                 byte[] buf = getCmd(Opcodes.GET_TRIGGER_SOURCE, 1);
-                if (buf == null || buf[0] > 2)
+                if (buf is null || buf[0] > 2)
                     return TRIGGER_SOURCE.ERROR;
                 readOnce.Add(op);
                 return triggerSource_ = buf[0] == 0 ? TRIGGER_SOURCE.INTERNAL : TRIGGER_SOURCE.EXTERNAL;
@@ -1943,10 +1943,10 @@ namespace WasatchNET
         /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
         internal bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
-            if ((isARM || isStroker) && buf == null)
+            if ((isARM || isStroker) && buf is null)
                 buf = new byte[8];
 
-            ushort wLength = (ushort)((buf == null) ? 0 : buf.Length);
+            ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
 
             UsbSetupPacket packet = new UsbSetupPacket(
                 HOST_TO_DEVICE, // bRequestType
@@ -2074,7 +2074,7 @@ namespace WasatchNET
             if (eeprom.badPixelList.Count == 0)
                 return;
 
-            if (spectrum == null || spectrum.Length == 0)
+            if (spectrum is null || spectrum.Length == 0)
                 return;
 
             // iterate over each bad pixel
@@ -2163,7 +2163,7 @@ namespace WasatchNET
                 currentAcquisitionCancelled = false;
 
                 double[] sum = getSpectrumRaw();
-                if (sum == null)
+                if (sum is null)
                 {
                     if (!currentAcquisitionCancelled && errorOnTimeout)
                         logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
@@ -2178,7 +2178,7 @@ namespace WasatchNET
                     {
                         // don't send a new SW trigger if using continuous acquisition
                         double[] tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
-                        if (tmp == null)
+                        if (tmp is null)
                             return null;
 
                         for (int px = 0; px < pixels; px++)
@@ -2327,7 +2327,7 @@ namespace WasatchNET
                 }
 
                 // verify that exactly the number expected were received
-                if (subspectrum == null || subspectrum.Length != pixelsPerEndpoint)
+                if (subspectrum is null || subspectrum.Length != pixelsPerEndpoint)
                 {
                     if (!currentAcquisitionCancelled && errorOnTimeout)
                         logger.error($"failed when reading subspectrum from 0x{spectralReader.EpNum:x2} ({id})");

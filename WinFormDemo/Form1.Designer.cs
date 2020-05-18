@@ -78,6 +78,7 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            this.checkBoxContinuousAcquisition = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -181,7 +182,7 @@
             this.setDFUModeToolStripMenuItem});
             this.toolStripMenuItemTest.Enabled = false;
             this.toolStripMenuItemTest.Name = "toolStripMenuItemTest";
-            this.toolStripMenuItemTest.Size = new System.Drawing.Size(40, 20);
+            this.toolStripMenuItemTest.Size = new System.Drawing.Size(39, 20);
             this.toolStripMenuItemTest.Text = "Test";
             // 
             // toolStripMenuItemTestWriteEEPROM
@@ -210,7 +211,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(217, 192);
+            this.groupBoxSettings.Size = new System.Drawing.Size(218, 192);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -221,7 +222,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(213, 175);
+            this.treeViewSettings.Size = new System.Drawing.Size(214, 175);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -271,6 +272,7 @@
             this.groupBoxControl.Controls.Add(this.checkBoxLaserEnable);
             this.groupBoxControl.Controls.Add(this.label3);
             this.groupBoxControl.Controls.Add(this.label5);
+            this.groupBoxControl.Controls.Add(this.checkBoxContinuousAcquisition);
             this.groupBoxControl.Location = new System.Drawing.Point(0, 41);
             this.groupBoxControl.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxControl.Name = "groupBoxControl";
@@ -283,11 +285,11 @@
             // checkBoxExternalTriggerSource
             // 
             this.checkBoxExternalTriggerSource.AutoSize = true;
-            this.checkBoxExternalTriggerSource.Location = new System.Drawing.Point(52, 132);
+            this.checkBoxExternalTriggerSource.Location = new System.Drawing.Point(75, 132);
             this.checkBoxExternalTriggerSource.Name = "checkBoxExternalTriggerSource";
-            this.checkBoxExternalTriggerSource.Size = new System.Drawing.Size(130, 17);
+            this.checkBoxExternalTriggerSource.Size = new System.Drawing.Size(95, 17);
             this.checkBoxExternalTriggerSource.TabIndex = 18;
-            this.checkBoxExternalTriggerSource.Text = "external trigger source";
+            this.checkBoxExternalTriggerSource.Text = "external trigger";
             this.checkBoxExternalTriggerSource.UseVisualStyleBackColor = true;
             this.checkBoxExternalTriggerSource.CheckedChanged += new System.EventHandler(this.checkBoxExternalTriggerSource_CheckedChanged);
             // 
@@ -320,7 +322,7 @@
             0,
             0,
             65536});
-            this.numericUpDownLaserPowerPerc.Location = new System.Drawing.Point(134, 108);
+            this.numericUpDownLaserPowerPerc.Location = new System.Drawing.Point(15, 110);
             this.numericUpDownLaserPowerPerc.Name = "numericUpDownLaserPowerPerc";
             this.numericUpDownLaserPowerPerc.Size = new System.Drawing.Size(48, 20);
             this.numericUpDownLaserPowerPerc.TabIndex = 14;
@@ -464,9 +466,9 @@
             this.label1.Location = new System.Drawing.Point(68, 19);
             this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(100, 13);
+            this.label1.Size = new System.Drawing.Size(52, 13);
             this.label1.TabIndex = 1;
-            this.label1.Text = "integration time (ms)";
+            this.label1.Text = "integ (ms)";
             // 
             // buttonStart
             // 
@@ -524,9 +526,9 @@
             this.label2.Location = new System.Drawing.Point(68, 41);
             this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(80, 13);
+            this.label2.Size = new System.Drawing.Size(51, 13);
             this.label2.TabIndex = 3;
-            this.label2.Text = "scan averaging";
+            this.label2.Text = "scan avg";
             // 
             // checkBoxTakeDark
             // 
@@ -556,7 +558,7 @@
             // checkBoxLaserEnable
             // 
             this.checkBoxLaserEnable.AutoSize = true;
-            this.checkBoxLaserEnable.Location = new System.Drawing.Point(52, 109);
+            this.checkBoxLaserEnable.Location = new System.Drawing.Point(75, 112);
             this.checkBoxLaserEnable.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxLaserEnable.Name = "checkBoxLaserEnable";
             this.checkBoxLaserEnable.Size = new System.Drawing.Size(83, 17);
@@ -578,7 +580,7 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(182, 112);
+            this.label5.Location = new System.Drawing.Point(60, 113);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(15, 13);
             this.label5.TabIndex = 15;
@@ -691,6 +693,17 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
+            // checkBoxContinuousAcquisition
+            // 
+            this.checkBoxContinuousAcquisition.AutoSize = true;
+            this.checkBoxContinuousAcquisition.Location = new System.Drawing.Point(129, 41);
+            this.checkBoxContinuousAcquisition.Name = "checkBoxContinuousAcquisition";
+            this.checkBoxContinuousAcquisition.Size = new System.Drawing.Size(78, 17);
+            this.checkBoxContinuousAcquisition.TabIndex = 19;
+            this.checkBoxContinuousAcquisition.Text = "continuous";
+            this.checkBoxContinuousAcquisition.UseVisualStyleBackColor = true;
+            this.checkBoxContinuousAcquisition.CheckedChanged += new System.EventHandler(this.checkBoxContinuousAcquisition_CheckedChanged);
+            // 
             // Form1
             // 
             this.AcceptButton = this.buttonInitialize;
@@ -785,6 +798,7 @@
         private System.Windows.Forms.NumericUpDown numericUpDownDetectorSetpointDegC;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.CheckBox checkBoxExternalTriggerSource;
+        private System.Windows.Forms.CheckBox checkBoxContinuousAcquisition;
     }
 }
 
