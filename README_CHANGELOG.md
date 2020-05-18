@@ -1,8 +1,10 @@
 # Wasatch.NET Changelog
 
+- 2020-05-18 2.2.6
+    - fixed EEPROM.write on ARM
+    - added MultiChannelWrapper.scanAveraging
 - 2020-05-18 2.2.5
     - quick design change, HOCT no longer auto writes to EEPROM on close
-
 - 2020-05-18 2.2.4
     - WasatchNET
         - added FeatureMask
@@ -10,16 +12,13 @@
     - MultiChannel
         - serialized operations to avoid async failures
         - add FW to groupBox titles
-
 - 2020-05-12 2.2.3
     - added full model compound EEPROM field for bigger model number support
 	- reorganized some EEPROM fields
-
 - 2020-05-08 2.2.2
     - added readback to fix issue with HOCT eeprom write
 	- added USB reset on HOCT buffer clear errors (may or may not be needed)
 	- added some attempted error logging and handling for HOCT
-
 - 2020-05-05 2.2.1
     - WasatchNET
         - added WasatchMath.dll

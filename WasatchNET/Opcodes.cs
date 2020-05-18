@@ -156,6 +156,7 @@ namespace WasatchNET
             armInvertedRetvals.Add(Opcodes.SET_LASER_MOD_PULSE_DELAY);
             armInvertedRetvals.Add(Opcodes.SET_CONTINUOUS_ACQUISITION);
             armInvertedRetvals.Add(Opcodes.SET_CONTINUOUS_FRAMES);
+            armInvertedRetvals.Add(Opcodes.SET_MODEL_CONFIG_ARM);
         }
     }
 }

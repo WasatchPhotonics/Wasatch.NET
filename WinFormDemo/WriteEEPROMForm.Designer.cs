@@ -93,6 +93,16 @@
             this.textBoxCalibrationDate = new System.Windows.Forms.TextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.groupBox11 = new System.Windows.Forms.GroupBox();
+            this.label18 = new System.Windows.Forms.Label();
+            this.label19 = new System.Windows.Forms.Label();
+            this.label20 = new System.Windows.Forms.Label();
+            this.label21 = new System.Windows.Forms.Label();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.textBoxGainEven = new System.Windows.Forms.TextBox();
+            this.textBoxOffsetEven = new System.Windows.Forms.TextBox();
+            this.textBoxGainOdd = new System.Windows.Forms.TextBox();
+            this.textBoxOffsetOdd = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownExcitationNM)).BeginInit();
             this.groupBoxWritable.SuspendLayout();
             this.groupBox10.SuspendLayout();
@@ -128,6 +138,8 @@
             this.groupBox3.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox1.SuspendLayout();
+            this.groupBox11.SuspendLayout();
+            this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // numericUpDownExcitationNM
@@ -146,6 +158,7 @@
             // 
             // groupBoxWritable
             // 
+            this.groupBoxWritable.Controls.Add(this.groupBox11);
             this.groupBoxWritable.Controls.Add(this.groupBox10);
             this.groupBoxWritable.Controls.Add(this.buttonSave);
             this.groupBoxWritable.Controls.Add(this.groupBox7);
@@ -156,7 +169,7 @@
             this.groupBoxWritable.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxWritable.Location = new System.Drawing.Point(0, 0);
             this.groupBoxWritable.Name = "groupBoxWritable";
-            this.groupBoxWritable.Size = new System.Drawing.Size(516, 483);
+            this.groupBoxWritable.Size = new System.Drawing.Size(770, 483);
             this.groupBoxWritable.TabIndex = 1;
             this.groupBoxWritable.TabStop = false;
             this.groupBoxWritable.Text = "Customer-writable fields";
@@ -1100,11 +1113,113 @@
             this.label1.TabIndex = 1;
             this.label1.Text = "Excitation Wavelength (nm)";
             // 
+            // groupBox11
+            // 
+            this.groupBox11.Controls.Add(this.tableLayoutPanel1);
+            this.groupBox11.Location = new System.Drawing.Point(517, 75);
+            this.groupBox11.Name = "groupBox11";
+            this.groupBox11.Size = new System.Drawing.Size(200, 100);
+            this.groupBox11.TabIndex = 38;
+            this.groupBox11.TabStop = false;
+            this.groupBox11.Text = "Gain && Offset";
+            // 
+            // label18
+            // 
+            this.label18.AutoSize = true;
+            this.label18.Location = new System.Drawing.Point(3, 13);
+            this.label18.Name = "label18";
+            this.label18.Size = new System.Drawing.Size(29, 13);
+            this.label18.TabIndex = 0;
+            this.label18.Text = "Gain";
+            // 
+            // label19
+            // 
+            this.label19.AutoSize = true;
+            this.label19.Location = new System.Drawing.Point(3, 39);
+            this.label19.Name = "label19";
+            this.label19.Size = new System.Drawing.Size(35, 13);
+            this.label19.TabIndex = 1;
+            this.label19.Text = "Offset";
+            // 
+            // label20
+            // 
+            this.label20.AutoSize = true;
+            this.label20.Location = new System.Drawing.Point(44, 0);
+            this.label20.Name = "label20";
+            this.label20.Size = new System.Drawing.Size(32, 13);
+            this.label20.TabIndex = 2;
+            this.label20.Text = "Even";
+            // 
+            // label21
+            // 
+            this.label21.AutoSize = true;
+            this.label21.Location = new System.Drawing.Point(120, 0);
+            this.label21.Name = "label21";
+            this.label21.Size = new System.Drawing.Size(27, 13);
+            this.label21.TabIndex = 3;
+            this.label21.Text = "Odd";
+            // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 3;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel1.Controls.Add(this.label20, 1, 0);
+            this.tableLayoutPanel1.Controls.Add(this.label19, 0, 2);
+            this.tableLayoutPanel1.Controls.Add(this.label21, 2, 0);
+            this.tableLayoutPanel1.Controls.Add(this.label18, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.textBoxGainEven, 1, 1);
+            this.tableLayoutPanel1.Controls.Add(this.textBoxOffsetEven, 1, 2);
+            this.tableLayoutPanel1.Controls.Add(this.textBoxGainOdd, 2, 1);
+            this.tableLayoutPanel1.Controls.Add(this.textBoxOffsetOdd, 2, 2);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 16);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 3;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(194, 81);
+            this.tableLayoutPanel1.TabIndex = 4;
+            // 
+            // textBoxGainEven
+            // 
+            this.textBoxGainEven.Location = new System.Drawing.Point(44, 16);
+            this.textBoxGainEven.Name = "textBoxGainEven";
+            this.textBoxGainEven.Size = new System.Drawing.Size(70, 20);
+            this.textBoxGainEven.TabIndex = 4;
+            this.textBoxGainEven.TextChanged += new System.EventHandler(this.textBoxGainEven_TextChanged);
+            // 
+            // textBoxOffsetEven
+            // 
+            this.textBoxOffsetEven.Location = new System.Drawing.Point(44, 42);
+            this.textBoxOffsetEven.Name = "textBoxOffsetEven";
+            this.textBoxOffsetEven.Size = new System.Drawing.Size(70, 20);
+            this.textBoxOffsetEven.TabIndex = 5;
+            this.textBoxOffsetEven.TextChanged += new System.EventHandler(this.textBoxOffsetEven_TextChanged);
+            // 
+            // textBoxGainOdd
+            // 
+            this.textBoxGainOdd.Location = new System.Drawing.Point(120, 16);
+            this.textBoxGainOdd.Name = "textBoxGainOdd";
+            this.textBoxGainOdd.Size = new System.Drawing.Size(70, 20);
+            this.textBoxGainOdd.TabIndex = 6;
+            this.textBoxGainOdd.TextChanged += new System.EventHandler(this.textBoxGainOdd_TextChanged);
+            // 
+            // textBoxOffsetOdd
+            // 
+            this.textBoxOffsetOdd.Location = new System.Drawing.Point(120, 42);
+            this.textBoxOffsetOdd.Name = "textBoxOffsetOdd";
+            this.textBoxOffsetOdd.Size = new System.Drawing.Size(70, 20);
+            this.textBoxOffsetOdd.TabIndex = 7;
+            this.textBoxOffsetOdd.TextChanged += new System.EventHandler(this.textBoxOffsetOdd_TextChanged);
+            // 
             // WriteEEPROMForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(516, 483);
+            this.ClientSize = new System.Drawing.Size(770, 483);
             this.Controls.Add(this.groupBoxWritable);
             this.Name = "WriteEEPROMForm";
             this.Text = "Update EEPROM";
@@ -1150,6 +1265,9 @@
             this.groupBox2.PerformLayout();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.groupBox11.ResumeLayout(false);
+            this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1221,5 +1339,15 @@
         private System.Windows.Forms.NumericUpDown numericUpDownBadPixel2;
         private System.Windows.Forms.NumericUpDown numericUpDownBadPixel1;
         private System.Windows.Forms.NumericUpDown numericUpDownBadPixel0;
+        private System.Windows.Forms.GroupBox groupBox11;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.Label label20;
+        private System.Windows.Forms.Label label19;
+        private System.Windows.Forms.Label label21;
+        private System.Windows.Forms.Label label18;
+        private System.Windows.Forms.TextBox textBoxGainEven;
+        private System.Windows.Forms.TextBox textBoxOffsetEven;
+        private System.Windows.Forms.TextBox textBoxGainOdd;
+        private System.Windows.Forms.TextBox textBoxOffsetOdd;
     }
 }

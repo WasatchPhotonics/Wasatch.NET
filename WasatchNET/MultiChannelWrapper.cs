@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using System.Diagnostics.Tracing;
 
 namespace WasatchNET
 {
@@ -427,6 +428,19 @@ namespace WasatchNET
         bool _hardwareTriggeringEnabled;
 
         /// <summary>
+        /// At the moment, we have no validated way to encapsulate scan averaging
+        /// within WasatchNET when using HW drivers.  Therefore, we're doing the
+        /// looping and averaging in getSpectraAsync, controlled by this field.
+        /// </summary>
+        public uint scanAveraging 
+        {
+            get => _scanAveraging;
+            set => _scanAveraging = Math.Max(1, value);
+        }
+        uint _scanAveraging = 1;
+
+        #if false
+        /// <summary>
         /// Whether scan averaging should be implemented via "continuous acquisition"
         /// within the spectrometer (realistically, the only way to support this feature
         /// while using hardware triggers).
@@ -454,6 +468,7 @@ namespace WasatchNET
             }
         }
         bool _useContinuousAcquisition;
+        #endif
 
         ////////////////////////////////////////////////////////////////////////
         // Acquisition Parameters
@@ -575,6 +590,9 @@ namespace WasatchNET
         /// 
         /// Sorting by integration time should ensure total read-out time is close 
         /// to minimal.
+        ///
+        /// At present, all scan averaging (SW and HW triggered) is provided by 
+        /// this method.
         /// </remarks>
         ///
         /// <param name="sendTrigger">whether to automatically send trigger(s) to
@@ -583,34 +601,61 @@ namespace WasatchNET
         /// <returns>a list of ChannelSpectra in position order</returns>
         public async Task<List<ChannelSpectrum>> getSpectraAsync(bool sendTrigger=true)
         {
-            if (sendTrigger)
-            {
-                if (!await startAcquisitionAsync())
-                {
-                    logger.error("Unable to start acquisition");
-                    return null;
-                }
-            }
+            uint count = 0;
 
-            // for a slight speedup, read spectra in ascending order by
-            // integration time
             SortedDictionary<int, ChannelSpectrum> spectraByPos = new SortedDictionary<int, ChannelSpectrum>();
-            foreach (var pos in positionsByIntegTime())
+            do
             {
-                var spec = specByPos[pos];
-                if (!spec.multiChannelSelected)
-                    continue;
+                if (sendTrigger)
+                {
+                    if (!await startAcquisitionAsync())
+                    {
+                        logger.error("Unable to start acquisition");
+                        return null;
+                    }
+                }
 
-                logger.debug($"getSpectraAsync: calling getSpectrumAsync({pos})");
-                var cs = await getSpectrumAsync(pos);
-                logger.debug($"getSpectraAsync: back from getSpectrumAsync({pos})");
-                spectraByPos.Add(pos, cs);
-            }
+                // for a slight speedup, read spectra in ascending order by
+                // integration time
+                foreach (var pos in positionsByIntegTime())
+                {
+                    var spec = specByPos[pos];
+                    if (!spec.multiChannelSelected)
+                        continue;
 
-            // re-sort results by position, for caller convenience
-            List<ChannelSpectrum> result = new List<ChannelSpectrum>();
+                    logger.debug($"getSpectraAsync: calling getSpectrumAsync({pos})");
+                    var cs = await getSpectrumAsync(pos);
+                    logger.debug($"getSpectraAsync: back from getSpectrumAsync({pos})");
+                    if (cs is null)
+                        continue;
+
+                    if (spectraByPos.ContainsKey(pos))
+                    {
+                        // add existing intensities into the newest ChannelSpectrum
+                        var old = spectraByPos[pos].intensities;
+                        for (int i = 0; i < old.Length; i++)
+                            cs.intensities[i] += old[i];
+                        spectraByPos[pos] = cs; // keep newest (for temperature etc)
+                    }
+                    else
+                    {
+                        spectraByPos.Add(pos, cs);
+                    }
+                }
+                count++;
+                logger.debug($"getSpectraAsync: count = {count}");
+            } while (count < scanAveraging);
+
+            // re-sort results by position, for caller convenience, and divide out
+            List <ChannelSpectrum> result = new List<ChannelSpectrum>();
             foreach (var pair in spectraByPos)
-                result.Add(pair.Value);
+            {
+                var cs = pair.Value;
+                if (scanAveraging > 1)
+                    for (int i = 0; i < cs.intensities.Length; i++)
+                        cs.intensities[i] /= scanAveraging;
+                result.Add(cs);
+            }
 
             return result;
         }
