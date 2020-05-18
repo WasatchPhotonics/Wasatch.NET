@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-05-18 2.2.5
+    - quick design change, HOCT no longer auto writes to EEPROM on close
+
 - 2020-05-18 2.2.4
     - WasatchNET
         - added FeatureMask

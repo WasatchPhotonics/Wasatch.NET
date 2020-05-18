@@ -1080,9 +1080,6 @@ namespace WasatchNET
 
                 FrameProcess.Wait();
 
-
-                eeprom.write();
-
                 bool closeOk = OctUsb.CloseDevice();
                 if (closeOk)
                     commsOpen = false;
