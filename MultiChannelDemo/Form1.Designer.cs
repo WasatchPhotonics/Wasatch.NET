@@ -138,6 +138,7 @@
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            this.checkBoxContinuousAcquisition = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -741,17 +742,18 @@
             this.groupBoxBatch.Controls.Add(this.numericUpDownBatchMin);
             this.groupBoxBatch.Location = new System.Drawing.Point(3, 458);
             this.groupBoxBatch.Name = "groupBoxBatch";
-            this.groupBoxBatch.Size = new System.Drawing.Size(201, 194);
+            this.groupBoxBatch.Size = new System.Drawing.Size(201, 218);
             this.groupBoxBatch.TabIndex = 1;
             this.groupBoxBatch.TabStop = false;
             this.groupBoxBatch.Text = "Monte Carlo";
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.checkBoxContinuousAcquisition);
             this.groupBox4.Controls.Add(this.checkBoxIntegThrowaways);
             this.groupBox4.Location = new System.Drawing.Point(6, 145);
             this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(187, 41);
+            this.groupBox4.Size = new System.Drawing.Size(187, 64);
             this.groupBox4.TabIndex = 6;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Misc";
@@ -1493,6 +1495,17 @@
             this.saveFileDialog.SupportMultiDottedExtensions = true;
             this.saveFileDialog.Title = "Monte Carlo Batch Report";
             // 
+            // checkBoxContinuousAcquisition
+            // 
+            this.checkBoxContinuousAcquisition.AutoSize = true;
+            this.checkBoxContinuousAcquisition.Location = new System.Drawing.Point(6, 42);
+            this.checkBoxContinuousAcquisition.Name = "checkBoxContinuousAcquisition";
+            this.checkBoxContinuousAcquisition.Size = new System.Drawing.Size(131, 17);
+            this.checkBoxContinuousAcquisition.TabIndex = 2;
+            this.checkBoxContinuousAcquisition.Text = "continuous acquisition";
+            this.checkBoxContinuousAcquisition.UseVisualStyleBackColor = true;
+            this.checkBoxContinuousAcquisition.CheckedChanged += new System.EventHandler(this.checkBoxContinuousAcquisition_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1695,6 +1708,7 @@
         private System.Windows.Forms.Button buttonUnselectAll;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.CheckBox checkBoxIntegThrowaways;
+        private System.Windows.Forms.CheckBox checkBoxContinuousAcquisition;
     }
 }
 

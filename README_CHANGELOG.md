@@ -3,6 +3,7 @@
 - 2020-05-?? 2.2.?
     - WasatchNET
         - added FeatureMask
+        - added Spectrometer.scanAveragingIsContinuous
     - MultiChannel
         - took out all the parallel bits that contribute to async failures
         - add FW to groupBox titles

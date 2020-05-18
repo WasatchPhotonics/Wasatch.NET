@@ -426,6 +426,31 @@ namespace WasatchNET
         }
         bool _hardwareTriggeringEnabled;
 
+        /// <summary>
+        /// Whether scan averaging should be implemented via "continuous acquisition"
+        /// within the spectrometer (realistically, the only way to support this feature
+        /// while using hardware triggers).
+        /// </summary>
+        public bool useContinuousAcquisition
+        {
+            get => _useContinuousAcquisition;
+            set
+            {
+                foreach (var pair in specByPos)
+                {
+                    var spec = pair.Value;
+                    if (!spec.multiChannelSelected)
+                        continue;
+
+                    logger.debug($"pos {pair.Key}: scanAveragingIsContinuous -> {value}");
+                    spec.scanAveragingIsContinuous = value;
+                }
+                _useContinuousAcquisition = value;
+
+            }
+        }
+        bool _useContinuousAcquisition;
+
         ////////////////////////////////////////////////////////////////////////
         // Acquisition Parameters
         ////////////////////////////////////////////////////////////////////////

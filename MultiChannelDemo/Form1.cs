@@ -220,6 +220,8 @@ namespace MultiChannelDemo
             var enabled = checkBoxTriggerEnableAll.Checked;
             logger.header("Hardware Triggering {0}", enabled ? "enabled" : "disabled");
             wrapper.hardwareTriggeringEnabled = enabled;
+
+            updateScanAveragingAvailability();
         }
 
         // user clicked the "fan control" system checkbox
@@ -791,18 +793,6 @@ namespace MultiChannelDemo
                     sw.Write(string.Join<string>(", ", specShifts ));
                     sw.WriteLine();
 
-                    // run batch at evenly-stepped increments
-                    if (false)
-                    {
-                        int iterationElapsedMS = (int)(DateTime.Now - iterationStart).TotalMilliseconds;
-                        int sleepMS = WORKER_PERIOD_MS - iterationElapsedMS;
-
-                        if (sleepMS > 0)
-                        {
-                            logger.debug($"workerBatch: sleeping {sleepMS}ms");
-                            Thread.Sleep(sleepMS);
-                        }
-                    }
                     triggerCount++;
                 }
             }
@@ -877,6 +867,21 @@ namespace MultiChannelDemo
         private void checkBoxIntegThrowaways_CheckedChanged(object sender, EventArgs e)
         {
             wrapper.integrationThrowaways = checkBoxIntegThrowaways.Checked;
+        }
+
+        private void checkBoxContinuousAcquisition_CheckedChanged(object sender, EventArgs e)
+        {
+            var enabled = checkBoxContinuousAcquisition.Checked;
+            wrapper.useContinuousAcquisition = enabled;
+            updateScanAveragingAvailability();
+        }
+
+        void updateScanAveragingAvailability()
+        {
+            if (wrapper.hardwareTriggeringEnabled)
+                numericUpDownScansToAverage.Enabled = wrapper.useContinuousAcquisition;
+            else
+                numericUpDownScansToAverage.Enabled = true;
         }
     }
 }
