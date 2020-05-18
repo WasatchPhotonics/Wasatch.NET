@@ -99,7 +99,7 @@ namespace WinFormDemo
 
         void updateCurrentSpectrometer()
         {
-            if (currentSpectrometer == null)
+            if (currentSpectrometer is null)
             {
                 groupBoxSettings.Enabled =
                 groupBoxControl.Enabled =
@@ -178,7 +178,7 @@ namespace WinFormDemo
                 {
                     SpectrometerState state = spectrometerStates[spectrometer];
 
-                    if (state.spectrum == null)
+                    if (state.spectrum is null)
                     {
                         // logger.debug("not graphing because spectrum null");
                         continue;
@@ -447,7 +447,7 @@ namespace WinFormDemo
             lock (spectrometers)
             {
                 SpectrometerState state = spectrometerStates[currentSpectrometer];
-                if (state.spectrum == null)
+                if (state.spectrum is null)
                     return;
 
                 state.save();
@@ -462,7 +462,7 @@ namespace WinFormDemo
 
         private void toolStripMenuItemTestWriteEEPROM_Click(object sender, EventArgs e)
         {
-            if (currentSpectrometer == null)
+            if (currentSpectrometer is null)
                 return;
 
             WriteEEPROMForm eepromForm = new WriteEEPROMForm(currentSpectrometer.eeprom);
@@ -471,7 +471,7 @@ namespace WinFormDemo
 
         private void setDFUModeToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (currentSpectrometer == null)
+            if (currentSpectrometer is null)
                 return;
 
             DialogResult result = MessageBox.Show("Are you sure? This mode is used for reflashing ARM firmware, and could brick your spectrometer.",
@@ -572,7 +572,7 @@ namespace WinFormDemo
 
                 // logger.debug("workerAcquisition: getting spectrum");
                 double[] raw = spectrometer.getSpectrum();
-                if (raw == null)
+                if (raw is null)
                 {
                     Thread.Sleep(100);
                     continue;
@@ -639,11 +639,19 @@ namespace WinFormDemo
 
         private void checkBoxExternalTriggerSource_CheckedChanged(object sender, EventArgs e)
         {
-            if (currentSpectrometer == null)
+            if (currentSpectrometer is null)
                 return;
 
             currentSpectrometer.triggerSource = checkBoxExternalTriggerSource.Checked ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
             logger.debug("GUI: trigger source now {0}", currentSpectrometer.triggerSource);
+        }
+
+        private void checkBoxContinuousAcquisition_CheckedChanged(object sender, EventArgs e)
+        {
+            if (currentSpectrometer is null)
+                return;
+
+            currentSpectrometer.scanAveragingIsContinuous = checkBoxContinuousAcquisition.Checked;
         }
     }
 }

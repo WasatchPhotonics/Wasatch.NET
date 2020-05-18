@@ -54,8 +54,6 @@
             this.flowLayoutPanelControls = new System.Windows.Forms.FlowLayoutPanel();
             this.groupBoxSystem = new System.Windows.Forms.GroupBox();
             this.buttonUnselectAll = new System.Windows.Forms.Button();
-            this.label12 = new System.Windows.Forms.Label();
-            this.numericUpDownTriggerWidthMS = new System.Windows.Forms.NumericUpDown();
             this.label11 = new System.Windows.Forms.Label();
             this.numericUpDownIntegrationTimeMS = new System.Windows.Forms.NumericUpDown();
             this.label10 = new System.Windows.Forms.Label();
@@ -86,11 +84,9 @@
             this.buttonAcquireAll = new System.Windows.Forms.Button();
             this.buttonInit = new System.Windows.Forms.Button();
             this.groupBoxBatch = new System.Windows.Forms.GroupBox();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.checkBoxDoubleTriggerAttempt = new System.Windows.Forms.CheckBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.numericUpDownDoubleTriggerProbability = new System.Windows.Forms.NumericUpDown();
-            this.checkBoxDoubleTriggerEnable = new System.Windows.Forms.CheckBox();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.checkBoxContinuousAcquisition = new System.Windows.Forms.CheckBox();
+            this.checkBoxIntegThrowaways = new System.Windows.Forms.CheckBox();
             this.labelBatchStatus = new System.Windows.Forms.Label();
             this.groupBoxIntegrationTimeLimits = new System.Windows.Forms.GroupBox();
             this.numericUpDownIntegrationTimeMSMin = new System.Windows.Forms.NumericUpDown();
@@ -154,7 +150,6 @@
             this.groupBoxControls.SuspendLayout();
             this.flowLayoutPanelControls.SuspendLayout();
             this.groupBoxSystem.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownTriggerWidthMS)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegrationTimeMS)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownScansToAverage)).BeginInit();
             this.groupBoxOptimization.SuspendLayout();
@@ -165,8 +160,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpMax)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpMin)).BeginInit();
             this.groupBoxBatch.SuspendLayout();
-            this.groupBox2.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDoubleTriggerProbability)).BeginInit();
+            this.groupBox4.SuspendLayout();
             this.groupBoxIntegrationTimeLimits.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegrationTimeMSMin)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegrationTimeMSMax)).BeginInit();
@@ -291,8 +285,6 @@
             // groupBoxSystem
             // 
             this.groupBoxSystem.Controls.Add(this.buttonUnselectAll);
-            this.groupBoxSystem.Controls.Add(this.label12);
-            this.groupBoxSystem.Controls.Add(this.numericUpDownTriggerWidthMS);
             this.groupBoxSystem.Controls.Add(this.label11);
             this.groupBoxSystem.Controls.Add(this.numericUpDownIntegrationTimeMS);
             this.groupBoxSystem.Controls.Add(this.label10);
@@ -314,7 +306,7 @@
             this.groupBoxSystem.Controls.Add(this.buttonInit);
             this.groupBoxSystem.Location = new System.Drawing.Point(3, 3);
             this.groupBoxSystem.Name = "groupBoxSystem";
-            this.groupBoxSystem.Size = new System.Drawing.Size(201, 476);
+            this.groupBoxSystem.Size = new System.Drawing.Size(201, 449);
             this.groupBoxSystem.TabIndex = 0;
             this.groupBoxSystem.TabStop = false;
             this.groupBoxSystem.Text = "System";
@@ -328,39 +320,6 @@
             this.buttonUnselectAll.Text = "Unselect All";
             this.buttonUnselectAll.UseVisualStyleBackColor = true;
             this.buttonUnselectAll.Click += new System.EventHandler(this.buttonUnselectAll_Click);
-            // 
-            // label12
-            // 
-            this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(87, 268);
-            this.label12.Name = "label12";
-            this.label12.Size = new System.Drawing.Size(86, 13);
-            this.label12.TabIndex = 20;
-            this.label12.Text = "trigger width (ms)";
-            // 
-            // numericUpDownTriggerWidthMS
-            // 
-            this.numericUpDownTriggerWidthMS.Location = new System.Drawing.Point(13, 266);
-            this.numericUpDownTriggerWidthMS.Maximum = new decimal(new int[] {
-            200,
-            0,
-            0,
-            0});
-            this.numericUpDownTriggerWidthMS.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.numericUpDownTriggerWidthMS.Name = "numericUpDownTriggerWidthMS";
-            this.numericUpDownTriggerWidthMS.Size = new System.Drawing.Size(68, 20);
-            this.numericUpDownTriggerWidthMS.TabIndex = 19;
-            this.numericUpDownTriggerWidthMS.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.numericUpDownTriggerWidthMS.Value = new decimal(new int[] {
-            50,
-            0,
-            0,
-            0});
-            this.numericUpDownTriggerWidthMS.ValueChanged += new System.EventHandler(this.numericUpDownTriggerWidthMS_ValueChanged);
             // 
             // label11
             // 
@@ -434,7 +393,7 @@
             this.groupBoxOptimization.Controls.Add(this.label8);
             this.groupBoxOptimization.Controls.Add(this.numericUpDownOptimizeThreshold);
             this.groupBoxOptimization.Controls.Add(this.numericUpDownOptimizeTarget);
-            this.groupBoxOptimization.Location = new System.Drawing.Point(6, 293);
+            this.groupBoxOptimization.Location = new System.Drawing.Point(6, 266);
             this.groupBoxOptimization.Name = "groupBoxOptimization";
             this.groupBoxOptimization.Size = new System.Drawing.Size(187, 72);
             this.groupBoxOptimization.TabIndex = 17;
@@ -524,7 +483,7 @@
             this.groupBoxInterpolation.Controls.Add(this.numericUpDownInterpMax);
             this.groupBoxInterpolation.Controls.Add(this.numericUpDownInterpMin);
             this.groupBoxInterpolation.Enabled = false;
-            this.groupBoxInterpolation.Location = new System.Drawing.Point(6, 371);
+            this.groupBoxInterpolation.Location = new System.Drawing.Point(6, 344);
             this.groupBoxInterpolation.Name = "groupBoxInterpolation";
             this.groupBoxInterpolation.Size = new System.Drawing.Size(187, 96);
             this.groupBoxInterpolation.TabIndex = 18;
@@ -737,7 +696,7 @@
             this.checkBoxTriggerEnableAll.Name = "checkBoxTriggerEnableAll";
             this.checkBoxTriggerEnableAll.Size = new System.Drawing.Size(95, 17);
             this.checkBoxTriggerEnableAll.TabIndex = 2;
-            this.checkBoxTriggerEnableAll.Text = "Trigger Enable";
+            this.checkBoxTriggerEnableAll.Text = "HW Triggering";
             this.toolTip1.SetToolTip(this.checkBoxTriggerEnableAll, "Turn hardware triggering on or off for all spectrometers");
             this.checkBoxTriggerEnableAll.UseVisualStyleBackColor = true;
             this.checkBoxTriggerEnableAll.CheckedChanged += new System.EventHandler(this.checkBoxTriggerEnableAll_CheckedChanged);
@@ -775,76 +734,54 @@
             // 
             // groupBoxBatch
             // 
-            this.groupBoxBatch.Controls.Add(this.groupBox2);
+            this.groupBoxBatch.Controls.Add(this.groupBox4);
             this.groupBoxBatch.Controls.Add(this.labelBatchStatus);
             this.groupBoxBatch.Controls.Add(this.groupBoxIntegrationTimeLimits);
             this.groupBoxBatch.Controls.Add(this.label2);
             this.groupBoxBatch.Controls.Add(this.buttonBatchStart);
             this.groupBoxBatch.Controls.Add(this.numericUpDownBatchMin);
-            this.groupBoxBatch.Location = new System.Drawing.Point(3, 485);
+            this.groupBoxBatch.Location = new System.Drawing.Point(3, 458);
             this.groupBoxBatch.Name = "groupBoxBatch";
-            this.groupBoxBatch.Size = new System.Drawing.Size(201, 229);
+            this.groupBoxBatch.Size = new System.Drawing.Size(201, 218);
             this.groupBoxBatch.TabIndex = 1;
             this.groupBoxBatch.TabStop = false;
             this.groupBoxBatch.Text = "Monte Carlo";
             // 
-            // groupBox2
+            // groupBox4
             // 
-            this.groupBox2.Controls.Add(this.checkBoxDoubleTriggerAttempt);
-            this.groupBox2.Controls.Add(this.label1);
-            this.groupBox2.Controls.Add(this.numericUpDownDoubleTriggerProbability);
-            this.groupBox2.Controls.Add(this.checkBoxDoubleTriggerEnable);
-            this.groupBox2.Location = new System.Drawing.Point(6, 143);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(187, 76);
-            this.groupBox2.TabIndex = 5;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Double Triggering";
+            this.groupBox4.Controls.Add(this.checkBoxContinuousAcquisition);
+            this.groupBox4.Controls.Add(this.checkBoxIntegThrowaways);
+            this.groupBox4.Location = new System.Drawing.Point(6, 145);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(187, 64);
+            this.groupBox4.TabIndex = 6;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "Misc";
             // 
-            // checkBoxDoubleTriggerAttempt
+            // checkBoxContinuousAcquisition
             // 
-            this.checkBoxDoubleTriggerAttempt.AutoSize = true;
-            this.checkBoxDoubleTriggerAttempt.Location = new System.Drawing.Point(6, 19);
-            this.checkBoxDoubleTriggerAttempt.Name = "checkBoxDoubleTriggerAttempt";
-            this.checkBoxDoubleTriggerAttempt.Size = new System.Drawing.Size(85, 17);
-            this.checkBoxDoubleTriggerAttempt.TabIndex = 3;
-            this.checkBoxDoubleTriggerAttempt.Text = "attempt read";
-            this.checkBoxDoubleTriggerAttempt.UseVisualStyleBackColor = true;
-            this.checkBoxDoubleTriggerAttempt.CheckedChanged += new System.EventHandler(this.checkBoxDoubleTriggerAttempt_CheckedChanged);
+            this.checkBoxContinuousAcquisition.AutoSize = true;
+            this.checkBoxContinuousAcquisition.Enabled = false;
+            this.checkBoxContinuousAcquisition.Location = new System.Drawing.Point(6, 42);
+            this.checkBoxContinuousAcquisition.Name = "checkBoxContinuousAcquisition";
+            this.checkBoxContinuousAcquisition.Size = new System.Drawing.Size(131, 17);
+            this.checkBoxContinuousAcquisition.TabIndex = 2;
+            this.checkBoxContinuousAcquisition.Text = "continuous acquisition";
+            this.checkBoxContinuousAcquisition.UseVisualStyleBackColor = true;
+            this.checkBoxContinuousAcquisition.CheckedChanged += new System.EventHandler(this.checkBoxContinuousAcquisition_CheckedChanged);
             // 
-            // label1
+            // checkBoxIntegThrowaways
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(69, 45);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(71, 13);
-            this.label1.TabIndex = 2;
-            this.label1.Text = "probability (%)";
-            // 
-            // numericUpDownDoubleTriggerProbability
-            // 
-            this.numericUpDownDoubleTriggerProbability.Location = new System.Drawing.Point(6, 43);
-            this.numericUpDownDoubleTriggerProbability.Name = "numericUpDownDoubleTriggerProbability";
-            this.numericUpDownDoubleTriggerProbability.Size = new System.Drawing.Size(57, 20);
-            this.numericUpDownDoubleTriggerProbability.TabIndex = 1;
-            this.numericUpDownDoubleTriggerProbability.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.numericUpDownDoubleTriggerProbability.Value = new decimal(new int[] {
-            20,
-            0,
-            0,
-            0});
-            this.numericUpDownDoubleTriggerProbability.ValueChanged += new System.EventHandler(this.numericUpDownDoubleTriggerProbability_ValueChanged);
-            // 
-            // checkBoxDoubleTriggerEnable
-            // 
-            this.checkBoxDoubleTriggerEnable.AutoSize = true;
-            this.checkBoxDoubleTriggerEnable.Location = new System.Drawing.Point(107, 19);
-            this.checkBoxDoubleTriggerEnable.Name = "checkBoxDoubleTriggerEnable";
-            this.checkBoxDoubleTriggerEnable.Size = new System.Drawing.Size(50, 17);
-            this.checkBoxDoubleTriggerEnable.TabIndex = 0;
-            this.checkBoxDoubleTriggerEnable.Text = "force";
-            this.checkBoxDoubleTriggerEnable.UseVisualStyleBackColor = true;
-            this.checkBoxDoubleTriggerEnable.CheckedChanged += new System.EventHandler(this.checkBoxDoubleTriggerEnable_CheckedChanged);
+            this.checkBoxIntegThrowaways.AutoSize = true;
+            this.checkBoxIntegThrowaways.Checked = true;
+            this.checkBoxIntegThrowaways.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBoxIntegThrowaways.Location = new System.Drawing.Point(6, 19);
+            this.checkBoxIntegThrowaways.Name = "checkBoxIntegThrowaways";
+            this.checkBoxIntegThrowaways.Size = new System.Drawing.Size(139, 17);
+            this.checkBoxIntegThrowaways.TabIndex = 1;
+            this.checkBoxIntegThrowaways.Text = "stabilization throwaways";
+            this.checkBoxIntegThrowaways.UseVisualStyleBackColor = true;
+            this.checkBoxIntegThrowaways.CheckedChanged += new System.EventHandler(this.checkBoxIntegThrowaways_CheckedChanged);
             // 
             // labelBatchStatus
             // 
@@ -1591,7 +1528,6 @@
             this.flowLayoutPanelControls.ResumeLayout(false);
             this.groupBoxSystem.ResumeLayout(false);
             this.groupBoxSystem.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownTriggerWidthMS)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegrationTimeMS)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownScansToAverage)).EndInit();
             this.groupBoxOptimization.ResumeLayout(false);
@@ -1605,9 +1541,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownInterpMin)).EndInit();
             this.groupBoxBatch.ResumeLayout(false);
             this.groupBoxBatch.PerformLayout();
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox2.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDoubleTriggerProbability)).EndInit();
+            this.groupBox4.ResumeLayout(false);
+            this.groupBox4.PerformLayout();
             this.groupBoxIntegrationTimeLimits.ResumeLayout(false);
             this.groupBoxIntegrationTimeLimits.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownIntegrationTimeMSMin)).EndInit();
@@ -1771,14 +1706,10 @@
         private System.Windows.Forms.CheckBox checkBoxPos6;
         private System.Windows.Forms.CheckBox checkBoxPos7;
         private System.Windows.Forms.CheckBox checkBoxPos8;
-        private System.Windows.Forms.Label label12;
-        private System.Windows.Forms.NumericUpDown numericUpDownTriggerWidthMS;
         private System.Windows.Forms.Button buttonUnselectAll;
-        private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.NumericUpDown numericUpDownDoubleTriggerProbability;
-        private System.Windows.Forms.CheckBox checkBoxDoubleTriggerEnable;
-        private System.Windows.Forms.CheckBox checkBoxDoubleTriggerAttempt;
+        private System.Windows.Forms.GroupBox groupBox4;
+        private System.Windows.Forms.CheckBox checkBoxIntegThrowaways;
+        private System.Windows.Forms.CheckBox checkBoxContinuousAcquisition;
     }
 }
 

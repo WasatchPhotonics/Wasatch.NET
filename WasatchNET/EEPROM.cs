@@ -30,7 +30,7 @@ namespace WasatchNET
 
         //internal const int MAX_PAGES = 256; // really 8, but last 2 are unallocated
         internal const int MAX_PAGES = 8;
-        const byte FORMAT = 8;
+        const byte FORMAT = 9;
 
         Spectrometer spectrometer;
         Logger logger = Logger.getInstance();
@@ -270,6 +270,9 @@ namespace WasatchNET
         }
 
         short _detectorOffsetOdd;
+
+        public FeatureMask featureMask = new FeatureMask();
+
         /////////////////////////////////////////////////////////////////////////       
         // Page 1
         /////////////////////////////////////////////////////////////////////////       
@@ -298,7 +301,7 @@ namespace WasatchNET
             set
             {
                 EventHandler handler = EEPROMChanged;
-                if (wavecalCoeffs == null || value.Length == wavecalCoeffs.Length)
+                if (wavecalCoeffs is null || value.Length == wavecalCoeffs.Length)
                     _wavecalCoeffs = value;
                 else
                 {
@@ -865,7 +868,7 @@ namespace WasatchNET
 
             else if (spectrometer is SPISpectrometer)
             {
-                if (pages == null || pages.Count != MAX_PAGES)
+                if (pages is null || pages.Count != MAX_PAGES)
                 {
                     logger.error("EEPROM.write: need to perform a read first");
                     return false;
@@ -1023,7 +1026,13 @@ namespace WasatchNET
 
             else
             {
-                if (pages == null || pages.Count != MAX_PAGES)
+                ////////////////////////////////////////////////////////////////
+                //                                                            //
+                //            "Regular" USB Wasatch Spectrometers             //
+                //                                                            //
+                ////////////////////////////////////////////////////////////////
+
+                if (pages is null || pages.Count != MAX_PAGES)
                 {
                     logger.error("EEPROM.write: need to perform a read first");
                     return false;
@@ -1035,7 +1044,7 @@ namespace WasatchNET
                 if (!ParseData.writeBool(hasCooling, pages[0], 36)) return false;
                 if (!ParseData.writeBool(hasBattery, pages[0], 37)) return false;
                 if (!ParseData.writeBool(hasLaser, pages[0], 38)) return false;
-                if (!ParseData.writeUInt16(excitationNM, pages[0], 39)) return false;
+                if (!ParseData.writeUInt16(featureMask.toUInt16(), pages[0], 39)) return false;
                 if (!ParseData.writeUInt16(slitSizeUM, pages[0], 41)) return false;
                 if (!ParseData.writeUInt16(startupIntegrationTimeMS, pages[0], 43)) return false;
                 if (!ParseData.writeInt16(startupDetectorTemperatureDegC, pages[0], 45)) return false;
@@ -1339,7 +1348,6 @@ namespace WasatchNET
                     slitSizeUM = 0;
 
                     byte[] buffer = new byte[16];
-                    int errorReader = 0;
 
                     string test = buffer.ToString();
 
@@ -1608,8 +1616,6 @@ namespace WasatchNET
                     wavecalCoeffs[3] = ParseData.toFloat(buffer, 28);
                 }
 
-                int errorReader = 0;
-
                 string test = buffer.ToString();
 
                 startupIntegrationTimeMS = (ushort)HOCTSpectrometer.OctUsb.DefaultIntegrationTime();
@@ -1680,17 +1686,23 @@ namespace WasatchNET
 
             else
             {
+                ////////////////////////////////////////////////////////////////
+                //                                                            //
+                //            "Regular" USB Wasatch Spectrometers             //
+                //                                                            //
+                ////////////////////////////////////////////////////////////////
+
                 pages = new List<byte[]>();
                 for (ushort page = 0; page < MAX_PAGES; page++)
                 {
                     byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
-                    if (buf == null)
+                    if (buf is null)
                     {
                         try
                         {
                             setDefault(spectrometer);
                         }
-                        catch (Exception e)
+                        catch
                         {
                             return false;
                         }
@@ -1710,7 +1722,7 @@ namespace WasatchNET
                     hasCooling = ParseData.toBool(pages[0], 36);
                     hasBattery = ParseData.toBool(pages[0], 37);
                     hasLaser = ParseData.toBool(pages[0], 38);
-                    excitationNM = ParseData.toUInt16(pages[0], 39);
+                    excitationNM = ParseData.toUInt16(pages[0], 39); // for old formats, first read this as excitation
                     slitSizeUM = ParseData.toUInt16(pages[0], 41);
 
                     startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
@@ -1769,7 +1781,18 @@ namespace WasatchNET
                     laserPowerCoeffs[3] = ParseData.toFloat(pages[3], 24);
                     maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
                     minLaserPowerMW = ParseData.toFloat(pages[3], 32);
-                    laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
+
+                    // correct laser excitation across formats
+                    if (format >= 4)
+                    {
+                        laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
+                        excitationNM = (ushort)Math.Round(laserExcitationWavelengthNMFloat);
+                    }
+                    else
+                    {
+                        laserExcitationWavelengthNMFloat = excitationNM;
+                    }
+                    
                     if (format >= 5)
                     {
                         minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
@@ -1808,7 +1831,6 @@ namespace WasatchNET
                         {
                             intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
                         }
-
                     }
                     else
                     {
@@ -1859,7 +1881,8 @@ namespace WasatchNET
                             subformat = PAGE_SUBFORMAT.USER_DATA;
                     }
 
-
+                    if (format >= 9)
+                        featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
                 }
                 catch (Exception ex)
                 {
@@ -1880,10 +1903,7 @@ namespace WasatchNET
         {
             model = "";
 
-
-
             serialNumber = a.serialNumber;
-
 
             baudRate = 0;
 
@@ -1896,7 +1916,6 @@ namespace WasatchNET
             slitSizeUM = 0;
 
             byte[] buffer = new byte[16];
-            int errorReader = 0;
 
             string test = buffer.ToString();
 
@@ -1966,6 +1985,8 @@ namespace WasatchNET
 
             //needs work
             intensityCorrectionOrder = 0;
+
+            featureMask = new FeatureMask();
         }
 
         public bool hasLaserPowerCalibration()
@@ -1973,7 +1994,7 @@ namespace WasatchNET
             if (maxLaserPowerMW <= 0)
                 return false;
 
-            if (laserPowerCoeffs == null || laserPowerCoeffs.Length < 4)
+            if (laserPowerCoeffs is null || laserPowerCoeffs.Length < 4)
                 return false;
 
             foreach (double d in laserPowerCoeffs)
