@@ -309,7 +309,7 @@ namespace WasatchNET
             }
         }
 
-        protected override double[] getSpectrumRaw()
+        protected override double[] getSpectrumRaw(bool skipTrigger=false)
         {
             logger.debug("requesting spectrum");
             ////////////////////////////////////////////////////////////////////

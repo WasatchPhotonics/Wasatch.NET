@@ -2148,7 +2148,9 @@ namespace WasatchNET
         /// Take a single complete spectrum, including any configured scan 
         /// averaging, boxcar and dark subtraction.
         /// </summary>
+        ///
         /// <param name="forceNew">not used in base class (provided for specialized subclasses)</param>
+        ///
         /// <returns>The acquired spectrum as an array of doubles</returns>
         public virtual double[] getSpectrum(bool forceNew=false)
         {
@@ -2170,7 +2172,8 @@ namespace WasatchNET
                     // logger.debug("getSpectrum: getting additional spectra for averaging");
                     for (uint i = 1; i < scanAveraging_; i++)
                     {
-                        double[] tmp = getSpectrumRaw();
+                        // don't send a new SW trigger if using continuous acquisition
+                        double[] tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
                         if (tmp == null)
                             return null;
 
@@ -2238,8 +2241,15 @@ namespace WasatchNET
                 spectralReader.ReadFlush();
         }
 
-        // just the bytes, ma'am
-        protected virtual double[] getSpectrumRaw()
+        /// <summary>
+        /// just the bytes, ma'am
+        /// </summary> 
+        ///
+        /// <param name="skipTrigger">
+        /// allows getSpectrum to suppress SW triggers when scanAveraging, on scans after
+        /// the first, if scanAveragingIsContinuous
+        /// </param>
+        protected virtual double[] getSpectrumRaw(bool skipTrigger=false)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
             byte[] buf = null;
@@ -2247,7 +2257,7 @@ namespace WasatchNET
                 buf = new byte[8];
 
             // request a spectrum
-            if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger)
+            if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
                 sendSWTrigger();
 
             if (isStroker)
