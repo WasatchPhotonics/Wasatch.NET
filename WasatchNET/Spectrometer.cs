@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 
@@ -198,6 +195,13 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
         // internal driver attributes (no direct corresponding HW component)
         ////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// If there is an error reading one of the bulk endpoints, pause this 
+        /// many milliseconds in hopes of the bus resetting itself (does not
+        /// automatically retry).
+        /// </summary>
+        public int delayAfterBulkEndpointErrorMS = 100;
 
         /// <summary>
         /// For spectrometer firmware providing "start of spectrum markers", 
@@ -2327,7 +2331,7 @@ namespace WasatchNET
                 {
                     if (!currentAcquisitionCancelled && errorOnTimeout)
                         logger.error($"failed when reading subspectrum from 0x{spectralReader.EpNum:x2} ({id})");
-                    Thread.Sleep(100);
+                    Thread.Sleep(delayAfterBulkEndpointErrorMS);
                     if (isStroker && areaScanEnabled)
                         pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
                     return null;

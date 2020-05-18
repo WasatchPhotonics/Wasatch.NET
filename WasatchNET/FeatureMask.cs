@@ -1,12 +1,4 @@
-﻿using MPSSELight;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace WasatchNET
+﻿namespace WasatchNET
 {
     /// <summary>
     /// This class encapsulates a 16-bit set of boolean flags which indicate

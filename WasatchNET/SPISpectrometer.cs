@@ -1,13 +1,9 @@
 using System;
-using System.Reflection;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Linq;
-using LibUsbDotNet;
 using LibUsbDotNet.Main;
 using MPSSELight;
-using FTD2XX_NET;
 
 namespace WasatchNET
 {

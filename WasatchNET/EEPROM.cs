@@ -1699,7 +1699,7 @@ namespace WasatchNET
                     hasCooling = ParseData.toBool(pages[0], 36);
                     hasBattery = ParseData.toBool(pages[0], 37);
                     hasLaser = ParseData.toBool(pages[0], 38);
-                    excitationNM = ParseData.toUInt16(pages[0], 39);
+                    excitationNM = ParseData.toUInt16(pages[0], 39); // for old formats, first read this as excitation
                     slitSizeUM = ParseData.toUInt16(pages[0], 41);
 
                     startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
@@ -1758,10 +1758,16 @@ namespace WasatchNET
                     laserPowerCoeffs[3] = ParseData.toFloat(pages[3], 24);
                     maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
                     minLaserPowerMW = ParseData.toFloat(pages[3], 32);
-                    if (format > 4)
+
+                    // correct laser excitation across formats
+                    if (format >= 4)
                     {
                         laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
                         excitationNM = (ushort)Math.Round(laserExcitationWavelengthNMFloat);
+                    }
+                    else
+                    {
+                        laserExcitationWavelengthNMFloat = excitationNM;
                     }
                     
                     if (format >= 5)
