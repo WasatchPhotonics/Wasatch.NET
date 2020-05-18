@@ -68,7 +68,7 @@ namespace WasatchNET
         UsbEndpointReader spectralReader82;
         UsbEndpointReader spectralReader86;
 
-        Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
+        internal Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
         HashSet<Opcodes> armInvertedRetvals = OpcodeHelper.getInstance().getArmInvertedRetvals();
 
         protected Logger logger = Logger.getInstance();
@@ -1957,9 +1957,14 @@ namespace WasatchNET
                 wIndex,         // wIndex
                 wLength);       // wLength
 
-            bool expectedSuccessResult = true;
+            bool? expectedSuccessResult = true;
             if (isARM)
-                expectedSuccessResult = armInvertedRetvals.Contains(opcode);
+            {
+                if (opcode != Opcodes.SECOND_TIER_COMMAND)
+                    expectedSuccessResult = armInvertedRetvals.Contains(opcode);
+                else
+                    expectedSuccessResult = null; // no easy way to know, as we don't pass wValue as enum
+            }
 
             lock (commsLock)
             {
@@ -1973,7 +1978,7 @@ namespace WasatchNET
 
                 bool result = usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
 
-                if (expectedSuccessResult != result)
+                if (expectedSuccessResult != null && expectedSuccessResult.Value != result)
                 {
                     logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
                         opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, result, expectedSuccessResult);

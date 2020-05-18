@@ -711,11 +711,9 @@ namespace WasatchNET
             set
             {
                 EventHandler handler = EEPROMChanged;
-                for (int i = 0; i < userData.Length; i++)
-                    if (i < value.Length)
-                        userData[i] = (byte) value[i];
-                    else
-                        userData[i] = 0;
+                userData = new byte[value.Length];
+                for (int i = 0; i < value.Length; i++)
+                    userData[i] = (byte) value[i];
                 handler?.Invoke(this, new EventArgs());
             }
         }
@@ -1113,6 +1111,7 @@ namespace WasatchNET
                 // Should protect users without restricting them
                 if (userData.Length <= 64)
                 {
+                    Array.Clear(pages[4], 0, pages[4].Length);
                     Array.Copy(userData, pages[4], userData.Length);
                 }
                 else
@@ -1121,7 +1120,6 @@ namespace WasatchNET
                     if (userData.Length <= 128)
                     {
                         Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
-
                     }
                     else if (userData.Length <= 192)
                     {
@@ -1173,7 +1171,7 @@ namespace WasatchNET
                         logger.hexdump(pages[page], String.Format("writing page {0} [ARM]: ", page));
                         ok = spectrometer.sendCmd(
                             opcode: Opcodes.SECOND_TIER_COMMAND,
-                            wValue: (ushort)Opcodes.SET_MODEL_CONFIG_ARM,
+                            wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM],
                             wIndex: (ushort)page,
                             buf: pages[page]);
                     }
@@ -1352,7 +1350,7 @@ namespace WasatchNET
                     string test = buffer.ToString();
 
                    
-                    wavecalCoeffs = new float[] { 0, 1, 0, 0 }; // MZ: add a zero?
+                    wavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
                     
 
                     startupIntegrationTimeMS = 0;
@@ -1447,6 +1445,7 @@ namespace WasatchNET
                         wavecalCoeffs[1] = ParseData.toFloat(pages[1], 4);
                         wavecalCoeffs[2] = ParseData.toFloat(pages[1], 8);
                         wavecalCoeffs[3] = ParseData.toFloat(pages[1], 12);
+                        wavecalCoeffs[4] = 0;
                         degCToDACCoeffs[0] = ParseData.toFloat(pages[1], 16);
                         degCToDACCoeffs[1] = ParseData.toFloat(pages[1], 20);
                         degCToDACCoeffs[2] = ParseData.toFloat(pages[1], 24);
@@ -2033,6 +2032,13 @@ namespace WasatchNET
                 double t = wavecalCoeffs[wavecalCoeffs.Length - 1];
                 if (double.IsNaN(t) || double.IsInfinity(t))
                     wavecalCoeffs[wavecalCoeffs.Length - 1] = 0;
+
+                // it's just not reasonable for the x^4 coeff to have magnitude > 1
+                if (Math.Abs(wavecalCoeffs[4]) > 1.0)
+                {
+                    logger.error("truncating wavecalCoeff[4] {0} to zero", wavecalCoeffs[4]);
+                    wavecalCoeffs[4] = 0;
+                }
             }
 
             ////////////////////////////////////////////////////////////////////

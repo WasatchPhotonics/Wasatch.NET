@@ -85,7 +85,6 @@
             this.buttonInit = new System.Windows.Forms.Button();
             this.groupBoxBatch = new System.Windows.Forms.GroupBox();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.checkBoxContinuousAcquisition = new System.Windows.Forms.CheckBox();
             this.checkBoxIntegThrowaways = new System.Windows.Forms.CheckBox();
             this.labelBatchStatus = new System.Windows.Forms.Label();
             this.groupBoxIntegrationTimeLimits = new System.Windows.Forms.GroupBox();
@@ -749,7 +748,6 @@
             // 
             // groupBox4
             // 
-            this.groupBox4.Controls.Add(this.checkBoxContinuousAcquisition);
             this.groupBox4.Controls.Add(this.checkBoxIntegThrowaways);
             this.groupBox4.Location = new System.Drawing.Point(6, 145);
             this.groupBox4.Name = "groupBox4";
@@ -757,18 +755,6 @@
             this.groupBox4.TabIndex = 6;
             this.groupBox4.TabStop = false;
             this.groupBox4.Text = "Misc";
-            // 
-            // checkBoxContinuousAcquisition
-            // 
-            this.checkBoxContinuousAcquisition.AutoSize = true;
-            this.checkBoxContinuousAcquisition.Enabled = false;
-            this.checkBoxContinuousAcquisition.Location = new System.Drawing.Point(6, 42);
-            this.checkBoxContinuousAcquisition.Name = "checkBoxContinuousAcquisition";
-            this.checkBoxContinuousAcquisition.Size = new System.Drawing.Size(131, 17);
-            this.checkBoxContinuousAcquisition.TabIndex = 2;
-            this.checkBoxContinuousAcquisition.Text = "continuous acquisition";
-            this.checkBoxContinuousAcquisition.UseVisualStyleBackColor = true;
-            this.checkBoxContinuousAcquisition.CheckedChanged += new System.EventHandler(this.checkBoxContinuousAcquisition_CheckedChanged);
             // 
             // checkBoxIntegThrowaways
             // 
@@ -1709,7 +1695,6 @@
         private System.Windows.Forms.Button buttonUnselectAll;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.CheckBox checkBoxIntegThrowaways;
-        private System.Windows.Forms.CheckBox checkBoxContinuousAcquisition;
     }
 }
 

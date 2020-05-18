@@ -220,8 +220,6 @@ namespace MultiChannelDemo
             var enabled = checkBoxTriggerEnableAll.Checked;
             logger.header("Hardware Triggering {0}", enabled ? "enabled" : "disabled");
             wrapper.hardwareTriggeringEnabled = enabled;
-
-            updateScanAveragingAvailability();
         }
 
         // user clicked the "fan control" system checkbox
@@ -310,12 +308,7 @@ namespace MultiChannelDemo
         // user changed scan averaging, so set in each spectrometer
         private void numericUpDownScansToAverage_ValueChanged(object sender, EventArgs e)
         {
-            uint value = (uint)numericUpDownScansToAverage.Value;
-            foreach (var pos in wrapper.positions)
-            {
-                var spec = wrapper.getSpectrometer(pos);
-                spec.scanAveraging = value;
-            }
+            wrapper.scanAveraging = (uint)numericUpDownScansToAverage.Value;
         }
 
         /// <summary>
@@ -867,21 +860,6 @@ namespace MultiChannelDemo
         private void checkBoxIntegThrowaways_CheckedChanged(object sender, EventArgs e)
         {
             wrapper.integrationThrowaways = checkBoxIntegThrowaways.Checked;
-        }
-
-        private void checkBoxContinuousAcquisition_CheckedChanged(object sender, EventArgs e)
-        {
-            var enabled = checkBoxContinuousAcquisition.Checked;
-            wrapper.useContinuousAcquisition = enabled;
-            updateScanAveragingAvailability();
-        }
-
-        void updateScanAveragingAvailability()
-        {
-            if (wrapper.hardwareTriggeringEnabled)
-                numericUpDownScansToAverage.Enabled = wrapper.useContinuousAcquisition;
-            else
-                numericUpDownScansToAverage.Enabled = true;
         }
     }
 }

@@ -1,5 +1,9 @@
 # Wasatch.NET Changelog
 
+- 2020-05-18 2.2.6
+    - fixed EEPROM.write on ARM
+    - added MultiChannelWrapper.scanAveraging
+
 - 2020-05-18 2.2.4
     - WasatchNET
         - added FeatureMask
