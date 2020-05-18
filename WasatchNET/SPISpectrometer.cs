@@ -1,13 +1,9 @@
 using System;
-using System.Reflection;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Linq;
-using LibUsbDotNet;
 using LibUsbDotNet.Main;
 using MPSSELight;
-using FTD2XX_NET;
 
 namespace WasatchNET
 {
@@ -258,7 +254,7 @@ namespace WasatchNET
             {
                 mpsse = new FT232H(devSerialNumber, mpsseParams);
             }
-            catch (Exception e)
+            catch 
             {
                 logger.debug("Unable to create MPSSE connection with board. May be missing drivers");
                 return false;
@@ -274,7 +270,7 @@ namespace WasatchNET
                              ChipSelectPolicy = SpiDevice.CsPolicy.CsActiveLow
                          });
             }
-            catch (Exception e)
+            catch
             {
                 logger.debug("Unable to create SPI connection with board. May be missing drivers");
                 return false;
@@ -496,7 +492,7 @@ namespace WasatchNET
         }
 
 
-        protected override double[] getSpectrumRaw()
+        protected override double[] getSpectrumRaw(bool skipTrigger=false)
         {
             logger.debug("requesting spectrum");
             ////////////////////////////////////////////////////////////////////

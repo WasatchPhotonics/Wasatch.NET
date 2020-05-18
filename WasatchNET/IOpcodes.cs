@@ -12,6 +12,7 @@ namespace WasatchNET
     public enum Opcodes
     {
         ACQUIRE_SPECTRUM,
+        FPGA_RESET,
         GET_ACTUAL_FRAMES,
         GET_ACTUAL_INTEGRATION_TIME,
         GET_ADC_RAW,

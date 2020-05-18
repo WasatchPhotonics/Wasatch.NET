@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using WasatchNET;
@@ -63,7 +61,7 @@ namespace WinFormDemo
             stub("detectorOffset",              "EEPROM/Page 0/Detector Offset/value (InGaAs even pixels)");
             stub("detectorOffsetOdd",           "EEPROM/Page 0/Detector Offset/odd pixels (InGaAs only)");
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 5; i++)
                 stub("wavecalCoeff" + i,        "EEPROM/Page 1/Wavelength Calibration/Coeff" + i);
             for (int i = 0; i < 3; i++)
                 stub("degCToDACCoeff" + i,      "EEPROM/Page 1/Detector TEC Calibration (°C->DAC)/Coeff" + i);

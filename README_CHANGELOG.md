@@ -1,5 +1,13 @@
 # Wasatch.NET Changelog
 
+- 2020-05-18 2.2.4
+    - WasatchNET
+        - added FeatureMask
+        - added Spectrometer.scanAveragingIsContinuous
+    - MultiChannel
+        - serialized operations to avoid async failures
+        - add FW to groupBox titles
+
 - 2020-05-12 2.2.3
     - added full model compound EEPROM field for bigger model number support
 	- reorganized some EEPROM fields

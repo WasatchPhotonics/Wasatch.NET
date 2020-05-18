@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 
@@ -39,6 +37,7 @@ namespace WasatchNET
         public const byte DEVICE_TO_HOST = 0xc0;
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
         public const int LEGACY_VERTICAL_PIXELS = 70;
+        public const ushort SPECTRUM_START_MARKER = 0xffff;
 
         ////////////////////////////////////////////////////////////////////////
         // data types
@@ -100,6 +99,24 @@ namespace WasatchNET
         public double[] wavenumbers { get; protected set; }
 
         /// <summary>
+        /// convenience accesor for pixel axis (lazy-loaded), for parallelism
+        /// with wavelengths and wavenumbers
+        /// </summary>
+        public double[] pixelAxis
+        {
+            get
+            {
+                if (_pixelAxis != null)
+                    return _pixelAxis;
+                _pixelAxis = new double[pixels];
+                for (int i = 0; i < pixels; i++)
+                    _pixelAxis[i] = i;
+                return _pixelAxis;
+            }
+        }
+        double[] _pixelAxis = null;
+
+        /// <summary>
         /// Useful if you lost the results of getSpectrum, or if you want to 
         /// peek into ongoing multi-acquisition tasks like scan averaging or 
         /// optimization.
@@ -124,6 +141,19 @@ namespace WasatchNET
         /// spectrometers in several respects, such as producing both 2D and 3D imagery.
         /// </summary>
         public bool isOCT { get; protected set; } = false;
+
+        /// <summary>
+        /// Some spectrometers send a start-of-frame marker in the first pixel of
+        /// the spectrum.
+        /// </summary>
+        public bool hasMarker
+        {
+            get
+            {
+                // if we decide to keep this, change to EEPROM.featureMask.hasFraming
+                return eeprom.model == "WPX-8CHANNEL";
+            }
+        }
 
         /// <summary>spectrometer serial number</summary>
         public virtual string serialNumber
@@ -166,19 +196,39 @@ namespace WasatchNET
         // internal driver attributes (no direct corresponding HW component)
         ////////////////////////////////////////////////////////////////////////
 
-        // make const?  Do subclasses change this?
+        /// <summary>
+        /// If there is an error reading one of the bulk endpoints, pause this 
+        /// many milliseconds in hopes of the bus resetting itself (does not
+        /// automatically retry).
+        /// </summary>
+        public int delayAfterBulkEndpointErrorMS = 100;
+
+        /// <summary>
+        /// For spectrometer firmware providing "start of spectrum markers", 
+        /// provides a count of how many INCORRECT markers were found in the MOST
+        /// RECENT spectrum.
+        /// </summary>
+        public int shiftedMarkerCount { get; private set; } = 0;
+
+        /// <summary>
+        /// Whether the driver should automatically perform a throwaway ADC read
+        /// when changing the selected ADC.  (defaults true)
+        /// </summary>
         bool throwawayADCRead { get; set; } = true;
 
         /// <summary>
         /// Whether the driver should automatically generate a throwaway 
         /// "stability" measurement after changing integration time.
+        /// (defaults false)
         /// </summary>
         public bool throwawayAfterIntegrationTime { get; set; }
 
         /// <summary>
         /// Whether the driver should automatically send a software trigger on
-        /// getSpectrum()
+        /// calls to getSpectrum() when triggerSource is set to INTERNAL.
+        /// (defaults true)
         /// </summary>
+        ///
         /// <remarks>
         /// This is provided in case the caller wishes to call sendSWTrigger()
         /// explicitly, for instance to send software triggers to a series of
@@ -196,14 +246,90 @@ namespace WasatchNET
         bool _autoTrigger = true;
 
         /// <summary>
-        /// How many acquisitions to average together (zero for no averaging)
+        /// Whether the "scanAveraging" property should automatically configure
+        /// continuousAcquisitionEnable and continuousFrames.
+        /// (default false)
         /// </summary>
+        ///
+        /// <remarks>
+        /// EXPERIMENTAL -- NOT RECOMMENDED FOR PRODUCTION APPLICATIONS.
+        /// 
+        /// Setting false will automatically reset continuousAcquisitionEnable
+        /// and continuousFrames to default (off) values.
+        /// </remarks>
+        public bool scanAveragingIsContinuous
+        {
+            get => scanAveragingIsContinuous_;
+            set
+            {
+                scanAveragingIsContinuous_ = value;
+
+                if (value)
+                {
+                    configureContinuousAcquisition();
+                }
+                else
+                {
+                    continuousAcquisitionEnable = false;
+                    continuousFrames = 1;
+                }
+            }
+        }
+        bool scanAveragingIsContinuous_;
+
+        /// <summary>
+        /// How many acquisitions to average together (0 or 1 for no averaging).
+        /// (default 1)
+        /// </summary>
+        ///
+        /// <remarks>
+        /// Note that while SW triggering supports 2^16 scans to average, HW 
+        /// triggering (necessarily using continuousFrames) is limited to 255.
+        /// </remarks>
         public virtual uint scanAveraging
         {
             get { return scanAveraging_; }
-            set { lock (acquisitionLock) scanAveraging_ = value; }
+            set 
+            {
+                lock (acquisitionLock)
+                {
+                    scanAveraging_ = value;
+                    configureContinuousAcquisition();
+                }
+            }
         }
         protected uint scanAveraging_ = 1;
+
+        void configureContinuousAcquisition()
+        {
+            if (!scanAveragingIsContinuous)
+                return;
+
+            if (scanAveraging > 1 && !continuousAcquisitionEnable)
+            {
+                logger.debug("auto-enabling continuous acquisition");
+                continuousAcquisitionEnable = true;
+            }
+            else if (scanAveraging <= 1 && continuousAcquisitionEnable)
+            {
+                logger.debug("auto-disabling continuous acquisition");
+                continuousAcquisitionEnable = false;
+                continuousFrames = 1;
+            }
+
+            if (continuousAcquisitionEnable)
+            {
+                if (scanAveraging <= 0xff)
+                {
+                    logger.debug($"auto-setting continuousFrames to {scanAveraging}");
+                    continuousFrames = (byte)scanAveraging;
+                }
+                else
+                {
+                    logger.error($"can't auto-configure continuousFrames ({scanAveraging} out of range)");
+                }
+            }
+        }
 
         /// <summary>
         /// Perform post-acquisition high-frequency smoothing by averaging
@@ -248,8 +374,9 @@ namespace WasatchNET
         /// <summary>
         /// If the spectrometer is deployed in a multi-channel configuration,
         /// this provides a place to store an integral position in the Spectrometer
-        /// object.  
+        /// object.  (defaults to -1, an invalid position)
         /// </summary>
+        ///
         /// <remarks>
         /// This may be populated from EEPROM.UserText or other sources.
         /// This value is not used by anything except MultiChannelWrapper and 
@@ -258,14 +385,31 @@ namespace WasatchNET
         public int multiChannelPosition = -1;
 
         /// <summary>
-        /// Multichannel convenience accessor
+        /// Multichannel convenience accessor (default false)
         /// </summary>
         public bool multiChannelSelected { get; set; }
 
         /// <summary>
-        /// Whether an ERROR should be logged on a timeout event
+        /// Whether an ERROR should be logged on a timeout event (default true)
         /// </summary>
         public bool errorOnTimeout { get; set; } = true;
+
+        /// <summary>
+        /// If enabled, Wasatch.NET will automatically read the detector temperature
+        /// following every successful call to getSpectrum().  That temperature 
+        /// can then be read from lastDetectorTemperatureDegC, without inducing
+        /// any spectrometer communications.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// Many customer applications wish to monitor detector temperature.
+        /// However, attempting to read temperature asynchronously from the 
+        /// spectrometer over USB can complicate timing in the midst of 
+        /// acquisitions.  This provides a controlled process to obtain fairly-
+        /// current temperature without adding interrupts to the USB 
+        /// communciation cycle.  (It's also very similar to what ENLIGHTEN does)
+        /// </remarks>
+        public bool readTemperatureAfterSpectrum = false;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -281,13 +425,6 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
         // device properties (please maintain in alphabetical order)
         ////////////////////////////////////////////////////////////////////////
-
-        // <summary>
-        // Used for quickly turning on/off a group of accessors for 
-        // troubleshooting .NET clients that iteratively call every accessor
-        // at instantiation.
-        // </summary>
-        // private bool kludgedOut = false;
 
         /// <summary>
         /// Convenience accessor to set an explicit acquisition timeout.  
@@ -335,7 +472,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0; 
                 return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES, 2));
             }
         }
@@ -344,7 +480,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0; 
                 uint value = Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 6));
                 return (value == 0xffffff) ? 0 : value;
             }
@@ -359,7 +494,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 //if (!adcHasBeenSelected_)
                 //    return 0;
                 if (isSiG)
@@ -429,7 +563,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_CONTINUOUS_ACQUISITION;
                 if (haveCache(op))
                     return continuousAcquisitionEnable_;
@@ -448,7 +581,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_CONTINUOUS_FRAMES;
                 if (haveCache(op))
                     return continuousFrames_;
@@ -467,7 +599,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_DETECTOR_GAIN;
                 if (haveCache(op))
                     return detectorGain_;
@@ -486,7 +617,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
                 {
                     logger.debug("detectorGainOdd not supported on non-InGaAs detectors");
@@ -515,7 +645,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_DETECTOR_OFFSET;
                 if (haveCache(op))
                     return detectorOffset_;
@@ -534,7 +663,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
                 {
                     logger.debug("detectorOffsetOdd not supported on non-InGaAs detectors");
@@ -563,7 +691,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE;
                 if (haveCache(op))
                     return detectorSensingThresholdEnabled_;
@@ -582,7 +709,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD;
                 if (haveCache(op))
                     return detectorSensingThreshold_;
@@ -601,7 +727,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_DETECTOR_TEC_ENABLE;
                 if (!eeprom.hasCooling)
                     return false;
@@ -647,7 +772,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_DETECTOR_TEC_SETPOINT;
                 if (!eeprom.hasCooling)
                     return 0;
@@ -685,14 +809,18 @@ namespace WasatchNET
             }
         }
 
-        // a cached version
-        public float lastDetectorTemperatureDegC = -999;
+
+        /// <summary>
+        /// A cached value of the last-measured detector temperature.  This
+        /// is automatically updated following spectral reads if 
+        /// readTemperatureAfterSpectrum is set.
+        /// </summary>
+        public float lastDetectorTemperatureDegC = UNINITIALIZED_TEMPERATURE_DEG_C;
 
         public ushort detectorTemperatureRaw
         {
             get
             {
-                // if (kludgedOut) return 0;
                 if (isSiG)
                     return 0;
                 return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
@@ -703,12 +831,11 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return "UNKNOWN";
                 const Opcodes op = Opcodes.GET_FIRMWARE_REVISION;
                 if (haveCache(op))
                     return firmwareRevision_;
                 byte[] buf = getCmd(op, 4);
-                if (buf == null)
+                if (buf is null)
                     return "ERROR";
                 string s = "";
                 for (int i = 3; i >= 0; i--)
@@ -727,12 +854,11 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return "UNKNOWN";
                 const Opcodes op = Opcodes.GET_FPGA_REVISION;
                 if (haveCache(op))
                     return fpgaRevision_;
                 byte[] buf = getCmd(op, 7);
-                if (buf == null)
+                if (buf is null)
                     return "UNKNOWN";
                 string s = "";
                 for (uint i = 0; i < 7; i++)
@@ -747,7 +873,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
                     return false;
                 const Opcodes op = Opcodes.GET_CF_SELECT;
@@ -770,7 +895,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return HORIZONTAL_BINNING.ERROR;
                 if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return HORIZONTAL_BINNING.ERROR;
 
@@ -805,17 +929,21 @@ namespace WasatchNET
             get
             {
                 const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
-                // if (kludgedOut) return 0;
                 if (haveCache(op))
                     return integrationTimeMS_;
                 byte[] buf = getCmd(op, 3, fullLen: 6);
-                if (buf == null)
+                if (buf is null)
                     return 0;
                 readOnce.Add(op);
                 return integrationTimeMS_ = Unpack.toUint(buf);
             }
             set
             {
+                // noop if already set 
+                const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
+                if (haveCache(op) && integrationTimeMS_ == value)
+                    return;
+
                 lock (acquisitionLock)
                 {
                     // temporarily disabled EEPROM range-checking by customer 
@@ -835,7 +963,7 @@ namespace WasatchNET
                         buf = new byte[8];
                     sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf);
                     integrationTimeMS_ = ms;
-                    readOnce.Add(Opcodes.GET_INTEGRATION_TIME);
+                    readOnce.Add(op);
 
                     if (throwawayAfterIntegrationTime)
                         performThrowawaySpectrum();
@@ -848,7 +976,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_LASER_ENABLE;
                 if (haveCache(op))
                     return laserEnabled_;
@@ -871,7 +998,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_LASER_MOD_ENABLE;
                 if (haveCache(op))
                     return laserModulationEnabled_;
@@ -890,7 +1016,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 if (isARM)
                 {
                     logger.error("GET_LASER_INTERLOCK not supported on ARM");
@@ -904,7 +1029,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME;
                 if (haveCache(op))
                     return laserModulationLinkedToIntegrationTime_;
@@ -923,7 +1047,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LASER_MOD_PULSE_DELAY;
                 if (haveCache(op))
                     return laserModulationPulseDelay_;
@@ -943,7 +1066,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LASER_MOD_DURATION;
                 if (haveCache(op))
                     return laserModulationDuration_;
@@ -963,7 +1085,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LASER_MOD_PERIOD;
                 if (haveCache(op))
                     return laserModulationPeriod_;
@@ -983,7 +1104,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LASER_MOD_PULSE_WIDTH;
                 if (haveCache(op))
                     return laserModulationPulseWidth_;
@@ -1004,7 +1124,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 if (fpgaOptions.hasAreaScan)
                 {
                     logger.debug("laserRampingEnabled feature currently disabled");
@@ -1043,7 +1162,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 /*
                 if (!fpgaOptions.hasAreaScan)
                 {
@@ -1073,7 +1191,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 ushort raw = laserTemperatureRaw;
                 if (raw == 0)
                 {
@@ -1120,7 +1237,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;   
                 // if (!laserHasFired_) return 0;
 
                 if (!eeprom.hasLaser)
@@ -1149,7 +1265,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 const Opcodes op = Opcodes.GET_LINE_LENGTH;
                 if (haveCache(op))
                     return lineLength_;
@@ -1163,7 +1278,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_OPT_AREA_SCAN;
                 if (haveCache(op))
                     return optAreaScan_;
@@ -1177,7 +1291,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_OPT_ACTUAL_INTEGRATION_TIME;
                 if (haveCache(op))
                     return optActualIntegrationTime_;
@@ -1191,7 +1304,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_OPT_CF_SELECT;
                 if (haveCache(op))
                     return optCFSelect_;
@@ -1205,7 +1317,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return FPGA_DATA_HEADER.ERROR;
                 const Opcodes op = Opcodes.GET_OPT_DATA_HEADER_TAG;
                 if (haveCache(op))
                     return optDataHeaderTag_;
@@ -1219,7 +1330,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return false;
                 const Opcodes op = Opcodes.GET_OPT_HORIZONTAL_BINNING;
                 if (haveCache(op))
                     return optHorizontalBinning_;
@@ -1233,7 +1343,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return FPGA_INTEG_TIME_RES.ERROR;
                 const Opcodes op = Opcodes.GET_OPT_INTEGRATION_TIME_RESOLUTION;
                 if (haveCache(op))
                     return optIntegrationTimeResolution_;
@@ -1247,7 +1356,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return FPGA_LASER_CONTROL.ERROR;
                 const Opcodes op = Opcodes.GET_OPT_LASER_CONTROL;
                 if (haveCache(op))
                     return optLaserControl_;
@@ -1261,7 +1369,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return FPGA_LASER_TYPE.ERROR;
                 const Opcodes op = Opcodes.GET_OPT_LASER_TYPE;
                 if (haveCache(op))
                     return optLaserType_;
@@ -1275,7 +1382,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 lock (adcLock)
                 {
                     if (selectedADC != 0)
@@ -1291,7 +1397,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 if (!hasSecondaryADC)
                     return 0;
                 lock (adcLock)
@@ -1307,7 +1412,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 if (!adcHasBeenSelected_)
                     return 0;
                 const Opcodes op = Opcodes.GET_SELECTED_ADC;
@@ -1332,7 +1436,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return TRIGGER_SOURCE.ERROR;
                 if (featureIdentification.boardType != BOARD_TYPES.ARM)
                 {
                     logger.debug("GET_TRIGGER_SOURCE disabled for boardType {0}", featureIdentification.boardType.ToString());
@@ -1342,7 +1445,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return triggerSource_;
                 byte[] buf = getCmd(Opcodes.GET_TRIGGER_SOURCE, 1);
-                if (buf == null || buf[0] > 2)
+                if (buf is null || buf[0] > 2)
                     return TRIGGER_SOURCE.ERROR;
                 readOnce.Add(op);
                 return triggerSource_ = buf[0] == 0 ? TRIGGER_SOURCE.INTERNAL : TRIGGER_SOURCE.EXTERNAL;
@@ -1369,7 +1472,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return EXTERNAL_TRIGGER_OUTPUT.ERROR;
                 if (featureIdentification.boardType != BOARD_TYPES.ARM)
                 {
                     logger.debug("GET_TRIGGER_OUTPUT disabled for boardType {0}", featureIdentification.boardType.ToString());
@@ -1406,7 +1508,6 @@ namespace WasatchNET
         {
             get
             {
-                // if (kludgedOut) return 0;
                 if (featureIdentification.boardType != BOARD_TYPES.ARM)
                 {
                     logger.debug("GET_TRIGGER_DELAY disabled for boardType {0}", featureIdentification.boardType.ToString());
@@ -1442,6 +1543,8 @@ namespace WasatchNET
 
         virtual internal bool open()
         {
+            logger.header($"Spectrometer.open: VID = 0x{usbRegistry.Vid:x4}, PID = 0x{usbRegistry.Pid:x4}");
+
             // clear cache
             readOnce.Clear();
 
@@ -1557,6 +1660,7 @@ namespace WasatchNET
                 }
             }
 
+            logger.debug("Spectrometer.open: complete");
             return true;
         }
 
@@ -1841,10 +1945,10 @@ namespace WasatchNET
         /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
         internal bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
-            if ((isARM || isStroker) && buf == null)
+            if ((isARM || isStroker) && buf is null)
                 buf = new byte[8];
 
-            ushort wLength = (ushort)((buf == null) ? 0 : buf.Length);
+            ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
 
             UsbSetupPacket packet = new UsbSetupPacket(
                 HOST_TO_DEVICE, // bRequestType
@@ -1952,6 +2056,13 @@ namespace WasatchNET
             return sendCmd(Opcodes.SET_DFU_MODE);
         }
 
+        // this is not a Property because it has no value and cannot be undone
+        public bool resetFPGA()
+        {
+            logger.info("Resetting FPGA");
+            return sendCmd(Opcodes.FPGA_RESET);
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // getSpectrum
         ////////////////////////////////////////////////////////////////////////
@@ -1965,7 +2076,7 @@ namespace WasatchNET
             if (eeprom.badPixelList.Count == 0)
                 return;
 
-            if (spectrum == null || spectrum.Length == 0)
+            if (spectrum is null || spectrum.Length == 0)
                 return;
 
             // iterate over each bad pixel
@@ -2043,7 +2154,9 @@ namespace WasatchNET
         /// Take a single complete spectrum, including any configured scan 
         /// averaging, boxcar and dark subtraction.
         /// </summary>
+        ///
         /// <param name="forceNew">not used in base class (provided for specialized subclasses)</param>
+        ///
         /// <returns>The acquired spectrum as an array of doubles</returns>
         public virtual double[] getSpectrum(bool forceNew=false)
         {
@@ -2052,7 +2165,7 @@ namespace WasatchNET
                 currentAcquisitionCancelled = false;
 
                 double[] sum = getSpectrumRaw();
-                if (sum == null)
+                if (sum is null)
                 {
                     if (!currentAcquisitionCancelled && errorOnTimeout)
                         logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
@@ -2065,8 +2178,9 @@ namespace WasatchNET
                     // logger.debug("getSpectrum: getting additional spectra for averaging");
                     for (uint i = 1; i < scanAveraging_; i++)
                     {
-                        double[] tmp = getSpectrumRaw();
-                        if (tmp == null)
+                        // don't send a new SW trigger if using continuous acquisition
+                        double[] tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
+                        if (tmp is null)
                             return null;
 
                         for (int px = 0; px < pixels; px++)
@@ -2082,6 +2196,10 @@ namespace WasatchNET
                 if (dark != null && dark.Length == sum.Length)
                     for (int px = 0; px < pixels; px++)
                         sum[px] -= dark_[px];
+
+                // this should be enough to update the cached value
+                if (readTemperatureAfterSpectrum)
+                    _ = detectorTemperatureDegC;
 
                 if (boxcarHalfWidth_ > 0)
                 {
@@ -2110,16 +2228,15 @@ namespace WasatchNET
         /// Generate a throwaway spectrum, such as following a change in 
         /// integration time on spectrometers requiring such.
         /// </summary>
+        ///
         /// <remarks>
         /// If the caller doesn't want to block on this, they can always change
         /// integrationTimeMS within a Task.Run closure.
         /// </remarks>
         void performThrowawaySpectrum()
         {
-            // We will need to issue a software trigger for throwaway spectra.
-            // However, we want to make sure getSpectrumRaw won't "autoTrigger",
-            // as we don't want to send two.
-            if (!autoTrigger)
+            // send a trigger if getSpectrumRaw won't
+            if (!autoTrigger || triggerSource_ != TRIGGER_SOURCE.INTERNAL)
                 sendSWTrigger();
             getSpectrumRaw();
         }
@@ -2130,8 +2247,15 @@ namespace WasatchNET
                 spectralReader.ReadFlush();
         }
 
-        // just the bytes, ma'am
-        protected virtual double[] getSpectrumRaw()
+        /// <summary>
+        /// just the bytes, ma'am
+        /// </summary> 
+        ///
+        /// <param name="skipTrigger">
+        /// allows getSpectrum to suppress SW triggers when scanAveraging, on scans after
+        /// the first, if scanAveragingIsContinuous
+        /// </param>
+        protected virtual double[] getSpectrumRaw(bool skipTrigger=false)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
             byte[] buf = null;
@@ -2139,7 +2263,7 @@ namespace WasatchNET
                 buf = new byte[8];
 
             // request a spectrum
-            if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger)
+            if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
                 sendSWTrigger();
 
             if (isStroker)
@@ -2205,11 +2329,11 @@ namespace WasatchNET
                 }
 
                 // verify that exactly the number expected were received
-                if (subspectrum == null || subspectrum.Length != pixelsPerEndpoint)
+                if (subspectrum is null || subspectrum.Length != pixelsPerEndpoint)
                 {
                     if (!currentAcquisitionCancelled && errorOnTimeout)
                         logger.error($"failed when reading subspectrum from 0x{spectralReader.EpNum:x2} ({id})");
-                    Thread.Sleep(10);
+                    Thread.Sleep(delayAfterBulkEndpointErrorMS);
                     if (isStroker && areaScanEnabled)
                         pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
                     return null;
@@ -2224,6 +2348,37 @@ namespace WasatchNET
 
             if (isStroker && areaScanEnabled)
                 pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
+
+            if (hasMarker)
+            {
+                shiftedMarkerCount = 0;
+                if (spec[0] != SPECTRUM_START_MARKER)
+                    logger.error($"MARKER: first pixel does not match marker ({id})");
+
+                for (int i = 1; i < spec.Length; i++)
+                {
+                    if (spec[i] == SPECTRUM_START_MARKER)
+                    {
+                        logger.error($"MARKER found at pixel {i} ({id})");
+                        shiftedMarkerCount++;
+                    }
+                }
+
+                // regardless, overwrite the marker now that we've processed it
+                spec[0] = spec[1];
+            }
+
+            if (eeprom.featureMask.invertXAxis)
+                Array.Reverse(spec);
+
+            if (eeprom.featureMask.bin2x2)
+            {
+                var smoothed = new double[spec.Length];
+                for (int i = 0; i < spec.Length - 1; i++)
+                    smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
+                smoothed[spec.Length - 1] = spec[spec.Length - 1];
+                spec = smoothed;
+            }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
 
@@ -2525,6 +2680,12 @@ namespace WasatchNET
 
                 if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
                 {
+                    // Note that we may fall down this path following a SW-triggered
+                    // throwaway initiated by integration time change, even if the overall
+                    // triggering strategy is external.  In that case the following error
+                    // is misleading (it wasn't externally-triggered) but valid (it did
+                    // timeout).
+
                     // if we were given an explicit timeout, give up
                     if (acquisitionTimeoutMS != null || acquisitionTimeoutTimestamp != null)
                     {

@@ -39,6 +39,7 @@ namespace WasatchNET
         {
             // bRequest commands
             cmd[Opcodes.ACQUIRE_SPECTRUM                       ] = 0xad;
+            cmd[Opcodes.FPGA_RESET                             ] = 0xb5;
             cmd[Opcodes.GET_ACTUAL_FRAMES                      ] = 0xe4;
             cmd[Opcodes.GET_ACTUAL_INTEGRATION_TIME            ] = 0xdf;
             cmd[Opcodes.GET_ADC_RAW                            ] = 0xd5;
@@ -128,6 +129,10 @@ namespace WasatchNET
             // 0x10 = get external laser power
             // 0x11 = I2C sensor write (IMX)
             // 0x12 = I2C sensor read  (IMX)
+
+            // abandoned / former opcodes
+            // 0xb3 = FPGA config register (16bit)
+            // 0xbb = correlated double-sampling
 
             // this list has not been double-checked; ENLIGHTEN ignores return values :-(
             armInvertedRetvals.Add(Opcodes.ACQUIRE_SPECTRUM);
