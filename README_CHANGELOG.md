@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-05-19 2.2.7
+    - revised how startup temperature works
 - 2020-05-18 2.2.6
     - fixed EEPROM.write on ARM
     - added MultiChannelWrapper.scanAveraging
