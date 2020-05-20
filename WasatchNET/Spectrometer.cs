@@ -1617,6 +1617,7 @@ namespace WasatchNET
 
             // MZ: base on A/R/C?
             // use cache variable because why not
+            // TS: I get the intent here but we should be using the EEPROM field for this...
             float degC = UNINITIALIZED_TEMPERATURE_DEG_C;
             if (featureIdentification.hasDefaultTECSetpointDegC)
                 degC = featureIdentification.defaultTECSetpointDegC;
@@ -1624,6 +1625,9 @@ namespace WasatchNET
                 degC = -15;
             else if (Regex.IsMatch(eeprom.detectorName, @"S11511|S11850|S13971|S7031", RegexOptions.IgnoreCase))
                 degC = 10;
+
+            if (eeprom.startupDetectorTemperatureDegC >= eeprom.detectorTempMin && eeprom.startupDetectorTemperatureDegC <= eeprom.detectorTempMax)
+                degC = eeprom.startupDetectorTemperatureDegC;
 
             if (hasLaser)
             {
