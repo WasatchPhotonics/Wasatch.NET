@@ -1594,7 +1594,7 @@ namespace WasatchNET
 
                 baudRate = 0;
 
-                hasCooling = true;
+                hasCooling = false;
                 hasBattery = false;
                 hasLaser = false;
 
