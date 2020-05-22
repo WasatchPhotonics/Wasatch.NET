@@ -129,7 +129,7 @@ namespace WasatchNET
 
         static MultiChannelWrapper instance = null;
 
-        Driver driver = Driver.getInstance();
+        public Driver driver = Driver.getInstance();
         SortedDictionary<int, Spectrometer> specByPos;
 
         // which spectrometer generates the external trigger

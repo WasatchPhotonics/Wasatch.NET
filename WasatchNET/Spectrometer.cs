@@ -514,16 +514,17 @@ namespace WasatchNET
                 if (!eeprom.hasBattery)
                     return 0;
 
+                // don't check the battery faster than 1Hz
                 DateTime now = DateTime.Now;
-                DateTime nextCheck = batteryStateTimestamp_.AddSeconds(1);
-                if (batteryStateRaw_ != 0 && now < nextCheck)
-                    return batteryStateRaw_;
+                if (batteryStateTimestamp_ != null)
+                    if (now < batteryStateTimestamp_.Value.AddSeconds(1))
+                        return batteryStateRaw_;
 
                 // Unpack.toUint assumes little-endian order, but this is a custom 
                 // register, so let's re-order the received bytes to match the ICD
                 uint tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, 3));
                 uint lsb = (byte)(tmp & 0xff);
-                uint msb = (byte)((tmp >> 8) & 0xff);
+                uint msb = (byte)((tmp >>  8) & 0xff);
                 uint chg = (byte)((tmp >> 16) & 0xff);
                 batteryStateRaw_ = (lsb << 16) | (msb << 8) | chg;
 
@@ -531,7 +532,7 @@ namespace WasatchNET
                 return batteryStateRaw_;
             }
         }
-        DateTime batteryStateTimestamp_ = DateTime.Now;
+        DateTime? batteryStateTimestamp_ = null;
         uint batteryStateRaw_ = 0;
 
         public virtual float batteryPercentage
@@ -542,8 +543,8 @@ namespace WasatchNET
                     return 0;
 
                 uint raw = batteryStateRaw;
-                byte lsb = (byte)((batteryStateRaw >> 16) & 0xff);
-                byte msb = (byte)((batteryStateRaw >>  8) & 0xff);
+                byte lsb = (byte)((raw >> 16) & 0xff);
+                byte msb = (byte)((raw >>  8) & 0xff);
                 return ((float)(1.0 * msb)) + ((float)(1.0 * lsb / 256.0));
             }
         }
@@ -1926,6 +1927,7 @@ namespace WasatchNET
                 {
                     logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
                         opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
+                    logger.hexdump(buf, $"{opcode} result");
                     return null;
                 }
             }
