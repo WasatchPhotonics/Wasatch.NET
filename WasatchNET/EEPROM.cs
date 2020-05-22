@@ -1338,7 +1338,7 @@ namespace WasatchNET
                     baudRate = 0;
 
                     hasCooling = false;
-                    hasBattery = true;
+                    hasBattery = true;   // MZ: why?
                     hasLaser = false;
 
                     excitationNM = 0;
