@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-05-28 2.2.9
+    - surfacing firmware for Boulder spectrometers
+	- downstream bug fixes for Boulder spectrometers
 - 2020-05-22 2.2.8
     - battery cleanup
 - 2020-05-19 2.2.7

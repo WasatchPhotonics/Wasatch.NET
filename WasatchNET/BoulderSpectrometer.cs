@@ -376,7 +376,9 @@ namespace WasatchNET
 
         public override bool laserInterlockEnabled { get => false; }
 
-        public override UInt64 laserModulationPeriod { get => 0; }
+        public override UInt64 laserModulationPeriod { get => 100; }
+
+        public override ulong laserModulationPulseWidth { get => 0; set { } }
 
         public override float detectorGain { get => 0; }
 
@@ -537,6 +539,7 @@ namespace WasatchNET
                     cmd[0] = 0x6b; // read FPGA register
                     cmd[1] = 0x04; // read FPGA version number
 
+                    sbWrite(cmd);
                     byte[] response = sbRead(3);
 
                     UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
@@ -547,7 +550,7 @@ namespace WasatchNET
 
                     string formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
                     logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
-
+                    
                     return formatted;
                 }
             }

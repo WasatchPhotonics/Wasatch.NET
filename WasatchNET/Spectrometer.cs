@@ -1101,7 +1101,7 @@ namespace WasatchNET
         }
         UInt64 laserModulationPeriod_;
 
-        public UInt64 laserModulationPulseWidth
+        public virtual UInt64 laserModulationPulseWidth
         {
             get
             {
