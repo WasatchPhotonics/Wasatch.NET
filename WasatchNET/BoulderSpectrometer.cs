@@ -3,6 +3,8 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Text;
+using System.Text.RegularExpressions;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 
@@ -483,11 +485,75 @@ namespace WasatchNET
             }
         }
 
-        public override string firmwareRevision => "";
+        public override string firmwareRevision
+        {
+            get
+            {
+                string retval = null;
 
-        public override string fpgaRevision => "";
+                lock (acquisitionLock)
+                {
+                    try
+                    {
+                        byte[] raw = new byte[32];
+                        int error = 0;
 
-        public override float excitationWavelengthNM
+                        SeaBreezeWrapper.seabreeze_get_usb_descriptor_string(specIndex, ref error, 1, ref raw[0], raw.Length);
+
+                        if (error == 0)
+                        {
+                            int len = 0;
+                            while (raw[len] != 0 && len + 1 < raw.Length)
+                                len++;
+
+                            byte[] cleanByte = Encoding.Convert(Encoding.GetEncoding("iso-8859-1"), Encoding.UTF8, raw);
+                            string text = Encoding.UTF8.GetString(cleanByte, 0, len);
+                            const string pattern = @"\b(\d+\.\d+\.\d+)\b";
+                            Regex regEx = new Regex(pattern);
+                            MatchCollection matches = regEx.Matches(text);
+                            if (matches.Count > 0)
+                                retval =  matches[0].Groups[0].Value;
+                            else
+                                retval = text;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error("Error getting FX2 firmware version: {0}", e.Message);
+                    }
+                }
+                
+                return retval;
+            }
+        }
+
+        public override string fpgaRevision
+        {
+            get
+            {
+                lock (acquisitionLock)
+                {
+                    byte[] cmd = new byte[2];
+                    cmd[0] = 0x6b; // read FPGA register
+                    cmd[1] = 0x04; // read FPGA version number
+
+                    byte[] response = sbRead(3);
+
+                    UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
+
+                    int major = (bytes >> 12) & 0x0f;
+                    int minor = (bytes >> 4) & 0xff;
+                    int build = (bytes) & 0x0f;
+
+                    string formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
+                    logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
+
+                    return formatted;
+                }
+            }
+        }
+
+    public override float excitationWavelengthNM
         {
             get
             {
