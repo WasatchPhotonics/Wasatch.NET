@@ -81,7 +81,7 @@ make doc
 # verify version number is consistent (postAndRename handles for MSI)
 # (arguably, all that really matters is the WasatchNET assembly version)
 validateAssemblyVersion "WasatchNET"
-validateAssemblyVersion "WinFormDemo"
+#validateAssemblyVersion "WinFormDemo"
 #validateAssemblyVersion "MultiChannelDemo"
 
 # verify version number is tagged

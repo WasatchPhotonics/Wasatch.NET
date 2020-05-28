@@ -43,7 +43,7 @@ namespace WinFormDemo
             // attach the Driver's logger to our textbox
             logger.setTextBox(textBoxEventLog);
 
-            Text = String.Format("Wasatch.NET WinForm Demo (v{0})", Assembly.GetExecutingAssembly().GetName().Version.ToString());
+            Text = String.Format("Wasatch.NET WinForm Demo (v{0})", driver.version);
 
             // select the first X-Axis option
             comboBoxXAxis.SelectedIndex = 0;

@@ -55,7 +55,7 @@ namespace MultiChannelDemo
         {
             InitializeComponent();
 
-            Text = String.Format("MultiChannelDemo v{0}", Application.ProductVersion);
+            Text = String.Format("MultiChannelDemo v{0}", wrapper.driver.version);
 
             logger.setTextBox(textBoxEventLog);
 
