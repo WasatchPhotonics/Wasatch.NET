@@ -15,10 +15,13 @@ namespace WasatchNET
     [ClassInterface(ClassInterfaceType.None)]
     public class Driver : IDriver
     {
+        const int MAX_RESETS = 3;
+
         static Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
 
         bool suppressErrors = false;
+        int resetCount = 0;
 
         public Logger logger { get; } = Logger.getInstance();
         public string version { get; }
@@ -362,6 +365,50 @@ namespace WasatchNET
             }
         }
 
+        void attemptReset(object sender)
+        {
+            UsbDevice usb = sender as UsbDevice;
+            if (usb != null && usb.IsOpen)
+            {
+                if (resetCount > MAX_RESETS)
+                {
+                    logger.error("exceeded max resets, closing device");
+                    usb.Close();
+                    return;
+                }
+
+                UsbEndpointBase baseDevice = sender as UsbEndpointBase;
+                if (baseDevice != null)
+                {
+                    // UsbEndpointInfo uei = baseDevice.EndpointInfo;
+                    // LibUsbDotNet.Descriptors.UsbEndpointDescriptor ued = uei.Descriptor;
+                    logger.error($"[UsbEndPointBase]: usb device still open on endpoint 0x{baseDevice.EpNum}, so resetting endpoint");
+                    baseDevice.Reset();
+                    resetCount++;
+                }
+            }
+            else
+            {
+                // probably need to reconnect, per https://stackoverflow.com/questions/20822869/libusbdotnet-strange-errors-after-working-with-usb-device-for-awhile
+                // except the reconnect recommended by the above SO link is basically
+                // what we already have in Spectrometer.reconnect(), so maybe we want
+                // to continue to "silently ignore" here and handle this from
+                // Spectrometer.getSpectrum()?
+                // Perhaps this would be a good place to throw a custom exception
+                // that could be caught in getSpectrum, which could then trigger reconnect()?
+                logger.error("YOU ARE HERE -- add disconnect / reconnect logic?");
+
+                UsbEndpointReader reader = sender as UsbEndpointReader;
+                if (reader != null)
+                {
+                    logger.error($"[UsbEndpointReader]: hit error at endpoint 0x{reader.EpNum:x2}");
+                    //reader.Reset();
+                    //reader.Flush();
+                    return;
+                }
+            }
+        }
+
         void OnUsbError(object sender, UsbError e)
         {
             if (suppressErrors)
@@ -373,45 +420,23 @@ namespace WasatchNET
                 logger.error("{0} [UsbEndPointBase]: Win32ErrorNumber {1} ({2}): {3}",
                     prefix, e.Win32ErrorNumber, e.Win32ErrorString, e.Description);
 
-                // Magic number 31 came from here: http://libusbdotnet.sourceforge.net/V2/html/718df290-f19a-9033-3a26-1e8917adf15d.htm
-                // (actually arises with ARM devices in testing)
-                // per https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
-                // 31 == ERROR_GEN_FAILURE (0x1f) "A device attached to the system is not functioning."
-
                 if (e.Win32ErrorNumber == 31)
                 {
-                    UsbDevice usb = sender as UsbDevice;
-                    if (usb != null && usb.IsOpen)
-                    {
-                        UsbEndpointBase baseDevice = sender as UsbEndpointBase;
-                        // UsbEndpointInfo uei = baseDevice.EndpointInfo;
-                        // LibUsbDotNet.Descriptors.UsbEndpointDescriptor ued = uei.Descriptor;
-                        logger.error($"{prefix} [UsbEndPointBase]: usb device still open on endpoint 0x{baseDevice.EpNum}, so resetting endpoint");
-                        baseDevice.Reset();
-                    }
-                    else
-                    {
-                        // probably need to reconnect, per https://stackoverflow.com/questions/20822869/libusbdotnet-strange-errors-after-working-with-usb-device-for-awhile
-                        // except the reconnect recommended by the above SO link is basically
-                        // what we already have in Spectrometer.reconnect(), so maybe we want
-                        // to continue to "silently ignore" here and handle this from
-                        // Spectrometer.getSpectrum()?
-                        // Perhaps this would be a good place to throw a custom exception
-                        // that could be caught in getSpectrum, which could then trigger reconnect()?
-                        logger.error("YOU ARE HERE -- add disconnect / reconnect logic?");
-
-                        UsbEndpointReader reader = sender as UsbEndpointReader;
-                        if (reader != null)
-                        {
-                             logger.error($"{prefix} [UsbEndpointReader]: hit error at endpoint 0x{reader.EpNum:x2}");
-                             //reader.Reset();
-                             //reader.Flush();
-                        }
-                    }
+                    // Magic number 31 came from here: http://libusbdotnet.sourceforge.net/V2/html/718df290-f19a-9033-3a26-1e8917adf15d.htm
+                    // (actually arises with ARM devices in testing)
+                    // per https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
+                    // 31 == ERROR_GEN_FAILURE (0x1f) "A device attached to the system is not functioning."
+                    logger.error("[Driver] A device attached to the system is not functioning");
+                    attemptReset(sender);
+                }
+                else if (e.Win32ErrorNumber == 22)
+                {
+                    logger.error("[Driver] The device does not recognize the command");
+                    attemptReset(sender);
                 }
                 else
                 {
-                    // silently ignore Endpoint errors other than Win32Error
+                    // silently ignore errors other than Win32Error 31
                 }
             }
             else if (sender is UsbTransfer)

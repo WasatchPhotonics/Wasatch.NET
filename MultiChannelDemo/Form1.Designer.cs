@@ -138,6 +138,8 @@
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            this.numericUpDownBoxcar = new System.Windows.Forms.NumericUpDown();
+            this.label1 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -220,6 +222,7 @@
             this.groupBox12.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chartAll)).BeginInit();
             this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBoxcar)).BeginInit();
             this.SuspendLayout();
             // 
             // splitContainerTopVsLog
@@ -748,6 +751,8 @@
             // 
             // groupBox4
             // 
+            this.groupBox4.Controls.Add(this.label1);
+            this.groupBox4.Controls.Add(this.numericUpDownBoxcar);
             this.groupBox4.Controls.Add(this.checkBoxIntegThrowaways);
             this.groupBox4.Location = new System.Drawing.Point(6, 145);
             this.groupBox4.Name = "groupBox4";
@@ -1493,6 +1498,23 @@
             this.saveFileDialog.SupportMultiDottedExtensions = true;
             this.saveFileDialog.Title = "Monte Carlo Batch Report";
             // 
+            // numericUpDownBoxcar
+            // 
+            this.numericUpDownBoxcar.Location = new System.Drawing.Point(7, 38);
+            this.numericUpDownBoxcar.Name = "numericUpDownBoxcar";
+            this.numericUpDownBoxcar.Size = new System.Drawing.Size(56, 20);
+            this.numericUpDownBoxcar.TabIndex = 2;
+            this.numericUpDownBoxcar.ValueChanged += new System.EventHandler(this.numericUpDownBoxcar_ValueChanged);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(69, 40);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(39, 13);
+            this.label1.TabIndex = 3;
+            this.label1.Text = "boxcar";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1599,6 +1621,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.chartAll)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBoxcar)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -1695,6 +1718,8 @@
         private System.Windows.Forms.Button buttonUnselectAll;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.CheckBox checkBoxIntegThrowaways;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.NumericUpDown numericUpDownBoxcar;
     }
 }
 

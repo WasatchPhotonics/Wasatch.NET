@@ -15,7 +15,10 @@ doc docs:
 	@cat doxygen.err
 
 deploy:
-	@cp -v lib/x86/WasatchNET.dll $(HOME)/work/code/RamanSpecCal/dist
+	@for CLIENT in RamanSpecCal CrashTestNET ; \
+     do test -d ../$$CLIENT && \
+        cp -v lib/x86/WasatchNET.dll ../$$CLIENT/dist ; \
+     done
 
 clean:
 	@rm -rf WasatchNET/bin      \

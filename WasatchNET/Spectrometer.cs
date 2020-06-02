@@ -221,6 +221,11 @@ namespace WasatchNET
         /// "stability" measurement after changing integration time.
         /// (defaults false)
         /// </summary>
+        ///
+        /// <todo>
+        /// Change such that only used if the trigger source is internal (SW-triggered)
+        /// and autoTrigger is enabled (both the default).
+        /// </todo>
         public bool throwawayAfterIntegrationTime { get; set; }
 
         /// <summary>
@@ -1019,7 +1024,7 @@ namespace WasatchNET
             {
                 if (isARM)
                 {
-                    logger.error("GET_LASER_INTERLOCK not supported on ARM");
+                    logger.debug("GET_LASER_INTERLOCK not supported on ARM");
                     return false;
                 }
                 return Unpack.toBool(getCmd(Opcodes.GET_LASER_INTERLOCK, 1));
@@ -1195,7 +1200,7 @@ namespace WasatchNET
                 ushort raw = laserTemperatureRaw;
                 if (raw == 0)
                 {
-                    logger.error("laserTemperatureDegC.get: can't take log of zero");
+                    logger.debug("laserTemperatureDegC.get: can't take log of zero");
                     return 0;
                 }
 
@@ -2244,6 +2249,12 @@ namespace WasatchNET
         /// If the caller doesn't want to block on this, they can always change
         /// integrationTimeMS within a Task.Run closure.
         /// </remarks>
+        ///
+        /// <todo>
+        /// Consider simply disabling this feature (returning from this function)
+        /// if autoTrigger is disabled or using HW triggering.  In such cases, if
+        /// the user wants a throwaway, they can generate it themselves.
+        /// </todo>
         void performThrowawaySpectrum()
         {
             // send a trigger if getSpectrumRaw won't
@@ -2381,6 +2392,12 @@ namespace WasatchNET
 
             if (eeprom.featureMask.invertXAxis)
                 Array.Reverse(spec);
+
+            if (isSiG)
+            {
+                // overwrite last pixel
+                spec[pixels - 1] = spec[pixels - 2];
+            }
 
             if (eeprom.featureMask.bin2x2)
             {
