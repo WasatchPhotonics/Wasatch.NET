@@ -933,40 +933,50 @@ namespace WasatchNET
                 if (!ParseData.writeFloat(laserPowerCoeffs[3], pages[3], 24)) return false;
                 if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 28)) return false;
                 if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 32)) return false;
-                if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
-                if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
-                if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
-                if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
+
+                if (format >= 4)
+                {
+                    if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
+                    if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
+                    if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
+                }
+                
+                if (format >= 7)
+                    if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
 
                 byte[] userDataChunk2 = new byte[64];
                 byte[] userDataChunk3 = new byte[64];
 
-                // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
-                // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
-                // than try to write them.
-                //
-                // Should protect users without restricting them
-                if (userData.Length <= 64)
+                if (format >= 8)
                 {
-                    Array.Copy(userData, pages[4], userData.Length);
-                }
-                else
-                {
-                    Array.Copy(userData, pages[4], 64);
-                    if (userData.Length <= 128)
+                    
+                    // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
+                    // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
+                    // than try to write them.
+                    //
+                    // Should protect users without restricting them
+                    if (userData.Length <= 64)
                     {
-                        Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
-
-                    }
-                    else if (userData.Length <= 192)
-                    {
-                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
-                        Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
+                        Array.Copy(userData, pages[4], userData.Length);
                     }
                     else
                     {
-                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
-                        Array.Copy(userData, 128, userDataChunk3, 0, 64);
+                        Array.Copy(userData, pages[4], 64);
+                        if (userData.Length <= 128)
+                        {
+                            Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
+
+                        }
+                        else if (userData.Length <= 192)
+                        {
+                            Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                            Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
+                        }
+                        else
+                        {
+                            Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                            Array.Copy(userData, 128, userDataChunk3, 0, 64);
+                        }
                     }
                 }
                 // note that we write the positional, error-prone array (which is 
@@ -975,15 +985,32 @@ namespace WasatchNET
                     if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
                         return false;
 
-                if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
-                if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
+                if (format >= 5)
+                    if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
 
-                if (subformat == PAGE_SUBFORMAT.USER_DATA)
+                if (format >= 8)
                 {
-                    Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
-                    Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
+                    if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
+
+                    if (subformat == PAGE_SUBFORMAT.USER_DATA)
+                    {
+                        Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
+                        Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
+                    }
+                    else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
+                    {
+                        if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
+                        if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
+                        {
+                            for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                            {
+                                if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                            }
+                        }
+                    }
                 }
-                else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
+
+                else if (format >= 6)
                 {
                     if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
                     if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
@@ -994,8 +1021,8 @@ namespace WasatchNET
                         }
                     }
                 }
-                // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
-                pages[0][63] = FORMAT;
+
+                pages[0][63] = format;
 
                 SPISpectrometer a = spectrometer as SPISpectrometer;
 
@@ -1096,40 +1123,50 @@ namespace WasatchNET
                 if (!ParseData.writeFloat(laserPowerCoeffs[3], pages[3], 24)) return false;
                 if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 28)) return false;
                 if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 32)) return false;
-                if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
-                if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
-                if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
-                if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
+
+                if (format >= 4)
+                {
+                    if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
+                    if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
+                    if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
+                }
+
+                if (format >= 7)
+                    if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
 
                 byte[] userDataChunk2 = new byte[64];
                 byte[] userDataChunk3 = new byte[64];
 
-                // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
-                // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
-                // than try to write them.
-                //
-                // Should protect users without restricting them
-                if (userData.Length <= 64)
+                if (format >= 8)
                 {
-                    Array.Clear(pages[4], 0, pages[4].Length);
-                    Array.Copy(userData, pages[4], userData.Length);
-                }
-                else
-                {
-                    Array.Copy(userData, pages[4], 64);
-                    if (userData.Length <= 128)
+
+                    // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
+                    // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
+                    // than try to write them.
+                    //
+                    // Should protect users without restricting them
+                    if (userData.Length <= 64)
                     {
-                        Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
-                    }
-                    else if (userData.Length <= 192)
-                    {
-                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
-                        Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
+                        Array.Copy(userData, pages[4], userData.Length);
                     }
                     else
                     {
-                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
-                        Array.Copy(userData, 128, userDataChunk3, 0, 64);
+                        Array.Copy(userData, pages[4], 64);
+                        if (userData.Length <= 128)
+                        {
+                            Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
+
+                        }
+                        else if (userData.Length <= 192)
+                        {
+                            Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                            Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
+                        }
+                        else
+                        {
+                            Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                            Array.Copy(userData, 128, userDataChunk3, 0, 64);
+                        }
                     }
                 }
 
@@ -1139,16 +1176,35 @@ namespace WasatchNET
                     if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
                         return false;
 
-                if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
+                if (format >= 5)
+                    if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
+
                 //subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
                 if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
 
-                if (subformat == PAGE_SUBFORMAT.USER_DATA)
+                if (format >= 8)
                 {
-                    Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
-                    Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
+                    if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
+
+                    if (subformat == PAGE_SUBFORMAT.USER_DATA)
+                    {
+                        Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
+                        Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
+                    }
+                    else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
+                    {
+                        if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
+                        if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
+                        {
+                            for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                            {
+                                if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                            }
+                        }
+                    }
                 }
-                else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
+
+                else if (format >= 6)
                 {
                     if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
                     if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
@@ -1160,8 +1216,7 @@ namespace WasatchNET
                     }
                 }
 
-                // regardless of what the "read" format was (this.format), we always WRITE the latest format version.
-                pages[0][63] = FORMAT;
+                pages[0][63] = format;
 
                 for (short page = 0; page < pages.Count; page++)
                 {
@@ -1582,6 +1637,8 @@ namespace WasatchNET
 
                 enforceReasonableDefaults();
 
+                format = FORMAT;
+
                 return true;
             }
 
@@ -1893,6 +1950,8 @@ namespace WasatchNET
                     dump();
 
                 enforceReasonableDefaults();
+
+                format = FORMAT;
 
                 return true;
             }
