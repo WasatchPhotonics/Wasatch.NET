@@ -74,6 +74,8 @@ namespace WasatchNET
             // Add Wasatch Photonics USB spectrometers
             ////////////////////////////////////////////////////////////////////
 
+            // @todo move away from UsbRegistry to prep for LibUsbDotNet 3.x
+
             UsbRegDeviceList deviceRegistries = UsbDevice.AllDevices;
 
             //UsbDeviceFinder usbDeviceFinder = UsbDevice.

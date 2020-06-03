@@ -169,9 +169,14 @@ namespace WasatchNET
             get
             {
                 // if we decide to keep this, change to EEPROM.featureMask.hasFraming
-                return eeprom.model == "WPX-8CHANNEL";
+                return _hasMarker || eeprom.model == "WPX-8CHANNEL";
+            }
+            set
+            {
+                _hasMarker = value;
             }
         }
+        bool _hasMarker;
 
         /// <summary>spectrometer serial number</summary>
         public virtual string serialNumber
@@ -847,6 +852,8 @@ namespace WasatchNET
             {
                 if (isSiG)
                     return 0;
+                if (!eeprom.hasCooling)
+                    return 0;
                 return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
             }
         }
@@ -966,7 +973,10 @@ namespace WasatchNET
                 // noop if already set 
                 const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
                 if (haveCache(op) && integrationTimeMS_ == value)
+                {
+                    logger.debug($"ignoring request to re-set existing integration time {value}");
                     return;
+                }
 
                 lock (acquisitionLock)
                 {
@@ -1623,7 +1633,11 @@ namespace WasatchNET
                 usingDualEndpoints = true;
             }
 
-            if (!usingDualEndpoints)
+            // flush anything left-over from prior exchanges
+            spectralReader82.ReadFlush();
+            if (usingDualEndpoints)
+                spectralReader86.ReadFlush();
+            else
                 spectralReader86 = null;
 
             regenerateWavelengths();
@@ -1816,11 +1830,8 @@ namespace WasatchNET
             if (usbDevice != null)
             {
                 logger.debug("Spectrometer.reconnect: clearing");
-                spectralReader82.ReadFlush();
-                if (usingDualEndpoints)
-                    spectralReader86.ReadFlush();
                 spectralReader82.Dispose();
-                if (usingDualEndpoints)
+                if (spectralReader86 != null)
                     spectralReader86.Dispose();
                 // statusReader.Dispose();
                 wholeUsbDevice.ReleaseInterface(0);
@@ -1863,9 +1874,6 @@ namespace WasatchNET
             logger.debug("Spectrometer.reconnect: creating readers");
             spectralReader82 = usbDevice.OpenEndpointReader(ReadEndpointID.Ep02);
             spectralReader86 = usbDevice.OpenEndpointReader(ReadEndpointID.Ep06);
-
-            spectralReader82.ReadFlush();
-            // spectralReader86.ReadFlush();
 
             logger.debug("Spectrometer.reconnect: done");
             return true;
@@ -2242,7 +2250,7 @@ namespace WasatchNET
                         sum[px] -= dark_[px];
 
                 // this should be enough to update the cached value
-                if (readTemperatureAfterSpectrum)
+                if (readTemperatureAfterSpectrum && eeprom.hasCooling)
                     _ = detectorTemperatureDegC;
 
                 if (boxcarHalfWidth_ > 0)
