@@ -67,6 +67,7 @@ namespace WasatchNET
         // consistent with Wasatch.PY
         UsbEndpointReader spectralReader82;
         UsbEndpointReader spectralReader86;
+        bool usingDualEndpoints;
 
         internal Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
         HashSet<Opcodes> armInvertedRetvals = OpcodeHelper.getInstance().getArmInvertedRetvals();
@@ -78,6 +79,23 @@ namespace WasatchNET
         object commsLock = new object();
         DateTime lastUsbTimestamp = DateTime.Now;
         internal bool shuttingDown = false;
+
+        /// <summary>
+        /// Whether to synchronize all spectral reads with a class-level (static) 
+        /// mutex.  
+        /// </summary>
+        ///
+        /// <remarks>
+        /// This doesn't include the sending of ACQUIRE software triggers, just 
+        /// the bulk readouts over Ep2 and Ep6.  As USB is fundamentally serial,
+        /// this probably doesn't change behavior much, but it will ensure whole
+        /// whole spectra are transferred atomically, even when spanning endpoints.
+        /// 
+        /// This is a developmental test feature, and not intended for production
+        /// applications.
+        /// </remarks>
+        public bool useReadoutMutex { get; set; }
+        static Mutex readoutMutex = new Mutex();
 
         List<UsbEndpointReader> endpoints = new List<UsbEndpointReader>();
         int pixelsPerEndpoint = 0;
@@ -1597,19 +1615,16 @@ namespace WasatchNET
             // figure out what endpoints we'll use, and sizes for each
             pixelsPerEndpoint = (int)pixels;
             endpoints.Add(spectralReader82);
-            if (pixels == 512 || pixels == 1024)
+            if (pixels == 2048 && !isARM)
             {
-                // defaults fine
-            }
-            else if (pixels == 2048)
-            {
+                logger.debug("splitting over two endpoints");
                 endpoints.Add(spectralReader86);
                 pixelsPerEndpoint = 1024;
+                usingDualEndpoints = true;
             }
-            else
-            {
-                logger.debug("unusual number of pixels ({0})...assuming all at endpoint {1}", pixels, spectralReader82);
-            }
+
+            if (!usingDualEndpoints)
+                spectralReader86 = null;
 
             regenerateWavelengths();
 
@@ -1801,8 +1816,12 @@ namespace WasatchNET
             if (usbDevice != null)
             {
                 logger.debug("Spectrometer.reconnect: clearing");
+                spectralReader82.ReadFlush();
+                if (usingDualEndpoints)
+                    spectralReader86.ReadFlush();
                 spectralReader82.Dispose();
-                spectralReader86.Dispose();
+                if (usingDualEndpoints)
+                    spectralReader86.Dispose();
                 // statusReader.Dispose();
                 wholeUsbDevice.ReleaseInterface(0);
                 wholeUsbDevice.Close();
@@ -1824,7 +1843,7 @@ namespace WasatchNET
                 return logger.error("Spectrometer: failed to re-open UsbRegistry");
 
             wholeUsbDevice = usbDevice as IUsbDevice;
-            if (!ReferenceEquals(wholeUsbDevice, null))
+            if (wholeUsbDevice != null)
             {
                 logger.debug("Spectrometer.reconnect: claiming interface");
                 wholeUsbDevice.SetConfiguration(1);
@@ -1835,9 +1854,18 @@ namespace WasatchNET
                 logger.debug("Spectrometer.reconnect: WinUSB detected");
             }
 
+            // should this be moved to AFTER we've read the EEPROM and know what
+            // we need?  We would then have to handle in-flight reconnects; however,
+            // this is a little fudgy right now in that it instantiates endpoint 6
+            // on spectrometers which may not actually have an endpoint 6.  It seems
+            // to be okay, as long as we don't actually use the extra endpoint for
+            // anything (including ReadFlush).
             logger.debug("Spectrometer.reconnect: creating readers");
             spectralReader82 = usbDevice.OpenEndpointReader(ReadEndpointID.Ep02);
             spectralReader86 = usbDevice.OpenEndpointReader(ReadEndpointID.Ep06);
+
+            spectralReader82.ReadFlush();
+            // spectralReader86.ReadFlush();
 
             logger.debug("Spectrometer.reconnect: done");
             return true;
@@ -2257,6 +2285,7 @@ namespace WasatchNET
         /// </todo>
         void performThrowawaySpectrum()
         {
+            logger.debug("generating throwaway spectrum");
             // send a trigger if getSpectrumRaw won't
             if (!autoTrigger || triggerSource_ != TRIGGER_SOURCE.INTERNAL)
                 sendSWTrigger();
@@ -2298,6 +2327,9 @@ namespace WasatchNET
             // read spectrum
             ////////////////////////////////////////////////////////////////////
 
+            if (useReadoutMutex)
+                readoutMutex.WaitOne();
+
             double[] spec = new double[pixels]; // default to all zeros
 
             int pixelsRead = 0;
@@ -2332,6 +2364,8 @@ namespace WasatchNET
                         if (retries >= maxRetries)
                         {
                             logger.error($"giving up after {retries} retries");
+                            if (useReadoutMutex)
+                                readoutMutex.ReleaseMutex();
                             return null;
                         }
 
@@ -2345,6 +2379,8 @@ namespace WasatchNET
                         else
                         {
                             logger.error("reconnection failed, giving up");
+                            if (useReadoutMutex)
+                                readoutMutex.ReleaseMutex();
                             return null;
                         }
                     }
@@ -2358,6 +2394,8 @@ namespace WasatchNET
                     Thread.Sleep(delayAfterBulkEndpointErrorMS);
                     if (isStroker && areaScanEnabled)
                         pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
+                    if (useReadoutMutex)
+                        readoutMutex.ReleaseMutex();
                     return null;
                 }
 
@@ -2367,6 +2405,10 @@ namespace WasatchNET
 
                 pixelsRead += pixelsPerEndpoint;
             }
+
+            // release the mutex...other spectrometers can proceed with their reads
+            if (useReadoutMutex)
+                readoutMutex.ReleaseMutex();
 
             if (isStroker && areaScanEnabled)
                 pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;

@@ -21,25 +21,13 @@ deploy:
      done
 
 clean:
-	@rm -rf WasatchNET/bin      \
-	        WasatchNET/obj      \
+	@rm -rf {WasatchNET,WinFormDemo,UnitTests,MultiChannelDemo,APITest,LibUsbDotNetTest}/{bin,obj} \
                                 \
-	        WinFormDemo/obj     \
-	        WinFormDemo/bin     \
-                                \
-	        UnitTests/obj       \
-	        UnitTests/bin       \
-                                \
-            Setup32/Release     \
-            Setup32/Debug       \
-                                \
-            Setup64/Release     \
-            Setup64/Debug       \
+            Setup{32,64}/{Debug,Release} \
                                 \
             lib/WasatchNET.dll  \
                                 \
             doc/doxygen         \
-            doxygen.out         \
-            doxygen.err         \
+            doxygen.{out,err}   \
                                 \
             .vs

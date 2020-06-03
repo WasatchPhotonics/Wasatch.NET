@@ -1,5 +1,10 @@
 # Wasatch.NET Changelog
 
+- 2020-??-?? 2.2.10
+    - support 2048-pixel ARM
+    - added useReadoutMutex
+    - bulk endpoint cleanup
+    - simplified 'make clean'
 - 2020-05-22 2.2.8
     - battery cleanup
 - 2020-05-19 2.2.7
