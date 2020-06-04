@@ -658,6 +658,9 @@ namespace MultiChannelDemo
                         headers.Add($"Pos{pos}_Avg");
                 foreach (var pos in wrapper.positions)
                     if (wrapper.getSpectrometer(pos).multiChannelSelected)
+                        headers.Add($"Pos{pos}_Peak");
+                foreach (var pos in wrapper.positions)
+                    if (wrapper.getSpectrometer(pos).multiChannelSelected)
                         headers.Add($"Pos{pos}_DegC");
                 foreach (var pos in wrapper.positions)
                     if (wrapper.getSpectrometer(pos).multiChannelSelected)
@@ -752,6 +755,7 @@ namespace MultiChannelDemo
 
                     List<string> specInteg   = new List<string>();
                     List<string> specAvg     = new List<string>();
+                    List<string> specPeakX   = new List<string>();
                     List<string> specDegC    = new List<string>();
                     List<string> specSpectra = new List<string>();
                     List<string> specShifts  = new List<string>();
@@ -763,9 +767,11 @@ namespace MultiChannelDemo
 
                         var avg = spec.lastSpectrum.Average();
                         var ms = spec.integrationTimeMS;
+                        var peakX = xOfPeakY(spec.wavelengths, spec.lastSpectrum);
 
                         specInteg   .Add(string.Format("{0}", ms));
                         specAvg     .Add(string.Format("{0:f2}", avg));
+                        specPeakX   .Add(string.Format("{0:f2}", peakX));
                         specDegC    .Add(string.Format("{0:f2}", spec.lastDetectorTemperatureDegC));
                         specSpectra .Add(string.Format("{0}", acquisitionCounts[pos]));
                         specShifts  .Add(string.Format("{0}", spec.shiftedMarkerCount));
@@ -781,6 +787,7 @@ namespace MultiChannelDemo
                     sw.Write($"{triggerCount}, {nowStr}, {timeRemaining}, {elapsedMS}, {wrapper.triggerPulseWidthMS}, ");
                     sw.Write(string.Join<string>(", ", specInteg  ) + ", ");
                     sw.Write(string.Join<string>(", ", specAvg    ) + ", ");
+                    sw.Write(string.Join<string>(", ", specPeakX  ) + ", ");
                     sw.Write(string.Join<string>(", ", specDegC   ) + ", ");
                     sw.Write(string.Join<string>(", ", specSpectra) + ", ");
                     sw.Write(string.Join<string>(", ", specShifts ));
@@ -860,6 +867,25 @@ namespace MultiChannelDemo
         private void checkBoxIntegThrowaways_CheckedChanged(object sender, EventArgs e)
         {
             wrapper.integrationThrowaways = checkBoxIntegThrowaways.Checked;
+        }
+
+        private void numericUpDownBoxcar_ValueChanged(object sender, EventArgs e)
+        {
+            var n = (uint)numericUpDownBoxcar.Value;
+            foreach (var pos in wrapper.positions)
+            {
+                var spec = wrapper.getSpectrometer(pos);
+                spec.boxcarHalfWidth = n;
+            }
+        }
+
+        double xOfPeakY(double[] x, double[] y)
+        {
+            int best = 0;
+            for (int i = 1; i < x.Length; i++)
+                if (y[i] > y[best])
+                    best = i;
+            return x[best];
         }
     }
 }

@@ -50,7 +50,12 @@ function postAndRename()
     LOCAL_PATH="${ARCH}/Debug/$LOCAL_NAME"
 
     REMOTE_NAME="WasatchNET-${VERSION}-${ARCH}.msi"
-    REMOTE_PATH="www/binaries/drivers/Wasatch.NET/$REMOTE_NAME"
+    if $IS_BETA
+    then
+        REMOTE_PATH="www/binaries/drivers/Wasatch.NET/beta/$REMOTE_NAME"
+    else
+        REMOTE_PATH="www/binaries/drivers/Wasatch.NET/$REMOTE_NAME"
+    fi
 
     scp $LOCAL_PATH $USERNAME@wasatchphotonics.com:$REMOTE_PATH
 }
@@ -60,23 +65,28 @@ do
     cp -v WasatchNET/bin/$arch/Debug/WasatchNET.{dll,pdb} lib/$arch
 done
 
-read -p "Username: " USERNAME
-read -p "Version:  " VERSION 
+read -p "Username:   " USERNAME
+read -p "Version:    " VERSION 
+read -p "Beta [y/n]: " BETA_RESPONSE
+
+if echo $BETA_RESPONSE | grep -qi y
+then
+    IS_BETA=true
+else
+    IS_BETA=false
+fi
 
 # make sure we're releasing off master
 BRANCH=`git rev-parse --abbrev-ref HEAD`
-if [ $BRANCH != "master" ]
+if [ $BRANCH != "master" ] && [ ! $IS_BETA ]
 then
-    echo "Please release off master (currently on $BRANCH)"
+    echo "Please release non-beta versions off master (currently on $BRANCH)"
     exit 1
 fi
 
 # render documentation (TODO: incorporate VERSION into rendered docs)
 export VERSION
 make doc
-
-# echo
-# read -p "Press return to continue..." FOO
 
 # verify version number is consistent (postAndRename handles for MSI)
 # (arguably, all that really matters is the WasatchNET assembly version)
