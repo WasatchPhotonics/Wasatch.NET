@@ -910,8 +910,9 @@ namespace WasatchNET
                 if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
                 // skip 18
                 if (!ParseData.writeUInt16(activePixelsVert, pages[2], 19)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[4], pages[2], 21)) return false;
-
+                if (format >= 8)
+                    if (!ParseData.writeFloat(wavecalCoeffs[4], pages[2], 21)) return false;
+                
                 if (!ParseData.writeUInt16(actualPixelsHoriz, pages[2], 25)) return false;
                 if (!ParseData.writeUInt16(ROIHorizStart, pages[2], 27)) return false;
                 if (!ParseData.writeUInt16(ROIHorizEnd, pages[2], 29)) return false;
@@ -940,7 +941,12 @@ namespace WasatchNET
                     if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
                     if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
                 }
-                
+                else
+                {
+                    if (!ParseData.writeUInt16((ushort)minIntegrationTimeMS, pages[2], 21)) return false;
+                    if (!ParseData.writeUInt16((ushort)maxIntegrationTimeMS, pages[2], 23)) return false;
+                }
+
                 if (format >= 7)
                     if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
 
@@ -1069,7 +1075,12 @@ namespace WasatchNET
                 if (!ParseData.writeBool(hasCooling, pages[0], 36)) return false;
                 if (!ParseData.writeBool(hasBattery, pages[0], 37)) return false;
                 if (!ParseData.writeBool(hasLaser, pages[0], 38)) return false;
-                if (!ParseData.writeUInt16(featureMask.toUInt16(), pages[0], 39)) return false;
+
+                if (format >= 9)
+                    if (!ParseData.writeUInt16(featureMask.toUInt16(), pages[0], 39)) return false;
+                else
+                    if (!ParseData.writeUInt16(excitationNM, pages[0], 39)) return false;
+
                 if (!ParseData.writeUInt16(slitSizeUM, pages[0], 41)) return false;
                 if (!ParseData.writeUInt16(startupIntegrationTimeMS, pages[0], 43)) return false;
                 if (!ParseData.writeInt16(startupDetectorTemperatureDegC, pages[0], 45)) return false;
@@ -1123,6 +1134,8 @@ namespace WasatchNET
                 if (!ParseData.writeFloat(laserPowerCoeffs[3], pages[3], 24)) return false;
                 if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 28)) return false;
                 if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 32)) return false;
+
+
 
                 if (format >= 4)
                 {
