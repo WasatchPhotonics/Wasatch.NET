@@ -1,5 +1,11 @@
 # Wasatch.NET Changelog
 
+- 2020-06-03 2.2.10
+    - don't attempt to read temperature on ambient detectors
+    - added support for 2048-pixel ARM
+    - added useReadoutMutex
+    - bulk endpoint cleanup
+    - simplified 'make clean'
 - 2020-05-28 2.2.9
     - surfacing firmware for Boulder spectrometers
 	- downstream bug fixes for Boulder spectrometers

@@ -67,6 +67,7 @@ namespace WasatchNET
         // consistent with Wasatch.PY
         UsbEndpointReader spectralReader82;
         UsbEndpointReader spectralReader86;
+        bool usingDualEndpoints;
 
         internal Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
         HashSet<Opcodes> armInvertedRetvals = OpcodeHelper.getInstance().getArmInvertedRetvals();
@@ -78,6 +79,23 @@ namespace WasatchNET
         object commsLock = new object();
         DateTime lastUsbTimestamp = DateTime.Now;
         internal bool shuttingDown = false;
+
+        /// <summary>
+        /// Whether to synchronize all spectral reads with a class-level (static) 
+        /// mutex.  
+        /// </summary>
+        ///
+        /// <remarks>
+        /// This doesn't include the sending of ACQUIRE software triggers, just 
+        /// the bulk readouts over Ep2 and Ep6.  As USB is fundamentally serial,
+        /// this probably doesn't change behavior much, but it will ensure whole
+        /// whole spectra are transferred atomically, even when spanning endpoints.
+        /// 
+        /// This is a developmental test feature, and not intended for production
+        /// applications.
+        /// </remarks>
+        public bool useReadoutMutex { get; set; }
+        static Mutex readoutMutex = new Mutex();
 
         List<UsbEndpointReader> endpoints = new List<UsbEndpointReader>();
         int pixelsPerEndpoint = 0;
@@ -151,9 +169,14 @@ namespace WasatchNET
             get
             {
                 // if we decide to keep this, change to EEPROM.featureMask.hasFraming
-                return eeprom.model == "WPX-8CHANNEL";
+                return _hasMarker || eeprom.model == "WPX-8CHANNEL";
+            }
+            set
+            {
+                _hasMarker = value;
             }
         }
+        bool _hasMarker;
 
         /// <summary>spectrometer serial number</summary>
         public virtual string serialNumber
@@ -221,6 +244,11 @@ namespace WasatchNET
         /// "stability" measurement after changing integration time.
         /// (defaults false)
         /// </summary>
+        ///
+        /// <todo>
+        /// Change such that only used if the trigger source is internal (SW-triggered)
+        /// and autoTrigger is enabled (both the default).
+        /// </todo>
         public bool throwawayAfterIntegrationTime { get; set; }
 
         /// <summary>
@@ -824,6 +852,8 @@ namespace WasatchNET
             {
                 if (isSiG)
                     return 0;
+                if (!eeprom.hasCooling)
+                    return 0;
                 return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
             }
         }
@@ -943,7 +973,10 @@ namespace WasatchNET
                 // noop if already set 
                 const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
                 if (haveCache(op) && integrationTimeMS_ == value)
+                {
+                    logger.debug($"ignoring request to re-set existing integration time {value}");
                     return;
+                }
 
                 lock (acquisitionLock)
                 {
@@ -1019,7 +1052,7 @@ namespace WasatchNET
             {
                 if (isARM)
                 {
-                    logger.error("GET_LASER_INTERLOCK not supported on ARM");
+                    logger.debug("GET_LASER_INTERLOCK not supported on ARM");
                     return false;
                 }
                 return Unpack.toBool(getCmd(Opcodes.GET_LASER_INTERLOCK, 1));
@@ -1195,7 +1228,7 @@ namespace WasatchNET
                 ushort raw = laserTemperatureRaw;
                 if (raw == 0)
                 {
-                    logger.error("laserTemperatureDegC.get: can't take log of zero");
+                    logger.debug("laserTemperatureDegC.get: can't take log of zero");
                     return 0;
                 }
 
@@ -1592,19 +1625,20 @@ namespace WasatchNET
             // figure out what endpoints we'll use, and sizes for each
             pixelsPerEndpoint = (int)pixels;
             endpoints.Add(spectralReader82);
-            if (pixels == 512 || pixels == 1024)
+            if (pixels == 2048 && !isARM)
             {
-                // defaults fine
-            }
-            else if (pixels == 2048)
-            {
+                logger.debug("splitting over two endpoints");
                 endpoints.Add(spectralReader86);
                 pixelsPerEndpoint = 1024;
+                usingDualEndpoints = true;
             }
+
+            // flush anything left-over from prior exchanges
+            spectralReader82.ReadFlush();
+            if (usingDualEndpoints)
+                spectralReader86.ReadFlush();
             else
-            {
-                logger.debug("unusual number of pixels ({0})...assuming all at endpoint {1}", pixels, spectralReader82);
-            }
+                spectralReader86 = null;
 
             regenerateWavelengths();
 
@@ -1797,7 +1831,8 @@ namespace WasatchNET
             {
                 logger.debug("Spectrometer.reconnect: clearing");
                 spectralReader82.Dispose();
-                spectralReader86.Dispose();
+                if (spectralReader86 != null)
+                    spectralReader86.Dispose();
                 // statusReader.Dispose();
                 wholeUsbDevice.ReleaseInterface(0);
                 wholeUsbDevice.Close();
@@ -1819,7 +1854,7 @@ namespace WasatchNET
                 return logger.error("Spectrometer: failed to re-open UsbRegistry");
 
             wholeUsbDevice = usbDevice as IUsbDevice;
-            if (!ReferenceEquals(wholeUsbDevice, null))
+            if (wholeUsbDevice != null)
             {
                 logger.debug("Spectrometer.reconnect: claiming interface");
                 wholeUsbDevice.SetConfiguration(1);
@@ -1830,6 +1865,12 @@ namespace WasatchNET
                 logger.debug("Spectrometer.reconnect: WinUSB detected");
             }
 
+            // should this be moved to AFTER we've read the EEPROM and know what
+            // we need?  We would then have to handle in-flight reconnects; however,
+            // this is a little fudgy right now in that it instantiates endpoint 6
+            // on spectrometers which may not actually have an endpoint 6.  It seems
+            // to be okay, as long as we don't actually use the extra endpoint for
+            // anything (including ReadFlush).
             logger.debug("Spectrometer.reconnect: creating readers");
             spectralReader82 = usbDevice.OpenEndpointReader(ReadEndpointID.Ep02);
             spectralReader86 = usbDevice.OpenEndpointReader(ReadEndpointID.Ep06);
@@ -2209,7 +2250,7 @@ namespace WasatchNET
                         sum[px] -= dark_[px];
 
                 // this should be enough to update the cached value
-                if (readTemperatureAfterSpectrum)
+                if (readTemperatureAfterSpectrum && eeprom.hasCooling)
                     _ = detectorTemperatureDegC;
 
                 if (boxcarHalfWidth_ > 0)
@@ -2244,8 +2285,15 @@ namespace WasatchNET
         /// If the caller doesn't want to block on this, they can always change
         /// integrationTimeMS within a Task.Run closure.
         /// </remarks>
+        ///
+        /// <todo>
+        /// Consider simply disabling this feature (returning from this function)
+        /// if autoTrigger is disabled or using HW triggering.  In such cases, if
+        /// the user wants a throwaway, they can generate it themselves.
+        /// </todo>
         void performThrowawaySpectrum()
         {
+            logger.debug("generating throwaway spectrum");
             // send a trigger if getSpectrumRaw won't
             if (!autoTrigger || triggerSource_ != TRIGGER_SOURCE.INTERNAL)
                 sendSWTrigger();
@@ -2287,6 +2335,9 @@ namespace WasatchNET
             // read spectrum
             ////////////////////////////////////////////////////////////////////
 
+            if (useReadoutMutex)
+                readoutMutex.WaitOne();
+
             double[] spec = new double[pixels]; // default to all zeros
 
             int pixelsRead = 0;
@@ -2321,6 +2372,8 @@ namespace WasatchNET
                         if (retries >= maxRetries)
                         {
                             logger.error($"giving up after {retries} retries");
+                            if (useReadoutMutex)
+                                readoutMutex.ReleaseMutex();
                             return null;
                         }
 
@@ -2334,6 +2387,8 @@ namespace WasatchNET
                         else
                         {
                             logger.error("reconnection failed, giving up");
+                            if (useReadoutMutex)
+                                readoutMutex.ReleaseMutex();
                             return null;
                         }
                     }
@@ -2347,6 +2402,8 @@ namespace WasatchNET
                     Thread.Sleep(delayAfterBulkEndpointErrorMS);
                     if (isStroker && areaScanEnabled)
                         pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
+                    if (useReadoutMutex)
+                        readoutMutex.ReleaseMutex();
                     return null;
                 }
 
@@ -2356,6 +2413,10 @@ namespace WasatchNET
 
                 pixelsRead += pixelsPerEndpoint;
             }
+
+            // release the mutex...other spectrometers can proceed with their reads
+            if (useReadoutMutex)
+                readoutMutex.ReleaseMutex();
 
             if (isStroker && areaScanEnabled)
                 pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
@@ -2381,6 +2442,12 @@ namespace WasatchNET
 
             if (eeprom.featureMask.invertXAxis)
                 Array.Reverse(spec);
+
+            if (isSiG)
+            {
+                // overwrite last pixel
+                spec[pixels - 1] = spec[pixels - 2];
+            }
 
             if (eeprom.featureMask.bin2x2)
             {

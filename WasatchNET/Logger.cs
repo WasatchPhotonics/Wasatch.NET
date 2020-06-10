@@ -235,7 +235,7 @@ namespace WasatchNET
                 }
 
                 if (textBox != null)
-                    textBox.BeginInvoke(new MethodInvoker(delegate { textBox.AppendText(msg + Environment.NewLine); }));
+                    textBox.BeginInvoke(new MethodInvoker(delegate { if (textBox != null) textBox.AppendText(msg + Environment.NewLine); }));
             }
         }
     }
