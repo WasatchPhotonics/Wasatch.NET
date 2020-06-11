@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-06-10 2.2.11
+    - added support for writing older EEPROM formats
+	- fixed bugs with some spectrometer's temp range and initialization
 - 2020-06-03 2.2.10
     - don't attempt to read temperature on ambient detectors
     - added support for 2048-pixel ARM

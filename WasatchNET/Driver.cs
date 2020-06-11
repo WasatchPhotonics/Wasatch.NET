@@ -205,6 +205,7 @@ namespace WasatchNET
 
                     while (boulderSpectrometer.open())
                     {
+                        boulderSpectrometer.detectorTECSetpointDegC = 15.0f; 
                         spectrometers.Add(boulderSpectrometer);
                         ++boulderIndex;
                         boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
