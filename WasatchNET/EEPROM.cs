@@ -1332,7 +1332,7 @@ namespace WasatchNET
                 degCToDACCoeffs[0] = 0;
                 degCToDACCoeffs[1] = 0;
                 degCToDACCoeffs[2] = 0;
-                detectorTempMax = 20;
+                detectorTempMax = 25;
                 detectorTempMin = 10;
                 adcToDegCCoeffs[0] = 0;
                 adcToDegCCoeffs[1] = 0;
