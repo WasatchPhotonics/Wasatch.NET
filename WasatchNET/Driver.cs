@@ -226,6 +226,15 @@ namespace WasatchNET
             return spectrometers.Count;
         }
 
+        public int openMockSpectrometer()
+        {
+            MockSpectrometer mockSpectrometer = new MockSpectrometer(null);
+            if(mockSpectrometer.open(1024))
+                spectrometers.Add(mockSpectrometer);
+
+            return spectrometers.Count;
+        }
+
         /// <summary>
         /// How many Wasatch USB spectrometers were found.
         /// </summary>
