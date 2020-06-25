@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -12,6 +13,12 @@ namespace WasatchNET
     {
         uint darkBaseline = 0;
         double sensitivity = 1.0;
+        string currentSource = "";
+
+        public enum SAMPLE_METHOD { EXACT, LINEAR_INTERPOLATION, NOISY_LINEAR_INTERPOLATION };
+
+        Dictionary<string, SortedDictionary<int, double[]>> interpolationSamples = new Dictionary<string, SortedDictionary<int, double[]>>();
+        SAMPLE_METHOD sampleMethod = SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION;
 
         internal MockSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
@@ -344,8 +351,16 @@ namespace WasatchNET
 
             double[] spec = new double[pixels]; // default to all zeros
 
-            spec = addNoise(spec, darkBaseline, darkBaseline / 20);
-
+            SortedDictionary<int, double[]> spectra;
+            if (sampleMethod == SAMPLE_METHOD.LINEAR_INTERPOLATION || sampleMethod == SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION)
+            {
+                if (interpolationSamples.TryGetValue(currentSource, out spectra))
+                {
+                    spec = interpolateSamples();
+                }
+                else
+                    spec = addNoise(spec, darkBaseline, darkBaseline / 20);
+            }
 
             if (eeprom.featureMask.invertXAxis)
                 Array.Reverse(spec);
@@ -369,6 +384,125 @@ namespace WasatchNET
             return spec;
         }
 
+        public void setSource(string src)
+        {
+            currentSource = src;
+        }
+
+        public void addData(string src, int integrationTime, double[] spectrum)
+        {
+            SortedDictionary<int, double[]> tempSpectra = new SortedDictionary<int, double[]>();
+            if(!interpolationSamples.TryGetValue(src, out tempSpectra))
+            {
+                tempSpectra = new SortedDictionary<int, double[]>();
+                interpolationSamples.Add(src, tempSpectra);
+            }
+
+            double[] tempSpectrum;
+            if(!tempSpectra.TryGetValue(integrationTime, out tempSpectrum))
+            {
+                tempSpectra.Add(integrationTime, spectrum);
+            }
+
+            tempSpectra[integrationTime] = spectrum;
+            interpolationSamples[src] = tempSpectra;
+        }
+
+        public void clearData()
+        {
+            interpolationSamples.Clear();
+        }
+
+        double[] interpolateSamples()
+        {
+            double[] final = new double[pixels];
+
+            SortedDictionary<int, double[]> spectra;
+            if (interpolationSamples.TryGetValue(currentSource, out spectra))
+            {
+                if (spectra.Count == 1)
+                    return spectra.First().Value;
+
+                int index = -1;
+                foreach (int integration in spectra.Keys)
+                {
+                    if (integration > integrationTimeMS)
+                        break;
+                    index++;
+                }
+
+                if (index != spectra.Count - 1 && index != -1)
+                {
+                    double[] minSpectrum;
+                    double[] maxSpectrum;
+                    int minIntegration;
+                    int maxIntegration;
+
+                    var enumerator = spectra.GetEnumerator();
+                    enumerator.MoveNext();
+                    for (int i = 0; i < index; ++i)
+                        enumerator.MoveNext();
+                    minSpectrum = enumerator.Current.Value;
+                    minIntegration = enumerator.Current.Key;
+                    enumerator.MoveNext();
+
+                    maxSpectrum = enumerator.Current.Value;
+                    maxIntegration = enumerator.Current.Key;
+
+                    double span = maxIntegration - minIntegration;
+                    double pctMax = ((double)integrationTimeMS - (double)minIntegration) / span;
+
+                    for (int i = 0; i < pixels; ++i)
+                        final[i] = (1 - pctMax) * minSpectrum[i] + pctMax * maxSpectrum[i];
+
+                }
+                else
+                {
+                    double[] minSpectrum;
+                    double[] maxSpectrum;
+                    int minIntegration;
+                    int maxIntegration;
+
+                    if (index == -1)
+                    {
+                        var enumerator = spectra.GetEnumerator();
+                        enumerator.MoveNext();
+                        minSpectrum = enumerator.Current.Value;
+                        minIntegration = enumerator.Current.Key;
+                        enumerator.MoveNext();
+
+                        maxSpectrum = enumerator.Current.Value;
+                        maxIntegration = enumerator.Current.Key;
+                    }
+                    else
+                    {
+                        var enumerator = spectra.GetEnumerator();
+                        for (int i = 0; i < spectra.Count - 1; ++i)
+                            enumerator.MoveNext();
+                        minSpectrum = enumerator.Current.Value;
+                        minIntegration = enumerator.Current.Key;
+                        enumerator.MoveNext();
+
+                        maxSpectrum = enumerator.Current.Value;
+                        maxIntegration = enumerator.Current.Key;
+                    }
+
+                    for (int i = 0; i < pixels; ++i)
+                    {
+                        double slope = (maxSpectrum[i] - minSpectrum[i]) / (maxIntegration - minIntegration);
+                        double delta = slope * (integrationTimeMS - maxIntegration);
+                        final[i] = maxSpectrum[i] + delta;
+                    }
+
+
+                }
+            }
+
+            if (sampleMethod == SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION)
+                final = addNoise(final, 20, 1);
+
+            return final;
+        }
 
         double addNoise(double data, double mean, double sd)
         {
