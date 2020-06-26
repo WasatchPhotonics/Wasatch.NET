@@ -14,12 +14,26 @@ namespace WasatchNET
         uint darkBaseline = 0;
         double sensitivity = 1.0;
         string currentSource = "";
+        Random noiseMaker = new Random();
 
         public enum SAMPLE_METHOD { EXACT, LINEAR_INTERPOLATION, NOISY_LINEAR_INTERPOLATION };
 
+        /// <summary>
+        /// Collection of spectra for simulating various samples.
+        /// In practice, accessing individual spectra (as double arrays) will look like => 
+        /// interpolationSamples["Xe"][120] 
+        /// </summary>
         Dictionary<string, SortedDictionary<int, double[]>> interpolationSamples = new Dictionary<string, SortedDictionary<int, double[]>>();
+        
         public SAMPLE_METHOD sampleMethod = SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION;
 
+        /// <summary>
+        /// Simple, relatively flexible mock spectrometer
+        /// General workflow is addData(source, time, spectrum) -> setSource(source) for as many different sources as desired
+        /// Once these calls are made, the spectrometer will produce data, optionally with noise, for the set source
+        /// With current implementation, need at least two integration times per source to interpolate and create "new" spectra
+        /// Temperatures will be randomly produced based on the given setpoint
+        /// </summary>
         internal MockSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
 
@@ -285,63 +299,6 @@ namespace WasatchNET
             return true;
         }
 
-        //////////////////////////////////////////////////////
-        //              NEEDS IMPLEMENT
-        //////////////////////////////////////////////////////
-        public override double[] getSpectrum(bool forceNew = false)
-        {
-            lock (acquisitionLock)
-            {
-                double[] sum = getSpectrumRaw();
-                if (sum is null)
-                {
-                    if (!currentAcquisitionCancelled && errorOnTimeout)
-                        logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
-                    return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
-
-                if (scanAveraging_ > 1)
-                {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
-                    {
-                        // don't send a new SW trigger if using continuous acquisition
-                        double[] tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
-                        if (tmp is null)
-                            return null;
-
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] += tmp[px];
-                    }
-
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] /= scanAveraging_;
-                }
-
-                correctBadPixels(ref sum);
-
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
-
-                // this should be enough to update the cached value
-                if (readTemperatureAfterSpectrum && eeprom.hasCooling)
-                    _ = detectorTemperatureDegC;
-
-                if (boxcarHalfWidth_ > 0)
-                {
-                    // logger.debug("getSpectrum: returning boxcar");
-                    return Util.applyBoxcar(boxcarHalfWidth_, sum);
-                }
-                else
-                {
-                    // logger.debug("getSpectrum: returning sum");
-                    return sum;
-                }
-            }
-        }
-
         protected override double[] getSpectrumRaw(bool skipTrigger = false)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
@@ -361,7 +318,10 @@ namespace WasatchNET
                     spec = interpolateSamples();
                 }
                 else
+                {
+                    logger.debug("Unable to generate spectrum for {0} in getSpectrum, returning noise", currentSource);
                     spec = addNoise(spec, darkBaseline, darkBaseline / 20);
+                }
             }
 
             if (eeprom.featureMask.invertXAxis)
@@ -415,16 +375,35 @@ namespace WasatchNET
             interpolationSamples.Clear();
         }
 
+
+        /// <summary>
+        /// Creates an interpolated spectrum based on the integration time and the collected samples
+        /// The call to this function assumes the current source is in the data dictionary, if not it will 
+        /// return an array of 0s
+        /// </summary>
+        ///
+        /// <param name="forceNew">not used in base class (provided for specialized subclasses)</param>
+        ///
+        /// <returns>An interpolated spectrum based on the stored data and current source</returns>
         double[] interpolateSamples()
         {
             double[] final = new double[pixels];
 
             SortedDictionary<int, double[]> spectra;
+
+            // look for the current source in our collection
             if (interpolationSamples.TryGetValue(currentSource, out spectra))
             {
+                //TS: If there is a single spectrum for the source simply return it. We could make some assumptions
+                //about sensitivity here and still do an interpolation, but I'm personally not that comfortable with that
+                //and prefer we require at least two spectra per source
                 if (spectra.Count == 1)
                     return spectra.First().Value;
 
+                //Traverse spectra (ordered by integration time) until index == spectra with integration time just below
+                //the set integration time
+                //
+                //For example, if we have 10ms, 20ms, and 30ms, and want to build a spectrum at 25ms, index will be set to 1
                 int index = -1;
                 foreach (int integration in spectra.Keys)
                 {
@@ -433,6 +412,7 @@ namespace WasatchNET
                     index++;
                 }
 
+                //Block executed if the requested integration time is between two existing samples in our library
                 if (index != spectra.Count - 1 && index != -1)
                 {
                     double[] minSpectrum;
@@ -440,6 +420,7 @@ namespace WasatchNET
                     int minIntegration;
                     int maxIntegration;
 
+                    //grab the two spectra with integration times around the time we're aiming for
                     var enumerator = spectra.GetEnumerator();
                     enumerator.MoveNext();
                     for (int i = 0; i < index; ++i)
@@ -451,6 +432,8 @@ namespace WasatchNET
                     maxSpectrum = enumerator.Current.Value;
                     maxIntegration = enumerator.Current.Key;
 
+                    //do a per pixel weighted average (weighted by how close the desired integration time is) between the 
+                    //two spectra to create the interpolated spectrum
                     double span = maxIntegration - minIntegration;
                     double pctMax = ((double)integrationTimeMS - (double)minIntegration) / span;
 
@@ -458,6 +441,9 @@ namespace WasatchNET
                         final[i] = (1 - pctMax) * minSpectrum[i] + pctMax * maxSpectrum[i];
 
                 }
+
+                //Block executed if the requested integration time is less than the minmimum sample in our library,
+                //or more than the maximum sample
                 else
                 {
                     double[] minSpectrum;
@@ -465,6 +451,7 @@ namespace WasatchNET
                     int minIntegration;
                     int maxIntegration;
 
+                    //grab the spectra with the two lowest integration times
                     if (index == -1)
                     {
                         var enumerator = spectra.GetEnumerator();
@@ -476,6 +463,7 @@ namespace WasatchNET
                         maxSpectrum = enumerator.Current.Value;
                         maxIntegration = enumerator.Current.Key;
                     }
+                    //grab the spectra with the two highest integration times
                     else
                     {
                         var enumerator = spectra.GetEnumerator();
@@ -489,28 +477,36 @@ namespace WasatchNET
                         maxIntegration = enumerator.Current.Key;
                     }
 
+                    //extrapolate to "out of bounds" integration times, assuming perfect linearity on every pixel
                     for (int i = 0; i < pixels; ++i)
                     {
                         double slope = (maxSpectrum[i] - minSpectrum[i]) / (maxIntegration - minIntegration);
                         double delta = slope * (integrationTimeMS - maxIntegration);
-                        final[i] = maxSpectrum[i] + delta;
+
+                        //clamp to 0 - 2^16, should not be needed for interpolating, just this extrapolating
+                        final[i] = Math.Max(0,Math.Min(maxSpectrum[i] + delta, 2^16));
                     }
 
 
                 }
             }
 
+            //TS: apply noise if desired. Probably should have higher SD and be more data driven
             if (sampleMethod == SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION)
                 final = addNoise(final, 20, 1);
 
             return final;
         }
 
+        public void seedNoise(int seed)
+        {
+            noiseMaker = new Random(seed);
+        }
+
         double addNoise(double data, double mean, double sd)
         {
-            Random rand = new Random(); //reuse this if you are generating many
-            double u1 = 1.0 - rand.NextDouble(); //uniform(0,1] random doubles
-            double u2 = 1.0 - rand.NextDouble();
+            double u1 = 1.0 - noiseMaker.NextDouble(); //uniform(0,1] noiseMakerom doubles
+            double u2 = 1.0 - noiseMaker.NextDouble();
             double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) *
                          Math.Sin(2.0 * Math.PI * u2); //random normal(0,1)
             double randNormal = mean + sd * randStdNormal;
@@ -522,15 +518,13 @@ namespace WasatchNET
 
         double[] addNoise(double[] data, double mean, double sd)
         {
-            Random rand = new Random(); //reuse this if you are generating many
-
             double[] noised = new double[data.Length];
 
             int index = 0;
             foreach (double d in data)
             {
-                double u1 = 1.0 - rand.NextDouble(); //uniform(0,1] random doubles
-                double u2 = 1.0 - rand.NextDouble();
+                double u1 = 1.0 - noiseMaker.NextDouble(); //uniform(0,1] noiseMakerom doubles
+                double u2 = 1.0 - noiseMaker.NextDouble();
                 double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) *
                              Math.Sin(2.0 * Math.PI * u2); //random normal(0,1)
                 double randNormal = mean + sd * randStdNormal;
