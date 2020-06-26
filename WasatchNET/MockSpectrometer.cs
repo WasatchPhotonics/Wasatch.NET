@@ -259,6 +259,8 @@ namespace WasatchNET
                 return false;
             }
 
+            regenerateWavelengths();
+
             return true;
         }
 
