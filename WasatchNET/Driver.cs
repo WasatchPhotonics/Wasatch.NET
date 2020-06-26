@@ -226,10 +226,10 @@ namespace WasatchNET
             return spectrometers.Count;
         }
 
-        public int openMockSpectrometer()
+        public int openMockSpectrometer(uint pixels)
         {
             MockSpectrometer mockSpectrometer = new MockSpectrometer(null);
-            if(mockSpectrometer.open(1024))
+            if(mockSpectrometer.open(pixels))
                 spectrometers.Add(mockSpectrometer);
 
             return spectrometers.Count;
