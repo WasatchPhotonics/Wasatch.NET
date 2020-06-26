@@ -263,7 +263,7 @@ namespace WasatchNET
         {
             darkBaseline = 800;
 
-            eeprom = new EEPROM(this);
+            eeprom = new MockEEPROM(this);
 
             if (!eeprom.read())
             {

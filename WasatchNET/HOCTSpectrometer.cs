@@ -1014,7 +1014,7 @@ namespace WasatchNET
                     OctUsb.SetPixelCount(2048);
                     pixels = (uint)1024;
 
-                    eeprom = new EEPROM(this);
+                    eeprom = new HOCTEEPROM(this);
                     if (!eeprom.read())
                     {
                         logger.error("Spectrometer: failed to GET_MODEL_CONFIG");

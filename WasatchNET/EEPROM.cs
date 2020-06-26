@@ -30,12 +30,12 @@ namespace WasatchNET
 
         //internal const int MAX_PAGES = 256; // really 8, but last 2 are unallocated
         internal const int MAX_PAGES = 8;
-        const byte FORMAT = 9;
+        protected const byte FORMAT = 9;
 
-        Spectrometer spectrometer;
-        Logger logger = Logger.getInstance();
+        protected Spectrometer spectrometer;
+        protected Logger logger = Logger.getInstance();
 
-        public List<byte[]> pages { get; private set; }
+        public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
         public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, RESERVED };
 
@@ -740,8 +740,8 @@ namespace WasatchNET
 
         short[] _badPixels;
         // read-only containers for expedited processing
-        public List<short> badPixelList { get; private set; }
-        public SortedSet<short> badPixelSet { get; private set; }
+        public List<short> badPixelList { get; protected set; }
+        public SortedSet<short> badPixelSet { get; protected set; }
 
         public string productConfiguration
         {
@@ -856,414 +856,56 @@ namespace WasatchNET
         /// for a copy.
         /// </remarks>
         /// <returns>true on success, false on failure</returns>
-        public bool write()
+        public virtual bool write()
         {
-            if (spectrometer is BoulderSpectrometer)
+            ////////////////////////////////////////////////////////////////
+            //                                                            //
+            //            "Regular" USB Wasatch Spectrometers             //
+            //                                                            //
+            ////////////////////////////////////////////////////////////////
+
+            if (pages is null || pages.Count != MAX_PAGES)
             {
-                defaultValues = false;
-                return true;
+                logger.error("EEPROM.write: need to perform a read first");
+                return false;
             }
 
-            else if (spectrometer is SPISpectrometer)
+            if (!writeParse())
+                return false;
+            
+            for (short page = 0; page < pages.Count; page++)
             {
-                if (pages is null || pages.Count != MAX_PAGES)
+                bool ok = false;
+                if (spectrometer.isARM)
                 {
-                    logger.error("EEPROM.write: need to perform a read first");
-                    return false;
-                }
-
-                if (!ParseData.writeString(model, pages[0], 0, 16)) return false;
-                if (!ParseData.writeString(serialNumber, pages[0], 16, 16)) return false;
-                if (!ParseData.writeUInt32(baudRate, pages[0], 32)) return false;
-                if (!ParseData.writeBool(hasCooling, pages[0], 36)) return false;
-                if (!ParseData.writeBool(hasBattery, pages[0], 37)) return false;
-                if (!ParseData.writeBool(hasLaser, pages[0], 38)) return false;
-                if (!ParseData.writeUInt16(excitationNM, pages[0], 39)) return false;
-                if (!ParseData.writeUInt16(slitSizeUM, pages[0], 41)) return false;
-                if (!ParseData.writeUInt16(startupIntegrationTimeMS, pages[0], 43)) return false;
-                if (!ParseData.writeInt16(startupDetectorTemperatureDegC, pages[0], 45)) return false;
-                if (!ParseData.writeByte(startupTriggeringMode, pages[0], 47)) return false;
-                if (!ParseData.writeFloat(detectorGain, pages[0], 48)) return false;
-                if (!ParseData.writeInt16(detectorOffset, pages[0], 52)) return false;
-                if (!ParseData.writeFloat(detectorGainOdd, pages[0], 54)) return false;
-                if (!ParseData.writeInt16(detectorOffsetOdd, pages[0], 58)) return false;
-
-                if (!ParseData.writeFloat(wavecalCoeffs[0], pages[1], 0)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[1], pages[1], 4)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[2], pages[1], 8)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[3], pages[1], 12)) return false;
-                if (!ParseData.writeFloat(degCToDACCoeffs[0], pages[1], 16)) return false;
-                if (!ParseData.writeFloat(degCToDACCoeffs[1], pages[1], 20)) return false;
-                if (!ParseData.writeFloat(degCToDACCoeffs[2], pages[1], 24)) return false;
-                if (!ParseData.writeInt16(detectorTempMax, pages[1], 28)) return false;
-                if (!ParseData.writeInt16(detectorTempMin, pages[1], 30)) return false;
-                if (!ParseData.writeFloat(adcToDegCCoeffs[0], pages[1], 32)) return false;
-                if (!ParseData.writeFloat(adcToDegCCoeffs[1], pages[1], 36)) return false;
-                if (!ParseData.writeFloat(adcToDegCCoeffs[2], pages[1], 40)) return false;
-                if (!ParseData.writeInt16(thermistorResistanceAt298K, pages[1], 44)) return false;
-                if (!ParseData.writeInt16(thermistorBeta, pages[1], 46)) return false;
-                if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
-                if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
-
-                
-                if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
-                if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
-                // skip 18
-                if (!ParseData.writeUInt16(activePixelsVert, pages[2], 19)) return false;
-                if (format >= 8)
-                    if (!ParseData.writeFloat(wavecalCoeffs[4], pages[2], 21)) return false;
-                
-                if (!ParseData.writeUInt16(actualPixelsHoriz, pages[2], 25)) return false;
-                if (!ParseData.writeUInt16(ROIHorizStart, pages[2], 27)) return false;
-                if (!ParseData.writeUInt16(ROIHorizEnd, pages[2], 29)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionStart[0], pages[2], 31)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionEnd[0], pages[2], 33)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionStart[1], pages[2], 35)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionEnd[1], pages[2], 37)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionStart[2], pages[2], 39)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionEnd[2], pages[2], 41)) return false;
-                if (!ParseData.writeFloat(linearityCoeffs[0], pages[2], 43)) return false;
-                if (!ParseData.writeFloat(linearityCoeffs[1], pages[2], 47)) return false;
-                if (!ParseData.writeFloat(linearityCoeffs[2], pages[2], 51)) return false;
-                if (!ParseData.writeFloat(linearityCoeffs[3], pages[2], 55)) return false;
-                if (!ParseData.writeFloat(linearityCoeffs[4], pages[2], 59)) return false;
-
-                if (!ParseData.writeFloat(laserPowerCoeffs[0], pages[3], 12)) return false;
-                if (!ParseData.writeFloat(laserPowerCoeffs[1], pages[3], 16)) return false;
-                if (!ParseData.writeFloat(laserPowerCoeffs[2], pages[3], 20)) return false;
-                if (!ParseData.writeFloat(laserPowerCoeffs[3], pages[3], 24)) return false;
-                if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 28)) return false;
-                if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 32)) return false;
-
-                if (format >= 4)
-                {
-                    if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
-                    if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
-                    if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
+                    logger.hexdump(pages[page], String.Format("writing page {0} [ARM]: ", page));
+                    ok = spectrometer.sendCmd(
+                        opcode: Opcodes.SECOND_TIER_COMMAND,
+                        wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM],
+                        wIndex: (ushort)page,
+                        buf: pages[page]);
                 }
                 else
                 {
-                    if (!ParseData.writeUInt16((ushort)minIntegrationTimeMS, pages[2], 21)) return false;
-                    if (!ParseData.writeUInt16((ushort)maxIntegrationTimeMS, pages[2], 23)) return false;
+                    const uint DATA_START = 0x3c00; // from Wasatch Stroker Console's EnhancedStroker.SetModelInformation()
+                    ushort pageOffset = (ushort)(DATA_START + page * 64);
+                    logger.hexdump(pages[page], String.Format("writing page {0} to offset {1} [FX2]: ", page, pageOffset));
+                    ok = spectrometer.sendCmd(
+                        opcode: Opcodes.SET_MODEL_CONFIG_FX2,
+                        wValue: pageOffset,
+                        wIndex: 0,
+                        buf: pages[page]);
                 }
-
-                if (format >= 7)
-                    if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
-
-                byte[] userDataChunk2 = new byte[64];
-                byte[] userDataChunk3 = new byte[64];
-
-                if (format >= 8)
+                if (!ok)
                 {
-                    
-                    // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
-                    // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
-                    // than try to write them.
-                    //
-                    // Should protect users without restricting them
-                    if (userData.Length <= 64)
-                    {
-                        Array.Copy(userData, pages[4], userData.Length);
-                    }
-                    else
-                    {
-                        Array.Copy(userData, pages[4], 64);
-                        if (userData.Length <= 128)
-                        {
-                            Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
-
-                        }
-                        else if (userData.Length <= 192)
-                        {
-                            Array.Copy(userData, 64, userDataChunk2, 0, 64);
-                            Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
-                        }
-                        else
-                        {
-                            Array.Copy(userData, 64, userDataChunk2, 0, 64);
-                            Array.Copy(userData, 128, userDataChunk3, 0, 64);
-                        }
-                    }
-                }
-                // note that we write the positional, error-prone array (which is 
-                // user -writable), not the List or SortedSet caches
-                for (int i = 0; i < badPixels.Length; i++)
-                    if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
-                        return false;
-
-                if (format >= 5)
-                    if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
-
-                if (format >= 8)
-                {
-                    if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
-
-                    if (subformat == PAGE_SUBFORMAT.USER_DATA)
-                    {
-                        Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
-                        Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
-                    }
-                    else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
-                    {
-                        if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                        if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
-                        {
-                            for (int i = 0; i <= intensityCorrectionOrder; ++i)
-                            {
-                                if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
-                            }
-                        }
-                    }
-                }
-
-                else if (format >= 6)
-                {
-                    if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                    if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
-                    {
-                        for (int i = 0; i <= intensityCorrectionOrder; ++i)
-                        {
-                            if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
-                        }
-                    }
-                }
-
-                pages[0][63] = format;
-
-                SPISpectrometer a = spectrometer as SPISpectrometer;
-
-                bool writeOk = a.writeEEPROM(pages);
-                if (writeOk)
-                    defaultValues = false;
-
-                return writeOk;
-
-            }
-
-            else if (spectrometer is HOCTSpectrometer)
-            {
-                byte[] buffer = new byte[32];
-
-                if (!ParseData.writeString(serialNumber, buffer, 0, 16)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[0], buffer, 16)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[1], buffer, 20)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[2], buffer, 24)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[3], buffer, 28)) return false;
-
-                bool writeOK = HOCTSpectrometer.OctUsb.WriteCalibration(0, buffer);
-                return writeOK;
-
-            }
-
-            else
-            {
-                ////////////////////////////////////////////////////////////////
-                //                                                            //
-                //            "Regular" USB Wasatch Spectrometers             //
-                //                                                            //
-                ////////////////////////////////////////////////////////////////
-
-                if (pages is null || pages.Count != MAX_PAGES)
-                {
-                    logger.error("EEPROM.write: need to perform a read first");
+                    logger.error("EEPROM.write: failed to save page {0}", page);
                     return false;
                 }
-
-                if (!ParseData.writeString(model, pages[0], 0, 16)) return false;
-                if (!ParseData.writeString(serialNumber, pages[0], 16, 16)) return false;
-                if (!ParseData.writeUInt32(baudRate, pages[0], 32)) return false;
-                if (!ParseData.writeBool(hasCooling, pages[0], 36)) return false;
-                if (!ParseData.writeBool(hasBattery, pages[0], 37)) return false;
-                if (!ParseData.writeBool(hasLaser, pages[0], 38)) return false;
-
-                if (format >= 9)
-                    if (!ParseData.writeUInt16(featureMask.toUInt16(), pages[0], 39)) return false;
-                else
-                    if (!ParseData.writeUInt16(excitationNM, pages[0], 39)) return false;
-
-                if (!ParseData.writeUInt16(slitSizeUM, pages[0], 41)) return false;
-                if (!ParseData.writeUInt16(startupIntegrationTimeMS, pages[0], 43)) return false;
-                if (!ParseData.writeInt16(startupDetectorTemperatureDegC, pages[0], 45)) return false;
-                if (!ParseData.writeByte(startupTriggeringMode, pages[0], 47)) return false;
-                if (!ParseData.writeFloat(detectorGain, pages[0], 48)) return false;
-                if (!ParseData.writeInt16(detectorOffset, pages[0], 52)) return false;
-                if (!ParseData.writeFloat(detectorGainOdd, pages[0], 54)) return false;
-                if (!ParseData.writeInt16(detectorOffsetOdd, pages[0], 58)) return false;
-
-                if (!ParseData.writeFloat(wavecalCoeffs[0], pages[1], 0)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[1], pages[1], 4)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[2], pages[1], 8)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[3], pages[1], 12)) return false;
-                if (!ParseData.writeFloat(degCToDACCoeffs[0], pages[1], 16)) return false;
-                if (!ParseData.writeFloat(degCToDACCoeffs[1], pages[1], 20)) return false;
-                if (!ParseData.writeFloat(degCToDACCoeffs[2], pages[1], 24)) return false;
-                if (!ParseData.writeInt16(detectorTempMax, pages[1], 28)) return false;
-                if (!ParseData.writeInt16(detectorTempMin, pages[1], 30)) return false;
-                if (!ParseData.writeFloat(adcToDegCCoeffs[0], pages[1], 32)) return false;
-                if (!ParseData.writeFloat(adcToDegCCoeffs[1], pages[1], 36)) return false;
-                if (!ParseData.writeFloat(adcToDegCCoeffs[2], pages[1], 40)) return false;
-                if (!ParseData.writeInt16(thermistorResistanceAt298K, pages[1], 44)) return false;
-                if (!ParseData.writeInt16(thermistorBeta, pages[1], 46)) return false;
-                if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
-                if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
-
-                if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
-                if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
-                // skip 18
-                if (!ParseData.writeUInt16(activePixelsVert, pages[2], 19)) return false;
-                if (!ParseData.writeFloat(wavecalCoeffs[4], pages[2], 21)) return false;
-
-                if (!ParseData.writeUInt16(actualPixelsHoriz, pages[2], 25)) return false;
-                if (!ParseData.writeUInt16(ROIHorizStart, pages[2], 27)) return false;
-                if (!ParseData.writeUInt16(ROIHorizEnd, pages[2], 29)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionStart[0], pages[2], 31)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionEnd[0], pages[2], 33)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionStart[1], pages[2], 35)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionEnd[1], pages[2], 37)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionStart[2], pages[2], 39)) return false;
-                if (!ParseData.writeUInt16(ROIVertRegionEnd[2], pages[2], 41)) return false;
-                if (!ParseData.writeFloat(linearityCoeffs[0], pages[2], 43)) return false;
-                if (!ParseData.writeFloat(linearityCoeffs[1], pages[2], 47)) return false;
-                if (!ParseData.writeFloat(linearityCoeffs[2], pages[2], 51)) return false;
-                if (!ParseData.writeFloat(linearityCoeffs[3], pages[2], 55)) return false;
-                if (!ParseData.writeFloat(linearityCoeffs[4], pages[2], 59)) return false;
-
-                if (!ParseData.writeFloat(laserPowerCoeffs[0], pages[3], 12)) return false;
-                if (!ParseData.writeFloat(laserPowerCoeffs[1], pages[3], 16)) return false;
-                if (!ParseData.writeFloat(laserPowerCoeffs[2], pages[3], 20)) return false;
-                if (!ParseData.writeFloat(laserPowerCoeffs[3], pages[3], 24)) return false;
-                if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 28)) return false;
-                if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 32)) return false;
-
-
-
-                if (format >= 4)
-                {
-                    if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
-                    if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
-                    if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
-                }
-
-                if (format >= 7)
-                    if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
-
-                byte[] userDataChunk2 = new byte[64];
-                byte[] userDataChunk3 = new byte[64];
-
-                if (format >= 8)
-                {
-
-                    // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
-                    // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
-                    // than try to write them.
-                    //
-                    // Should protect users without restricting them
-                    if (userData.Length <= 64)
-                    {
-                        Array.Copy(userData, pages[4], userData.Length);
-                    }
-                    else
-                    {
-                        Array.Copy(userData, pages[4], 64);
-                        if (userData.Length <= 128)
-                        {
-                            Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
-
-                        }
-                        else if (userData.Length <= 192)
-                        {
-                            Array.Copy(userData, 64, userDataChunk2, 0, 64);
-                            Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
-                        }
-                        else
-                        {
-                            Array.Copy(userData, 64, userDataChunk2, 0, 64);
-                            Array.Copy(userData, 128, userDataChunk3, 0, 64);
-                        }
-                    }
-                }
-
-                // note that we write the positional, error-prone array (which is 
-                // user -writable), not the List or SortedSet caches
-                for (int i = 0; i < badPixels.Length; i++)
-                    if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
-                        return false;
-
-                if (format >= 5)
-                    if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
-
-                //subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
-                if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
-
-                if (format >= 8)
-                {
-                    if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
-
-                    if (subformat == PAGE_SUBFORMAT.USER_DATA)
-                    {
-                        Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
-                        Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
-                    }
-                    else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
-                    {
-                        if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                        if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
-                        {
-                            for (int i = 0; i <= intensityCorrectionOrder; ++i)
-                            {
-                                if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
-                            }
-                        }
-                    }
-                }
-
-                else if (format >= 6)
-                {
-                    if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
-                    if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
-                    {
-                        for (int i = 0; i <= intensityCorrectionOrder; ++i)
-                        {
-                            if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
-                        }
-                    }
-                }
-
-                pages[0][63] = format;
-
-                for (short page = 0; page < pages.Count; page++)
-                {
-                    bool ok = false;
-                    if (spectrometer.isARM)
-                    {
-                        logger.hexdump(pages[page], String.Format("writing page {0} [ARM]: ", page));
-                        ok = spectrometer.sendCmd(
-                            opcode: Opcodes.SECOND_TIER_COMMAND,
-                            wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM],
-                            wIndex: (ushort)page,
-                            buf: pages[page]);
-                    }
-                    else
-                    {
-                        const uint DATA_START = 0x3c00; // from Wasatch Stroker Console's EnhancedStroker.SetModelInformation()
-                        ushort pageOffset = (ushort)(DATA_START + page * 64);
-                        logger.hexdump(pages[page], String.Format("writing page {0} to offset {1} [FX2]: ", page, pageOffset));
-                        ok = spectrometer.sendCmd(
-                            opcode: Opcodes.SET_MODEL_CONFIG_FX2,
-                            wValue: pageOffset,
-                            wIndex: 0,
-                            buf: pages[page]);
-                    }
-                    if (!ok)
-                    {
-                        logger.error("EEPROM.write: failed to save page {0}", page);
-                        return false;
-                    }
-                    logger.debug("EEPROM: wrote EEPROM page {0}", page);
-                }
-                defaultValues = false;
-                return true;
+                logger.debug("EEPROM: wrote EEPROM page {0}", page);
             }
+            defaultValues = false;
+            return true;
+            
         }
 
         /////////////////////////////////////////////////////////////////////////       
@@ -1290,772 +932,222 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
-        public bool read()
+        public virtual bool read()
         {
+            ////////////////////////////////////////////////////////////////
+            //                                                            //
+            //            "Regular" USB Wasatch Spectrometers             //
+            //                                                            //
+            ////////////////////////////////////////////////////////////////
+
             // read all pages into cache
-            if (spectrometer is BoulderSpectrometer)
+            pages = new List<byte[]>();
+            for (ushort page = 0; page < MAX_PAGES; page++)
             {
-                
-                BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
-                model = "";
-
-                serialNumber = "";
-
-                baudRate = 0;
-
-                hasCooling = true;
-                hasBattery = false;
-                hasLaser = false;
-
-                excitationNM = 0;
-
-                slitSizeUM = 0;
-
-                byte[] buffer = new byte[16];
-                int errorReader = 0;
-
-                string test = buffer.ToString();
-
-                startupIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
-                double temp = a.detectorTemperatureDegC;
-                startupDetectorTemperatureDegC = (short)temp;
-                if (startupDetectorTemperatureDegC >= 99)
-                    startupDetectorTemperatureDegC = 15;
-                else if (startupDetectorTemperatureDegC <= -50)
-                    startupDetectorTemperatureDegC = 15;
-                startupTriggeringMode = 2; 
-                detectorGain = 0;
-                detectorOffset = 0;
-                detectorGainOdd = 0;
-                detectorOffsetOdd = 0;
-
-                degCToDACCoeffs[0] = 0;
-                degCToDACCoeffs[1] = 0;
-                degCToDACCoeffs[2] = 0;
-                detectorTempMax = 25;
-                detectorTempMin = 10;
-                adcToDegCCoeffs[0] = 0;
-                adcToDegCCoeffs[1] = 0;
-                adcToDegCCoeffs[2] = 0;
-                thermistorResistanceAt298K = 0;
-                thermistorBeta = 0;
-                calibrationDate = "01/01/2020";
-                calibrationBy = "RSC";
-
-                detectorName = "";
-                activePixelsHoriz = (ushort)a.pixels;
-                activePixelsVert = 0;
-                minIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
-                maxIntegrationTimeMS = 1000000;
-                actualPixelsHoriz = (ushort)a.pixels;
-                ROIHorizStart = 0; 
-                ROIHorizEnd = 0; 
-                ROIVertRegionStart[0] = 0;
-                ROIVertRegionEnd[0] = 0;
-                ROIVertRegionStart[1] = 0;
-                ROIVertRegionEnd[1] = 0;
-                ROIVertRegionStart[2] = 0;
-                ROIVertRegionEnd[2] = 0;
-                linearityCoeffs[0] = 0;
-                linearityCoeffs[1] = 0;
-                linearityCoeffs[2] = 0;
-                linearityCoeffs[3] = 0;
-                linearityCoeffs[4] = 0;
-
-                laserPowerCoeffs[0] = 0;
-                laserPowerCoeffs[1] = 0;
-                laserPowerCoeffs[2] = 0;
-                laserPowerCoeffs[3] = 0;
-                maxLaserPowerMW = 0;
-                minLaserPowerMW = 0;
-                laserExcitationWavelengthNMFloat = 830.0f;
-
-                avgResolution = 0.0f;
-
-                userData = new byte[63];
-
-                badPixelSet = new SortedSet<short>();
-                productConfiguration = "";
-
-                intensityCorrectionOrder = 0;
-
-                return true;
-            }
-
-            else if (spectrometer is MockSpectrometer)
-            {
-                MockSpectrometer a = spectrometer as MockSpectrometer;
-                model = "";
-
-                serialNumber = "";
-
-                baudRate = 0;
-
-                hasCooling = true;
-                hasBattery = false;
-                hasLaser = false;
-
-                excitationNM = 0;
-
-                slitSizeUM = 0;
-
-                byte[] buffer = new byte[16];
-                int errorReader = 0;
-
-                string test = buffer.ToString();
-
-                startupIntegrationTimeMS = 8;
-                //double temp = a.detectorTemperatureDegC;
-                startupDetectorTemperatureDegC = 15;
-                if (startupDetectorTemperatureDegC >= 99)
-                    startupDetectorTemperatureDegC = 15;
-                else if (startupDetectorTemperatureDegC <= -50)
-                    startupDetectorTemperatureDegC = 15;
-                startupTriggeringMode = 2;
-                detectorGain = 0;
-                detectorOffset = 0;
-                detectorGainOdd = 0;
-                detectorOffsetOdd = 0;
-
-                degCToDACCoeffs[0] = 0;
-                degCToDACCoeffs[1] = 0;
-                degCToDACCoeffs[2] = 0;
-                detectorTempMax = 25;
-                detectorTempMin = 10;
-                adcToDegCCoeffs[0] = 0;
-                adcToDegCCoeffs[1] = 0;
-                adcToDegCCoeffs[2] = 0;
-                thermistorResistanceAt298K = 0;
-                thermistorBeta = 0;
-                calibrationDate = "01/01/2020";
-                calibrationBy = "RSC";
-
-                detectorName = "";
-                activePixelsHoriz = (ushort)a.pixels;
-                activePixelsVert = 0;
-                minIntegrationTimeMS = 8;
-                maxIntegrationTimeMS = 1000000;
-                actualPixelsHoriz = (ushort)a.pixels;
-                ROIHorizStart = 0;
-                ROIHorizEnd = 0;
-                ROIVertRegionStart[0] = 0;
-                ROIVertRegionEnd[0] = 0;
-                ROIVertRegionStart[1] = 0;
-                ROIVertRegionEnd[1] = 0;
-                ROIVertRegionStart[2] = 0;
-                ROIVertRegionEnd[2] = 0;
-                linearityCoeffs[0] = 0;
-                linearityCoeffs[1] = 0;
-                linearityCoeffs[2] = 0;
-                linearityCoeffs[3] = 0;
-                linearityCoeffs[4] = 0;
-
-                laserPowerCoeffs[0] = 0;
-                laserPowerCoeffs[1] = 0;
-                laserPowerCoeffs[2] = 0;
-                laserPowerCoeffs[3] = 0;
-                maxLaserPowerMW = 0;
-                minLaserPowerMW = 0;
-                laserExcitationWavelengthNMFloat = 830.0f;
-
-                avgResolution = 0.0f;
-
-                userData = new byte[63];
-
-                badPixelSet = new SortedSet<short>();
-                productConfiguration = "";
-
-                intensityCorrectionOrder = 0;
-
-                return true;
-            }
-
-            else if (spectrometer is SPISpectrometer)
-            {
-
-
-                SPISpectrometer a = spectrometer as SPISpectrometer;
-
-                pages = a.getEEPROMPages();
-
-                format = pages[0][63];
-
-                //this if block checks for unwritten EEPROM (indicated by 0xff) and fills our virtual EEPROM with sane default values
-                //this will prevent us from upping the format to version 255(6?) but the tradeoff seems worth it
-                if (format == 0xff)
-                {
-                    model = "";
-
-
-
-                    serialNumber = a.serialNumber;
-
-
-                    baudRate = 0;
-
-                    hasCooling = false;
-                    hasBattery = false;
-                    hasLaser = false;
-
-                    excitationNM = 0;
-
-                    slitSizeUM = 0;
-
-                    byte[] buffer = new byte[16];
-
-                    string test = buffer.ToString();
-
-                   
-                    wavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
-                    
-
-                    startupIntegrationTimeMS = 0;
-                    double temp = 0;
-                    startupDetectorTemperatureDegC = (short)temp;
-                    if (startupDetectorTemperatureDegC >= 99)
-                        startupDetectorTemperatureDegC = 15;
-                    else if (startupDetectorTemperatureDegC <= -50)
-                        startupDetectorTemperatureDegC = 15;
-                    startupTriggeringMode = 2;
-                    detectorGain = a.detectorGain;
-                    detectorOffset = a.detectorOffset;
-                    detectorGainOdd = 0;
-                    detectorOffsetOdd = 0;
-
-                    degCToDACCoeffs[0] = 0;
-                    degCToDACCoeffs[1] = 0;
-                    degCToDACCoeffs[2] = 0;
-                    detectorTempMax = 0;
-                    detectorTempMin = 0;
-                    adcToDegCCoeffs[0] = 0;
-                    adcToDegCCoeffs[1] = 0;
-                    adcToDegCCoeffs[2] = 0;
-                    thermistorResistanceAt298K = 0;
-                    thermistorBeta = 0;
-                    calibrationDate = "01/01/2020";
-                    calibrationBy = "RSC";
-
-                    detectorName = "";
-                    activePixelsHoriz = (ushort)a.pixels;
-                    activePixelsVert = 0;
-                    minIntegrationTimeMS = 1;
-                    maxIntegrationTimeMS = 1000000;
-                    actualPixelsHoriz = (ushort)a.pixels;
-                    ROIHorizStart = 0; 
-                    ROIHorizEnd = 0; 
-                    ROIVertRegionStart[0] = 0;
-                    ROIVertRegionEnd[0] = 0;
-                    ROIVertRegionStart[1] = 0;
-                    ROIVertRegionEnd[1] = 0; 
-                    ROIVertRegionStart[2] = 0;
-                    ROIVertRegionEnd[2] = 0; 
-                    linearityCoeffs[0] = 0;
-                    linearityCoeffs[1] = 0;
-                    linearityCoeffs[2] = 0;
-                    linearityCoeffs[3] = 0;
-                    linearityCoeffs[4] = 0;
-
-                    laserPowerCoeffs[0] = 0;
-                    laserPowerCoeffs[1] = 0;
-                    laserPowerCoeffs[2] = 0;
-                    laserPowerCoeffs[3] = 0;
-                    maxLaserPowerMW = 0;
-                    minLaserPowerMW = 0;
-
-                    laserExcitationWavelengthNMFloat = 785.0f;
-
-                    avgResolution = 0.0f;
-
-                    userData = new byte[63];
-
-                    badPixelSet = new SortedSet<short>();
-                    productConfiguration = "";
-
-                    //needs work
-                    intensityCorrectionOrder = 0;
-                }
-
-                //if the format type has been written we will assume sane EEPROM values
-                else
+                byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                if (buf is null)
                 {
                     try
                     {
-                        model = ParseData.toString(pages[0], 0, 16);
-                        serialNumber = ParseData.toString(pages[0], 16, 16);
-                        baudRate = ParseData.toUInt32(pages[0], 32);
-                        hasCooling = ParseData.toBool(pages[0], 36);
-                        hasBattery = ParseData.toBool(pages[0], 37);
-                        hasLaser = ParseData.toBool(pages[0], 38);
-                        excitationNM = ParseData.toUInt16(pages[0], 39);
-                        slitSizeUM = ParseData.toUInt16(pages[0], 41);
-
-                        startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
-                        startupDetectorTemperatureDegC = ParseData.toInt16(pages[0], 45);
-                        startupTriggeringMode = ParseData.toUInt8(pages[0], 47);
-                        detectorGain = ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
-                        detectorOffset = ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
-                        detectorGainOdd = ParseData.toFloat(pages[0], 54); // InGaAs-only
-                        detectorOffsetOdd = ParseData.toInt16(pages[0], 58); // InGaAs-only
-
-                        wavecalCoeffs[0] = ParseData.toFloat(pages[1], 0);
-                        wavecalCoeffs[1] = ParseData.toFloat(pages[1], 4);
-                        wavecalCoeffs[2] = ParseData.toFloat(pages[1], 8);
-                        wavecalCoeffs[3] = ParseData.toFloat(pages[1], 12);
-                        wavecalCoeffs[4] = 0;
-                        degCToDACCoeffs[0] = ParseData.toFloat(pages[1], 16);
-                        degCToDACCoeffs[1] = ParseData.toFloat(pages[1], 20);
-                        degCToDACCoeffs[2] = ParseData.toFloat(pages[1], 24);
-                        detectorTempMax = ParseData.toInt16(pages[1], 28);
-                        detectorTempMin = ParseData.toInt16(pages[1], 30);
-                        adcToDegCCoeffs[0] = ParseData.toFloat(pages[1], 32);
-                        adcToDegCCoeffs[1] = ParseData.toFloat(pages[1], 36);
-                        adcToDegCCoeffs[2] = ParseData.toFloat(pages[1], 40);
-                        thermistorResistanceAt298K = ParseData.toInt16(pages[1], 44);
-                        thermistorBeta = ParseData.toInt16(pages[1], 46);
-                        calibrationDate = ParseData.toString(pages[1], 48, 12);
-                        calibrationBy = ParseData.toString(pages[1], 60, 3);
-
-                        detectorName = ParseData.toString(pages[2], 0, 16);
-                        activePixelsHoriz = ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
-                        activePixelsVert = ParseData.toUInt16(pages[2], 19);
-                        minIntegrationTimeMS = ParseData.toUInt16(pages[2], 21); // will overwrite if 
-                        maxIntegrationTimeMS = ParseData.toUInt16(pages[2], 23); //   format >= 5
-                        actualPixelsHoriz = ParseData.toUInt16(pages[2], 25);
-                        ROIHorizStart = ParseData.toUInt16(pages[2], 27);
-                        ROIHorizEnd = ParseData.toUInt16(pages[2], 29);
-                        ROIVertRegionStart[0] = ParseData.toUInt16(pages[2], 31);
-                        ROIVertRegionEnd[0] = ParseData.toUInt16(pages[2], 33);
-                        ROIVertRegionStart[1] = ParseData.toUInt16(pages[2], 35);
-                        ROIVertRegionEnd[1] = ParseData.toUInt16(pages[2], 37);
-                        ROIVertRegionStart[2] = ParseData.toUInt16(pages[2], 39);
-                        ROIVertRegionEnd[2] = ParseData.toUInt16(pages[2], 41);
-                        linearityCoeffs[0] = ParseData.toFloat(pages[2], 43);
-                        linearityCoeffs[1] = ParseData.toFloat(pages[2], 47);
-                        linearityCoeffs[2] = ParseData.toFloat(pages[2], 51);
-                        linearityCoeffs[3] = ParseData.toFloat(pages[2], 55);
-                        linearityCoeffs[4] = ParseData.toFloat(pages[2], 59);
-
-                        // deviceLifetimeOperationMinutes = ParseData.toInt32(pages[3], 0);
-                        // laserLifetimeOperationMinutes = ParseData.toInt32(pages[3], 4);
-                        // laserTemperatureMax  = ParseData.toInt16(pages[3], 8);
-                        // laserTemperatureMin  = ParseData.toInt16(pages[3], 10);
-
-                        laserPowerCoeffs[0] = ParseData.toFloat(pages[3], 12);
-                        laserPowerCoeffs[1] = ParseData.toFloat(pages[3], 16);
-                        laserPowerCoeffs[2] = ParseData.toFloat(pages[3], 20);
-                        laserPowerCoeffs[3] = ParseData.toFloat(pages[3], 24);
-                        maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
-                        minLaserPowerMW = ParseData.toFloat(pages[3], 32);
-                        laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
-                        if (format >= 5)
-                        {
-                            minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
-                            maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
-                        }
-
-                        userData = format < 4 ? new byte[63] : new byte[64];
-                        Array.Copy(pages[4], userData, userData.Length);
-
-                        badPixelSet = new SortedSet<short>();
-                        for (int i = 0; i < 15; i++)
-                        {
-                            short pixel = ParseData.toInt16(pages[5], i * 2);
-                            badPixels[i] = pixel;
-                            if (pixel >= 0)
-                                badPixelSet.Add(pixel); // does not throw
-                        }
-                        badPixelList = new List<short>(badPixelSet);
-
-                        if (format >= 5)
-                            productConfiguration = ParseData.toString(pages[5], 30, 16);
-                        else
-                            productConfiguration = "";
-
-                        if (format >= 6)
-                        {
-                            intensityCorrectionOrder = ParseData.toUInt8(pages[6], 0);
-                            uint numCoeffs = (uint)intensityCorrectionOrder + 1;
-
-                            if (numCoeffs > 8)
-                                numCoeffs = 0;
-
-                            intensityCorrectionCoeffs = numCoeffs > 0 ? new float[numCoeffs] : null;
-
-                            for (int i = 0; i < numCoeffs; ++i)
-                            {
-                                intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
-                            }
-
-                        }
-                        else
-                        {
-                            intensityCorrectionOrder = 0;
-                        }
-
-                        if (format >= 7)
-                        {
-                            avgResolution = ParseData.toFloat(pages[3], 48);
-                        }
-                        else
-                        {
-                            avgResolution = 0.0f;
-                        }
-
-                        if (format >= 8)
-                        {
-                            wavecalCoeffs[4] = ParseData.toFloat(pages[2], 21);
-                            subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
-                            if (subformat == PAGE_SUBFORMAT.USER_DATA)
-                            {
-                                intensityCorrectionOrder = 0;
-                                intensityCorrectionCoeffs = null;
-
-                                userData = new byte[192];
-                                //Array.Copy(pages[4], userData, userData.Length);
-                                Array.Copy(pages[4], 0, userData, 0, 64);
-                                Array.Copy(pages[6], 0, userData, 64, 64);
-                                Array.Copy(pages[7], 0, userData, 128, 64);
-                            }
-                        }
-                        else
-                        {
-                            if (format >= 6)
-                                subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
-                            else
-                                subformat = PAGE_SUBFORMAT.USER_DATA;
-                        }
-
-
+                        setDefault(spectrometer);
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        logger.error("EEPROM: caught exception: {0}", ex.Message);
                         return false;
                     }
+                    return true;
                 }
-                if (logger.debugEnabled())
-                    dump();
-
-                enforceReasonableDefaults();
-
-                format = FORMAT;
-
-                return true;
+                pages.Add(buf);
+                logger.hexdump(buf, String.Format("read page {0}: ", page));
             }
 
-            else if (spectrometer is HOCTSpectrometer)
+            format = pages[0][63];
+
+            try
             {
-                HOCTSpectrometer a = spectrometer as HOCTSpectrometer;
-                model = "";
+                model = ParseData.toString(pages[0], 0, 16);
+                serialNumber = ParseData.toString(pages[0], 16, 16);
+                baudRate = ParseData.toUInt32(pages[0], 32);
+                hasCooling = ParseData.toBool(pages[0], 36);
+                hasBattery = ParseData.toBool(pages[0], 37);
+                hasLaser = ParseData.toBool(pages[0], 38);
+                excitationNM = ParseData.toUInt16(pages[0], 39); // for old formats, first read this as excitation
+                slitSizeUM = ParseData.toUInt16(pages[0], 41);
 
-                serialNumber = "";
+                startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
+                startupDetectorTemperatureDegC = ParseData.toInt16(pages[0], 45);
+                startupTriggeringMode = ParseData.toUInt8(pages[0], 47);
+                detectorGain = ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
+                detectorOffset = ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
+                detectorGainOdd = ParseData.toFloat(pages[0], 54); // InGaAs-only
+                detectorOffsetOdd = ParseData.toInt16(pages[0], 58); // InGaAs-only
 
-                baudRate = 0;
+                wavecalCoeffs[0] = ParseData.toFloat(pages[1], 0);
+                wavecalCoeffs[1] = ParseData.toFloat(pages[1], 4);
+                wavecalCoeffs[2] = ParseData.toFloat(pages[1], 8);
+                wavecalCoeffs[3] = ParseData.toFloat(pages[1], 12);
+                degCToDACCoeffs[0] = ParseData.toFloat(pages[1], 16);
+                degCToDACCoeffs[1] = ParseData.toFloat(pages[1], 20);
+                degCToDACCoeffs[2] = ParseData.toFloat(pages[1], 24);
+                detectorTempMax = ParseData.toInt16(pages[1], 28);
+                detectorTempMin = ParseData.toInt16(pages[1], 30);
+                adcToDegCCoeffs[0] = ParseData.toFloat(pages[1], 32);
+                adcToDegCCoeffs[1] = ParseData.toFloat(pages[1], 36);
+                adcToDegCCoeffs[2] = ParseData.toFloat(pages[1], 40);
+                thermistorResistanceAt298K = ParseData.toInt16(pages[1], 44);
+                thermistorBeta = ParseData.toInt16(pages[1], 46);
+                calibrationDate = ParseData.toString(pages[1], 48, 12);
+                calibrationBy = ParseData.toString(pages[1], 60, 3);
 
-                hasCooling = false;
-                hasBattery = false;
-                hasLaser = false;
+                detectorName = ParseData.toString(pages[2], 0, 16);
+                activePixelsHoriz = ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
+                activePixelsVert = ParseData.toUInt16(pages[2], 19);
+                minIntegrationTimeMS = ParseData.toUInt16(pages[2], 21); // will overwrite if 
+                maxIntegrationTimeMS = ParseData.toUInt16(pages[2], 23); //   format >= 5
+                actualPixelsHoriz = ParseData.toUInt16(pages[2], 25);
+                ROIHorizStart = ParseData.toUInt16(pages[2], 27);
+                ROIHorizEnd = ParseData.toUInt16(pages[2], 29);
+                ROIVertRegionStart[0] = ParseData.toUInt16(pages[2], 31);
+                ROIVertRegionEnd[0] = ParseData.toUInt16(pages[2], 33);
+                ROIVertRegionStart[1] = ParseData.toUInt16(pages[2], 35);
+                ROIVertRegionEnd[1] = ParseData.toUInt16(pages[2], 37);
+                ROIVertRegionStart[2] = ParseData.toUInt16(pages[2], 39);
+                ROIVertRegionEnd[2] = ParseData.toUInt16(pages[2], 41);
+                linearityCoeffs[0] = ParseData.toFloat(pages[2], 43);
+                linearityCoeffs[1] = ParseData.toFloat(pages[2], 47);
+                linearityCoeffs[2] = ParseData.toFloat(pages[2], 51);
+                linearityCoeffs[3] = ParseData.toFloat(pages[2], 55);
+                linearityCoeffs[4] = ParseData.toFloat(pages[2], 59);
 
-                excitationNM = 0;
+                // deviceLifetimeOperationMinutes = ParseData.toInt32(pages[3], 0);
+                // laserLifetimeOperationMinutes = ParseData.toInt32(pages[3], 4);
+                // laserTemperatureMax  = ParseData.toInt16(pages[3], 8);
+                // laserTemperatureMin  = ParseData.toInt16(pages[3], 10);
 
-                slitSizeUM = 0;
+                laserPowerCoeffs[0] = ParseData.toFloat(pages[3], 12);
+                laserPowerCoeffs[1] = ParseData.toFloat(pages[3], 16);
+                laserPowerCoeffs[2] = ParseData.toFloat(pages[3], 20);
+                laserPowerCoeffs[3] = ParseData.toFloat(pages[3], 24);
+                maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
+                minLaserPowerMW = ParseData.toFloat(pages[3], 32);
 
-                bool readOk = false;
-                byte[] buffer = HOCTSpectrometer.OctUsb.ReadCalibration(ref readOk);
-
-                if (!readOk)
+                // correct laser excitation across formats
+                if (format >= 4)
                 {
-                    serialNumber = ParseData.toString(buffer, 0, 16);
-
-                    wavecalCoeffs[0] = ParseData.toFloat(buffer, 16);
-                    wavecalCoeffs[1] = ParseData.toFloat(buffer, 20);
-                    wavecalCoeffs[2] = ParseData.toFloat(buffer, 24);
-                    wavecalCoeffs[3] = ParseData.toFloat(buffer, 28);
+                    laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
+                    excitationNM = (ushort)Math.Round(laserExcitationWavelengthNMFloat);
+                }
+                else
+                {
+                    laserExcitationWavelengthNMFloat = excitationNM;
+                }
+                    
+                if (format >= 5)
+                {
+                    minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
+                    maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
                 }
 
-                string test = buffer.ToString();
-
-                startupIntegrationTimeMS = (ushort)HOCTSpectrometer.OctUsb.DefaultIntegrationTime();
-                double temp = a.detectorTemperatureDegC;
-                startupDetectorTemperatureDegC = (short)temp;
-                if (startupDetectorTemperatureDegC >= 99)
-                    startupDetectorTemperatureDegC = 15;
-                else if (startupDetectorTemperatureDegC <= -50)
-                    startupDetectorTemperatureDegC = 15;
-                startupTriggeringMode = 0;
-                detectorGain = 0;
-                detectorOffset = 0;
-                detectorGainOdd = 0;
-                detectorOffsetOdd = 0;
-
-                degCToDACCoeffs[0] = 0;
-                degCToDACCoeffs[1] = 0;
-                degCToDACCoeffs[2] = 0;
-                detectorTempMax = 0;
-                detectorTempMin = 0;
-                adcToDegCCoeffs[0] = 0;
-                adcToDegCCoeffs[1] = 0;
-                adcToDegCCoeffs[2] = 0;
-                thermistorResistanceAt298K = 0;
-                thermistorBeta = 0;
-                calibrationDate = "01/01/2020";
-                calibrationBy = "RSC";
-
-                detectorName = "";
-                activePixelsHoriz = (ushort)a.pixels;
-                activePixelsVert = (ushort)HOCTSpectrometer.OctUsb.NUM_OF_LINES_PER_FRAME;
-                minIntegrationTimeMS = 98;
-                maxIntegrationTimeMS = 33600;
-                actualPixelsHoriz = (ushort)a.pixels;
-                ROIHorizStart = 0;
-                ROIHorizEnd = (ushort)(a.pixels - 1);
-                ROIVertRegionStart[0] = 0;
-                ROIVertRegionEnd[0] = 0;
-                ROIVertRegionStart[1] = 0;
-                ROIVertRegionEnd[1] = 0;
-                ROIVertRegionStart[2] = 0;
-                ROIVertRegionEnd[2] = 0;
-                linearityCoeffs[0] = 0;
-                linearityCoeffs[1] = 0;
-                linearityCoeffs[2] = 0;
-                linearityCoeffs[3] = 0;
-                linearityCoeffs[4] = 0;
-
-                laserPowerCoeffs[0] = 0;
-                laserPowerCoeffs[1] = 0;
-                laserPowerCoeffs[2] = 0;
-                laserPowerCoeffs[3] = 0;
-                maxLaserPowerMW = 0;
-                minLaserPowerMW = 0;
-                laserExcitationWavelengthNMFloat = 0.0f;
-
-                avgResolution = 0.0f;
-
-                userData = new byte[63];
+                userData = format < 4 ? new byte[63] : new byte[64];
+                Array.Copy(pages[4], userData, userData.Length);
 
                 badPixelSet = new SortedSet<short>();
-                productConfiguration = "";
-
-                intensityCorrectionOrder = 0;
-
-                return true;
-            }
-
-            else
-            {
-                ////////////////////////////////////////////////////////////////
-                //                                                            //
-                //            "Regular" USB Wasatch Spectrometers             //
-                //                                                            //
-                ////////////////////////////////////////////////////////////////
-
-                pages = new List<byte[]>();
-                for (ushort page = 0; page < MAX_PAGES; page++)
+                for (int i = 0; i < 15; i++)
                 {
-                    byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
-                    if (buf is null)
+                    short pixel = ParseData.toInt16(pages[5], i * 2);
+                    badPixels[i] = pixel;
+                    if (pixel >= 0)
+                        badPixelSet.Add(pixel); // does not throw
+                }
+                badPixelList = new List<short>(badPixelSet);
+
+                if (format >= 5)
+                    productConfiguration = ParseData.toString(pages[5], 30, 16);
+                else
+                    productConfiguration = "";
+
+                if (format >= 6)
+                {
+                    intensityCorrectionOrder = ParseData.toUInt8(pages[6], 0);
+                    uint numCoeffs = (uint)intensityCorrectionOrder + 1;
+
+                    if (numCoeffs > 8)
+                        numCoeffs = 0;
+
+                    intensityCorrectionCoeffs = numCoeffs > 0 ? new float[numCoeffs] : null;
+
+                    for (int i = 0; i < numCoeffs; ++i)
                     {
-                        try
-                        {
-                            setDefault(spectrometer);
-                        }
-                        catch
-                        {
-                            return false;
-                        }
-                        return true;
+                        intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
                     }
-                    pages.Add(buf);
-                    logger.hexdump(buf, String.Format("read page {0}: ", page));
+                }
+                else
+                {
+                    intensityCorrectionOrder = 0;
                 }
 
-                format = pages[0][63];
-
-                try
+                if (format >= 7)
                 {
-                    model = ParseData.toString(pages[0], 0, 16);
-                    serialNumber = ParseData.toString(pages[0], 16, 16);
-                    baudRate = ParseData.toUInt32(pages[0], 32);
-                    hasCooling = ParseData.toBool(pages[0], 36);
-                    hasBattery = ParseData.toBool(pages[0], 37);
-                    hasLaser = ParseData.toBool(pages[0], 38);
-                    excitationNM = ParseData.toUInt16(pages[0], 39); // for old formats, first read this as excitation
-                    slitSizeUM = ParseData.toUInt16(pages[0], 41);
+                    avgResolution = ParseData.toFloat(pages[3], 48);
+                }
+                else
+                {
+                    avgResolution = 0.0f;
+                }
 
-                    startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
-                    startupDetectorTemperatureDegC = ParseData.toInt16(pages[0], 45);
-                    startupTriggeringMode = ParseData.toUInt8(pages[0], 47);
-                    detectorGain = ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
-                    detectorOffset = ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
-                    detectorGainOdd = ParseData.toFloat(pages[0], 54); // InGaAs-only
-                    detectorOffsetOdd = ParseData.toInt16(pages[0], 58); // InGaAs-only
-
-                    wavecalCoeffs[0] = ParseData.toFloat(pages[1], 0);
-                    wavecalCoeffs[1] = ParseData.toFloat(pages[1], 4);
-                    wavecalCoeffs[2] = ParseData.toFloat(pages[1], 8);
-                    wavecalCoeffs[3] = ParseData.toFloat(pages[1], 12);
-                    degCToDACCoeffs[0] = ParseData.toFloat(pages[1], 16);
-                    degCToDACCoeffs[1] = ParseData.toFloat(pages[1], 20);
-                    degCToDACCoeffs[2] = ParseData.toFloat(pages[1], 24);
-                    detectorTempMax = ParseData.toInt16(pages[1], 28);
-                    detectorTempMin = ParseData.toInt16(pages[1], 30);
-                    adcToDegCCoeffs[0] = ParseData.toFloat(pages[1], 32);
-                    adcToDegCCoeffs[1] = ParseData.toFloat(pages[1], 36);
-                    adcToDegCCoeffs[2] = ParseData.toFloat(pages[1], 40);
-                    thermistorResistanceAt298K = ParseData.toInt16(pages[1], 44);
-                    thermistorBeta = ParseData.toInt16(pages[1], 46);
-                    calibrationDate = ParseData.toString(pages[1], 48, 12);
-                    calibrationBy = ParseData.toString(pages[1], 60, 3);
-
-                    detectorName = ParseData.toString(pages[2], 0, 16);
-                    activePixelsHoriz = ParseData.toUInt16(pages[2], 16); // note: byte 18 unused
-                    activePixelsVert = ParseData.toUInt16(pages[2], 19);
-                    minIntegrationTimeMS = ParseData.toUInt16(pages[2], 21); // will overwrite if 
-                    maxIntegrationTimeMS = ParseData.toUInt16(pages[2], 23); //   format >= 5
-                    actualPixelsHoriz = ParseData.toUInt16(pages[2], 25);
-                    ROIHorizStart = ParseData.toUInt16(pages[2], 27);
-                    ROIHorizEnd = ParseData.toUInt16(pages[2], 29);
-                    ROIVertRegionStart[0] = ParseData.toUInt16(pages[2], 31);
-                    ROIVertRegionEnd[0] = ParseData.toUInt16(pages[2], 33);
-                    ROIVertRegionStart[1] = ParseData.toUInt16(pages[2], 35);
-                    ROIVertRegionEnd[1] = ParseData.toUInt16(pages[2], 37);
-                    ROIVertRegionStart[2] = ParseData.toUInt16(pages[2], 39);
-                    ROIVertRegionEnd[2] = ParseData.toUInt16(pages[2], 41);
-                    linearityCoeffs[0] = ParseData.toFloat(pages[2], 43);
-                    linearityCoeffs[1] = ParseData.toFloat(pages[2], 47);
-                    linearityCoeffs[2] = ParseData.toFloat(pages[2], 51);
-                    linearityCoeffs[3] = ParseData.toFloat(pages[2], 55);
-                    linearityCoeffs[4] = ParseData.toFloat(pages[2], 59);
-
-                    // deviceLifetimeOperationMinutes = ParseData.toInt32(pages[3], 0);
-                    // laserLifetimeOperationMinutes = ParseData.toInt32(pages[3], 4);
-                    // laserTemperatureMax  = ParseData.toInt16(pages[3], 8);
-                    // laserTemperatureMin  = ParseData.toInt16(pages[3], 10);
-
-                    laserPowerCoeffs[0] = ParseData.toFloat(pages[3], 12);
-                    laserPowerCoeffs[1] = ParseData.toFloat(pages[3], 16);
-                    laserPowerCoeffs[2] = ParseData.toFloat(pages[3], 20);
-                    laserPowerCoeffs[3] = ParseData.toFloat(pages[3], 24);
-                    maxLaserPowerMW = ParseData.toFloat(pages[3], 28);
-                    minLaserPowerMW = ParseData.toFloat(pages[3], 32);
-
-                    // correct laser excitation across formats
-                    if (format >= 4)
-                    {
-                        laserExcitationWavelengthNMFloat = ParseData.toFloat(pages[3], 36);
-                        excitationNM = (ushort)Math.Round(laserExcitationWavelengthNMFloat);
-                    }
-                    else
-                    {
-                        laserExcitationWavelengthNMFloat = excitationNM;
-                    }
-                    
-                    if (format >= 5)
-                    {
-                        minIntegrationTimeMS = ParseData.toUInt32(pages[3], 40);
-                        maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
-                    }
-
-                    userData = format < 4 ? new byte[63] : new byte[64];
-                    Array.Copy(pages[4], userData, userData.Length);
-
-                    badPixelSet = new SortedSet<short>();
-                    for (int i = 0; i < 15; i++)
-                    {
-                        short pixel = ParseData.toInt16(pages[5], i * 2);
-                        badPixels[i] = pixel;
-                        if (pixel >= 0)
-                            badPixelSet.Add(pixel); // does not throw
-                    }
-                    badPixelList = new List<short>(badPixelSet);
-
-                    if (format >= 5)
-                        productConfiguration = ParseData.toString(pages[5], 30, 16);
-                    else
-                        productConfiguration = "";
-
-                    if (format >= 6)
-                    {
-                        intensityCorrectionOrder = ParseData.toUInt8(pages[6], 0);
-                        uint numCoeffs = (uint)intensityCorrectionOrder + 1;
-
-                        if (numCoeffs > 8)
-                            numCoeffs = 0;
-
-                        intensityCorrectionCoeffs = numCoeffs > 0 ? new float[numCoeffs] : null;
-
-                        for (int i = 0; i < numCoeffs; ++i)
-                        {
-                            intensityCorrectionCoeffs[i] = ParseData.toFloat(pages[6], 1 + 4 * i);
-                        }
-                    }
-                    else
+                if (format >= 8)
+                {
+                    wavecalCoeffs[4] = ParseData.toFloat(pages[2], 21);
+                    subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
+                    if (subformat == PAGE_SUBFORMAT.USER_DATA)
                     {
                         intensityCorrectionOrder = 0;
-                    }
+                        intensityCorrectionCoeffs = null;
 
-                    if (format >= 7)
-                    {
-                        avgResolution = ParseData.toFloat(pages[3], 48);
-                    }
-                    else
-                    {
-                        avgResolution = 0.0f;
-                    }
-
-                    if (format >= 8)
-                    {
-                        wavecalCoeffs[4] = ParseData.toFloat(pages[2], 21);
-                        subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
-                        if (subformat == PAGE_SUBFORMAT.USER_DATA)
-                        {
-                            intensityCorrectionOrder = 0;
-                            intensityCorrectionCoeffs = null;
-
-                            userData = new byte[192];
-                            //Array.Copy(pages[4], userData, userData.Length);
-                            Array.Copy(pages[4], 0, userData, 0, 64);
-                            Array.Copy(pages[6], 0, userData, 64, 64);
-                            Array.Copy(pages[7], 0, userData, 128, 64);
-                        }
-
-                        /*
-                        userData = new byte[16000];
+                        userData = new byte[192];
+                        //Array.Copy(pages[4], userData, userData.Length);
                         Array.Copy(pages[4], 0, userData, 0, 64);
-                        Array.Copy(pages[7], 0, userData, 64, 64);
-
-                        for (int k = 8; k < 256; ++k)
-                        {
-                            Array.Copy(pages[k], 0, userData, 64 * (k - 6), 64);
-                        }
-                        */
+                        Array.Copy(pages[6], 0, userData, 64, 64);
+                        Array.Copy(pages[7], 0, userData, 128, 64);
                     }
-                    else
+
+                    /*
+                    userData = new byte[16000];
+                    Array.Copy(pages[4], 0, userData, 0, 64);
+                    Array.Copy(pages[7], 0, userData, 64, 64);
+
+                    for (int k = 8; k < 256; ++k)
                     {
-                        if (format >= 6)
-                            subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
-                        else
-                            subformat = PAGE_SUBFORMAT.USER_DATA;
+                        Array.Copy(pages[k], 0, userData, 64 * (k - 6), 64);
                     }
-
-                    if (format >= 9)
-                        featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
+                    */
                 }
-                catch (Exception ex)
+                else
                 {
-                    logger.error("EEPROM: caught exception: {0}", ex.Message);
-                    return false;
+                    if (format >= 6)
+                        subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
+                    else
+                        subformat = PAGE_SUBFORMAT.USER_DATA;
                 }
 
-                if (logger.debugEnabled())
-                    dump();
-
-                enforceReasonableDefaults();
-
-                format = FORMAT;
-
-                return true;
+                if (format >= 9)
+                    featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
             }
+            catch (Exception ex)
+            {
+                logger.error("EEPROM: caught exception: {0}", ex.Message);
+                return false;
+            }
+
+            if (logger.debugEnabled())
+                dump();
+
+            enforceReasonableDefaults();
+
+            format = FORMAT;
+
+            return true;
+            
         }
 
         public void setDefault(Spectrometer a)
@@ -2163,7 +1255,7 @@ namespace WasatchNET
             return true;
         }
 
-        void enforceReasonableDefaults()
+        protected void enforceReasonableDefaults()
         {
             ////////////////////////////////////////////////////////////////////
             // wavecal (only check first 4)
@@ -2246,7 +1338,174 @@ namespace WasatchNET
             }
         }
 
-        void dump()
+        protected bool writeParse()
+        {
+            if (!ParseData.writeString(model, pages[0], 0, 16)) return false;
+            if (!ParseData.writeString(serialNumber, pages[0], 16, 16)) return false;
+            if (!ParseData.writeUInt32(baudRate, pages[0], 32)) return false;
+            if (!ParseData.writeBool(hasCooling, pages[0], 36)) return false;
+            if (!ParseData.writeBool(hasBattery, pages[0], 37)) return false;
+            if (!ParseData.writeBool(hasLaser, pages[0], 38)) return false;
+
+            if (format >= 9)
+                if (!ParseData.writeUInt16(featureMask.toUInt16(), pages[0], 39)) return false;
+                else
+                if (!ParseData.writeUInt16(excitationNM, pages[0], 39)) return false;
+
+            if (!ParseData.writeUInt16(slitSizeUM, pages[0], 41)) return false;
+            if (!ParseData.writeUInt16(startupIntegrationTimeMS, pages[0], 43)) return false;
+            if (!ParseData.writeInt16(startupDetectorTemperatureDegC, pages[0], 45)) return false;
+            if (!ParseData.writeByte(startupTriggeringMode, pages[0], 47)) return false;
+            if (!ParseData.writeFloat(detectorGain, pages[0], 48)) return false;
+            if (!ParseData.writeInt16(detectorOffset, pages[0], 52)) return false;
+            if (!ParseData.writeFloat(detectorGainOdd, pages[0], 54)) return false;
+            if (!ParseData.writeInt16(detectorOffsetOdd, pages[0], 58)) return false;
+
+            if (!ParseData.writeFloat(wavecalCoeffs[0], pages[1], 0)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[1], pages[1], 4)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[2], pages[1], 8)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[3], pages[1], 12)) return false;
+            if (!ParseData.writeFloat(degCToDACCoeffs[0], pages[1], 16)) return false;
+            if (!ParseData.writeFloat(degCToDACCoeffs[1], pages[1], 20)) return false;
+            if (!ParseData.writeFloat(degCToDACCoeffs[2], pages[1], 24)) return false;
+            if (!ParseData.writeInt16(detectorTempMax, pages[1], 28)) return false;
+            if (!ParseData.writeInt16(detectorTempMin, pages[1], 30)) return false;
+            if (!ParseData.writeFloat(adcToDegCCoeffs[0], pages[1], 32)) return false;
+            if (!ParseData.writeFloat(adcToDegCCoeffs[1], pages[1], 36)) return false;
+            if (!ParseData.writeFloat(adcToDegCCoeffs[2], pages[1], 40)) return false;
+            if (!ParseData.writeInt16(thermistorResistanceAt298K, pages[1], 44)) return false;
+            if (!ParseData.writeInt16(thermistorBeta, pages[1], 46)) return false;
+            if (!ParseData.writeString(calibrationDate, pages[1], 48, 12)) return false;
+            if (!ParseData.writeString(calibrationBy, pages[1], 60, 3)) return false;
+
+            if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
+            if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
+            // skip 18
+            if (!ParseData.writeUInt16(activePixelsVert, pages[2], 19)) return false;
+            if (!ParseData.writeFloat(wavecalCoeffs[4], pages[2], 21)) return false;
+
+            if (!ParseData.writeUInt16(actualPixelsHoriz, pages[2], 25)) return false;
+            if (!ParseData.writeUInt16(ROIHorizStart, pages[2], 27)) return false;
+            if (!ParseData.writeUInt16(ROIHorizEnd, pages[2], 29)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionStart[0], pages[2], 31)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionEnd[0], pages[2], 33)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionStart[1], pages[2], 35)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionEnd[1], pages[2], 37)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionStart[2], pages[2], 39)) return false;
+            if (!ParseData.writeUInt16(ROIVertRegionEnd[2], pages[2], 41)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[0], pages[2], 43)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[1], pages[2], 47)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[2], pages[2], 51)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[3], pages[2], 55)) return false;
+            if (!ParseData.writeFloat(linearityCoeffs[4], pages[2], 59)) return false;
+
+            if (!ParseData.writeFloat(laserPowerCoeffs[0], pages[3], 12)) return false;
+            if (!ParseData.writeFloat(laserPowerCoeffs[1], pages[3], 16)) return false;
+            if (!ParseData.writeFloat(laserPowerCoeffs[2], pages[3], 20)) return false;
+            if (!ParseData.writeFloat(laserPowerCoeffs[3], pages[3], 24)) return false;
+            if (!ParseData.writeFloat(maxLaserPowerMW, pages[3], 28)) return false;
+            if (!ParseData.writeFloat(minLaserPowerMW, pages[3], 32)) return false;
+
+
+
+            if (format >= 4)
+            {
+                if (!ParseData.writeFloat(laserExcitationWavelengthNMFloat, pages[3], 36)) return false;
+                if (!ParseData.writeUInt32(minIntegrationTimeMS, pages[3], 40)) return false;
+                if (!ParseData.writeUInt32(maxIntegrationTimeMS, pages[3], 44)) return false;
+            }
+
+            if (format >= 7)
+                if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
+
+            byte[] userDataChunk2 = new byte[64];
+            byte[] userDataChunk3 = new byte[64];
+
+            if (format >= 8)
+            {
+
+                // The user has unfettered access to userData and can make it as long as they want, this breaks it up into chunks
+                // to write to the different places in EEPROM we write user data to, and throws away bytes above 192 rather
+                // than try to write them.
+                //
+                // Should protect users without restricting them
+                if (userData.Length <= 64)
+                {
+                    Array.Copy(userData, pages[4], userData.Length);
+                }
+                else
+                {
+                    Array.Copy(userData, pages[4], 64);
+                    if (userData.Length <= 128)
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, userData.Length - 64);
+
+                    }
+                    else if (userData.Length <= 192)
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                        Array.Copy(userData, 128, userDataChunk3, 0, userData.Length - 128);
+                    }
+                    else
+                    {
+                        Array.Copy(userData, 64, userDataChunk2, 0, 64);
+                        Array.Copy(userData, 128, userDataChunk3, 0, 64);
+                    }
+                }
+            }
+
+            // note that we write the positional, error-prone array (which is 
+            // user -writable), not the List or SortedSet caches
+            for (int i = 0; i < badPixels.Length; i++)
+                if (!ParseData.writeInt16(badPixels[i], pages[5], i * 2))
+                    return false;
+
+            if (format >= 5)
+                if (!ParseData.writeString(productConfiguration, pages[5], 30, 16)) return false;
+
+            //subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
+            if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
+
+            if (format >= 8)
+            {
+                if (!ParseData.writeByte((byte)subformat, pages[5], 63)) return false;
+
+                if (subformat == PAGE_SUBFORMAT.USER_DATA)
+                {
+                    Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
+                    Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
+                }
+                else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
+                {
+                    if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
+                    if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
+                    {
+                        for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                        {
+                            if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                        }
+                    }
+                }
+            }
+
+            else if (format >= 6)
+            {
+                if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
+                if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
+                {
+                    for (int i = 0; i <= intensityCorrectionOrder; ++i)
+                    {
+                        if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                    }
+                }
+            }
+
+            pages[0][63] = format;
+
+            return true;
+        }
+
+        protected void dump()
         {
             logger.debug("Model                 = {0}", model);
             logger.debug("serialNumber          = {0}", serialNumber);

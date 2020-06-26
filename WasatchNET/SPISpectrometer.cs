@@ -220,7 +220,7 @@ namespace WasatchNET
 
         override internal bool open()
         {
-            eeprom = new EEPROM(this);
+            eeprom = new SPIEEPROM(this);
 
             string ftdi = null;
             try
