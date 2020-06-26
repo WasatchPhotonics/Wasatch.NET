@@ -18,7 +18,7 @@ namespace WasatchNET
         public enum SAMPLE_METHOD { EXACT, LINEAR_INTERPOLATION, NOISY_LINEAR_INTERPOLATION };
 
         Dictionary<string, SortedDictionary<int, double[]>> interpolationSamples = new Dictionary<string, SortedDictionary<int, double[]>>();
-        SAMPLE_METHOD sampleMethod = SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION;
+        public SAMPLE_METHOD sampleMethod = SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION;
 
         internal MockSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
