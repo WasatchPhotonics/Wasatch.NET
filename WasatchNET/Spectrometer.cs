@@ -818,7 +818,7 @@ namespace WasatchNET
                 }
             }
         }
-        ushort detectorTECSetpointRaw_;
+        protected ushort detectorTECSetpointRaw_;
 
         public virtual float detectorTemperatureDegC
         {
@@ -1132,7 +1132,7 @@ namespace WasatchNET
                 sendCmd(Opcodes.SET_LASER_MOD_PERIOD, val.LSW, val.MidW, val.buf);
             }
         }
-        UInt64 laserModulationPeriod_;
+        protected UInt64 laserModulationPeriod_;
 
         public virtual UInt64 laserModulationPulseWidth
         {
@@ -1151,7 +1151,7 @@ namespace WasatchNET
                 sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, val.LSW, val.MidW, val.buf);
             }
         }
-        UInt64 laserModulationPulseWidth_;
+        protected UInt64 laserModulationPulseWidth_;
 
         /// <summary>disabled to deconflict area scan</summary>
         public bool laserRampingEnabled
@@ -1293,7 +1293,7 @@ namespace WasatchNET
                 readOnce.Add(Opcodes.GET_LASER_TEC_SETPOINT);
             }
         }
-        byte laserTemperatureSetpointRaw_;
+        protected byte laserTemperatureSetpointRaw_;
 
         public uint lineLength
         {
@@ -1496,7 +1496,7 @@ namespace WasatchNET
                     logger.debug("not sending SET_TRIGGER_SOURCE (0x{0:x2}) -> {1} because ARM", cmd[Opcodes.SET_TRIGGER_SOURCE], triggerSource_);
             }
         }
-        TRIGGER_SOURCE triggerSource_ = TRIGGER_SOURCE.INTERNAL; // not ERROR
+        protected TRIGGER_SOURCE triggerSource_ = TRIGGER_SOURCE.INTERNAL; // not ERROR
 
         // MZ: I'm not sure what GPIO pin would support this triggerOutput...
         //     on one recent "outbound" triggering project, we ended up using
@@ -1822,7 +1822,7 @@ namespace WasatchNET
             lastUsbTimestamp = DateTime.Now;
         }
 
-        public bool reconnect()
+        public virtual bool reconnect()
         {
             logger.debug("Spectrometer.reconnect: starting");
 
@@ -2123,7 +2123,7 @@ namespace WasatchNET
         /// If a spectrometer has bad_pixels configured in the EEPROM, then average 
         /// over them in the driver.
         /// </summary> 
-        void correctBadPixels(ref double[] spectrum)
+        protected void correctBadPixels(ref double[] spectrum)
         {
             if (eeprom.badPixelList.Count == 0)
                 return;
@@ -2793,6 +2793,6 @@ namespace WasatchNET
         }
 
         public void cancelCurrentAcquisition() => currentAcquisitionCancelled = true;
-        private bool currentAcquisitionCancelled;
+        protected bool currentAcquisitionCancelled;
     }
 }

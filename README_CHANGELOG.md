@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-06-25 2.3.0
+	- added simple mock spectrometer
 - 2020-06-10 2.2.11
     - added support for writing older EEPROM formats
 	- fixed bugs with some spectrometer's temp range and initialization
