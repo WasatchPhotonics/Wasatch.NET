@@ -103,10 +103,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AcquisitionStatus.cs" />
+    <Compile Include="BoulderEEPROM.cs" />
     <Compile Include="BoulderSpectrometer.cs" />
     <Compile Include="FeatureIdentification.cs" />
     <Compile Include="FeatureMask.cs" />
     <Compile Include="FPGAOptions.cs" />
+    <Compile Include="HOCTEEPROM.cs" />
     <Compile Include="HOCTSpectrometer.cs" />
     <Compile Include="IDriver.cs" />
     <Compile Include="IDriverVBAWrapper.cs" />
@@ -118,10 +120,12 @@
     <Compile Include="ISpectrometer.cs" />
     <Compile Include="IUInt40.cs" />
     <Compile Include="EEPROM.cs" />
+    <Compile Include="MockEEPROM.cs" />
     <Compile Include="MockSpectrometer.cs" />
     <Compile Include="MultiChannelWrapper.cs" />
     <Compile Include="ParseData.cs" />
     <Compile Include="SeaBreezeWrapper.cs" />
+    <Compile Include="SPIEEPROM.cs" />
     <Compile Include="SPISpectrometer.cs" />
     <Compile Include="BoulderStatusRegister.cs" />
     <Compile Include="Unpack.cs" />

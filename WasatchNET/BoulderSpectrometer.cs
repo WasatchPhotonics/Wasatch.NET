@@ -45,7 +45,7 @@ namespace WasatchNET
 
         override internal bool open()
         {
-            eeprom = new EEPROM(this);
+            eeprom = new BoulderEEPROM(this);
 
             int errorReader = 0;
 
