@@ -484,7 +484,7 @@ namespace WasatchNET
                         double delta = slope * (integrationTimeMS - maxIntegration);
 
                         //clamp to 0 - 2^16, should not be needed for interpolating, just this extrapolating
-                        final[i] = Math.Max(0,Math.Min(maxSpectrum[i] + delta, 2^16));
+                        final[i] = Math.Max(0,Math.Min(maxSpectrum[i] + delta, Math.Pow(2,16)));
                     }
 
 
