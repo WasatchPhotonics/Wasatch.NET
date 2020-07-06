@@ -6,6 +6,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
+using Newtonsoft.Json;
+using System.IO;
 
 namespace WasatchNET
 {
@@ -349,6 +351,47 @@ namespace WasatchNET
         public void setSource(string src)
         {
             currentSource = src;
+        }
+
+        public bool addDataBulk(string jsonFile)
+        {
+            MockDataJSON json = null;
+            string text = File.ReadAllText(jsonFile);
+
+            //string crypText = AesOperation.EncryptString(AesOperation.jsonLock, text);
+
+            //text = AesOperation.DecryptString(AesOperation.jsonLock, crypText);
+
+            try
+            {
+                json = JsonConvert.DeserializeObject<MockDataJSON>(text);
+                logger.debug("successfully deserialized QCConfig");
+            }
+            catch (JsonReaderException jre)
+            {
+                return false;
+            }
+
+            if (json.measurements != null && json.measurements.Count > 0)
+            {
+                foreach (string src in json.measurements.Keys)
+                {
+                    if (json.measurements[src].Count > 0)
+                    {
+                        foreach (int time in json.measurements[src].Keys)
+                        {
+                            addData(src, time, json.measurements[src][time]);
+                        }
+                    }
+                }
+
+                return true;
+
+            }
+
+            else
+                return false;
+
         }
 
         public void addData(string src, int integrationTime, double[] spectrum)
