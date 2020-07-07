@@ -123,7 +123,7 @@
     <Compile Include="ISpectrometer.cs" />
     <Compile Include="IUInt40.cs" />
     <Compile Include="EEPROM.cs" />
-    <Compile Include="MockDataJSON.cs" />
+    <Compile Include="MockSpectrometerJSON.cs" />
     <Compile Include="MockEEPROM.cs" />
     <Compile Include="MockSpectrometer.cs" />
     <Compile Include="MultiChannelWrapper.cs" />

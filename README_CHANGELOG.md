@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-07-07 2.3.2
+    - added option to Mock Spectrometer to bulk load and set EEPROM through JSON file
 - 2020-06-26 2.3.1
 	- reorganized EEPROM read/write differences from switch-like model to subclasses
 - 2020-06-25 2.3.0
