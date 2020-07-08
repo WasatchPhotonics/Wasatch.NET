@@ -6,6 +6,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
+using Newtonsoft.Json;
+using System.IO;
 
 namespace WasatchNET
 {
@@ -349,6 +351,91 @@ namespace WasatchNET
         public void setSource(string src)
         {
             currentSource = src;
+        }
+
+        public bool initSpectrometer(string jsonFile)
+        {
+            MockSpectrometerJSON json = null;
+            string text = File.ReadAllText(jsonFile);
+
+            //string crypText = AesOperation.EncryptString(AesOperation.jsonLock, text);
+
+            //text = AesOperation.DecryptString(AesOperation.jsonLock, crypText);
+
+            try
+            {
+                json = JsonConvert.DeserializeObject<MockSpectrometerJSON>(text);
+                logger.debug("successfully deserialized QCConfig");
+            }
+            catch (JsonReaderException jre)
+            {
+                return false;
+            }
+
+            if (json.EEPROM != null)
+            {
+                eeprom.serialNumber = json.EEPROM.Serial;
+                eeprom.model = json.EEPROM.Model;
+                eeprom.slitSizeUM = (ushort)json.EEPROM.SlitWidth;
+                eeprom.baudRate = (uint)json.EEPROM.BaudRate;
+                eeprom.hasBattery = json.EEPROM.IncBattery;
+                eeprom.hasCooling = json.EEPROM.IncCooling;
+                eeprom.hasLaser = json.EEPROM.IncLaser;
+                eeprom.startupIntegrationTimeMS = (ushort)json.EEPROM.StartupIntTimeMS;
+                eeprom.startupDetectorTemperatureDegC = (short)json.EEPROM.StartupTempC;
+                eeprom.startupTriggeringMode = (byte)json.EEPROM.StartupTriggerMode;
+                eeprom.detectorGain = (short)json.EEPROM.DetectorGain;
+                eeprom.detectorGainOdd = (short)json.EEPROM.DetectorGainOdd;
+                eeprom.detectorOffset = (short)json.EEPROM.DetectorOffset;
+                eeprom.detectorOffsetOdd = (short)json.EEPROM.DetectorOffsetOdd;
+                eeprom.wavecalCoeffs = Array.ConvertAll(json.EEPROM.WavecalCoeffs, item => (float)item);
+                eeprom.degCToDACCoeffs = Array.ConvertAll(json.EEPROM.TempToDACCoeffs, item => (float)item);
+                eeprom.adcToDegCCoeffs = Array.ConvertAll(json.EEPROM.ADCToTempCoeffs, item => (float)item);
+                eeprom.linearityCoeffs = Array.ConvertAll(json.EEPROM.LinearityCoeffs, item => (float)item);
+                eeprom.detectorTempMax = (short)json.EEPROM.DetectorTempMax;
+                eeprom.detectorTempMin = (short)json.EEPROM.DetectorTempMin;
+                eeprom.thermistorBeta = (short)json.EEPROM.ThermistorBeta;
+                eeprom.thermistorResistanceAt298K = (short)json.EEPROM.ThermistorResAt298K;
+                eeprom.calibrationDate = json.EEPROM.CalibrationDate;
+                eeprom.calibrationBy = json.EEPROM.CalibrationBy;
+                eeprom.detectorName = json.EEPROM.DetectorName;
+                eeprom.actualPixelsHoriz = (ushort)json.EEPROM.ActualPixelsHoriz;
+                eeprom.activePixelsHoriz = (ushort)json.EEPROM.ActivePixelsHoriz;
+                eeprom.activePixelsVert = (ushort)json.EEPROM.ActivePixelsVert;
+                eeprom.ROIHorizStart = (ushort)json.EEPROM.ROIHorizStart;
+                eeprom.ROIHorizEnd = (ushort)json.EEPROM.ROIHorizEnd;
+                eeprom.ROIVertRegionStart = Array.ConvertAll(json.EEPROM.ROIVertRegionStarts, item => (ushort)item);
+                eeprom.ROIVertRegionEnd = Array.ConvertAll(json.EEPROM.ROIVertRegionEnds, item => (ushort)item);
+                eeprom.maxLaserPowerMW = (float)json.EEPROM.MaxLaserPowerMW;
+                eeprom.minLaserPowerMW = (float)json.EEPROM.MinLaserPowerMW;
+                eeprom.laserExcitationWavelengthNMFloat = (float)json.EEPROM.ExcitationWavelengthNM;
+                eeprom.badPixels = Array.ConvertAll(json.EEPROM.BadPixels, item => (short)item);
+                eeprom.userText = json.EEPROM.UserText;
+                eeprom.productConfiguration = json.EEPROM.ProductConfig;
+                eeprom.intensityCorrectionOrder = (byte)json.EEPROM.RelIntCorrOrder;
+                eeprom.intensityCorrectionCoeffs = Array.ConvertAll(json.EEPROM.RelIntCorrCoeff, item => (float)item);
+            }
+
+            if (json.measurements != null && json.measurements.Count > 0)
+            {
+                foreach (string src in json.measurements.Keys)
+                {
+                    if (json.measurements[src].Count > 0)
+                    {
+                        foreach (int time in json.measurements[src].Keys)
+                        {
+                            addData(src, time, json.measurements[src][time]);
+                        }
+                    }
+                }
+
+                return true;
+
+            }
+
+            else
+                return false;
+
         }
 
         public void addData(string src, int integrationTime, double[] spectrum)

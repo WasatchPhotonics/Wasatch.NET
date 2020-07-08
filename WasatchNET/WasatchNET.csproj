@@ -92,6 +92,9 @@
     <Reference Include="MPSSELight">
       <HintPath>..\lib\MPSSELight.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Windows.Forms" />
@@ -120,6 +123,7 @@
     <Compile Include="ISpectrometer.cs" />
     <Compile Include="IUInt40.cs" />
     <Compile Include="EEPROM.cs" />
+    <Compile Include="MockSpectrometerJSON.cs" />
     <Compile Include="MockEEPROM.cs" />
     <Compile Include="MockSpectrometer.cs" />
     <Compile Include="MultiChannelWrapper.cs" />
@@ -140,6 +144,7 @@
     <Compile Include="DriverVBAWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="WasatchNETStrongName.pfx" />
     <None Include="WasatchNETStrongName.pfx.snk" />
   </ItemGroup>
