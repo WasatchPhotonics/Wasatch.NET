@@ -17,7 +17,7 @@ namespace WasatchNET
         public string Serial;
         public string Model;
         public int SlitWidth;
-        public double BaudRate;
+        public int BaudRate;
         public bool IncBattery;
         public bool IncCooling;
         public bool IncLaser;
@@ -26,8 +26,8 @@ namespace WasatchNET
         public int StartupTriggerMode;
         public double DetectorGain;
         public double DetectorGainOdd;
-        public double DetectorOffset;
-        public double DetectorOffsetOdd;
+        public int DetectorOffset;
+        public int DetectorOffsetOdd;
         public double[] WavecalCoeffs;
         public double[] TempToDACCoeffs;
         public double[] ADCToTempCoeffs;
@@ -44,12 +44,12 @@ namespace WasatchNET
         public int ActivePixelsVert;
         public int ROIHorizStart;
         public int ROIHorizEnd;
-        public double[] ROIVertRegionStarts;
-        public double[] ROIVertRegionEnds;
+        public int[] ROIVertRegionStarts;
+        public int[] ROIVertRegionEnds;
         public double MaxLaserPowerMW;
         public double MinLaserPowerMW;
         public double ExcitationWavelengthNM;
-        public double[] BadPixels;
+        public int[] BadPixels;
         public string UserText;
         public string ProductConfig;
         public int RelIntCorrOrder;
