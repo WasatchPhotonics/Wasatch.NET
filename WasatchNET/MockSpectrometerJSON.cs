@@ -42,6 +42,8 @@ namespace WasatchNET
         public int ActualPixelsHoriz;
         public int ActivePixelsHoriz;
         public int ActivePixelsVert;
+        public int MinIntegrationTimeMS;
+        public int MaxIntegrationTimeMS;
         public int ROIHorizStart;
         public int ROIHorizEnd;
         public int[] ROIVertRegionStarts;
