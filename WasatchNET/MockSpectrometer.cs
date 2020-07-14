@@ -246,6 +246,12 @@ namespace WasatchNET
             }
         }
 
+        public override bool setLaserPowerPercentage(float perc)
+        {
+            return true;
+        }
+
+
         public override TRIGGER_SOURCE triggerSource
         {
             get
@@ -402,6 +408,8 @@ namespace WasatchNET
                 eeprom.actualPixelsHoriz = (ushort)json.EEPROM.ActualPixelsHoriz;
                 eeprom.activePixelsHoriz = (ushort)json.EEPROM.ActivePixelsHoriz;
                 eeprom.activePixelsVert = (ushort)json.EEPROM.ActivePixelsVert;
+                eeprom.minIntegrationTimeMS = (uint)json.EEPROM.MinIntegrationTimeMS;
+                eeprom.maxIntegrationTimeMS = (uint)json.EEPROM.MaxIntegrationTimeMS;
                 eeprom.ROIHorizStart = (ushort)json.EEPROM.ROIHorizStart;
                 eeprom.ROIHorizEnd = (ushort)json.EEPROM.ROIHorizEnd;
                 eeprom.ROIVertRegionStart = Array.ConvertAll(json.EEPROM.ROIVertRegionStarts, item => (ushort)item);
@@ -414,6 +422,8 @@ namespace WasatchNET
                 eeprom.productConfiguration = json.EEPROM.ProductConfig;
                 eeprom.intensityCorrectionOrder = (byte)json.EEPROM.RelIntCorrOrder;
                 eeprom.intensityCorrectionCoeffs = Array.ConvertAll(json.EEPROM.RelIntCorrCoeff, item => (float)item);
+
+                regenerateWavelengths();
             }
 
             if (json.measurements != null && json.measurements.Count > 0)

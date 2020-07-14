@@ -223,6 +223,9 @@ namespace WasatchNET
             }
 
             logger.debug($"OpenAllSpectrometers: returning {spectrometers.Count}");
+
+            logger.info("Testing Version Updates");
+
             return spectrometers.Count;
         }
 
