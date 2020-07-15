@@ -531,6 +531,9 @@ namespace WasatchNET
 
             }
 
+            if (eeprom.featureMask.invertXAxis)
+                Array.Reverse(spec);
+
             return spec;
             
         }
@@ -543,7 +546,7 @@ namespace WasatchNET
 
         public override string serialNumber
         {
-            get => "";
+            get => eeprom.serialNumber;
         }
 
         public override uint boxcarHalfWidth

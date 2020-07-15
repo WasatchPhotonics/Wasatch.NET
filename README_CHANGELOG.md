@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-07-15 2.3.4
+    - fixed bugs with spi spectrometer axis flipping and serial number
 - 2020-07-13 2.3.3
     - added integration time to mock spectrometer EEPROM
 	- fixed bug with wavelength generation when loading mock spectrometer EEPROM from JSON
