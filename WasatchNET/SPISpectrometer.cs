@@ -543,7 +543,7 @@ namespace WasatchNET
 
         public override string serialNumber
         {
-            get => "";
+            get => eeprom.serialNumber;
         }
 
         public override uint boxcarHalfWidth
