@@ -531,6 +531,9 @@ namespace WasatchNET
 
             }
 
+            if (eeprom.featureMask.invertXAxis)
+                Array.Reverse(spec);
+
             return spec;
             
         }
