@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-07-13 2.3.3
+    - added integration time to mock spectrometer EEPROM
+	- fixed bug with wavelength generation when loading mock spectrometer EEPROM from JSON
 - 2020-07-07 2.3.2
     - added option to Mock Spectrometer to bulk load and set EEPROM through JSON file
 - 2020-06-26 2.3.1
