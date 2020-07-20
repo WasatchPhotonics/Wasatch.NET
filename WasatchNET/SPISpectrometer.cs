@@ -4,6 +4,7 @@ using System.Threading;
 using System.Linq;
 using LibUsbDotNet.Main;
 using MPSSELight;
+using System.Runtime.Remoting.Messaging;
 
 namespace WasatchNET
 {
@@ -650,7 +651,7 @@ namespace WasatchNET
             }
         }
 
-        public override float detectorGainOdd { get => 0; }
+        public override float detectorGainOdd { get => 0; set{ } }
 
         public override short detectorOffset 
         {
@@ -709,7 +710,7 @@ namespace WasatchNET
             }
         }
 
-        public override short detectorOffsetOdd { get => 0; }
+        public override short detectorOffsetOdd { get => 0; set { } }
 
         public override bool isARM => false;
 
