@@ -421,7 +421,8 @@ namespace WasatchNET
                 eeprom.userText = json.EEPROM.UserText;
                 eeprom.productConfiguration = json.EEPROM.ProductConfig;
                 eeprom.intensityCorrectionOrder = (byte)json.EEPROM.RelIntCorrOrder;
-                eeprom.intensityCorrectionCoeffs = Array.ConvertAll(json.EEPROM.RelIntCorrCoeff, item => (float)item);
+                if (eeprom.intensityCorrectionCoeffs != null && json.EEPROM.RelIntCorrCoeff != null)
+                    eeprom.intensityCorrectionCoeffs = Array.ConvertAll(json.EEPROM.RelIntCorrCoeff, item => (float)item);
 
                 regenerateWavelengths();
             }
