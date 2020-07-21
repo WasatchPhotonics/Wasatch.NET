@@ -313,6 +313,7 @@ namespace WasatchNET
                 dump();
 
             enforceReasonableDefaults();
+            defaultValues = false;
 
             format = FORMAT;
 
