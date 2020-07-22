@@ -59,188 +59,134 @@ namespace WasatchNET
         {
             var item = obj as EEPROMJSON;
 
-            //public string Serial;
             if (item.Serial != this.Serial)
                 return false;
-            //public string Model;
             if (item.Model != this.Model)
                 return false;
-            //public int SlitWidth;
             if (item.SlitWidth != this.SlitWidth)
                 return false;
-            //public double BaudRate;
-            if (Math.Abs(item.BaudRate - this.BaudRate) > 0.00001)
+            if (!floatEq(item.BaudRate, this.BaudRate))
                 return false;
-            //public bool IncBattery;
             if (item.IncBattery != this.IncBattery)
                 return false;
-            //public bool IncCooling;
             if (item.IncCooling != this.IncCooling)
                 return false;
-            //public bool IncLaser;
             if (item.IncLaser != this.IncLaser)
                 return false;
-            //public int StartupIntTimeMS;
             if (item.StartupIntTimeMS != this.StartupIntTimeMS)
                 return false;
-            //public int StartupTempC;
             if (item.StartupTempC != this.StartupTempC)
                 return false;
-            //public int StartupTriggerMode;
             if (item.StartupTriggerMode != this.StartupTriggerMode)
                 return false;
-            //public double DetectorGain;
-            if (Math.Abs(item.DetectorGain - this.DetectorGain) > 0.00001)
+            if (!floatEq(item.DetectorGain, this.DetectorGain))
                 return false;
-            //public double DetectorGainOdd;
-            if (Math.Abs(item.DetectorGainOdd - this.DetectorGainOdd) > 0.00001)
+            if (!floatEq(item.DetectorGainOdd, this.DetectorGainOdd))
                 return false;
-            //public double DetectorOffset;
             if (item.DetectorOffset != this.DetectorOffset)
                 return false;
-            //public double DetectorOffsetOdd;
             if (item.DetectorOffsetOdd != this.DetectorOffsetOdd)
                 return false;
-            //public double[] WavecalCoeffs;
-            if (item.WavecalCoeffs.Length != this.WavecalCoeffs.Length)
+            if (!floatEq(item.WavecalCoeffs, this.WavecalCoeffs))
                 return false;
-            for (int i = 0; i < this.WavecalCoeffs.Length; ++i)
-            {
-                if (Math.Abs(item.WavecalCoeffs[i] - this.WavecalCoeffs[i]) > 0.00001)
-                    return false;
-            }
-            //public double[] TempToDACCoeffs;
-            if (item.TempToDACCoeffs.Length != this.TempToDACCoeffs.Length)
+            if (!floatEq(item.TempToDACCoeffs, this.TempToDACCoeffs))
                 return false;
-            for (int i = 0; i < this.TempToDACCoeffs.Length; ++i)
-            {
-                if (Math.Abs(item.TempToDACCoeffs[i] - this.TempToDACCoeffs[i]) > 0.00001)
-                    return false;
-            }
-            //public double[] ADCToTempCoeffs;
-            if (item.ADCToTempCoeffs.Length != this.ADCToTempCoeffs.Length)
+            if (!floatEq(item.ADCToTempCoeffs, this.ADCToTempCoeffs))
                 return false;
-            for (int i = 0; i < this.ADCToTempCoeffs.Length; ++i)
-            {
-                if (Math.Abs(item.ADCToTempCoeffs[i] - this.ADCToTempCoeffs[i]) > 0.00001)
-                    return false;
-            }
-            //public double[] LinearityCoeffs;
-            if (item.LinearityCoeffs.Length != this.LinearityCoeffs.Length)
+            if (!floatEq(item.LinearityCoeffs, this.LinearityCoeffs))
                 return false;
-            for (int i = 0; i < this.LinearityCoeffs.Length; ++i)
-            {
-                if (Math.Abs(item.LinearityCoeffs[i] - this.LinearityCoeffs[i]) > 0.00001)
-                    return false;
-            }
-            //public int DetectorTempMax;
             if (item.DetectorTempMax != this.DetectorTempMax)
                 return false;
-            //public int DetectorTempMin;
             if (item.DetectorTempMin != this.DetectorTempMin)
                 return false;
-            //public int ThermistorBeta;
             if (item.ThermistorBeta != this.ThermistorBeta)
                 return false;
-            //public int ThermistorResAt298K;
             if (item.ThermistorResAt298K != this.ThermistorResAt298K)
                 return false;
-            //public string CalibrationDate;
             if (item.CalibrationDate != this.CalibrationDate)
                 return false;
-            //public string CalibrationBy;
             if (item.CalibrationBy != this.CalibrationBy)
                 return false;
-            //public string DetectorName;
             if (item.DetectorName != this.DetectorName)
                 return false;
-            //public int ActualPixelsHoriz;
             if (item.ActualPixelsHoriz != this.ActualPixelsHoriz)
                 return false;
-            //public int ActivePixelsHoriz;
             if (item.ActivePixelsHoriz != this.ActivePixelsHoriz)
                 return false;
-            //public int ActivePixelsVert;
             if (item.ActivePixelsVert != this.ActivePixelsVert)
                 return false;
             if (item.MinIntegrationTimeMS != this.MinIntegrationTimeMS)
                 return false;
             if (item.MaxIntegrationTimeMS != this.MaxIntegrationTimeMS)
                 return false;
-            //public int ROIHorizStart;
             if (item.ROIHorizStart != this.ROIHorizStart)
                 return false;
-            //public int ROIHorizEnd;
             if (item.ROIHorizEnd != this.ROIHorizEnd)
                 return false;
-            //public double[] ROIVertRegionStarts;
-            if (item.ROIVertRegionStarts.Length != this.ROIVertRegionStarts.Length)
+            if (!intArrayEq(item.ROIVertRegionStarts, this.ROIVertRegionStarts))
                 return false;
-            for (int i = 0; i < this.ROIVertRegionStarts.Length; ++i)
-            {
-                if (item.ROIVertRegionStarts[i] != this.ROIVertRegionStarts[i])
-                    return false;
-            }
-            //public double[] ROIVertRegionEnds;
-            if (item.ROIVertRegionEnds.Length != this.ROIVertRegionEnds.Length)
+            if (!intArrayEq(item.ROIVertRegionEnds, this.ROIVertRegionEnds))
                 return false;
-            for (int i = 0; i < this.ROIVertRegionEnds.Length; ++i)
-            {
-                if (item.ROIVertRegionEnds[i] != this.ROIVertRegionEnds[i])
-                    return false;
-            }
-            if (item.LaserPowerCoeffs.Length != this.LaserPowerCoeffs.Length)
+            if (!floatEq(item.LaserPowerCoeffs, this.LaserPowerCoeffs))
                 return false;
-            for (int i = 0; i < this.LaserPowerCoeffs.Length; ++i)
-            {
-                if (Math.Abs(item.LaserPowerCoeffs[i] - this.LaserPowerCoeffs[i]) > 0.00001)
-                    return false;
-            }
-            //public double MaxLaserPowerMW;
-            if (Math.Abs(item.MaxLaserPowerMW - this.MaxLaserPowerMW) > 0.00001)
+            if (!floatEq(item.MaxLaserPowerMW, this.MaxLaserPowerMW))
                 return false;
-            //public double MinLaserPowerMW;
-            if (Math.Abs(item.MinLaserPowerMW - this.MinLaserPowerMW) > 0.00001)
+            if (!floatEq(item.MinLaserPowerMW, this.MinLaserPowerMW))
                 return false;
-            //public double ExcitationWavelengthNM;
-            if (Math.Abs(item.ExcitationWavelengthNM - this.ExcitationWavelengthNM) > 0.00001)
+            if (!floatEq(item.ExcitationWavelengthNM, this.ExcitationWavelengthNM))
                 return false;
-            if (Math.Abs(item.AvgResolution - this.AvgResolution) > 0.00001)
+            if (!floatEq(item.AvgResolution, this.AvgResolution))
                 return false;
-            //public double[] BadPixels;
-            if (item.BadPixels.Length != this.BadPixels.Length)
+            if (!intArrayEq(item.BadPixels, this.BadPixels))
                 return false;
-            for (int i = 0; i < this.BadPixels.Length; ++i)
-            {
-                if (item.BadPixels[i] != this.BadPixels[i])
-                    return false;
-            }
-            //public string UserText;
             if (item.UserText != this.UserText)
                 return false;
-            //public string ProductConfig;
             if (item.ProductConfig != this.ProductConfig)
                 return false;
-            //public int RelIntCorrOrder;
             if (item.RelIntCorrOrder != this.RelIntCorrOrder)
                 return false;
-            //public double[] RelIntCorrCoeff;
             if (item.RelIntCorrCoeffs != null)
             {
-                if (item.RelIntCorrCoeffs.Length != this.RelIntCorrCoeffs.Length)
+                if (!floatEq(item.RelIntCorrCoeffs, this.RelIntCorrCoeffs))
                     return false;
-                for (int i = 0; i < this.RelIntCorrCoeffs.Length; ++i)
-                {
-                    if (Math.Abs(item.RelIntCorrCoeffs[i] - this.RelIntCorrCoeffs[i]) > 0.00001)
-                        return false;
-                }
             }
-            //public bool Bin2x2;
-            //public bool FlipXAxis;
+
             if (item.Bin2x2 != this.Bin2x2)
                 return false;
             if (item.FlipXAxis != this.FlipXAxis)
                 return false;
+
+            return true;
+        }
+
+        bool floatEq(double a, double b, double thresh = 0.00001f)
+        {
+            if (Math.Abs(a - b) > thresh)
+                return false;
+
+            return true;
+        }
+
+        bool floatEq(double[] a, double[] b, double thresh = 0.00001f)
+        {
+            if (a.Length != b.Length)
+                return false;
+
+            for (int i = 0; i < a.Length; ++i)
+                if (!floatEq(a[i], b[i], thresh))
+                    return false;
+                
+            return true;
+        }
+
+        bool intArrayEq(int[] a, int[] b)
+        {
+            if (a.Length != b.Length)
+                return false;
+
+            for (int i = 0; i < a.Length; ++i)
+                if (a[i] != b[i])
+                    return false;
 
             return true;
         }
@@ -321,25 +267,25 @@ namespace WasatchNET
             addField(sb, indent,"IncBattery", IncBattery);
             addField(sb, indent,"IncCooling", IncCooling);
             addField(sb, indent,"IncLaser", IncLaser);
-            //
+            
             addField(sb, indent,"StartupIntTimeMS", StartupIntTimeMS);
             addField(sb, indent,"StartupTempC", StartupTempC);
-            //
+            
             addField(sb, indent,"StartupTriggerMode", StartupTriggerMode);
-            //
+            
             addField(sb, indent,"DetectorGain", DetectorGain);
-            //
+            
             addField(sb, indent,"DetectorGainOdd", DetectorGainOdd);
             addField(sb, indent,"DetectorOffset", DetectorOffset);
-            //
+            
             addField(sb, indent,"DetectorOffsetOdd", DetectorOffsetOdd);
-            //
+            
             addField(sb, indent,"WavecalCoeffs", WavecalCoeffs);
-            //
+            
             addField(sb, indent,"TempToDACCoeffs", TempToDACCoeffs);
             addField(sb, indent,"ADCToTempCoeffs", ADCToTempCoeffs);
             addField(sb, indent,"LinearityCoeffs", LinearityCoeffs);
-            //
+            
             addField(sb, indent,"DetectorTempMax", DetectorTempMax);
             addField(sb, indent,"DetectorTempMin", DetectorTempMin);
             addField(sb, indent,"ThermistorBeta", ThermistorBeta);

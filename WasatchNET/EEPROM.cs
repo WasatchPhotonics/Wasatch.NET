@@ -1265,6 +1265,7 @@ namespace WasatchNET
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
             wavecalCoeffs[2] = (float)json.WavecalCoeffs[2];
             wavecalCoeffs[3] = (float)json.WavecalCoeffs[3];
+            wavecalCoeffs[4] = (float)json.WavecalCoeffs[4];
             degCToDACCoeffs[0] = (float)json.TempToDACCoeffs[0];
             degCToDACCoeffs[1] = (float)json.TempToDACCoeffs[1];
             degCToDACCoeffs[2] = (float)json.TempToDACCoeffs[2];
@@ -1340,122 +1341,71 @@ namespace WasatchNET
         {
             EEPROMJSON json = new EEPROMJSON();
 
-            //Serial == eEPROMJSON.Serial &&
             json.Serial = serialNumber;
-            //Model == eEPROMJSON.Model &&
             json.Model = fullModel;
-            //SlitWidth == eEPROMJSON.SlitWidth &&
             json.SlitWidth = slitSizeUM;
-            //BaudRate == eEPROMJSON.BaudRate &&
             json.BaudRate = baudRate;
-            //IncBattery == eEPROMJSON.IncBattery &&
             json.IncBattery = hasBattery;
-            //IncCooling == eEPROMJSON.IncCooling &&
             json.IncCooling = hasCooling;
-            //IncLaser == eEPROMJSON.IncLaser &&
             json.IncLaser = hasLaser;
-            //StartupIntTimeMS == eEPROMJSON.StartupIntTimeMS &&
             json.StartupIntTimeMS = startupIntegrationTimeMS;
-            //StartupTempC == eEPROMJSON.StartupTempC &&
             json.StartupTempC = startupDetectorTemperatureDegC;
-            //StartupTriggerMode == eEPROMJSON.StartupTriggerMode &&
             json.StartupTriggerMode = startupTriggeringMode;
-            //DetectorGain == eEPROMJSON.DetectorGain &&
             json.DetectorGain = detectorGain;
-            //DetectorGainOdd == eEPROMJSON.DetectorGainOdd &&
             json.DetectorGainOdd = detectorGainOdd;
-            //DetectorOffset == eEPROMJSON.DetectorOffset &&
             json.DetectorOffset = detectorOffset;
-            //DetectorOffsetOdd == eEPROMJSON.DetectorOffsetOdd &&
             json.DetectorOffsetOdd = detectorOffsetOdd;
-            //EqualityComparer<double[]>.Default.Equals(WavecalCoeffs, eEPROMJSON.WavecalCoeffs) &&
             json.WavecalCoeffs = new double[5];
             json.WavecalCoeffs[0] = wavecalCoeffs[0];
             json.WavecalCoeffs[1] = wavecalCoeffs[1];
             json.WavecalCoeffs[2] = wavecalCoeffs[2];
             json.WavecalCoeffs[3] = wavecalCoeffs[3];
             json.WavecalCoeffs[4] = wavecalCoeffs[4];
-            //EqualityComparer<double[]>.Default.Equals(TempToDACCoeffs, eEPROMJSON.TempToDACCoeffs) &&
             json.TempToDACCoeffs = new double[3];
             json.TempToDACCoeffs[0] = degCToDACCoeffs[0];
             json.TempToDACCoeffs[1] = degCToDACCoeffs[1];
             json.TempToDACCoeffs[2] = degCToDACCoeffs[2];
-            /*
-             * wavecalCoeffs = new float[5];
-            degCToDACCoeffs = new float[3];
-            adcToDegCCoeffs = new float[3];
-            ROIVertRegionStart = new ushort[3];
-            ROIVertRegionEnd = new ushort[3];
-            badPixels = new short[15];
-            linearityCoeffs = new float[5];
-            laserPowerCoeffs = new float[4];
-            intensityCorrectionCoeffs = new float[12];
-            */
-            //EqualityComparer<double[]>.Default.Equals(ADCToTempCoeffs, eEPROMJSON.ADCToTempCoeffs) &&
             json.ADCToTempCoeffs = new double[3];
             json.ADCToTempCoeffs[0] = adcToDegCCoeffs[0];
             json.ADCToTempCoeffs[1] = adcToDegCCoeffs[1];
             json.ADCToTempCoeffs[2] = adcToDegCCoeffs[2];
-            //EqualityComparer<double[]>.Default.Equals(LinearityCoeffs, eEPROMJSON.LinearityCoeffs) &&
             json.LinearityCoeffs = new double[5];
             json.LinearityCoeffs[0] = linearityCoeffs[0];
             json.LinearityCoeffs[1] = linearityCoeffs[1];
             json.LinearityCoeffs[2] = linearityCoeffs[2];
             json.LinearityCoeffs[3] = linearityCoeffs[3];
             json.LinearityCoeffs[4] = linearityCoeffs[4];
-            //DetectorTempMax == eEPROMJSON.DetectorTempMax &&
             json.DetectorTempMax = detectorTempMax;
-            //DetectorTempMin == eEPROMJSON.DetectorTempMin &&
             json.DetectorTempMin = detectorTempMin;
-            //ThermistorBeta == eEPROMJSON.ThermistorBeta &&
             json.ThermistorBeta = thermistorBeta;
-            //ThermistorResAt298K == eEPROMJSON.ThermistorResAt298K &&
             json.ThermistorResAt298K = thermistorResistanceAt298K;
-            //CalibrationDate == eEPROMJSON.CalibrationDate &&
             json.CalibrationDate = calibrationDate;
-            //CalibrationBy == eEPROMJSON.CalibrationBy &&
             json.CalibrationBy = calibrationBy;
-            //DetectorName == eEPROMJSON.DetectorName &&
             json.DetectorName = detectorName;
-            //ActualPixelsHoriz == eEPROMJSON.ActualPixelsHoriz &&
             json.ActualPixelsHoriz = actualPixelsHoriz;
-            //ActivePixelsHoriz == eEPROMJSON.ActivePixelsHoriz &&
             json.ActivePixelsHoriz = activePixelsHoriz;
-            //ActivePixelsVert == eEPROMJSON.ActivePixelsVert &&
             json.ActivePixelsVert = activePixelsVert;
-            //MinIntegrationTimeMS == eEPROMJSON.MinIntegrationTimeMS &&
             json.MinIntegrationTimeMS = (int)minIntegrationTimeMS;
-            //MaxIntegrationTimeMS == eEPROMJSON.MaxIntegrationTimeMS &&
             json.MaxIntegrationTimeMS = (int)maxIntegrationTimeMS;
-            //ROIHorizStart == eEPROMJSON.ROIHorizStart &&
             json.ROIHorizStart = ROIHorizStart;
-            //ROIHorizEnd == eEPROMJSON.ROIHorizEnd &&
             json.ROIHorizEnd = ROIHorizEnd;
-            //EqualityComparer<int[]>.Default.Equals(ROIVertRegionStarts, eEPROMJSON.ROIVertRegionStarts) &&
             json.ROIVertRegionStarts = new int[3];
             json.ROIVertRegionStarts[0] = ROIVertRegionStart[0];
             json.ROIVertRegionStarts[1] = ROIVertRegionStart[1];
             json.ROIVertRegionStarts[2] = ROIVertRegionStart[2];
-            //EqualityComparer<int[]>.Default.Equals(ROIVertRegionEnds, eEPROMJSON.ROIVertRegionEnds) &&
             json.ROIVertRegionEnds = new int[3];
             json.ROIVertRegionEnds[0] = ROIVertRegionEnd[0];
             json.ROIVertRegionEnds[1] = ROIVertRegionEnd[1];
             json.ROIVertRegionEnds[2] = ROIVertRegionEnd[2];
-            //EqualityComparer<double[]>.Default.Equals(LaserPowerCoeffs, eEPROMJSON.LaserPowerCoeffs) &&
             json.LaserPowerCoeffs = new double[4];
             json.LaserPowerCoeffs[0] = laserPowerCoeffs[0];
             json.LaserPowerCoeffs[1] = laserPowerCoeffs[1];
             json.LaserPowerCoeffs[2] = laserPowerCoeffs[2];
             json.LaserPowerCoeffs[3] = laserPowerCoeffs[3];
-            //MaxLaserPowerMW == eEPROMJSON.MaxLaserPowerMW &&
             json.MaxLaserPowerMW = maxLaserPowerMW;
-            //MinLaserPowerMW == eEPROMJSON.MinLaserPowerMW &&
             json.MinLaserPowerMW = minLaserPowerMW;
-            //ExcitationWavelengthNM == eEPROMJSON.ExcitationWavelengthNM &&
             json.ExcitationWavelengthNM = laserExcitationWavelengthNMFloat;
-            //AvgResolution == eEPROMJSON.AvgResolution &&
             json.AvgResolution = avgResolution;
-            //EqualityComparer<int[]>.Default.Equals(BadPixels, eEPROMJSON.BadPixels) &&
             json.BadPixels = new int[15];
             json.BadPixels[0] = badPixels[0];
             json.BadPixels[1] = badPixels[1];
@@ -1472,11 +1422,8 @@ namespace WasatchNET
             json.BadPixels[12] = badPixels[12];
             json.BadPixels[13] = badPixels[13];
             json.BadPixels[14] = badPixels[14];
-            //UserText == eEPROMJSON.UserText &&
             json.UserText = userText;
-            //ProductConfig == eEPROMJSON.ProductConfig &&
             json.ProductConfig = productConfiguration;
-            //RelIntCorrOrder == eEPROMJSON.RelIntCorrOrder &&
             json.RelIntCorrOrder = intensityCorrectionOrder;
             if (json.RelIntCorrOrder > 0)
             {
