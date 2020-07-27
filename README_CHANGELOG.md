@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-07-22 2.3.6
+    - generalized EEPROM JSON
+	- added conversions between JSON and EEPROM
 - 2020-07-20 2.3.5
     - fixed bug with spi spectrometer interaction with downstream software
 - 2020-07-15 2.3.4
