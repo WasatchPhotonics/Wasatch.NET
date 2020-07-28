@@ -9,6 +9,7 @@ namespace WasatchNET
     class MockSpectrometerJSON
     {
         public Dictionary<string, SortedDictionary<int, double[]>> measurements;
+        public Dictionary<string, SortedDictionary<int, ushort[]>> frames;
         public EEPROMJSON EEPROM;
     }
 
