@@ -707,7 +707,7 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=2.3.5.0, Culture=neutral, processorArchitecture=MSIL"
+            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=2.3.6.0, Culture=neutral, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
                     "_AF7CDEF8890FB1BD18A20A0B590E1776"
@@ -1042,15 +1042,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Wasatch.NET"
-        "ProductCode" = "8:{17605E0D-A9C6-45EC-827C-BB1DEFE04248}"
-        "PackageCode" = "8:{8D05F875-BCF2-4C6B-A947-3C35A0F20557}"
+        "ProductCode" = "8:{472445C5-43F4-4333-B702-C2A1DD0167C8}"
+        "PackageCode" = "8:{0895CEE2-987A-460C-BBC7-260B840F5659}"
         "UpgradeCode" = "8:{F46C8BF0-A35E-4D7F-A611-252DBD4C6D58}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:2.3.6"
+        "ProductVersion" = "8:2.3.7"
         "Manufacturer" = "8:Wasatch Photonics"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:http://wasatchphotonics.com"
