@@ -26,7 +26,8 @@ namespace WasatchNET
         /// interpolationSamples["Xe"][120] 
         /// </summary>
         Dictionary<string, SortedDictionary<int, double[]>> interpolationSamples = new Dictionary<string, SortedDictionary<int, double[]>>();
-        
+        Dictionary<string, SortedDictionary<int, ushort[]>> interpolationFrames = new Dictionary<string, SortedDictionary<int, ushort[]>>();
+
         public SAMPLE_METHOD sampleMethod = SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION;
 
         /// <summary>
@@ -348,11 +349,52 @@ namespace WasatchNET
 
             // logger.debug("getSpectrumRaw({0}): {1}", id, string.Join<double>(", ", spec));
 
-            Thread.Sleep((int)integrationTimeMS_);
+            if (isOCT)
+                Thread.Sleep(70);
+            else
+                Thread.Sleep((int)integrationTimeMS_);
 
             lastSpectrum = spec;
             return spec;
         }
+
+        public override ushort[] getFrame()
+        {
+            logger.debug($"getSpectrumRaw: requesting spectrum {id}");
+            byte[] buf = null;
+
+            ////////////////////////////////////////////////////////////////////
+            // read spectrum
+            ////////////////////////////////////////////////////////////////////
+
+            ushort[] spec = new ushort[pixels * linesPerFrame]; // default to all zeros
+
+            SortedDictionary<int, ushort[]> spectra;
+            if (sampleMethod == SAMPLE_METHOD.LINEAR_INTERPOLATION || sampleMethod == SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION)
+            {
+                if (interpolationFrames.TryGetValue(currentSource, out spectra))
+                {
+                    spec = interpolateFrames();
+                }
+                else
+                {
+                    logger.debug("Unable to generate spectrum for {0} in getSpectrum, returning noise", currentSource);
+                }
+            }
+
+            if (eeprom.featureMask.invertXAxis)
+                Array.Reverse(spec);
+
+
+            logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+
+            // logger.debug("getSpectrumRaw({0}): {1}", id, string.Join<double>(", ", spec));
+
+            Thread.Sleep((int)integrationTimeMS_);
+
+            return spec;
+        }
+
 
         public void setSource(string src)
         {
@@ -383,6 +425,23 @@ namespace WasatchNET
                 eeprom.setFromJSON(json.EEPROM);
 
                 regenerateWavelengths();
+            }
+
+            if (json.frames != null && json.frames.Count > 0)
+            {
+                isOCT = true;
+                linesPerFrame = 500;
+
+                foreach (string src in json.frames.Keys)
+                {
+                    if (json.frames[src].Count > 0)
+                    {
+                        foreach (int time in json.frames[src].Keys)
+                        {
+                            addFrame(src, time, json.frames[src][time]);
+                        }
+                    }
+                }
             }
 
             if (json.measurements != null && json.measurements.Count > 0)
@@ -426,9 +485,29 @@ namespace WasatchNET
             interpolationSamples[src] = tempSpectra;
         }
 
+        public void addFrame(string src, int integrationTime, ushort[] spectrum)
+        {
+            SortedDictionary<int, ushort[]> tempSpectra = new SortedDictionary<int, ushort[]>();
+            if (!interpolationFrames.TryGetValue(src, out tempSpectra))
+            {
+                tempSpectra = new SortedDictionary<int, ushort[]>();
+                interpolationFrames.Add(src, tempSpectra);
+            }
+
+            ushort[] tempSpectrum;
+            if (!tempSpectra.TryGetValue(integrationTime, out tempSpectrum))
+            {
+                tempSpectra.Add(integrationTime, spectrum);
+            }
+
+            tempSpectra[integrationTime] = spectrum;
+            interpolationFrames[src] = tempSpectra;
+        }
+
         public void clearData()
         {
             interpolationSamples.Clear();
+            interpolationFrames.Clear();
         }
 
 
@@ -553,6 +632,116 @@ namespace WasatchNET
 
             return final;
         }
+
+        ushort[] interpolateFrames()
+        {
+            ushort[] final = new ushort[pixels * linesPerFrame];
+
+            SortedDictionary<int, ushort[]> spectra;
+
+            // look for the current source in our collection
+            if (interpolationFrames.TryGetValue(currentSource, out spectra))
+            {
+                //TS: If there is a single spectrum for the source simply return it. We could make some assumptions
+                //about sensitivity here and still do an interpolation, but I'm personally not that comfortable with that
+                //and prefer we require at least two spectra per source
+                if (spectra.Count == 1)
+                    return spectra.First().Value;
+
+                //Traverse spectra (ordered by integration time) until index == spectra with integration time just below
+                //the set integration time
+                //
+                //For example, if we have 10ms, 20ms, and 30ms, and want to build a spectrum at 25ms, index will be set to 1
+                int index = -1;
+                foreach (int integration in spectra.Keys)
+                {
+                    if (integration > integrationTimeMS)
+                        break;
+                    index++;
+                }
+
+                //Block executed if the requested integration time is between two existing samples in our library
+                if (index != spectra.Count - 1 && index != -1)
+                {
+                    ushort[] minSpectrum;
+                    ushort[] maxSpectrum;
+                    int minIntegration;
+                    int maxIntegration;
+
+                    //grab the two spectra with integration times around the time we're aiming for
+                    var enumerator = spectra.GetEnumerator();
+                    enumerator.MoveNext();
+                    for (int i = 0; i < index; ++i)
+                        enumerator.MoveNext();
+                    minSpectrum = enumerator.Current.Value;
+                    minIntegration = enumerator.Current.Key;
+                    enumerator.MoveNext();
+
+                    maxSpectrum = enumerator.Current.Value;
+                    maxIntegration = enumerator.Current.Key;
+
+                    //do a per pixel weighted average (weighted by how close the desired integration time is) between the 
+                    //two spectra to create the interpolated spectrum
+                    double span = maxIntegration - minIntegration;
+                    double pctMax = ((double)integrationTimeMS - (double)minIntegration) / span;
+
+                    for (int i = 0; i < pixels * linesPerFrame; ++i)
+                        final[i] = (ushort)((1 - pctMax) * minSpectrum[i] + pctMax * maxSpectrum[i]);
+
+                }
+
+                //Block executed if the requested integration time is less than the minmimum sample in our library,
+                //or more than the maximum sample
+                else
+                {
+                    ushort[] minSpectrum;
+                    ushort[] maxSpectrum;
+                    int minIntegration;
+                    int maxIntegration;
+
+                    //grab the spectra with the two lowest integration times
+                    if (index == -1)
+                    {
+                        var enumerator = spectra.GetEnumerator();
+                        enumerator.MoveNext();
+                        minSpectrum = enumerator.Current.Value;
+                        minIntegration = enumerator.Current.Key;
+                        enumerator.MoveNext();
+
+                        maxSpectrum = enumerator.Current.Value;
+                        maxIntegration = enumerator.Current.Key;
+                    }
+                    //grab the spectra with the two highest integration times
+                    else
+                    {
+                        var enumerator = spectra.GetEnumerator();
+                        for (int i = 0; i < spectra.Count - 1; ++i)
+                            enumerator.MoveNext();
+                        minSpectrum = enumerator.Current.Value;
+                        minIntegration = enumerator.Current.Key;
+                        enumerator.MoveNext();
+
+                        maxSpectrum = enumerator.Current.Value;
+                        maxIntegration = enumerator.Current.Key;
+                    }
+
+                    //extrapolate to "out of bounds" integration times, assuming perfect linearity on every pixel
+                    for (int i = 0; i < pixels * linesPerFrame; ++i)
+                    {
+                        double slope = (maxSpectrum[i] - minSpectrum[i]) / (maxIntegration - minIntegration);
+                        double delta = slope * (integrationTimeMS - maxIntegration);
+
+                        //clamp to 0 - 2^16, should not be needed for interpolating, just this extrapolating
+                        final[i] = (ushort)Math.Max(0, Math.Min(maxSpectrum[i] + delta, Math.Pow(2, 16)));
+                    }
+
+
+                }
+            }
+
+            return final;
+        }
+
 
         public void seedNoise(int seed)
         {

@@ -108,6 +108,8 @@ namespace WasatchNET
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
         public uint pixels { get; protected set; }
 
+        public int linesPerFrame { get; protected set; }
+
         /// <summary>pre-populated array of wavelengths (nm) by pixel, generated from eeprom.wavecalCoeffs</summary>
         /// <remarks>see Util.generateWavelengths</remarks>
         public double[] wavelengths { get; protected set; }

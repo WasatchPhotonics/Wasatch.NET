@@ -981,7 +981,7 @@ namespace WasatchNET
 
         }
 
-        public int linesPerFrame = 500;
+        //public int linesPerFrame = 500;
 
         int sampleLine_ = 100;
 
@@ -993,6 +993,7 @@ namespace WasatchNET
 
                 if (openOk)
                 {
+                    linesPerFrame = 500;
                     OctUsb.SetDelayAdc(3);
                     OctUsb.SetLinesPerFrame(linesPerFrame);
                     

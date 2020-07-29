@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-07-29 2.3.7
+    - added support for OCT frames to mock spectrometer
+	- made linesPerFrame a generalized attribute
 - 2020-07-22 2.3.6
     - generalized EEPROM JSON
 	- added conversions between JSON and EEPROM
