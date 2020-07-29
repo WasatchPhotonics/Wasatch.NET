@@ -902,7 +902,7 @@ namespace WasatchNET
         }
         string fpgaRevision_;
 
-        public bool highGainModeEnabled
+        public virtual bool highGainModeEnabled
         {
             get
             {

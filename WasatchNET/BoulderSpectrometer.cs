@@ -327,6 +327,12 @@ namespace WasatchNET
             return spec;
         }
 
+        public override bool highGainModeEnabled
+        {
+            get { return false; }
+            set { return; }
+        }
+
         public override bool laserEnabled
         {
             get { return false; }
