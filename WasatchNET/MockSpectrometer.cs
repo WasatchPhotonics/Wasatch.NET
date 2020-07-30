@@ -173,6 +173,12 @@ namespace WasatchNET
             }
         }
 
+        public override bool highGainModeEnabled
+        {
+            get { return false; }
+            set { return; }
+        }
+
         public override bool laserEnabled // dangerous one to cache...
         {
             get

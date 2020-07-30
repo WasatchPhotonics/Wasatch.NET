@@ -1198,6 +1198,12 @@ namespace WasatchNET
             }
         }
 
+        public override bool highGainModeEnabled
+        {
+            get { return false; }
+            set { return; }
+        }
+
         public override bool detectorTECEnabled
         {
             get

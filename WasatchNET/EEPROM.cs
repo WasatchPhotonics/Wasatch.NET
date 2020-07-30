@@ -1241,8 +1241,10 @@ namespace WasatchNET
         }
         public void setFromJSON(EEPROMJSON json)
         {
-            serialNumber = json.Serial;
-            fullModel = json.Model;
+            if (json.Serial != null)
+                serialNumber = json.Serial;
+            if (json.Model != null)
+                fullModel = json.Model;
             slitSizeUM = (ushort)json.SlitWidth;
             baudRate = (uint)json.BaudRate;
             excitationNM = (ushort)json.ExcitationWavelengthNM;
@@ -1276,10 +1278,14 @@ namespace WasatchNET
             detectorTempMin = (Int16)json.DetectorTempMin;
             thermistorBeta = (Int16)json.ThermistorBeta;
             thermistorResistanceAt298K = (Int16)json.ThermistorResAt298K;
-            calibrationDate = json.CalibrationDate;
-            calibrationBy = json.CalibrationBy;
 
-            detectorName = json.DetectorName;
+            if (json.CalibrationDate != null)
+                calibrationDate = json.CalibrationDate;
+            if (json.CalibrationBy != null)
+                calibrationBy = json.CalibrationBy;
+
+            if (json.DetectorName != null)
+                detectorName = json.DetectorName;
             actualPixelsHoriz = (ushort)json.ActualPixelsHoriz;
             activePixelsHoriz = (UInt16)json.ActivePixelsHoriz;
             activePixelsVert = (UInt16)json.ActivePixelsVert;
@@ -1308,7 +1314,8 @@ namespace WasatchNET
             laserPowerCoeffs[2] = (float)json.LaserPowerCoeffs[2];
             laserPowerCoeffs[3] = (float)json.LaserPowerCoeffs[3];
 
-            userText = json.UserText;
+            if (json.UserText != null)
+                userText = json.UserText;
 
             badPixels[0] = (Int16)json.BadPixels[0];
             badPixels[1] = (Int16)json.BadPixels[1];
@@ -1326,7 +1333,8 @@ namespace WasatchNET
             badPixels[13] = (Int16)json.BadPixels[13];
             badPixels[14] = (Int16)json.BadPixels[14];
 
-            productConfiguration = json.ProductConfig;
+            if (json.ProductConfig != null)
+                productConfiguration = json.ProductConfig;
 
             intensityCorrectionOrder = (byte)json.RelIntCorrOrder;
             if (json.RelIntCorrOrder > 0)

@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-07-30 2.3.8
+    - added safeguards for loading EEPROM from malformed JSON
+	- added some async functions and blocking for boulder spectrometers
 - 2020-07-29 2.3.7
     - added support for OCT frames to mock spectrometer
 	- made linesPerFrame a generalized attribute
