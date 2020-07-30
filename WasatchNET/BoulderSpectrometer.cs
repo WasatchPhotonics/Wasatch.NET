@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
+using System.Threading.Tasks;
 
 namespace WasatchNET
 {
@@ -18,6 +19,9 @@ namespace WasatchNET
 
         public const byte txEndpoint = 0x01;
         public const byte rxEndpoint = 0x81;
+
+        public bool commError = false;
+        public int nonSpectrumTimeoutMS = 1000;
 
         //internal Wrapper wrapper;
         //internal SeaBreezeWrapper wrapper;
@@ -267,48 +271,54 @@ namespace WasatchNET
 
         public override double[] getSpectrum(bool forceNew = false)
         {
-            lock (acquisitionLock)
+            if (!commError)
             {
-                double[] sum = getSpectrumRaw();
-                if (sum == null)
+                lock (acquisitionLock)
                 {
-                    logger.error("getSpectrum: getSpectrumRaw returned null");
-                    return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
-
-                if (scanAveraging_ > 1)
-                {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
+                    double[] sum = getSpectrumRaw();
+                    if (sum == null)
                     {
-                        double[] tmp = getSpectrumRaw();
-                        if (tmp == null)
-                            return null;
+                        logger.error("getSpectrum: getSpectrumRaw returned null");
+                        return null;
+                    }
+                    logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+                    if (scanAveraging_ > 1)
+                    {
+                        // logger.debug("getSpectrum: getting additional spectra for averaging");
+                        for (uint i = 1; i < scanAveraging_; i++)
+                        {
+                            double[] tmp = getSpectrumRaw();
+                            if (tmp == null)
+                                return null;
+
+                            for (int px = 0; px < pixels; px++)
+                                sum[px] += tmp[px];
+                        }
 
                         for (int px = 0; px < pixels; px++)
-                            sum[px] += tmp[px];
+                            sum[px] /= scanAveraging_;
                     }
 
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] /= scanAveraging_;
-                }
+                    if (dark != null && dark.Length == sum.Length)
+                        for (int px = 0; px < pixels; px++)
+                            sum[px] -= dark_[px];
 
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
-
-                if (boxcarHalfWidth > 0)
-                {
-                    // logger.debug("getSpectrum: returning boxcar");
-                    return Util.applyBoxcar(boxcarHalfWidth, sum);
-                }
-                else
-                {
-                    // logger.debug("getSpectrum: returning sum");
-                    return sum;
+                    if (boxcarHalfWidth > 0)
+                    {
+                        // logger.debug("getSpectrum: returning boxcar");
+                        return Util.applyBoxcar(boxcarHalfWidth, sum);
+                    }
+                    else
+                    {
+                        // logger.debug("getSpectrum: returning sum");
+                        return sum;
+                    }
                 }
             }
+            else
+                return new double[pixels];
+
         }
 
         protected override double[] getSpectrumRaw(bool skipTrigger=false)
@@ -321,11 +331,46 @@ namespace WasatchNET
             double[] spec = new double[pixels]; // default to all zeros
             int errorReader = 0;
 
+            spec = getSpectrumAsync().Result;
+
+            logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+            return spec;
+        }
+
+
+        protected async Task<double[]> getSpectrumAsync()
+        {
+            var task = launchSBSpectrumAsync();
+            int timeout = (int)integrationTimeMS * 3;
+            double[] spec = new double[pixels];
+
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+            {
+                // task completed within timeout
+                spec = task.Result;
+                logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+            }
+            else
+            {
+                // timeout logic
+                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                commError = true;
+            }
+
+            return spec;
+        }
+
+        protected async Task<double[]> launchSBSpectrumAsync()
+        {
+            double[] spec = new double[pixels];
+            int errorReader = 0;
+
             SeaBreezeWrapper.seabreeze_get_formatted_spectrum(specIndex, ref errorReader, ref spec[0], (int)pixels);
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return spec;
         }
+
 
         public override bool highGainModeEnabled
         {
@@ -352,8 +397,7 @@ namespace WasatchNET
                 //wrapper.setIntegrationTimeMillisec((long)value);
                 lock (acquisitionLock)
                 {
-                    int errorReader = 0;
-                    SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000));
+                    int errorReader = setIntegrationAsync(value).Result;
                     if (errorReader == 0)
                         integrationTime_ = value;
                     
@@ -361,6 +405,38 @@ namespace WasatchNET
             }
         }
         long integrationTime_;
+
+        protected async Task<int> setIntegrationAsync(uint value)
+        {
+            var task = launchSBSetIntegrationAsync(value);
+            int timeout = nonSpectrumTimeoutMS;
+            int errorCode = 0;
+            
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+            {
+                // task completed within timeout
+                errorCode = task.Result;
+            }
+            else
+            {
+                // timeout logic
+                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                commError = true;
+                errorCode = -1;
+            }
+
+            return errorCode;
+        }
+
+        protected async Task<int> launchSBSetIntegrationAsync(uint value)
+        {
+            int errorReader = 0;
+            SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000));
+
+            return errorReader;
+        }
+
+
 
         public override bool hasLaser
         {
