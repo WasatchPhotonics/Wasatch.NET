@@ -545,7 +545,7 @@ namespace WasatchNET
         protected async Task<double[]> getSpectrumAsync()
         {
             var task = launchSBSpectrumAsync();
-            int timeout = (int)integrationTimeMS * 3;
+            int timeout = Math.Max( (int)integrationTimeMS * 3, nonSpectrumTimeoutMS);
             double[] spec = new double[pixels];
 
             if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
