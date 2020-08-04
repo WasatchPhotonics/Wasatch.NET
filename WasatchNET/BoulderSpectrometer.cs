@@ -569,7 +569,9 @@ namespace WasatchNET
             double[] spec = new double[pixels];
             int errorReader = 0;
 
-            SeaBreezeWrapper.seabreeze_get_formatted_spectrum(specIndex, ref errorReader, ref spec[0], (int)pixels);
+            var task = Task.Run(() => SeaBreezeWrapper.seabreeze_get_formatted_spectrum(specIndex, ref errorReader, ref spec[0], (int)pixels));
+
+            await task;
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return spec;
@@ -855,15 +857,20 @@ namespace WasatchNET
                     sbWrite(cmd);
                     byte[] response = sbRead(3);
 
-                    UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
+                    string formatted = "";
 
-                    int major = (bytes >> 12) & 0x0f;
-                    int minor = (bytes >> 4) & 0xff;
-                    int build = (bytes) & 0x0f;
+                    if (response != null)
+                    {
+                        UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
 
-                    string formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
-                    logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
-                    
+                        int major = (bytes >> 12) & 0x0f;
+                        int minor = (bytes >> 4) & 0xff;
+                        int build = (bytes) & 0x0f;
+
+                        formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
+                        logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
+                    }
+
                     return formatted;
                 }
             }
