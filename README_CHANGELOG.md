@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-08-05 2.3.9
+    - made all calls to underlying driver in Boulder spectrometers async with timeouts
 - 2020-07-30 2.3.8
     - added safeguards for loading EEPROM from malformed JSON
 	- added some async functions and blocking for boulder spectrometers
