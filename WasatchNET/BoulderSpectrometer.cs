@@ -43,7 +43,8 @@ namespace WasatchNET
             {
                 lock(acquisitionLock)
                 {
-                    integrationTime_ = getIntegrationTimeAsync().Result;
+                    var task = Task.Run(async() => integrationTime_ = await getIntegrationTimeAsync());
+                    task.Wait();
                 }
             }
 
@@ -75,7 +76,7 @@ namespace WasatchNET
             int errorReader = 0;
             long integrationTime = 8;
 
-            integrationTime = SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader) / 1000;
+            integrationTime = await Task.Run(() => SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader)) / 1000;
             
             if (errorReader != 0)
                 integrationTime = 8;
@@ -95,11 +96,17 @@ namespace WasatchNET
             {
                 if (!commError)
                 {
-                    if (openSpectrometerAsync().Result)
+                    bool openSucceeded = true;
+                    var task = Task.Run(async () => openSucceeded = await openSpectrometerAsync());
+                    task.Wait();
+                    
+                    if (openSucceeded)
                     {
                         if (!commError)
-                            pixels = (uint)getPixelAsync().Result;
-
+                        {
+                            var pixelTask = Task.Run(async () => pixels = (uint) await getPixelAsync());
+                            pixelTask.Wait();
+                        }
                         logger.info("found spectrometer with {0} pixels", pixels);
 
                         if (!eeprom.read())
@@ -160,7 +167,8 @@ namespace WasatchNET
         protected async Task<bool> launchSBOpenSpecAsync()
         {
             int errorReader = 0;
-            return SeaBreezeWrapper.seabreeze_open_spectrometer(specIndex, ref errorReader) == 0;
+            bool retVal = await Task.Run(() => SeaBreezeWrapper.seabreeze_open_spectrometer(specIndex, ref errorReader) == 0);
+            return retVal;
         }
 
         protected async Task<int> getPixelAsync()
@@ -187,7 +195,7 @@ namespace WasatchNET
         protected async Task<int> launchSBGetPixelAsync()
         {
             int errorReader = 0;
-            int pixels = SeaBreezeWrapper.seabreeze_get_formatted_spectrum_length(specIndex, ref errorReader);
+            int pixels = await Task.Run(() => SeaBreezeWrapper.seabreeze_get_formatted_spectrum_length(specIndex, ref errorReader));
 
             return pixels;
         }
@@ -200,7 +208,8 @@ namespace WasatchNET
             {
                 lock (acquisitionLock)
                 {
-                    bool junk = closeSpectrometerAsync().Result;
+                    var task = Task.Run(async () => await closeSpectrometerAsync());
+                    task.Wait();
                 }
             }
         }
@@ -228,7 +237,7 @@ namespace WasatchNET
         protected async Task launchSBCloseSpecAsync()
         {
             int errorReader = 0;
-            SeaBreezeWrapper.seabreeze_close_spectrometer(specIndex, ref errorReader);
+            await Task.Run(() => SeaBreezeWrapper.seabreeze_close_spectrometer(specIndex, ref errorReader));
         }
 
 
@@ -299,7 +308,11 @@ namespace WasatchNET
             
             if (!commError)
             {
-                return sbWriteAsync(data).Result;
+                bool result = false;
+                var task = Task.Run(async () => result = await sbWriteAsync(data));
+                task.Wait();
+
+                return result;
             }
             else
                 return false;
@@ -331,7 +344,7 @@ namespace WasatchNET
         protected async Task<bool> launchSBWriteAsync(byte[] data)
         {
             int errorCode = 0;
-            SeaBreezeWrapper.seabreeze_write_usb(specIndex, ref errorCode, txEndpoint, ref data[0], data.Length);
+            await Task.Run(() => SeaBreezeWrapper.seabreeze_write_usb(specIndex, ref errorCode, txEndpoint, ref data[0], data.Length));
 
             if (errorCode != 0)
             {
@@ -346,8 +359,10 @@ namespace WasatchNET
             byte[] data = null;
 
             if (!commError)
-                data = sbReadAsync(bytes).Result;
-
+            {
+                var task = Task.Run(async () => data = await sbReadAsync(bytes));
+                task.Wait();
+            }
             if (log && data != null)
             {
                 string debug = "";
@@ -386,7 +401,7 @@ namespace WasatchNET
             byte[] data = new byte[bytes];
 
             int errorCode = 0;
-            SeaBreezeWrapper.seabreeze_read_usb(specIndex, ref errorCode, rxEndpoint, ref data[0], data.Length);
+            await Task.Run(() => SeaBreezeWrapper.seabreeze_read_usb(specIndex, ref errorCode, rxEndpoint, ref data[0], data.Length));
 
             if (errorCode != 0)
             {
@@ -535,7 +550,8 @@ namespace WasatchNET
             double[] spec = new double[pixels]; // default to all zeros
             int errorReader = 0;
 
-            spec = getSpectrumAsync().Result;
+            var task = Task.Run(async () => spec = await getSpectrumAsync());
+            task.Wait();
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return spec;
@@ -605,7 +621,10 @@ namespace WasatchNET
                 {
                     lock (acquisitionLock)
                     {
-                        int errorReader = setIntegrationAsync(value).Result;
+                        int errorReader = 0;
+                        var task = Task.Run(async () => errorReader = await setIntegrationAsync(value));
+                        task.Wait();
+
                         if (errorReader == 0)
                             integrationTime_ = value;
 
@@ -640,7 +659,7 @@ namespace WasatchNET
         protected async Task<int> launchSBSetIntegrationAsync(uint value)
         {
             int errorReader = 0;
-            SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000));
+            await Task.Run(() => SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000)));
 
             return errorReader;
         }
@@ -777,7 +796,8 @@ namespace WasatchNET
                 {
                     lock (acquisitionLock)
                     {
-                        retval = getFirmwareRevAsync().Result;
+                        var task = Task.Run(async () => retval = await getFirmwareRevAsync());
+                        task.Wait();
                     }
                 }
                 return retval;
@@ -815,7 +835,7 @@ namespace WasatchNET
                 byte[] raw = new byte[32];
                 int error = 0;
 
-                SeaBreezeWrapper.seabreeze_get_usb_descriptor_string(specIndex, ref error, 1, ref raw[0], raw.Length);
+                await Task.Run(() => SeaBreezeWrapper.seabreeze_get_usb_descriptor_string(specIndex, ref error, 1, ref raw[0], raw.Length));
 
                 if (error == 0)
                 {
