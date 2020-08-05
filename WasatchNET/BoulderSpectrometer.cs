@@ -96,7 +96,7 @@ namespace WasatchNET
             {
                 if (!commError)
                 {
-                    bool openSucceeded = true;
+                    bool openSucceeded = false;
                     var task = Task.Run(async () => openSucceeded = await openSpectrometerAsync());
                     task.Wait();
                     
