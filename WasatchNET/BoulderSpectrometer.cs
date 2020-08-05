@@ -38,14 +38,53 @@ namespace WasatchNET
             excitationWavelengthNM = 0;
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
             specIndex = index;
-            int errorReader = 0;
-            lock (acquisitionLock)
+
+            if (!commError)
             {
-                integrationTime_ = SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader) / 1000;
+                lock(acquisitionLock)
+                {
+                    var task = Task.Run(async() => integrationTime_ = await getIntegrationTimeAsync());
+                    task.Wait();
+                }
             }
-            if (errorReader != 0)
-                integrationTime_ = 8;
+
         }
+
+        protected async Task<long> getIntegrationTimeAsync()
+        {
+            var task = launchSBGetIntegrationAsync();
+            int timeout = nonSpectrumTimeoutMS;
+            long integrationTime = 8;
+
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+            {
+                // task completed within timeout
+                integrationTime = task.Result;
+            }
+            else
+            {
+                // timeout logic
+                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                commError = true;
+            }
+
+            return integrationTime;
+        }
+
+        protected async Task<long> launchSBGetIntegrationAsync()
+        {
+            int errorReader = 0;
+            long integrationTime = 8;
+
+            integrationTime = await Task.Run(() => SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader)) / 1000;
+            
+            if (errorReader != 0)
+                integrationTime = 8;
+
+            return integrationTime;
+
+        }
+
 
         override internal bool open()
         {
@@ -55,27 +94,43 @@ namespace WasatchNET
 
             lock (acquisitionLock)
             {
-                if (SeaBreezeWrapper.seabreeze_open_spectrometer(specIndex, ref errorReader) == 0)
+                if (!commError)
                 {
-                    pixels = (uint)SeaBreezeWrapper.seabreeze_get_formatted_spectrum_length(specIndex, ref errorReader);
-
-                    logger.info("found spectrometer with {0} pixels", pixels);
-
-                    if (!eeprom.read())
+                    bool openSucceeded = false;
+                    var task = Task.Run(async () => openSucceeded = await openSpectrometerAsync());
+                    task.Wait();
+                    
+                    if (openSucceeded)
                     {
-                        logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                        //wrapper.shutdown();
-                        close();
+                        if (!commError)
+                        {
+                            var pixelTask = Task.Run(async () => pixels = (uint) await getPixelAsync());
+                            pixelTask.Wait();
+                        }
+                        logger.info("found spectrometer with {0} pixels", pixels);
+
+                        if (!eeprom.read())
+                        {
+                            logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                            //wrapper.shutdown();
+                            close();
+                            return false;
+                        }
+                        logger.debug("back from reading EEPROM");
+
+                        regenerateWavelengths();
+                        //detectorTECSetpointDegC = 15.0f;
+
+                        logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
+
+                        return true;
+                    }
+
+                    else
+                    {
+                        logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
                         return false;
                     }
-                    logger.debug("back from reading EEPROM");
-
-                    regenerateWavelengths();
-                    //detectorTECSetpointDegC = 15.0f;
-
-                    logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
-
-                    return true;
                 }
 
                 else
@@ -87,15 +142,104 @@ namespace WasatchNET
 
         }
 
+        protected async Task<bool> openSpectrometerAsync()
+        {
+            var task = launchSBOpenSpecAsync();
+            int timeout = nonSpectrumTimeoutMS * 3;
+            bool result = false;
+
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+            {
+                // task completed within timeout
+                result = task.Result;
+            }
+            else
+            {
+                // timeout logic
+                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                commError = true;
+                result = false;
+            }
+
+            return result;
+        }
+
+        protected async Task<bool> launchSBOpenSpecAsync()
+        {
+            int errorReader = 0;
+            bool retVal = await Task.Run(() => SeaBreezeWrapper.seabreeze_open_spectrometer(specIndex, ref errorReader) == 0);
+            return retVal;
+        }
+
+        protected async Task<int> getPixelAsync()
+        {
+            var task = launchSBGetPixelAsync();
+            int timeout = nonSpectrumTimeoutMS;
+            int pixels = 0;
+
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+            {
+                // task completed within timeout
+                pixels = task.Result;
+            }
+            else
+            {
+                // timeout logic
+                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                commError = true;
+            }
+
+            return pixels;
+        }
+
+        protected async Task<int> launchSBGetPixelAsync()
+        {
+            int errorReader = 0;
+            int pixels = await Task.Run(() => SeaBreezeWrapper.seabreeze_get_formatted_spectrum_length(specIndex, ref errorReader));
+
+            return pixels;
+        }
+
+
         public override void close()
         {
             //wrapper.shutdown();
-            int errorReader = 0;
-            lock (acquisitionLock)
+            if (!commError)
             {
-                SeaBreezeWrapper.seabreeze_close_spectrometer(specIndex, ref errorReader);
+                lock (acquisitionLock)
+                {
+                    var task = Task.Run(async () => await closeSpectrometerAsync());
+                    task.Wait();
+                }
             }
         }
+
+        protected async Task<bool> closeSpectrometerAsync()
+        {
+            var task = launchSBCloseSpecAsync();
+            int timeout = nonSpectrumTimeoutMS * 3;
+
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+            {
+                // task completed within timeout
+                return true;
+            }
+            else
+            {
+                // timeout logic
+                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                commError = true;
+                return false;
+            }
+
+        }
+
+        protected async Task launchSBCloseSpecAsync()
+        {
+            int errorReader = 0;
+            await Task.Run(() => SeaBreezeWrapper.seabreeze_close_spectrometer(specIndex, ref errorReader));
+        }
+
 
         public bool updateStatus()
         {
@@ -161,8 +305,46 @@ namespace WasatchNET
                 logger.info(">> {0}", debug);
             }
 
+            
+            if (!commError)
+            {
+                bool result = false;
+                var task = Task.Run(async () => result = await sbWriteAsync(data));
+                task.Wait();
+
+                return result;
+            }
+            else
+                return false;
+
+        }
+
+        protected async Task<bool> sbWriteAsync(byte[] data)
+        {
+            var task = launchSBWriteAsync(data);
+            int timeout = nonSpectrumTimeoutMS;
+            bool result = false;
+
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+            {
+                // task completed within timeout
+                result = task.Result;
+            }
+            else
+            {
+                // timeout logic
+                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                commError = true;
+                result = false;
+            }
+
+            return result;
+        }
+
+        protected async Task<bool> launchSBWriteAsync(byte[] data)
+        {
             int errorCode = 0;
-            SeaBreezeWrapper.seabreeze_write_usb(specIndex, ref errorCode, txEndpoint, ref data[0], data.Length);
+            await Task.Run(() => SeaBreezeWrapper.seabreeze_write_usb(specIndex, ref errorCode, txEndpoint, ref data[0], data.Length));
 
             if (errorCode != 0)
             {
@@ -171,19 +353,17 @@ namespace WasatchNET
             return true;
         }
 
+
         private byte[] sbRead(int bytes, bool log = true)
         {
-            byte[] data = new byte[bytes];
+            byte[] data = null;
 
-            int errorCode = 0;
-            SeaBreezeWrapper.seabreeze_read_usb(specIndex, ref errorCode, rxEndpoint, ref data[0], data.Length);
-
-            if (errorCode != 0)
+            if (!commError)
             {
-                return null;
+                var task = Task.Run(async () => data = await sbReadAsync(bytes));
+                task.Wait();
             }
-
-            if (log)
+            if (log && data != null)
             {
                 string debug = "";
                 for (int i = 0; i < data.Length; i++)
@@ -193,6 +373,45 @@ namespace WasatchNET
 
             return data;
         }
+
+        protected async Task<byte[]> sbReadAsync(int size)
+        {
+            var task = launchSBReadAsync(size);
+            int timeout = nonSpectrumTimeoutMS;
+            byte[] bytes = null;
+
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+            {
+                // task completed within timeout
+                bytes = task.Result;
+            }
+            else
+            {
+                // timeout logic
+                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                commError = true;
+                bytes = null;
+            }
+
+            return bytes;
+        }
+
+        protected async Task<byte[]> launchSBReadAsync(int bytes)
+        {
+            byte[] data = new byte[bytes];
+
+            int errorCode = 0;
+            await Task.Run(() => SeaBreezeWrapper.seabreeze_read_usb(specIndex, ref errorCode, rxEndpoint, ref data[0], data.Length));
+
+            if (errorCode != 0)
+            {
+                return null;
+            }
+
+            return data;
+        }
+
+
 
         public void setDetectorTECSetpointDegreesC(double deg)
         {
@@ -331,7 +550,8 @@ namespace WasatchNET
             double[] spec = new double[pixels]; // default to all zeros
             int errorReader = 0;
 
-            spec = getSpectrumAsync().Result;
+            var task = Task.Run(async () => spec = await getSpectrumAsync());
+            task.Wait();
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return spec;
@@ -341,7 +561,7 @@ namespace WasatchNET
         protected async Task<double[]> getSpectrumAsync()
         {
             var task = launchSBSpectrumAsync();
-            int timeout = (int)integrationTimeMS * 3;
+            int timeout = Math.Max( (int)integrationTimeMS * 3, nonSpectrumTimeoutMS);
             double[] spec = new double[pixels];
 
             if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
@@ -365,7 +585,9 @@ namespace WasatchNET
             double[] spec = new double[pixels];
             int errorReader = 0;
 
-            SeaBreezeWrapper.seabreeze_get_formatted_spectrum(specIndex, ref errorReader, ref spec[0], (int)pixels);
+            var task = Task.Run(() => SeaBreezeWrapper.seabreeze_get_formatted_spectrum(specIndex, ref errorReader, ref spec[0], (int)pixels));
+
+            await task;
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return spec;
@@ -395,12 +617,18 @@ namespace WasatchNET
             {
                 //if (value < wrapper.getMaxIntegrationTimeMillisec())
                 //wrapper.setIntegrationTimeMillisec((long)value);
-                lock (acquisitionLock)
+                if (!commError)
                 {
-                    int errorReader = setIntegrationAsync(value).Result;
-                    if (errorReader == 0)
-                        integrationTime_ = value;
-                    
+                    lock (acquisitionLock)
+                    {
+                        int errorReader = 0;
+                        var task = Task.Run(async () => errorReader = await setIntegrationAsync(value));
+                        task.Wait();
+
+                        if (errorReader == 0)
+                            integrationTime_ = value;
+
+                    }
                 }
             }
         }
@@ -431,7 +659,7 @@ namespace WasatchNET
         protected async Task<int> launchSBSetIntegrationAsync(uint value)
         {
             int errorReader = 0;
-            SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000));
+            await Task.Run(() => SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000)));
 
             return errorReader;
         }
@@ -506,14 +734,6 @@ namespace WasatchNET
             }
             set
             {
-                //wrapper.setSpectrometerTECEnabled(value);
-                /*int errorReader = 0;
-                if (value)
-                    SeaBreezeWrapper.seabreeze_set_tec_enable(specIndex, ref errorReader, 1);
-                else
-                    SeaBreezeWrapper.seabreeze_set_tec_enable(specIndex, ref errorReader, 0);
-                if (errorReader == 0)
-                    tecEnabled_ = value;*/
                 bool ok = enableDetectorTEC(value);
                 if (ok)
                     tecEnabled_ = value;
@@ -530,9 +750,6 @@ namespace WasatchNET
                     return (float)status.detectorTemperatureDegC;
                 else
                     return 0;
-                //int errorReader = 0;
-                //return 0;
-                //return (float)SeaBreezeWrapper.seabreeze_read_tec_temperature(specIndex, ref errorReader);
             }
         }
 
@@ -573,43 +790,79 @@ namespace WasatchNET
         {
             get
             {
-                string retval = null;
+                string retval = "";
 
-                lock (acquisitionLock)
+                if (!commError)
                 {
-                    try
+                    lock (acquisitionLock)
                     {
-                        byte[] raw = new byte[32];
-                        int error = 0;
-
-                        SeaBreezeWrapper.seabreeze_get_usb_descriptor_string(specIndex, ref error, 1, ref raw[0], raw.Length);
-
-                        if (error == 0)
-                        {
-                            int len = 0;
-                            while (raw[len] != 0 && len + 1 < raw.Length)
-                                len++;
-
-                            byte[] cleanByte = Encoding.Convert(Encoding.GetEncoding("iso-8859-1"), Encoding.UTF8, raw);
-                            string text = Encoding.UTF8.GetString(cleanByte, 0, len);
-                            const string pattern = @"\b(\d+\.\d+\.\d+)\b";
-                            Regex regEx = new Regex(pattern);
-                            MatchCollection matches = regEx.Matches(text);
-                            if (matches.Count > 0)
-                                retval =  matches[0].Groups[0].Value;
-                            else
-                                retval = text;
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        logger.error("Error getting FX2 firmware version: {0}", e.Message);
+                        var task = Task.Run(async () => retval = await getFirmwareRevAsync());
+                        task.Wait();
                     }
                 }
-                
                 return retval;
             }
         }
+
+        protected async Task<string> getFirmwareRevAsync()
+        {
+            var task = launchSBGetFirmwareAsync();
+            int timeout = nonSpectrumTimeoutMS;
+            string firmware;
+
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
+            {
+                // task completed within timeout
+                firmware = task.Result;
+            }
+            else
+            {
+                // timeout logic
+                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                commError = true;
+                firmware = "";
+            }
+
+            return firmware;
+        }
+
+        protected async Task<string> launchSBGetFirmwareAsync()
+        {
+            string retval = null;
+
+            try
+            {
+                byte[] raw = new byte[32];
+                int error = 0;
+
+                await Task.Run(() => SeaBreezeWrapper.seabreeze_get_usb_descriptor_string(specIndex, ref error, 1, ref raw[0], raw.Length));
+
+                if (error == 0)
+                {
+                    int len = 0;
+                    while (raw[len] != 0 && len + 1 < raw.Length)
+                        len++;
+
+                    byte[] cleanByte = Encoding.Convert(Encoding.GetEncoding("iso-8859-1"), Encoding.UTF8, raw);
+                    string text = Encoding.UTF8.GetString(cleanByte, 0, len);
+                    const string pattern = @"\b(\d+\.\d+\.\d+)\b";
+                    Regex regEx = new Regex(pattern);
+                    MatchCollection matches = regEx.Matches(text);
+                    if (matches.Count > 0)
+                        retval = matches[0].Groups[0].Value;
+                    else
+                        retval = text;
+                }
+            }
+            catch (Exception e)
+            {
+                logger.error("Error getting FX2 firmware version: {0}", e.Message);
+            }
+            
+
+            return retval;
+        }
+
 
         public override string fpgaRevision
         {
@@ -624,21 +877,26 @@ namespace WasatchNET
                     sbWrite(cmd);
                     byte[] response = sbRead(3);
 
-                    UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
+                    string formatted = "";
 
-                    int major = (bytes >> 12) & 0x0f;
-                    int minor = (bytes >> 4) & 0xff;
-                    int build = (bytes) & 0x0f;
+                    if (response != null)
+                    {
+                        UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
 
-                    string formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
-                    logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
-                    
+                        int major = (bytes >> 12) & 0x0f;
+                        int minor = (bytes >> 4) & 0xff;
+                        int build = (bytes) & 0x0f;
+
+                        formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
+                        logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
+                    }
+
                     return formatted;
                 }
             }
         }
 
-    public override float excitationWavelengthNM
+        public override float excitationWavelengthNM
         {
             get
             {
