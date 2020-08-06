@@ -17,6 +17,14 @@ namespace WasatchNET
     {
         const int MAX_RESETS = 3;
 
+        [DllImport("kernel32", SetLastError = true)]
+        static extern IntPtr LoadLibrary(string lpFileName);
+
+        static bool CheckLibrary(string fileName)
+        {
+            return LoadLibrary(fileName) != IntPtr.Zero;
+        }
+
         static Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
 
@@ -189,7 +197,10 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////////
 
             // Add 3rd-party USB spectrometers (e.g. Ocean Optics, etc)
-            if (deviceRegistries.Count > 0 && Environment.Is64BitProcess)
+            if (CheckLibrary("SeaBreeze"))
+                logger.debug("SeaBreeze appears installed");
+
+            if (deviceRegistries.Count > 0 && Environment.Is64BitProcess && CheckLibrary("SeaBreeze"))
             {
                 UsbRegistry usbRegistry2 = deviceRegistries[0];
                 String desc2 = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",

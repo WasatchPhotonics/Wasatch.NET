@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-08-05 2.3.10
+    - added library check to prevent trying to open boulder spec when library not present
 - 2020-08-05 2.3.9
     - made all calls to underlying driver in Boulder spectrometers async with timeouts
 - 2020-07-30 2.3.8
