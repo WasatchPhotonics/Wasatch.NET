@@ -197,10 +197,16 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////////
 
             // Add 3rd-party USB spectrometers (e.g. Ocean Optics, etc)
-            if (CheckLibrary("SeaBreeze"))
-                logger.debug("SeaBreeze appears installed");
+            bool sbPresent = false;
+            sbPresent = CheckLibrary("SeaBreeze");
 
-            if (deviceRegistries.Count > 0 && Environment.Is64BitProcess && CheckLibrary("SeaBreeze"))
+
+            if (sbPresent)
+                logger.debug("SeaBreeze appears installed");
+            else
+                logger.debug("SeaBreeze not installed");
+
+            if (deviceRegistries.Count > 0 && Environment.Is64BitProcess && sbPresent)
             {
                 UsbRegistry usbRegistry2 = deviceRegistries[0];
                 String desc2 = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
