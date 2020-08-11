@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-08-11 2.3.11
+    - fixed bug where excitation would overwrite feature mask no matter what
+	- moved SB library check
 - 2020-08-05 2.3.10
     - added library check to prevent trying to open boulder spec when library not present
 - 2020-08-05 2.3.9
