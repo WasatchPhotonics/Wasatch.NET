@@ -1554,9 +1554,13 @@ namespace WasatchNET
             if (!ParseData.writeBool(hasLaser, pages[0], 38)) return false;
 
             if (format >= 9)
+            {
                 if (!ParseData.writeUInt16(featureMask.toUInt16(), pages[0], 39)) return false;
-                else
+            }
+            else
+            {
                 if (!ParseData.writeUInt16(excitationNM, pages[0], 39)) return false;
+            }
 
             if (!ParseData.writeUInt16(slitSizeUM, pages[0], 41)) return false;
             if (!ParseData.writeUInt16(startupIntegrationTimeMS, pages[0], 43)) return false;
