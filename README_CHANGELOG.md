@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-08-21 2.3.13
+    - upped timeout even further
 - 2020-08-21 2.3.12
     - added getSoucres() function for mock spectrometers
 	- increased timeouts for Boulder spectrometer
