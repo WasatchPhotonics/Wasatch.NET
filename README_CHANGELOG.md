@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-08-21 2.3.12
+    - added getSoucres() function for mock spectrometers
+	- increased timeouts for Boulder spectrometer
 - 2020-08-11 2.3.11
     - fixed bug where excitation would overwrite feature mask no matter what
 	- moved SB library check
