@@ -21,7 +21,7 @@ namespace WasatchNET
         public const byte rxEndpoint = 0x81;
 
         public bool commError = false;
-        public int nonSpectrumTimeoutMS = 1000;
+        public int nonSpectrumTimeoutMS = 5000;
 
         //internal Wrapper wrapper;
         //internal SeaBreezeWrapper wrapper;
