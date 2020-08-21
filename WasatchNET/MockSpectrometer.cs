@@ -407,6 +407,14 @@ namespace WasatchNET
             currentSource = src;
         }
 
+        public string[] getSources()
+        {
+            string[] srcs = new string[interpolationSamples.Keys.Count];
+            interpolationSamples.Keys.CopyTo(srcs, 0);
+
+            return srcs;
+        }
+
         public bool initSpectrometer(string jsonFile)
         {
             MockSpectrometerJSON json = null;
