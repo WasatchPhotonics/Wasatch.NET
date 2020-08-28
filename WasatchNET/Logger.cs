@@ -203,6 +203,29 @@ namespace WasatchNET
 
         private Logger()
         {
+            var envLevel = Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_LEVEL");
+            if (envLevel != null)
+            {
+                envLevel = envLevel.ToUpper();
+                     if (envLevel.Contains("DEBUG")) level = LogLevel.DEBUG;
+                else if (envLevel.Contains("INFO" )) level = LogLevel.INFO;
+                else if (envLevel.Contains("ERR"  )) level = LogLevel.ERROR;
+                else if (envLevel.Contains("NEVER")) level = LogLevel.NEVER;
+            }
+
+            var envPathname = Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_PATHNAME");
+            if (envPathname != null)
+            { 
+                // object isn't sufficiently constructed enough to use setPathname()?
+                try
+                {
+                    outfile = new StreamWriter(envPathname);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Can't set log pathname: {e}");
+                }
+            }
         }
 
         string getTimestamp()

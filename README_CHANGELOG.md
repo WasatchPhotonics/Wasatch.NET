@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-08-28 2.3.14
+    - added support for WASATCHNET\_LOGGER\_PATHNAME and \_LEVEL environment variables
 - 2020-08-21 2.3.13
     - upped timeout even further
 - 2020-08-21 2.3.12
