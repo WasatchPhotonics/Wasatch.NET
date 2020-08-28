@@ -40,7 +40,18 @@ namespace WasatchNET
         // Public attributes
         ////////////////////////////////////////////////////////////////////////
 
-        public LogLevel level { get; set; } = LogLevel.INFO;
+        public LogLevel level 
+        {
+            get => _level;
+            set
+            {
+                if (null != Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_FORCE"))
+                    return;
+
+                _level = value;
+            }
+        } 
+        LogLevel _level = LogLevel.INFO;
 
         static public Logger getInstance()
         {
@@ -54,6 +65,9 @@ namespace WasatchNET
 
         public void setPathname(string path)
         {
+            if (null != Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_FORCE"))
+                return;
+
             try
             {
                 outfile = new StreamWriter(path);
@@ -207,10 +221,10 @@ namespace WasatchNET
             if (envLevel != null)
             {
                 envLevel = envLevel.ToUpper();
-                     if (envLevel.Contains("DEBUG")) level = LogLevel.DEBUG;
-                else if (envLevel.Contains("INFO" )) level = LogLevel.INFO;
-                else if (envLevel.Contains("ERR"  )) level = LogLevel.ERROR;
-                else if (envLevel.Contains("NEVER")) level = LogLevel.NEVER;
+                     if (envLevel.Contains("DEBUG")) _level = LogLevel.DEBUG;
+                else if (envLevel.Contains("INFO" )) _level = LogLevel.INFO;
+                else if (envLevel.Contains("ERR"  )) _level = LogLevel.ERROR;
+                else if (envLevel.Contains("NEVER")) _level = LogLevel.NEVER;
             }
 
             var envPathname = Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_PATHNAME");
