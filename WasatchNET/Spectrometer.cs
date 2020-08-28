@@ -1472,14 +1472,18 @@ namespace WasatchNET
         {
             get
             {
-                if (featureIdentification.boardType != BOARD_TYPES.ARM)
-                {
-                    logger.debug("GET_TRIGGER_SOURCE disabled for boardType {0}", featureIdentification.boardType.ToString());
-                    return TRIGGER_SOURCE.INTERNAL;
-                }
                 const Opcodes op = Opcodes.GET_TRIGGER_SOURCE;
                 if (haveCache(op))
                     return triggerSource_;
+
+                if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                {
+                    // possibly no longer true...but only log once in any case
+                    logger.debug("GET_TRIGGER_SOURCE disabled for boardType {0}", featureIdentification.boardType.ToString());
+                    readOnce.Add(op);
+                    return triggerSource_;
+                }
+
                 byte[] buf = getCmd(Opcodes.GET_TRIGGER_SOURCE, 1);
                 if (buf is null || buf[0] > 2)
                     return TRIGGER_SOURCE.ERROR;
@@ -2732,7 +2736,7 @@ namespace WasatchNET
                 if (bytesReadThisEndpoint == bytesPerEndpoint)
                     break;
 
-                if (bytesReadThisEndpoint == 0 && !triggerWasExternal)
+                if (bytesRead == 0 && !triggerWasExternal)
                 {
                     logger.error($"readSubspectrum: read nothing (timeout?) ({id})");
                     return null; 
