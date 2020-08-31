@@ -12,7 +12,9 @@ namespace WinFormDemo
 {
     public partial class Form1 : Form
     {
-        const bool useTasks = true;
+        const bool useTasks = true; // whether you want to use BackgroundWorkers or async
+        const int minThreadSleepMS = 100;
+        const int minTaskDelayMS = 250;  // Task.Delay is less accurate than Thread.Sleep
 
         ////////////////////////////////////////////////////////////////////////
         // Attributes
@@ -255,10 +257,10 @@ namespace WinFormDemo
                         s.integrationTimeMS = opts.integrationTimeMS;
 
                     comboBoxSpectrometer.SelectedIndex = comboBoxSpectrometer.Items.Count - 1;
-                    Thread.Sleep(100);
+                    Thread.Sleep(minThreadSleepMS);
 
                     buttonStart_Click(null, null);
-                    Thread.Sleep(100);
+                    Thread.Sleep(minThreadSleepMS);
                 }
 
                 buttonInitialize.Enabled = false;
@@ -548,7 +550,7 @@ namespace WinFormDemo
             ushort lowFreqOperations = 0;
             while (true)
             {
-                Thread.Sleep(100);
+                Thread.Sleep(minThreadSleepMS);
                 if (worker.CancellationPending || shutdownPending)
                     break;
 
@@ -659,7 +661,7 @@ namespace WinFormDemo
             double[] raw = state.spectrometer.getSpectrum();
             if (raw is null)
             {
-                await Task.Delay(100);
+                await Task.Delay(minTaskDelayMS);
                 return true;
             }
 
@@ -681,8 +683,7 @@ namespace WinFormDemo
                 var elapsedMS = (endTime - startTime).TotalMilliseconds;
                 delayMS = (int)(opts.scanIntervalSec * 1000.0 - elapsedMS);
             }
-            if (delayMS < 100)
-                delayMS = 100;
+            delayMS = Math.Max(delayMS, minTaskDelayMS);
 
             await Task.Delay(delayMS);
             return true;

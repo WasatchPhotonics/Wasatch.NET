@@ -5,6 +5,9 @@
     - updated most Spectrometer setters to ignore duplicate (cached) values
     - rate-limit detector temperature readings to 1Hz (cache otherwise)
     - added high-level retry loop in Spectrometer.getSpectrum 
+    - added Spectromeer.acquisitionRetryCount
+    - added Spectromeer.acquireCount
+    - supported both BackgroundWorkers and Tasks in WinFormDemo
 - 2020-08-21 2.3.13
     - upped timeout even further
 - 2020-08-21 2.3.12

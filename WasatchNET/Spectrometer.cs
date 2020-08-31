@@ -75,7 +75,7 @@ namespace WasatchNET
         protected Logger logger = Logger.getInstance();
 
         protected object adcLock = new object();
-        protected object acquisitionLock = new object(); //<! synchronizes getSpectrum, integrationTimeMS, scanAveraging, dark and boxcarHalfWidth
+        protected object acquisitionLock = new object(); //!< synchronizes getSpectrum, integrationTimeMS, scanAveraging, dark and boxcarHalfWidth
         object commsLock = new object(); //!< synchronizes getCmd, getCmd2, sendCmd
         DateTime lastUsbTimestamp = DateTime.Now;
         internal bool shuttingDown = false;
@@ -323,6 +323,7 @@ namespace WasatchNET
             {
                 lock (acquisitionLock)
                 {
+                    logger.debug($"scanAveraging -> {value}");
                     scanAveraging_ = value;
                     configureContinuousAcquisition();
                 }
@@ -369,7 +370,13 @@ namespace WasatchNET
         public virtual uint boxcarHalfWidth
         {
             get { return boxcarHalfWidth_; }
-            set { lock (acquisitionLock) boxcarHalfWidth_ = value; }
+            set
+            {
+                lock (acquisitionLock)
+                {
+                    boxcarHalfWidth_ = value;
+                }
+            }
         }
         protected uint boxcarHalfWidth_;
 
@@ -380,7 +387,13 @@ namespace WasatchNET
         public virtual double[] dark
         {
             get { return dark_; }
-            set { lock (acquisitionLock) dark_ = value; }
+            set
+            {
+                lock (acquisitionLock)
+                {
+                    dark_ = value;
+                }
+            }
         }
         protected double[] dark_;
 
@@ -440,6 +453,19 @@ namespace WasatchNET
         /// communciation cycle.  (It's also very similar to what ENLIGHTEN does)
         /// </remarks>
         public bool readTemperatureAfterSpectrum = false;
+
+        /// <summary>
+        /// If a call to Spectrometer.getSpectrum() fails, how many internal
+        /// (within WasatchNET) retries should be attempted (includes re-sending
+        /// an ACQUIRE opcode).
+        /// </summary>
+        public int acquisitionMaxRetries = 2;
+
+        /// <summary>
+        /// Allows application to track how many ACQUIRE_SPECTRUM commands have
+        /// been sent to the spectrometer (including throwaways and retries).
+        /// </summary>
+        public int acquireCount { get; protected set; } = 0;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -2301,8 +2327,6 @@ namespace WasatchNET
         /// <returns>The acquired spectrum as an array of doubles</returns>
         public virtual double[] getSpectrum(bool forceNew=false)
         {
-            const int maxRetries = 2;
-
             lock (acquisitionLock)
             {
                 currentAcquisitionCancelled = false;
@@ -2321,7 +2345,7 @@ namespace WasatchNET
                         // quit immediately
                         return null;
                     }
-                    else if (retries++ < maxRetries)
+                    else if (retries++ < acquisitionMaxRetries)
                     {
                         // retry the whole thing (including ACQUIRE)
                         logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
@@ -2342,7 +2366,32 @@ namespace WasatchNET
                     for (uint i = 1; i < scanAveraging_; i++)
                     {
                         // don't send a new SW trigger if using continuous acquisition
-                        double[] tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
+                        double[] tmp;
+                        while (true)
+                        {
+                            tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
+                            if (tmp != null)
+                                break;
+
+                            // deal with null
+                            if (currentAcquisitionCancelled)
+                            {
+                                // quit immediately
+                                return null;
+                            }
+                            else if (retries++ < acquisitionMaxRetries)
+                            {
+                                // retry the whole thing (including ACQUIRE)
+                                logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                                continue;
+                            }
+                            else if (errorOnTimeout)
+                            {
+                                // display error if configured
+                                logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                            }
+                            return null;
+                        }
                         if (tmp is null)
                             return null;
 
@@ -2384,6 +2433,7 @@ namespace WasatchNET
                 buf = new byte[8];
 
             logger.debug("sending SW trigger");
+            acquireCount++;
             return sendCmd(Opcodes.ACQUIRE_SPECTRUM, buf: buf);
         }
 
