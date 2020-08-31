@@ -207,6 +207,19 @@ If you have a Wasatch Photonics spectrometer plugged-in and correctly showing
 under "libusb-win32 devices" in the Device Manager, you should be able to run
 the demo, then click "Initialize" to connect to the spectrometer.  
 
+# Logging
+
+Although the library lets applications configure logging programmatically via
+Driver.Logger.level and .setPathname(), not all applications do so.  End-users
+of compiled applications can still configure logging manually by setting these
+environment variables before running a program using Wasatch.NET:
+
+    C:> set WASATCHNET_LOGGER_PATHNAME=C:\temp\wasatchnet.log  (assumes directory exists)
+    C:> set WASATCHNET_LOGGER_LEVEL=DEBUG  (can be DEBUG, INFO, ERROR or NEVER)
+
+These environment "defaults" can still be overridden by application code which
+explicitly calls the above methods and properties, however.
+
 # Digital Signatures
 
 At least one client language (LabVIEW NXG) only supports .NET assemblies loaded

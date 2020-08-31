@@ -40,7 +40,18 @@ namespace WasatchNET
         // Public attributes
         ////////////////////////////////////////////////////////////////////////
 
-        public LogLevel level { get; set; } = LogLevel.INFO;
+        public LogLevel level 
+        {
+            get => _level;
+            set
+            {
+                if (null != Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_FORCE"))
+                    return;
+
+                _level = value;
+            }
+        } 
+        LogLevel _level = LogLevel.INFO;
 
         static public Logger getInstance()
         {
@@ -54,6 +65,9 @@ namespace WasatchNET
 
         public void setPathname(string path)
         {
+            if (null != Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_FORCE"))
+                return;
+
             try
             {
                 outfile = new StreamWriter(path);
@@ -203,6 +217,29 @@ namespace WasatchNET
 
         private Logger()
         {
+            var envLevel = Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_LEVEL");
+            if (envLevel != null)
+            {
+                envLevel = envLevel.ToUpper();
+                     if (envLevel.Contains("DEBUG")) _level = LogLevel.DEBUG;
+                else if (envLevel.Contains("INFO" )) _level = LogLevel.INFO;
+                else if (envLevel.Contains("ERR"  )) _level = LogLevel.ERROR;
+                else if (envLevel.Contains("NEVER")) _level = LogLevel.NEVER;
+            }
+
+            var envPathname = Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_PATHNAME");
+            if (envPathname != null)
+            { 
+                // object isn't sufficiently constructed enough to use setPathname()?
+                try
+                {
+                    outfile = new StreamWriter(envPathname);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Can't set log pathname: {e}");
+                }
+            }
         }
 
         string getTimestamp()

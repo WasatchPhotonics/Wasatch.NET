@@ -75,8 +75,8 @@ namespace WasatchNET
         protected Logger logger = Logger.getInstance();
 
         protected object adcLock = new object();
-        protected object acquisitionLock = new object();
-        object commsLock = new object();
+        protected object acquisitionLock = new object(); //!< synchronizes getSpectrum, integrationTimeMS, scanAveraging, dark and boxcarHalfWidth
+        object commsLock = new object(); //!< synchronizes getCmd, getCmd2, sendCmd
         DateTime lastUsbTimestamp = DateTime.Now;
         internal bool shuttingDown = false;
 
@@ -323,6 +323,7 @@ namespace WasatchNET
             {
                 lock (acquisitionLock)
                 {
+                    logger.debug($"scanAveraging -> {value}");
                     scanAveraging_ = value;
                     configureContinuousAcquisition();
                 }
@@ -369,7 +370,13 @@ namespace WasatchNET
         public virtual uint boxcarHalfWidth
         {
             get { return boxcarHalfWidth_; }
-            set { lock (acquisitionLock) boxcarHalfWidth_ = value; }
+            set
+            {
+                lock (acquisitionLock)
+                {
+                    boxcarHalfWidth_ = value;
+                }
+            }
         }
         protected uint boxcarHalfWidth_;
 
@@ -380,7 +387,13 @@ namespace WasatchNET
         public virtual double[] dark
         {
             get { return dark_; }
-            set { lock (acquisitionLock) dark_ = value; }
+            set
+            {
+                lock (acquisitionLock)
+                {
+                    dark_ = value;
+                }
+            }
         }
         protected double[] dark_;
 
@@ -440,6 +453,19 @@ namespace WasatchNET
         /// communciation cycle.  (It's also very similar to what ENLIGHTEN does)
         /// </remarks>
         public bool readTemperatureAfterSpectrum = false;
+
+        /// <summary>
+        /// If a call to Spectrometer.getSpectrum() fails, how many internal
+        /// (within WasatchNET) retries should be attempted (includes re-sending
+        /// an ACQUIRE opcode).
+        /// </summary>
+        public int acquisitionMaxRetries = 2;
+
+        /// <summary>
+        /// Allows application to track how many ACQUIRE_SPECTRUM commands have
+        /// been sent to the spectrometer (including throwaways and retries).
+        /// </summary>
+        public int acquireCount { get; protected set; } = 0;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -602,8 +628,12 @@ namespace WasatchNET
             }
             set
             {
+                const Opcodes op = Opcodes.GET_CONTINUOUS_ACQUISITION;
+                if (haveCache(op) && value == continuousAcquisitionEnable_)
+                    return;
+
                 sendCmd(Opcodes.SET_CONTINUOUS_ACQUISITION, (ushort)((continuousAcquisitionEnable_ = value) ? 1 : 0));
-                readOnce.Add(Opcodes.GET_CONTINUOUS_ACQUISITION);
+                readOnce.Add(op);
             }
         }
         bool continuousAcquisitionEnable_;
@@ -620,6 +650,10 @@ namespace WasatchNET
             }
             set
             {
+                const Opcodes op = Opcodes.GET_CONTINUOUS_FRAMES;
+                if (haveCache(op) && value == continuousFrames_)
+                    return;
+
                 sendCmd(Opcodes.SET_CONTINUOUS_FRAMES, continuousFrames_ = value);
                 readOnce.Add(Opcodes.GET_CONTINUOUS_FRAMES);
             }
@@ -638,8 +672,12 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_DETECTOR_GAIN);
+                const Opcodes op = Opcodes.GET_DETECTOR_GAIN;
+                if (haveCache(op) && value == detectorGain_)
+                    return;
+
                 sendCmd(Opcodes.SET_DETECTOR_GAIN, FunkyFloat.fromFloat(detectorGain_ = value));
+                readOnce.Add(op);
             }
         }
         float detectorGain_;
@@ -666,8 +704,12 @@ namespace WasatchNET
                     logger.debug("detectorGainOdd not supported on non-InGaAs detectors");
                     return;
                 }
-                readOnce.Add(Opcodes.GET_DETECTOR_GAIN_ODD);
+                const Opcodes op = Opcodes.GET_DETECTOR_GAIN_ODD;
+                if (haveCache(op) && value == detectorGainOdd_)
+                    return;
+
                 sendCmd(Opcodes.SET_DETECTOR_GAIN_ODD, FunkyFloat.fromFloat(detectorGainOdd_ = value));
+                readOnce.Add(op);
             }
         }
         float detectorGainOdd_;
@@ -684,8 +726,12 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_DETECTOR_OFFSET);
+                const Opcodes op = Opcodes.GET_DETECTOR_OFFSET;
+                if (haveCache(op) && value == detectorOffset_)
+                    return;
+
                 sendCmd(Opcodes.SET_DETECTOR_OFFSET, ParseData.shortAsUshort(detectorOffset_ = value));
+                readOnce.Add(op);
             }
         }
         short detectorOffset_;
@@ -712,8 +758,12 @@ namespace WasatchNET
                     logger.debug("detectorOffsetOdd not supported on non-InGaAs detectors");
                     return;
                 }
-                readOnce.Add(Opcodes.GET_DETECTOR_OFFSET_ODD);
+                const Opcodes op = Opcodes.GET_DETECTOR_OFFSET_ODD;
+                if (haveCache(op) && value == detectorOffsetOdd_)
+                    return;
+
                 sendCmd(Opcodes.SET_DETECTOR_OFFSET_ODD, ParseData.shortAsUshort(detectorOffsetOdd_ = value));
+                readOnce.Add(op);
             }
         }
         short detectorOffsetOdd_;
@@ -730,8 +780,12 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE);
+                const Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE;
+                if (haveCache(op) && value == detectorSensingThresholdEnabled_)
+                    return;
+                
                 sendCmd(Opcodes.SET_DETECTOR_SENSING_THRESHOLD_ENABLE, (ushort)((detectorSensingThresholdEnabled_ = value) ? 1 : 0));
+                readOnce.Add(op);
             }
         }
         bool detectorSensingThresholdEnabled_;
@@ -748,8 +802,12 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_DETECTOR_SENSING_THRESHOLD);
+                const Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD;
+                if (haveCache(op) && value == detectorSensingThreshold_)
+                    return;
+
                 sendCmd(Opcodes.SET_DETECTOR_SENSING_THRESHOLD, detectorSensingThreshold_ = value);
+                readOnce.Add(op);
             }
         }
         ushort detectorSensingThreshold_;
@@ -768,10 +826,14 @@ namespace WasatchNET
             }
             set
             {
+                const Opcodes op = Opcodes.GET_DETECTOR_TEC_ENABLE;
                 if (eeprom.hasCooling)
                 {
-                    readOnce.Add(Opcodes.GET_DETECTOR_TEC_ENABLE);
+                    if (haveCache(op) && value == detectorTECEnabled_)
+                        return;
+
                     sendCmd(Opcodes.SET_DETECTOR_TEC_ENABLE, (ushort)((detectorTECEnabled_ = value) ? 1 : 0));
+                    readOnce.Add(op);
                 }
             }
         }
@@ -813,10 +875,14 @@ namespace WasatchNET
             }
             set
             {
+                const Opcodes op = Opcodes.GET_DETECTOR_TEC_SETPOINT;
                 if (eeprom.hasCooling)
                 {
+                    if (haveCache(op) && value == detectorTECSetpointRaw_)
+                        return;
+
                     sendCmd(Opcodes.SET_DETECTOR_TEC_SETPOINT, detectorTECSetpointRaw_ = value);
-                    readOnce.Add(Opcodes.GET_DETECTOR_TEC_SETPOINT);
+                    readOnce.Add(op);
                 }
             }
         }
@@ -830,16 +896,9 @@ namespace WasatchNET
                 float degC = eeprom.adcToDegCCoeffs[0]
                            + eeprom.adcToDegCCoeffs[1] * raw
                            + eeprom.adcToDegCCoeffs[2] * raw * raw;
-                logger.debug("getDetectorTemperatureDegC: raw 0x{0:x4}, coeff {1:f2}, {2:f2}, {3:f2} = {4:f2}",
-                        raw,
-                        eeprom.adcToDegCCoeffs[0],
-                        eeprom.adcToDegCCoeffs[1],
-                        eeprom.adcToDegCCoeffs[2],
-                        degC);
                 return lastDetectorTemperatureDegC = degC;
             }
         }
-
 
         /// <summary>
         /// A cached value of the last-measured detector temperature.  This
@@ -848,17 +907,27 @@ namespace WasatchNET
         /// </summary>
         public float lastDetectorTemperatureDegC = UNINITIALIZED_TEMPERATURE_DEG_C;
 
+        /// <remarks>
+        /// Caches results so it won't query the spectrometer faster than 1Hz
+        /// </remarks>
         public ushort detectorTemperatureRaw
         {
             get
             {
-                if (isSiG)
-                    return 0;
                 if (!eeprom.hasCooling)
                     return 0;
-                return swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
+
+                DateTime now = DateTime.Now;
+                if (detectorTemperatureRaw_ == 0 || ((now - detectorTemperatureRawTimestamp).TotalSeconds >= 1.0))
+                {
+                    detectorTemperatureRaw_ = swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
+                    detectorTemperatureRawTimestamp = now;
+                }
+                return detectorTemperatureRaw_;
             }
         }
+        ushort detectorTemperatureRaw_ = 0;
+        DateTime detectorTemperatureRawTimestamp = DateTime.Now;
 
         public virtual string firmwareRevision
         {
@@ -918,8 +987,12 @@ namespace WasatchNET
             {
                 if (featureIdentification.boardType != BOARD_TYPES.INGAAS_FX2)
                     return;
-                readOnce.Add(Opcodes.GET_CF_SELECT);
+                const Opcodes op = Opcodes.GET_CF_SELECT;
+                if (haveCache(op) && value == highGainModeEnabled_)
+                    return;
+
                 sendCmd(Opcodes.SET_CF_SELECT, (ushort)((highGainModeEnabled_ = value) ? 1 : 0));
+                readOnce.Add(op);
             }
         }
         bool highGainModeEnabled_;
@@ -951,8 +1024,12 @@ namespace WasatchNET
             {
                 if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2 || value == HORIZONTAL_BINNING.ERROR)
                     return;
+                const Opcodes op = Opcodes.GET_HORIZONTAL_BINNING;
+                if (haveCache(op) && value == horizontalBinning_)
+                    return;
+
                 sendCmd(Opcodes.SET_HORIZONTAL_BINNING, (ushort)(horizontalBinning_ = value));
-                readOnce.Add(Opcodes.GET_HORIZONTAL_BINNING);
+                readOnce.Add(op);
             }
         }
         HORIZONTAL_BINNING horizontalBinning_;
@@ -972,13 +1049,9 @@ namespace WasatchNET
             }
             set
             {
-                // noop if already set 
                 const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
-                if (haveCache(op) && integrationTimeMS_ == value)
-                {
-                    logger.debug($"ignoring request to re-set existing integration time {value}");
+                if (haveCache(op) && value == integrationTimeMS_)
                     return;
-                }
 
                 lock (acquisitionLock)
                 {
@@ -1042,8 +1115,12 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_LASER_MOD_ENABLE);
+                const Opcodes op = Opcodes.GET_LASER_MOD_ENABLE;
+                if (haveCache(op) && value == laserModulationEnabled_)
+                    return;
+
                 sendCmd(Opcodes.SET_LASER_MOD_ENABLE, (ushort)((laserModulationEnabled_ = value) ? 1 : 0)); // TODO: missing fake 8-byte buf?
+                readOnce.Add(op);
             }
         }
         bool laserModulationEnabled_;
@@ -1073,8 +1150,12 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME);
+                const Opcodes op = Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME;
+                if (haveCache(op) && value == laserModulationLinkedToIntegrationTime_)
+                    return;
+
                 sendCmd(Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort)((laserModulationLinkedToIntegrationTime_ = value) ? 1 : 0));
+                readOnce.Add(op);
             }
         }
         bool laserModulationLinkedToIntegrationTime_;
@@ -1091,9 +1172,13 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_LASER_MOD_PULSE_DELAY);
+                const Opcodes op = Opcodes.GET_LASER_MOD_PULSE_DELAY;
+                if (haveCache(op) && value == laserModulationPulseDelay_)
+                    return;
+
                 UInt40 val = new UInt40(laserModulationPulseDelay_ = value);
                 sendCmd(Opcodes.SET_LASER_MOD_PULSE_DELAY, val.LSW, val.MidW, val.buf);
+                readOnce.Add(op);
             }
         }
         UInt64 laserModulationPulseDelay_;
@@ -1110,9 +1195,13 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_LASER_MOD_DURATION);
+                const Opcodes op = Opcodes.GET_LASER_MOD_DURATION;
+                if (haveCache(op) && value == laserModulationDuration_)
+                    return;
+
                 UInt40 val = new UInt40(laserModulationDuration_ = value);
                 sendCmd(Opcodes.SET_LASER_MOD_DURATION, val.LSW, val.MidW, val.buf);
+                readOnce.Add(op);
             }
         }
         UInt64 laserModulationDuration_;
@@ -1129,9 +1218,13 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_LASER_MOD_PERIOD);
+                const Opcodes op = Opcodes.GET_LASER_MOD_PERIOD;
+                if (haveCache(op) && value == laserModulationPeriod_)
+                    return;
+
                 UInt40 val = new UInt40(laserModulationPeriod_ = value);
                 sendCmd(Opcodes.SET_LASER_MOD_PERIOD, val.LSW, val.MidW, val.buf);
+                readOnce.Add(op);
             }
         }
         protected UInt64 laserModulationPeriod_;
@@ -1148,9 +1241,13 @@ namespace WasatchNET
             }
             set
             {
-                readOnce.Add(Opcodes.GET_LASER_MOD_PULSE_WIDTH);
+                const Opcodes op = Opcodes.GET_LASER_MOD_PULSE_WIDTH;
+                if (haveCache(op) && value == laserModulationPulseWidth_)
+                    return;
+
                 UInt40 val = new UInt40(laserModulationPulseWidth_ = value);
                 sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, val.LSW, val.MidW, val.buf);
+                readOnce.Add(op);
             }
         }
         protected UInt64 laserModulationPulseWidth_;
@@ -1291,8 +1388,12 @@ namespace WasatchNET
                 if (!eeprom.hasLaser)
                     return;
 
+                const Opcodes op = Opcodes.GET_LASER_TEC_SETPOINT;
+                if (haveCache(op) && value == laserTemperatureSetpointRaw_)
+                    return;
+
                 sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ = Math.Min((byte)127, value));
-                readOnce.Add(Opcodes.GET_LASER_TEC_SETPOINT);
+                readOnce.Add(op);
             }
         }
         protected byte laserTemperatureSetpointRaw_;
@@ -1472,14 +1573,18 @@ namespace WasatchNET
         {
             get
             {
-                if (featureIdentification.boardType != BOARD_TYPES.ARM)
-                {
-                    logger.debug("GET_TRIGGER_SOURCE disabled for boardType {0}", featureIdentification.boardType.ToString());
-                    return TRIGGER_SOURCE.INTERNAL;
-                }
                 const Opcodes op = Opcodes.GET_TRIGGER_SOURCE;
                 if (haveCache(op))
                     return triggerSource_;
+
+                if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                {
+                    // possibly no longer true...but only log once in any case
+                    logger.debug("GET_TRIGGER_SOURCE disabled for boardType {0}", featureIdentification.boardType.ToString());
+                    readOnce.Add(op);
+                    return triggerSource_;
+                }
+
                 byte[] buf = getCmd(Opcodes.GET_TRIGGER_SOURCE, 1);
                 if (buf is null || buf[0] > 2)
                     return TRIGGER_SOURCE.ERROR;
@@ -1488,10 +1593,14 @@ namespace WasatchNET
             }
             set
             {
+                const Opcodes op = Opcodes.GET_TRIGGER_SOURCE;
                 if (value == TRIGGER_SOURCE.ERROR)
                     return;
+                if (haveCache(op) && value == triggerSource_)
+                    return;
+
                 UInt40 val = new UInt40((ushort)(triggerSource_ = value));
-                readOnce.Add(Opcodes.GET_TRIGGER_SOURCE);
+                readOnce.Add(op);
                 if (featureIdentification.boardType != BOARD_TYPES.ARM)
                     sendCmd(Opcodes.SET_TRIGGER_SOURCE, val.LSW, val.MidW, val.buf);
                 else
@@ -1559,10 +1668,14 @@ namespace WasatchNET
             {
                 if (featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return;
+                const Opcodes op = Opcodes.GET_TRIGGER_DELAY;
+                if (haveCache(op) && value == triggerDelay_)
+                    return;
+
                 ushort lsw = (ushort)((triggerDelay_ = value) & 0xffff);
                 byte msb = (byte)(value >> 16);
                 sendCmd(Opcodes.SET_TRIGGER_DELAY, lsw, msb);
-                readOnce.Add(Opcodes.GET_TRIGGER_DELAY);
+                readOnce.Add(op);
             }
         }
         uint triggerDelay_;
@@ -2218,11 +2331,31 @@ namespace WasatchNET
             {
                 currentAcquisitionCancelled = false;
 
-                double[] sum = getSpectrumRaw();
-                if (sum is null)
+                int retries = 0;
+                double[] sum = null;
+                while (true)
                 {
-                    if (!currentAcquisitionCancelled && errorOnTimeout)
+                    sum = getSpectrumRaw();
+                    if (sum != null)
+                        break;
+
+                    // deal with null
+                    if (currentAcquisitionCancelled)
+                    {
+                        // quit immediately
+                        return null;
+                    }
+                    else if (retries++ < acquisitionMaxRetries)
+                    {
+                        // retry the whole thing (including ACQUIRE)
+                        logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                        continue;
+                    }
+                    else if (errorOnTimeout)
+                    {
+                        // display error if configured
                         logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                    }
                     return null;
                 }
                 logger.debug("getSpectrum: received {0} pixels", sum.Length);
@@ -2233,7 +2366,32 @@ namespace WasatchNET
                     for (uint i = 1; i < scanAveraging_; i++)
                     {
                         // don't send a new SW trigger if using continuous acquisition
-                        double[] tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
+                        double[] tmp;
+                        while (true)
+                        {
+                            tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
+                            if (tmp != null)
+                                break;
+
+                            // deal with null
+                            if (currentAcquisitionCancelled)
+                            {
+                                // quit immediately
+                                return null;
+                            }
+                            else if (retries++ < acquisitionMaxRetries)
+                            {
+                                // retry the whole thing (including ACQUIRE)
+                                logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                                continue;
+                            }
+                            else if (errorOnTimeout)
+                            {
+                                // display error if configured
+                                logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                            }
+                            return null;
+                        }
                         if (tmp is null)
                             return null;
 
@@ -2275,6 +2433,7 @@ namespace WasatchNET
                 buf = new byte[8];
 
             logger.debug("sending SW trigger");
+            acquireCount++;
             return sendCmd(Opcodes.ACQUIRE_SPECTRUM, buf: buf);
         }
 
@@ -2327,7 +2486,7 @@ namespace WasatchNET
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
                 sendSWTrigger();
 
-            if (isStroker)
+            if (true || isStroker)
             {
                 logger.debug("getSpectrumRaw: extra Stroker delay");
                 Thread.Sleep((int)integrationTimeMS_ + 5);
@@ -2364,7 +2523,9 @@ namespace WasatchNET
                             spec = new double[pixelsPerEndpoint];
                         }
                         else
+                        {
                             subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                        }
                         break;
                     }
                     catch (Exception ex)
@@ -2732,7 +2893,7 @@ namespace WasatchNET
                 if (bytesReadThisEndpoint == bytesPerEndpoint)
                     break;
 
-                if (bytesReadThisEndpoint == 0 && !triggerWasExternal)
+                if (bytesRead == 0 && !triggerWasExternal)
                 {
                     logger.error($"readSubspectrum: read nothing (timeout?) ({id})");
                     return null; 
@@ -2779,6 +2940,9 @@ namespace WasatchNET
                         logger.debug($"readSubspectrum: still waiting for external trigger ({id})");
                     }
                 }
+
+                logger.error("throwing away partial spectrum, try again");
+                return null;
             }
 
             ////////////////////////////////////////////////////////////////////
