@@ -75,8 +75,8 @@ namespace WasatchNET
         protected Logger logger = Logger.getInstance();
 
         protected object adcLock = new object();
-        protected object acquisitionLock = new object();
-        object commsLock = new object();
+        protected object acquisitionLock = new object(); //<! synchronizes getSpectrum, integrationTimeMS, scanAveraging, dark and boxcarHalfWidth
+        object commsLock = new object(); //!< synchronizes getCmd, getCmd2, sendCmd
         DateTime lastUsbTimestamp = DateTime.Now;
         internal bool shuttingDown = false;
 
@@ -2301,15 +2301,37 @@ namespace WasatchNET
         /// <returns>The acquired spectrum as an array of doubles</returns>
         public virtual double[] getSpectrum(bool forceNew=false)
         {
+            const int maxRetries = 2;
+
             lock (acquisitionLock)
             {
                 currentAcquisitionCancelled = false;
 
-                double[] sum = getSpectrumRaw();
-                if (sum is null)
+                int retries = 0;
+                double[] sum = null;
+                while (true)
                 {
-                    if (!currentAcquisitionCancelled && errorOnTimeout)
+                    sum = getSpectrumRaw();
+                    if (sum != null)
+                        break;
+
+                    // deal with null
+                    if (currentAcquisitionCancelled)
+                    {
+                        // quit immediately
+                        return null;
+                    }
+                    else if (retries++ < maxRetries)
+                    {
+                        // retry the whole thing (including ACQUIRE)
+                        logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                        continue;
+                    }
+                    else if (errorOnTimeout)
+                    {
+                        // display error if configured
                         logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                    }
                     return null;
                 }
                 logger.debug("getSpectrum: received {0} pixels", sum.Length);
@@ -2414,7 +2436,7 @@ namespace WasatchNET
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
                 sendSWTrigger();
 
-            if (isStroker)
+            if (true || isStroker)
             {
                 logger.debug("getSpectrumRaw: extra Stroker delay");
                 Thread.Sleep((int)integrationTimeMS_ + 5);
@@ -2451,7 +2473,9 @@ namespace WasatchNET
                             spec = new double[pixelsPerEndpoint];
                         }
                         else
+                        {
                             subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                        }
                         break;
                     }
                     catch (Exception ex)
@@ -2866,6 +2890,9 @@ namespace WasatchNET
                         logger.debug($"readSubspectrum: still waiting for external trigger ({id})");
                     }
                 }
+
+                logger.error("throwing away partial spectrum, try again");
+                return null;
             }
 
             ////////////////////////////////////////////////////////////////////

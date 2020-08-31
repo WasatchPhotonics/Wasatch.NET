@@ -11,7 +11,7 @@ namespace WinFormDemo
     {
         public string saveDir = "";
         public uint scanCount;
-        public uint scanIntervalSec;
+        public uint scanIntervalSec; // start-to-start period
         public bool autoSave;
         public bool autoStart;
         public uint integrationTimeMS;
@@ -55,7 +55,7 @@ namespace WinFormDemo
             Console.WriteLine("--autoSave          automatically save every spectrum to the specified location");
             Console.WriteLine("--saveDir           path to save spectra (must exist and be writable)");
             Console.WriteLine("--scanCount         how many spectra to acquire and optionally save before exiting");
-            Console.WriteLine("--scanIntervalSec   how long to wait between acquisitions");
+            Console.WriteLine("--scanIntervalSec   how long to wait between acquisitions (start-to-start)");
             Console.WriteLine("--integrationTimeMS integration time in milliseconds");
 
             shutdown = true;

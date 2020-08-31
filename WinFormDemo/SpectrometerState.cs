@@ -24,6 +24,7 @@ namespace WinFormDemo
         public double detTempDegC;
 
         public bool running;
+        public bool stopping;
         public ProcessingModes processingMode = ProcessingModes.SCOPE;
         public DateTime lastUpdate;
         public uint scanCount;

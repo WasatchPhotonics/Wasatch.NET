@@ -1,9 +1,10 @@
 # Wasatch.NET Changelog
 
-- 2020-08-28 2.3.14
+- 2020-08-31 2.3.14
     - added support for WASATCHNET\_LOGGER\_PATHNAME and \_LEVEL environment variables
     - updated most Spectrometer setters to ignore duplicate (cached) values
     - rate-limit detector temperature readings to 1Hz (cache otherwise)
+    - added high-level retry loop in Spectrometer.getSpectrum 
 - 2020-08-21 2.3.13
     - upped timeout even further
 - 2020-08-21 2.3.12

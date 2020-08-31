@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend3 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerGraphVsControls = new System.Windows.Forms.SplitContainer();
@@ -66,6 +66,7 @@
             this.checkBoxLaserEnable = new System.Windows.Forms.CheckBox();
             this.label3 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
+            this.checkBoxContinuousAcquisition = new System.Windows.Forms.CheckBox();
             this.groupBoxSetup = new System.Windows.Forms.GroupBox();
             this.labelDetTempDegC = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
@@ -78,7 +79,8 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.checkBoxContinuousAcquisition = new System.Windows.Forms.CheckBox();
+            this.numericUpDownAcquisitionPeriodMS = new System.Windows.Forms.NumericUpDown();
+            this.label7 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -100,6 +102,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBoxcarHalfWidth)).BeginInit();
             this.groupBoxSetup.SuspendLayout();
             this.groupBoxEventLog.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAcquisitionPeriodMS)).BeginInit();
             this.SuspendLayout();
             // 
             // splitContainerTopVsLog
@@ -125,6 +128,7 @@
             // splitContainerGraphVsControls
             // 
             this.splitContainerGraphVsControls.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainerGraphVsControls.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.splitContainerGraphVsControls.Location = new System.Drawing.Point(0, 0);
             this.splitContainerGraphVsControls.Margin = new System.Windows.Forms.Padding(2);
             this.splitContainerGraphVsControls.Name = "splitContainerGraphVsControls";
@@ -146,18 +150,18 @@
             // 
             // chart1
             // 
-            chartArea1.AxisX.LabelStyle.Format = "F2";
-            chartArea1.CursorX.IsUserEnabled = true;
-            chartArea1.CursorX.IsUserSelectionEnabled = true;
-            chartArea1.CursorY.IsUserEnabled = true;
-            chartArea1.CursorY.IsUserSelectionEnabled = true;
-            chartArea1.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea1);
+            chartArea3.AxisX.LabelStyle.Format = "F2";
+            chartArea3.CursorX.IsUserEnabled = true;
+            chartArea3.CursorX.IsUserSelectionEnabled = true;
+            chartArea3.CursorY.IsUserEnabled = true;
+            chartArea3.CursorY.IsUserSelectionEnabled = true;
+            chartArea3.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea3);
             this.chart1.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend1.Alignment = System.Drawing.StringAlignment.Center;
-            legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
-            legend1.Name = "Legend1";
-            this.chart1.Legends.Add(legend1);
+            legend3.Alignment = System.Drawing.StringAlignment.Center;
+            legend3.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
+            legend3.Name = "Legend1";
+            this.chart1.Legends.Add(legend3);
             this.chart1.Location = new System.Drawing.Point(0, 24);
             this.chart1.Margin = new System.Windows.Forms.Padding(2);
             this.chart1.Name = "chart1";
@@ -211,7 +215,7 @@
             this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Name = "groupBoxSettings";
             this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(218, 192);
+            this.groupBoxSettings.Size = new System.Drawing.Size(219, 192);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
             this.groupBoxSettings.Text = "Settings";
@@ -222,7 +226,7 @@
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
             this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(214, 175);
+            this.treeViewSettings.Size = new System.Drawing.Size(215, 175);
             this.treeViewSettings.TabIndex = 0;
             this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
             this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
@@ -253,6 +257,8 @@
             // 
             // groupBoxControl
             // 
+            this.groupBoxControl.Controls.Add(this.label7);
+            this.groupBoxControl.Controls.Add(this.numericUpDownAcquisitionPeriodMS);
             this.groupBoxControl.Controls.Add(this.checkBoxExternalTriggerSource);
             this.groupBoxControl.Controls.Add(this.numericUpDownDetectorSetpointDegC);
             this.groupBoxControl.Controls.Add(this.label6);
@@ -285,11 +291,11 @@
             // checkBoxExternalTriggerSource
             // 
             this.checkBoxExternalTriggerSource.AutoSize = true;
-            this.checkBoxExternalTriggerSource.Location = new System.Drawing.Point(75, 132);
+            this.checkBoxExternalTriggerSource.Location = new System.Drawing.Point(129, 18);
             this.checkBoxExternalTriggerSource.Name = "checkBoxExternalTriggerSource";
-            this.checkBoxExternalTriggerSource.Size = new System.Drawing.Size(95, 17);
+            this.checkBoxExternalTriggerSource.Size = new System.Drawing.Size(72, 17);
             this.checkBoxExternalTriggerSource.TabIndex = 18;
-            this.checkBoxExternalTriggerSource.Text = "external trigger";
+            this.checkBoxExternalTriggerSource.Text = "ext trigger";
             this.checkBoxExternalTriggerSource.UseVisualStyleBackColor = true;
             this.checkBoxExternalTriggerSource.CheckedChanged += new System.EventHandler(this.checkBoxExternalTriggerSource_CheckedChanged);
             // 
@@ -573,9 +579,9 @@
             this.label3.Location = new System.Drawing.Point(68, 64);
             this.label3.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(87, 13);
+            this.label3.Size = new System.Drawing.Size(39, 13);
             this.label3.TabIndex = 5;
-            this.label3.Text = "boxcar half-width";
+            this.label3.Text = "boxcar";
             // 
             // label5
             // 
@@ -585,6 +591,17 @@
             this.label5.Size = new System.Drawing.Size(15, 13);
             this.label5.TabIndex = 15;
             this.label5.Text = "%";
+            // 
+            // checkBoxContinuousAcquisition
+            // 
+            this.checkBoxContinuousAcquisition.AutoSize = true;
+            this.checkBoxContinuousAcquisition.Location = new System.Drawing.Point(129, 41);
+            this.checkBoxContinuousAcquisition.Name = "checkBoxContinuousAcquisition";
+            this.checkBoxContinuousAcquisition.Size = new System.Drawing.Size(78, 17);
+            this.checkBoxContinuousAcquisition.TabIndex = 19;
+            this.checkBoxContinuousAcquisition.Text = "continuous";
+            this.checkBoxContinuousAcquisition.UseVisualStyleBackColor = true;
+            this.checkBoxContinuousAcquisition.CheckedChanged += new System.EventHandler(this.checkBoxContinuousAcquisition_CheckedChanged);
             // 
             // groupBoxSetup
             // 
@@ -693,16 +710,23 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
-            // checkBoxContinuousAcquisition
+            // numericUpDownAcquisitionPeriodMS
             // 
-            this.checkBoxContinuousAcquisition.AutoSize = true;
-            this.checkBoxContinuousAcquisition.Location = new System.Drawing.Point(129, 41);
-            this.checkBoxContinuousAcquisition.Name = "checkBoxContinuousAcquisition";
-            this.checkBoxContinuousAcquisition.Size = new System.Drawing.Size(78, 17);
-            this.checkBoxContinuousAcquisition.TabIndex = 19;
-            this.checkBoxContinuousAcquisition.Text = "continuous";
-            this.checkBoxContinuousAcquisition.UseVisualStyleBackColor = true;
-            this.checkBoxContinuousAcquisition.CheckedChanged += new System.EventHandler(this.checkBoxContinuousAcquisition_CheckedChanged);
+            this.numericUpDownAcquisitionPeriodMS.Location = new System.Drawing.Point(4, 133);
+            this.numericUpDownAcquisitionPeriodMS.Name = "numericUpDownAcquisitionPeriodMS";
+            this.numericUpDownAcquisitionPeriodMS.Size = new System.Drawing.Size(59, 20);
+            this.numericUpDownAcquisitionPeriodMS.TabIndex = 20;
+            this.numericUpDownAcquisitionPeriodMS.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.numericUpDownAcquisitionPeriodMS.ValueChanged += new System.EventHandler(this.numericUpDownAcquisitionPeriodMS_ValueChanged);
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(70, 135);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(83, 13);
+            this.label7.TabIndex = 21;
+            this.label7.Text = "acq period (sec)";
             // 
             // Form1
             // 
@@ -746,6 +770,7 @@
             this.groupBoxSetup.PerformLayout();
             this.groupBoxEventLog.ResumeLayout(false);
             this.groupBoxEventLog.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAcquisitionPeriodMS)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -799,6 +824,8 @@
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.CheckBox checkBoxExternalTriggerSource;
         private System.Windows.Forms.CheckBox checkBoxContinuousAcquisition;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.NumericUpDown numericUpDownAcquisitionPeriodMS;
     }
 }
 

@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using WasatchNET;
@@ -12,6 +12,8 @@ namespace WinFormDemo
 {
     public partial class Form1 : Form
     {
+        const bool useTasks = true;
+
         ////////////////////////////////////////////////////////////////////////
         // Attributes
         ////////////////////////////////////////////////////////////////////////
@@ -54,9 +56,14 @@ namespace WinFormDemo
             backgroundWorkerGUIUpdate.RunWorkerAsync();
 
             opts = options;
-
         }
         
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            if (opts.autoStart)
+                buttonInitialize_Click(null, null);
+        }
+
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             logger.setTextBox(null);
@@ -72,8 +79,11 @@ namespace WinFormDemo
             SpectrometerState state = new SpectrometerState(s, opts);
 
             // TODO: move into SpectrometerState ctor
-            state.worker.DoWork += backgroundWorker_DoWork;
-            state.worker.RunWorkerCompleted += backgroundWorker_RunWorkerCompleted;
+            if (!useTasks)
+            {
+                state.worker.DoWork += backgroundWorker_DoWork;
+                state.worker.RunWorkerCompleted += backgroundWorker_RunWorkerCompleted;
+            }
 
             spectrometerStates.Add(s, state);
 
@@ -271,12 +281,18 @@ namespace WinFormDemo
             {
                 logger.info("Starting acquisition");
                 updateStartButton(true);
-                state.worker.RunWorkerAsync(currentSpectrometer);
+                if (useTasks)
+                    _ = Task_DoWork(currentSpectrometer);
+                else
+                    state.worker.RunWorkerAsync(currentSpectrometer);
             }
             else
             {
                 logger.info("Stopping acquisition");
-                state.worker.CancelAsync();
+                if (useTasks)
+                    state.stopping = true;
+                else
+                    state.worker.CancelAsync();
             }
         }
 
@@ -482,6 +498,39 @@ namespace WinFormDemo
             currentSpectrometer.setDFUMode();
         }
 
+        private void numericUpDownLaserPowerPerc_ValueChanged(object sender, EventArgs e)
+        {
+            if (currentSpectrometer != null)
+                currentSpectrometer.setLaserPowerPercentage(((float)numericUpDownLaserPowerPerc.Value) / 100.0f);
+        }
+
+        private void numericUpDownDetectorSetpointDegC_ValueChanged(object sender, EventArgs e)
+        {
+            if (currentSpectrometer != null)
+                currentSpectrometer.detectorTECSetpointDegC = (float)numericUpDownDetectorSetpointDegC.Value;
+        }
+
+        private void checkBoxExternalTriggerSource_CheckedChanged(object sender, EventArgs e)
+        {
+            if (currentSpectrometer is null)
+                return;
+
+            currentSpectrometer.triggerSource = checkBoxExternalTriggerSource.Checked ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
+            logger.debug("GUI: trigger source now {0}", currentSpectrometer.triggerSource);
+        }
+
+        private void checkBoxContinuousAcquisition_CheckedChanged(object sender, EventArgs e)
+        {
+            if (currentSpectrometer is null)
+                return;
+
+            currentSpectrometer.scanAveragingIsContinuous = checkBoxContinuousAcquisition.Checked;
+        }
+
+        private void numericUpDownAcquisitionPeriodMS_ValueChanged(object sender, EventArgs e)
+        {
+            opts.scanIntervalSec = (uint)(sender as NumericUpDown).Value;
+        }
         ////////////////////////////////////////////////////////////////////////
         // BackgroundWorker: GUI Updates
         ////////////////////////////////////////////////////////////////////////
@@ -497,7 +546,7 @@ namespace WinFormDemo
             logger.debug("GUIUpdate thread starting");
             BackgroundWorker worker = sender as BackgroundWorker;
             ushort lowFreqOperations = 0;
-            while(true)
+            while (true)
             {
                 Thread.Sleep(100);
                 if (worker.CancellationPending || shutdownPending)
@@ -560,44 +609,93 @@ namespace WinFormDemo
             Spectrometer spectrometer = (Spectrometer) e.Argument;
             SpectrometerState state = spectrometerStates[spectrometer];
 
-            string prefix = String.Format("Worker.{0}.{1}", spectrometer.model, spectrometer.serialNumber);
             state.running = true;
+            state.stopping = false;
 
             BackgroundWorker worker = sender as BackgroundWorker;
             while (true)
             {
                 // end thread if we've been asked to cancel
-                if (worker.CancellationPending)
+                if (worker.CancellationPending || state.stopping)
                     break;
 
-                // logger.debug("workerAcquisition: getting spectrum");
-                double[] raw = spectrometer.getSpectrum();
-                if (raw is null)
-                {
-                    Thread.Sleep(100);
-                    continue;
-                }
-
-                // process for graphing
-                lock (spectrometers)
-                    state.processSpectrum(raw);
-
-                // end thread if we've completed our allocated acquisitions
-                if (opts.scanCount > 0 && state.scanCount >= opts.scanCount)
+                bool ok = doAcquireIteration(state).Result;
+                if (!ok)
                     break;
-
-                int delayMS = (int) Math.Max(100, opts.scanIntervalSec * 1000);
-                if (delayMS > 0)
-                    Thread.Sleep(delayMS);
             }
 
             state.running = false;
             e.Result = spectrometer; // pass spectrometer handle to _Completed callback
         }
 
+        async Task<bool> Task_DoWork(Spectrometer spectrometer)
+        {
+            SpectrometerState state = spectrometerStates[spectrometer];
+
+            state.running = true;
+            state.stopping = false;
+
+            while (true)
+            {
+                // end Task if we've been asked to cancel
+                if (shutdownPending || state.stopping)
+                    break;
+
+                if (!await doAcquireIteration(state))
+                    break;
+            }
+
+            logger.debug("Task_DoWork closing");
+            state.running = false;
+            doComplete(spectrometer);
+            return true;
+        }
+
+        async Task<bool> doAcquireIteration(SpectrometerState state)
+        {
+            DateTime startTime = DateTime.Now;
+
+            // logger.debug("workerAcquisition: getting spectrum");
+            double[] raw = state.spectrometer.getSpectrum();
+            if (raw is null)
+            {
+                await Task.Delay(100);
+                return true;
+            }
+
+            // process for graphing
+            lock (spectrometers)
+            {
+                state.processSpectrum(raw);
+            }
+
+            // end thread if we've completed our allocated acquisitions
+            if (opts.scanCount > 0 && state.scanCount >= opts.scanCount)
+                return false;
+
+            // figure out how long to wait before the next iteration
+            int delayMS = 0;
+            if (opts.scanIntervalSec != 0)
+            {
+                DateTime endTime = DateTime.Now;
+                var elapsedMS = (endTime - startTime).TotalMilliseconds;
+                delayMS = (int)(opts.scanIntervalSec * 1000.0 - elapsedMS);
+            }
+            if (delayMS < 100)
+                delayMS = 100;
+
+            await Task.Delay(delayMS);
+            return true;
+        }
+
         private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            Spectrometer spectrometer = e.Result as Spectrometer;
+            doComplete(e.Result as Spectrometer);
+        }
+
+        // can be called from either BackgroundWorker or Task
+        void doComplete(Spectrometer spectrometer)
+        {
             if (spectrometer == currentSpectrometer)
                 updateStartButton(false);
 
@@ -617,41 +715,6 @@ namespace WinFormDemo
                 if (shutdown)
                     Close();
             }
-        }
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            if (opts.autoStart)
-                buttonInitialize_Click(null, null);
-        }
-
-        private void numericUpDownLaserPowerPerc_ValueChanged(object sender, EventArgs e)
-        {
-            if (currentSpectrometer != null)
-                currentSpectrometer.setLaserPowerPercentage(((float)numericUpDownLaserPowerPerc.Value) / 100.0f);
-        }
-
-        private void numericUpDownDetectorSetpointDegC_ValueChanged(object sender, EventArgs e)
-        {
-            if (currentSpectrometer != null)
-                currentSpectrometer.detectorTECSetpointDegC = (float)numericUpDownDetectorSetpointDegC.Value;
-        }
-
-        private void checkBoxExternalTriggerSource_CheckedChanged(object sender, EventArgs e)
-        {
-            if (currentSpectrometer is null)
-                return;
-
-            currentSpectrometer.triggerSource = checkBoxExternalTriggerSource.Checked ? TRIGGER_SOURCE.EXTERNAL : TRIGGER_SOURCE.INTERNAL;
-            logger.debug("GUI: trigger source now {0}", currentSpectrometer.triggerSource);
-        }
-
-        private void checkBoxContinuousAcquisition_CheckedChanged(object sender, EventArgs e)
-        {
-            if (currentSpectrometer is null)
-                return;
-
-            currentSpectrometer.scanAveragingIsContinuous = checkBoxContinuousAcquisition.Checked;
         }
     }
 }
