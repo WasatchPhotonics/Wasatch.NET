@@ -544,8 +544,12 @@ namespace WasatchNET
                 //about sensitivity here and still do an interpolation, but I'm personally not that comfortable with that
                 //and prefer we require at least two spectra per source
                 if (spectra.Count == 1)
-                    return spectra.First().Value;
+                {
+                    for (int i = 0; i < final.Length; ++i)
+                        final[i] = spectra.First().Value[i];
 
+                    return final;
+                }
                 //Traverse spectra (ordered by integration time) until index == spectra with integration time just below
                 //the set integration time
                 //

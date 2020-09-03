@@ -1289,6 +1289,11 @@ namespace WasatchNET
             }
         }
 
+        public override bool setLaserPowerPercentage(float perc)
+        {
+            return false;
+        }
+
         public override ushort laserTemperatureRaw
         {
             get
@@ -1311,5 +1316,5 @@ namespace WasatchNET
         }
 
 
-        }
+    }
 }
