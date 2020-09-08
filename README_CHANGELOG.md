@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-09-04 2.3.15
+    - fixed issue with trying to set laser power in OCT spectrometer
+	- fixed subtle bug with mock spectrometers with single samples for a source
 - 2020-08-31 2.3.14
     - added support for WASATCHNET\_LOGGER\_PATHNAME and \_LEVEL environment variables
     - updated most Spectrometer setters to ignore duplicate (cached) values
