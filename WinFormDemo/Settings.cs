@@ -151,7 +151,7 @@ namespace WinFormDemo
             stub("laserEnabled",                "Spectrometer State/Laser/Enabled");
             stub("laserTemperatureDegC",        "Spectrometer State/Laser/TEC/Temperature (°C)");
             stub("laserTemperatureRaw",         "Spectrometer State/Laser/TEC/Temperature (raw)");
-            stub("laserTemperatureSetpointRaw", "Spectrometer State/Laser/TEC/Setpoint (raw)"); 
+          //stub("laserTemperatureSetpointRaw", "Spectrometer State/Laser/TEC/Setpoint (raw)"); 
             stub("laserModEnabled",             "Spectrometer State/Laser/Modulation/Enabled");
             stub("laserModDuration",            "Spectrometer State/Laser/Modulation/Duration (µs)");
             stub("laserModPeriod",              "Spectrometer State/Laser/Modulation/Period (µs)");
@@ -315,7 +315,7 @@ namespace WinFormDemo
                 update("laserModPulseDelay",              spec.laserModulationPulseDelay);
                 update("laserModPulseWidth",              spec.laserModulationPulseWidth);
                 update("laserRampingEnabled",             spec.laserRampingEnabled);
-                update("laserTemperatureSetpointRaw",     spec.laserTemperatureSetpointRaw);
+              //update("laserTemperatureSetpointRaw",     spec.laserTemperatureSetpointRaw);
                 update("laserTemperatureRaw",             spec.laserTemperatureRaw);
                 update("laserTemperatureDegC",            spec.laserTemperatureDegC);
             }

@@ -164,7 +164,9 @@ namespace WasatchNET
 
         MultiChannelWrapper()
         {
+            logger.debug("MultiChannelWrapper.ctor: start");
             reset();
+            logger.debug("MultiChannelWrapper.ctor: done");
         }
 
         void reset()

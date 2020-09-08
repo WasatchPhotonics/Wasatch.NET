@@ -122,8 +122,7 @@ namespace WinFormDemo
             SpectrometerState state = spectrometerStates[currentSpectrometer];
 
             // update tree view
-            // if (!state.spectrometer.isARM())
-                treeViewSettings_DoubleClick(null, null);
+            treeViewSettings_DoubleClick(null, null);
 
             // update start button
             updateStartButton(spectrometerStates[currentSpectrometer].running);
@@ -191,24 +190,17 @@ namespace WinFormDemo
                     SpectrometerState state = spectrometerStates[spectrometer];
 
                     if (state.spectrum is null)
-                    {
-                        // logger.debug("not graphing because spectrum null");
                         continue;
-                    }
 
                     Series series = state.series;
                     series.Points.Clear();
 
                     if (graphWavenumbers && spectrometer.wavenumbers != null)
-                    {
                         for (uint i = 0; i < spectrometer.pixels; i++)
                             series.Points.AddXY(spectrometer.wavenumbers[i], state.spectrum[i]);
-                    }
                     else
-                    {
                         for (uint i = 0; i < spectrometer.pixels; i++)
                             series.Points.AddXY(spectrometer.wavelengths[i], state.spectrum[i]);
-                    }
 
                     // extra handling for current spectrometer
                     if (spectrometer == currentSpectrometer)
@@ -239,12 +231,38 @@ namespace WinFormDemo
 
         private void buttonInitialize_Click(object sender, EventArgs e)
         {
-            comboBoxSpectrometer.Items.Clear();
             groupBoxSpectrometers.Enabled = false;
+
+            if (spectrometerStates.Count > 0)
+            {
+                // this is a re-initialization
+
+                // not really sure what behavior would be considered "ideal" in this case,
+                // but I'm stopping all "running" background threads
+                foreach (var pair in spectrometerStates)
+                {
+                    var spec = pair.Key;
+                    var state = pair.Value;
+
+                    while (state.running)
+                    {
+                        state.stopping = true;
+                        Thread.Sleep(100);
+                    }
+                    // conceivably, could call spec.Close(), but trying to simulate
+                    // customer code which does not
+                }
+            }
+
+            // at this point, no background acquisitions should be running, and we
+            // can completely restart state
+            comboBoxSpectrometer.Items.Clear();
+            spectrometers.Clear();
+            spectrometerStates.Clear();
 
             if (driver.openAllSpectrometers() > 0)
             {
-                spectrometers.Clear();
+
                 for (int i = 0; i < driver.getNumberOfSpectrometers(); i++)
                 {
                     Spectrometer s = driver.getSpectrometer(i);
@@ -263,7 +281,10 @@ namespace WinFormDemo
                     Thread.Sleep(minThreadSleepMS);
                 }
 
-                buttonInitialize.Enabled = false;
+                // allow re-initialization (repeat calls to openAllSpectrometers), as some
+                // customers do this when power-cycling "one of many" connected units
+                // buttonInitialize.Enabled = false;
+
                 groupBoxSpectrometers.Enabled = true;
 
                 comboBoxSpectrometer.SelectedIndex = 0;
@@ -276,6 +297,7 @@ namespace WinFormDemo
             }
         }
 
+        // This only seems to affect the currently-running spectrometer
         private void buttonStart_Click(object sender, EventArgs e)
         {
             SpectrometerState state = spectrometerStates[currentSpectrometer];
@@ -291,10 +313,7 @@ namespace WinFormDemo
             else
             {
                 logger.info("Stopping acquisition");
-                if (useTasks)
-                    state.stopping = true;
-                else
-                    state.worker.CancelAsync();
+                state.stopping = true;
             }
         }
 
@@ -559,14 +578,17 @@ namespace WinFormDemo
                 // once a second, update temperatures
                 if (lowFreqOperations++ > 10)
                 {
+                    int count = 0;
                     foreach (Spectrometer s in spectrometers)
                     {
+                        count += s.spectrumCount;
                         if (!s.isARM)
                         {
                             SpectrometerState state = spectrometerStates[s];
                             state.detTempDegC = s.detectorTemperatureDegC;
                         }
                     }
+                    labelSpectrumCount.BeginInvoke(new MethodInvoker(delegate { labelSpectrumCount.Text = $"{count}"; }));
                     lowFreqOperations = 0;
                 }
             }
@@ -626,7 +648,6 @@ namespace WinFormDemo
                     break;
             }
 
-            state.running = false;
             e.Result = spectrometer; // pass spectrometer handle to _Completed callback
         }
 
@@ -648,7 +669,6 @@ namespace WinFormDemo
             }
 
             logger.debug("Task_DoWork closing");
-            state.running = false;
             doComplete(spectrometer);
             return true;
         }
@@ -699,6 +719,9 @@ namespace WinFormDemo
         {
             if (spectrometer == currentSpectrometer)
                 updateStartButton(false);
+
+            var state = spectrometerStates[spectrometer];
+            state.running = false;
 
             // should we auto-exit?
             if (opts.autoStart && opts.scanCount > 0)

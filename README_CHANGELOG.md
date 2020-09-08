@@ -1,5 +1,9 @@
 # Wasatch.NET Changelog
 
+- 2020-09-08 2.3.16
+    - added DomainTest
+    - added Logger.close
+    - cleanly close logger in Driver dtor
 - 2020-08-31 2.3.14
     - added support for WASATCHNET\_LOGGER\_PATHNAME and \_LEVEL environment variables
     - updated most Spectrometer setters to ignore duplicate (cached) values

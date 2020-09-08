@@ -79,6 +79,20 @@ namespace WasatchNET
             }
         }
 
+        public void close()
+        {
+            lock (instance)
+            {
+                textBox = null;
+                if (outfile != null)
+                {
+                    outfile.Flush();
+                    outfile.Close();
+                    outfile = null;
+                }
+            }
+        }
+
         public bool debugEnabled()
         {
             return level <= LogLevel.DEBUG;
@@ -265,7 +279,7 @@ namespace WasatchNET
             {
                 Console.WriteLine(msg);
 
-                if (outfile != null)
+                if (outfile != null && outfile.BaseStream != null)
                 {
                     outfile.WriteLine(msg);
                     outfile.Flush();

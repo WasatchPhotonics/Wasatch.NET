@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend3 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerGraphVsControls = new System.Windows.Forms.SplitContainer();
@@ -44,6 +44,8 @@
             this.groupBoxSpectrometers = new System.Windows.Forms.GroupBox();
             this.comboBoxSpectrometer = new System.Windows.Forms.ComboBox();
             this.groupBoxControl = new System.Windows.Forms.GroupBox();
+            this.label7 = new System.Windows.Forms.Label();
+            this.numericUpDownAcquisitionPeriodMS = new System.Windows.Forms.NumericUpDown();
             this.checkBoxExternalTriggerSource = new System.Windows.Forms.CheckBox();
             this.numericUpDownDetectorSetpointDegC = new System.Windows.Forms.NumericUpDown();
             this.label6 = new System.Windows.Forms.Label();
@@ -79,8 +81,7 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.numericUpDownAcquisitionPeriodMS = new System.Windows.Forms.NumericUpDown();
-            this.label7 = new System.Windows.Forms.Label();
+            this.labelSpectrumCount = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -94,6 +95,7 @@
             this.groupBoxSettings.SuspendLayout();
             this.groupBoxSpectrometers.SuspendLayout();
             this.groupBoxControl.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAcquisitionPeriodMS)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDetectorSetpointDegC)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownLaserPowerPerc)).BeginInit();
             this.groupBoxMode.SuspendLayout();
@@ -102,7 +104,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBoxcarHalfWidth)).BeginInit();
             this.groupBoxSetup.SuspendLayout();
             this.groupBoxEventLog.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAcquisitionPeriodMS)).BeginInit();
             this.SuspendLayout();
             // 
             // splitContainerTopVsLog
@@ -144,28 +145,28 @@
             this.splitContainerGraphVsControls.Panel2.Controls.Add(this.groupBoxSpectrometers);
             this.splitContainerGraphVsControls.Panel2.Controls.Add(this.groupBoxSetup);
             this.splitContainerGraphVsControls.Size = new System.Drawing.Size(698, 588);
-            this.splitContainerGraphVsControls.SplitterDistance = 479;
+            this.splitContainerGraphVsControls.SplitterDistance = 480;
             this.splitContainerGraphVsControls.SplitterWidth = 3;
             this.splitContainerGraphVsControls.TabIndex = 6;
             // 
             // chart1
             // 
-            chartArea3.AxisX.LabelStyle.Format = "F2";
-            chartArea3.CursorX.IsUserEnabled = true;
-            chartArea3.CursorX.IsUserSelectionEnabled = true;
-            chartArea3.CursorY.IsUserEnabled = true;
-            chartArea3.CursorY.IsUserSelectionEnabled = true;
-            chartArea3.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea3);
+            chartArea1.AxisX.LabelStyle.Format = "F2";
+            chartArea1.CursorX.IsUserEnabled = true;
+            chartArea1.CursorX.IsUserSelectionEnabled = true;
+            chartArea1.CursorY.IsUserEnabled = true;
+            chartArea1.CursorY.IsUserSelectionEnabled = true;
+            chartArea1.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea1);
             this.chart1.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend3.Alignment = System.Drawing.StringAlignment.Center;
-            legend3.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
-            legend3.Name = "Legend1";
-            this.chart1.Legends.Add(legend3);
+            legend1.Alignment = System.Drawing.StringAlignment.Center;
+            legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
+            legend1.Name = "Legend1";
+            this.chart1.Legends.Add(legend1);
             this.chart1.Location = new System.Drawing.Point(0, 24);
             this.chart1.Margin = new System.Windows.Forms.Padding(2);
             this.chart1.Name = "chart1";
-            this.chart1.Size = new System.Drawing.Size(479, 564);
+            this.chart1.Size = new System.Drawing.Size(480, 564);
             this.chart1.TabIndex = 0;
             this.chart1.Text = "chart1";
             // 
@@ -175,7 +176,7 @@
             this.toolStripMenuItemTest});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(479, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(480, 24);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -287,6 +288,24 @@
             this.groupBoxControl.TabIndex = 1;
             this.groupBoxControl.TabStop = false;
             this.groupBoxControl.Text = "Control";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(70, 135);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(83, 13);
+            this.label7.TabIndex = 21;
+            this.label7.Text = "acq period (sec)";
+            // 
+            // numericUpDownAcquisitionPeriodMS
+            // 
+            this.numericUpDownAcquisitionPeriodMS.Location = new System.Drawing.Point(4, 133);
+            this.numericUpDownAcquisitionPeriodMS.Name = "numericUpDownAcquisitionPeriodMS";
+            this.numericUpDownAcquisitionPeriodMS.Size = new System.Drawing.Size(59, 20);
+            this.numericUpDownAcquisitionPeriodMS.TabIndex = 20;
+            this.numericUpDownAcquisitionPeriodMS.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.numericUpDownAcquisitionPeriodMS.ValueChanged += new System.EventHandler(this.numericUpDownAcquisitionPeriodMS_ValueChanged);
             // 
             // checkBoxExternalTriggerSource
             // 
@@ -605,6 +624,7 @@
             // 
             // groupBoxSetup
             // 
+            this.groupBoxSetup.Controls.Add(this.labelSpectrumCount);
             this.groupBoxSetup.Controls.Add(this.labelDetTempDegC);
             this.groupBoxSetup.Controls.Add(this.label4);
             this.groupBoxSetup.Controls.Add(this.comboBoxXAxis);
@@ -710,23 +730,15 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
-            // numericUpDownAcquisitionPeriodMS
+            // labelSpectrumCount
             // 
-            this.numericUpDownAcquisitionPeriodMS.Location = new System.Drawing.Point(4, 133);
-            this.numericUpDownAcquisitionPeriodMS.Name = "numericUpDownAcquisitionPeriodMS";
-            this.numericUpDownAcquisitionPeriodMS.Size = new System.Drawing.Size(59, 20);
-            this.numericUpDownAcquisitionPeriodMS.TabIndex = 20;
-            this.numericUpDownAcquisitionPeriodMS.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.numericUpDownAcquisitionPeriodMS.ValueChanged += new System.EventHandler(this.numericUpDownAcquisitionPeriodMS_ValueChanged);
-            // 
-            // label7
-            // 
-            this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(70, 135);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(83, 13);
-            this.label7.TabIndex = 21;
-            this.label7.Text = "acq period (sec)";
+            this.labelSpectrumCount.AutoSize = true;
+            this.labelSpectrumCount.ForeColor = System.Drawing.SystemColors.ControlDark;
+            this.labelSpectrumCount.Location = new System.Drawing.Point(154, 44);
+            this.labelSpectrumCount.Name = "labelSpectrumCount";
+            this.labelSpectrumCount.Size = new System.Drawing.Size(42, 13);
+            this.labelSpectrumCount.TabIndex = 5;
+            this.labelSpectrumCount.Text = "spectra";
             // 
             // Form1
             // 
@@ -759,6 +771,7 @@
             this.groupBoxSpectrometers.ResumeLayout(false);
             this.groupBoxControl.ResumeLayout(false);
             this.groupBoxControl.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAcquisitionPeriodMS)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDetectorSetpointDegC)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownLaserPowerPerc)).EndInit();
             this.groupBoxMode.ResumeLayout(false);
@@ -770,7 +783,6 @@
             this.groupBoxSetup.PerformLayout();
             this.groupBoxEventLog.ResumeLayout(false);
             this.groupBoxEventLog.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAcquisitionPeriodMS)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -826,6 +838,7 @@
         private System.Windows.Forms.CheckBox checkBoxContinuousAcquisition;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.NumericUpDown numericUpDownAcquisitionPeriodMS;
+        private System.Windows.Forms.Label labelSpectrumCount;
     }
 }
 

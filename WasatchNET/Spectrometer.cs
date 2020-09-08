@@ -467,6 +467,14 @@ namespace WasatchNET
         /// </summary>
         public int acquireCount { get; protected set; } = 0;
 
+        /// <summary>
+        /// Allows application to track how many successful (non-null) calls
+        /// have been made to getSpectrum (whether averaged or otherwise).
+        /// </summary>
+        public int spectrumCount { get; protected set; } = 0;
+
+        public string uniqueKey { get; set; }
+
         ////////////////////////////////////////////////////////////////////////
         // property caching 
         ////////////////////////////////////////////////////////////////////////
@@ -1694,6 +1702,16 @@ namespace WasatchNET
         {
             logger.header($"Spectrometer.open: VID = 0x{usbRegistry.Vid:x4}, PID = 0x{usbRegistry.Pid:x4}");
 
+            // decide if we need to [re]initialize all settings to defaults
+            var driver = Driver.getInstance();
+            bool initialize = true;
+            if (uniqueKey != null &&
+                driver.lastKnownStates.ContainsKey(uniqueKey) &&
+                driver.lastKnownStates[uniqueKey] == Driver.LastKnownState.SUCCESS)
+                initialize = false;
+            logger.debug($"initialize = {initialize}");
+            driver.lastKnownStates.Remove(uniqueKey);
+
             // clear cache
             readOnce.Clear();
 
@@ -1757,6 +1775,54 @@ namespace WasatchNET
 
             regenerateWavelengths();
 
+            // decide what value we should use for detector TEC setpoint
+            //
+            // Note that we are currently doing this every time, even on re-
+            // initializations, because there is no hardware cache of this value,
+            // and I am CHOOSING NOT to recompute the "default raw" from the
+            // logic-determined degC, read the current raw, and then make a decision
+            // based on the difference between those values.
+            float degC = UNINITIALIZED_TEMPERATURE_DEG_C;
+            if (eeprom.startupDetectorTemperatureDegC >= eeprom.detectorTempMin && 
+                eeprom.startupDetectorTemperatureDegC <= eeprom.detectorTempMax)
+                degC = eeprom.startupDetectorTemperatureDegC;
+            else if (featureIdentification.hasDefaultTECSetpointDegC)
+                degC = featureIdentification.defaultTECSetpointDegC;
+            else if (Regex.IsMatch(eeprom.detectorName, @"S10141|G9214", RegexOptions.IgnoreCase))
+                degC = -15;
+            else if (Regex.IsMatch(eeprom.detectorName, @"S11511|S11850|S13971|S7031", RegexOptions.IgnoreCase))
+                degC = 10;
+
+            if (eeprom.hasCooling && degC != UNINITIALIZED_TEMPERATURE_DEG_C)
+            {
+                // TEC doesn't do anything unless you give it a temperature first
+                logger.debug("setting TEC setpoint to {0} deg C", degC);
+                detectorTECSetpointDegC = degC;
+
+                logger.debug("enabling detector TEC");
+                detectorTECEnabled = true;
+            }
+
+            // if this was intended to be a relatively lightweight "change as
+            // little as possible" re-opening, we're done now
+            if (!initialize)
+            {
+                logger.debug("retaining existing spectrometer hardware state:");
+                logger.debug("  laserEnabled        = {0}", laserEnabled); // I'm nervous about this one
+                logger.debug("  integrationTimeMS   = {0}", integrationTimeMS);
+                logger.debug("  detectorGain        = {0:f2}", detectorGain);
+                logger.debug("  detectorOffset      = {0}", detectorOffset);
+                logger.debug("  detectorGainOdd     = {0:f2}", detectorGainOdd);
+                logger.debug("  detectorOffsetOdd   = {0}", detectorOffsetOdd);
+
+                logger.debug("Spectrometer.open: complete (not initializing)");
+                return true;
+            }
+
+            ////////////////////////////////////////////////////////////////////
+            // initialize default values for newly opened spectrometers
+            ////////////////////////////////////////////////////////////////////
+
             // by default, integration time is zero in HW, so set to something
             // (ignore startup value if it's unreasonable)
             if (eeprom.startupIntegrationTimeMS >= eeprom.minIntegrationTimeMS &&
@@ -1764,20 +1830,6 @@ namespace WasatchNET
                 integrationTimeMS = eeprom.startupIntegrationTimeMS;
             else
                 integrationTimeMS = eeprom.minIntegrationTimeMS;
-
-            // MZ: base on A/R/C?
-            // use cache variable because why not
-            // TS: I get the intent here but we should be using the EEPROM field for this...
-            float degC = UNINITIALIZED_TEMPERATURE_DEG_C;
-            if (featureIdentification.hasDefaultTECSetpointDegC)
-                degC = featureIdentification.defaultTECSetpointDegC;
-            else if (Regex.IsMatch(eeprom.detectorName, @"S10141|G9214", RegexOptions.IgnoreCase))
-                degC = -15;
-            else if (Regex.IsMatch(eeprom.detectorName, @"S11511|S11850|S13971|S7031", RegexOptions.IgnoreCase))
-                degC = 10;
-
-            if (eeprom.startupDetectorTemperatureDegC >= eeprom.detectorTempMin && eeprom.startupDetectorTemperatureDegC <= eeprom.detectorTempMax)
-                degC = eeprom.startupDetectorTemperatureDegC;
 
             if (hasLaser)
             {
@@ -1792,16 +1844,6 @@ namespace WasatchNET
                 laserEnabled = false;
             }
 
-            if (eeprom.hasCooling && degC != UNINITIALIZED_TEMPERATURE_DEG_C)
-            {
-                // TEC doesn't do anything unless you give it a temperature first
-                logger.debug("setting TEC setpoint to {0} deg C", degC);
-                detectorTECSetpointDegC = degC;
-
-                logger.debug("enabling detector TEC");
-                detectorTECEnabled = true;
-            }
-
             // if we're using a modern EEPROM format, automatically apply the stored gain/offset values
             if (eeprom.format >= 4)
             {
@@ -1814,22 +1856,34 @@ namespace WasatchNET
                 }
             }
 
-            logger.debug("Spectrometer.open: complete");
+            logger.debug("Spectrometer.open: complete (initialized)");
             return true;
         }
 
         public virtual void close()
         {
-            shuttingDown = true;
-            logger.debug("throwawaySum = {0}", throwawaySum); // just make sure it gets used
+            logger.debug($"Spectrometer.close: closing {id}");
+
+            // quit whatever we're doing
+            cancelCurrentAcquisition();
+
+            // turn off the laser
+            if (usbDevice != null && usbDevice.IsOpen && hasLaser)
+                laserEnabled = false;
+
+            // ensure we're no longer acquiring
+            lock (acquisitionLock)
+            {
+                // stop all USB comms
+                shuttingDown = true;
+            }
+
+            logger.debug("Spectrometer.close: throwawaySum = {0}", throwawaySum); // just make sure it gets used
 
             if (usbDevice != null)
             {
                 if (usbDevice.IsOpen)
                 {
-                    if (hasLaser)
-                        laserEnabled = false;
-
                     IUsbDevice wholeUsbDevice = usbDevice as IUsbDevice;
                     if (!ReferenceEquals(wholeUsbDevice, null))
                         wholeUsbDevice.ReleaseInterface(0);
@@ -1837,6 +1891,7 @@ namespace WasatchNET
                 }
                 usbDevice = null;
             }
+            logger.debug($"Spectrometer.close: {id} closed");
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -2007,6 +2062,9 @@ namespace WasatchNET
         /// <returns>the array of returned bytes (null on error)</returns>
         internal byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
         {
+            if (shuttingDown)
+                return null;
+
             int bytesToRead = Math.Max(len, fullLen);
             if (isARM || isStroker) // ARM should always read at least 8 bytes
                 bytesToRead = Math.Min(8, bytesToRead);
@@ -2055,6 +2113,9 @@ namespace WasatchNET
         /// <returns>array of returned bytes (null on error)</returns>
         internal byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0, int fakeBufferLengthARM = 0)
         {
+            if (shuttingDown)
+                return null;
+
             int bytesToRead = len;
             if (isARM || isStroker)
                 bytesToRead = Math.Max(bytesToRead, fakeBufferLengthARM);
@@ -2107,6 +2168,9 @@ namespace WasatchNET
         /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
         internal bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
+            if (shuttingDown)
+                return false;
+
             if ((isARM || isStroker) && buf is null)
                 buf = new byte[8];
 
@@ -2327,25 +2391,28 @@ namespace WasatchNET
         /// <returns>The acquired spectrum as an array of doubles</returns>
         public virtual double[] getSpectrum(bool forceNew=false)
         {
+            var driver = Driver.getInstance();
             lock (acquisitionLock)
             {
+                driver.lastKnownStates[uniqueKey] = Driver.LastKnownState.ERROR;
                 currentAcquisitionCancelled = false;
 
                 int retries = 0;
                 double[] sum = null;
                 while (true)
                 {
+                    if (currentAcquisitionCancelled || shuttingDown)
+                        return null;
+
                     sum = getSpectrumRaw();
+
+                    if (currentAcquisitionCancelled || shuttingDown)
+                        return null;
+
                     if (sum != null)
                         break;
 
-                    // deal with null
-                    if (currentAcquisitionCancelled)
-                    {
-                        // quit immediately
-                        return null;
-                    }
-                    else if (retries++ < acquisitionMaxRetries)
+                    if (retries++ < acquisitionMaxRetries)
                     {
                         // retry the whole thing (including ACQUIRE)
                         logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
@@ -2369,17 +2436,18 @@ namespace WasatchNET
                         double[] tmp;
                         while (true)
                         {
+                            if (currentAcquisitionCancelled || shuttingDown)
+                                return null;
+
                             tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
+
+                            if (currentAcquisitionCancelled || shuttingDown)
+                                return null;
+
                             if (tmp != null)
                                 break;
 
-                            // deal with null
-                            if (currentAcquisitionCancelled)
-                            {
-                                // quit immediately
-                                return null;
-                            }
-                            else if (retries++ < acquisitionMaxRetries)
+                            if (retries++ < acquisitionMaxRetries)
                             {
                                 // retry the whole thing (including ACQUIRE)
                                 logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
@@ -2413,6 +2481,8 @@ namespace WasatchNET
                 if (readTemperatureAfterSpectrum && eeprom.hasCooling)
                     _ = detectorTemperatureDegC;
 
+                spectrumCount++;
+                driver.lastKnownStates[uniqueKey] = Driver.LastKnownState.SUCCESS;
                 if (boxcarHalfWidth_ > 0)
                 {
                     // logger.debug("getSpectrum: returning boxcar");
