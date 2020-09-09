@@ -307,7 +307,7 @@ namespace WasatchNET
         {
             logger.debug("closeAllSpectrometers: start");
 
-            lock(this)
+            lock (this)
             {
                 if (spectrometers.Count > 0)
                 {

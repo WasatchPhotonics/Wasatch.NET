@@ -12,7 +12,7 @@ namespace WinFormDemo
 {
     public partial class Form1 : Form
     {
-        const bool useTasks = true; // whether you want to use BackgroundWorkers or async
+        const bool useTasks = false; // whether you want to use BackgroundWorkers or async
         const int minThreadSleepMS = 100;
         const int minTaskDelayMS = 250;  // Task.Delay is less accurate than Thread.Sleep
 
@@ -69,8 +69,35 @@ namespace WinFormDemo
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            logger.setTextBox(null);
-            shutdownPending = true;
+            logger.debug("OnFormClosing: start");
+            if (!shutdownPending)
+            {
+                backgroundWorkerGUIUpdate.CancelAsync();
+                Thread.Sleep(minThreadSleepMS);
+
+                bool readyToShutdown = true;
+                lock (spectrometers)
+                {
+                    foreach (var pair in spectrometerStates)
+                    {
+                        var state = pair.Value;
+                        if (state.running)
+                            readyToShutdown = false;
+                    }
+                }
+
+                if (!readyToShutdown)
+                {
+                    logger.debug("OnFormClosing: raised shutdownPending");
+                    shutdownPending = true;
+                    e.Cancel = true;
+                    return;
+                }
+            }
+
+            logger.debug("OnFormClosing: completing");
+            logger.close();
+            // driver.closeAllSpectrometers();
         }   
 
         ////////////////////////////////////////////////////////////////////////
@@ -249,32 +276,20 @@ namespace WinFormDemo
                     var spec = pair.Key;
                     var state = pair.Value;
 
-                    if (useTasks)
+                    const int delayMS = 200;
+                    while (state.running)
                     {
-                        while (state.running)
-                        {
-                            logger.debug("waiting to stop {0}", spec.serialNumber);
-                            state.stopping = true;
-                            await Task.Delay(200);
-                        }
+                        logger.debug("waiting to stop {0}", spec.serialNumber);
+                        state.stopping = true;
+                        if (useTasks)
+                            await Task.Delay(delayMS);
+                        else
+                            Thread.Sleep(delayMS);
                     }
-                    else
-                    {
-                        if (state.worker.IsBusy)
-                        {
-                            state.worker.CancelAsync();
-                            while (state.worker.IsBusy)
-                            {
-                                Thread.Sleep(200);
-                            }
-                        }
-                    }
-
                 }
-
-                // todo: try to remove the need for this
-                logger.debug("closing all spectrometers");
-                driver.closeAllSpectrometers();
+                
+                // note that we never actually call closeAllSpectrometers;
+                // that is in fact the point of this test
             }
 
             logger.debug("initialization proceeding");
@@ -672,7 +687,7 @@ namespace WinFormDemo
             while (true)
             {
                 // end thread if we've been asked to cancel
-                if (worker.CancellationPending || state.stopping)
+                if (worker.CancellationPending || state.stopping || shutdownPending)
                     break;
 
                 bool ok = doAcquireIteration(state).Result;
@@ -761,20 +776,23 @@ namespace WinFormDemo
             state.running = false;
 
             // should we auto-exit?
-            if (opts.autoStart && opts.scanCount > 0)
+            if (shutdownPending || (opts.autoStart && opts.scanCount > 0))
             {
-                bool shutdown = true;
+                List<string> waitList = new List<string>();
                 lock (spectrometers)
                 {
                     foreach (Spectrometer s in spectrometers)
                     {
                         SpectrometerState ss = spectrometerStates[s];
                         if (ss.scanCount < opts.scanCount)
-                            shutdown = false;
+                            waitList.Add(s.serialNumber);
                     }
                 }
-                if (shutdown)
-                    Close();
+
+                if (waitList.Count == 0)
+                    Close(); // will re-trigger OnFormClosing
+                else
+                    logger.debug("shutdown still pending %s", string.Join(", ", waitList));
             }
         }
     }
