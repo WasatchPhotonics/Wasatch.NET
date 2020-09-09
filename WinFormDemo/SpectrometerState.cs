@@ -14,7 +14,7 @@ namespace WinFormDemo
         public enum ProcessingModes { SCOPE, ABSORBANCE, TRANSMISSION };
 
         public Spectrometer spectrometer;
-        public BackgroundWorker worker = new BackgroundWorker();
+        public BackgroundWorker worker = new BackgroundWorker() { WorkerSupportsCancellation = true };
         public Series series = new Series();
         public Options opts;
 
@@ -37,8 +37,6 @@ namespace WinFormDemo
             opts = options;
             series.Name = s.serialNumber;
             series.ChartType = SeriesChartType.Line;
-            worker.WorkerReportsProgress = false;
-            worker.WorkerSupportsCancellation = true;
         }
 
         public void processSpectrum(double[] latest)

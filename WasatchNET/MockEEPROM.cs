@@ -51,7 +51,6 @@ namespace WasatchNET
             slitSizeUM = 0;
 
             byte[] buffer = new byte[16];
-            int errorReader = 0;
 
             string test = buffer.ToString();
 

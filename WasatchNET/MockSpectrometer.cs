@@ -317,7 +317,6 @@ namespace WasatchNET
         protected override double[] getSpectrumRaw(bool skipTrigger = false)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
-            byte[] buf = null;
 
             ////////////////////////////////////////////////////////////////////
             // read spectrum
@@ -367,7 +366,6 @@ namespace WasatchNET
         public override ushort[] getFrame()
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
-            byte[] buf = null;
 
             ////////////////////////////////////////////////////////////////////
             // read spectrum
@@ -426,7 +424,7 @@ namespace WasatchNET
                 json = JsonConvert.DeserializeObject<MockSpectrometerJSON>(text);
                 logger.debug("successfully deserialized QCConfig");
             }
-            catch (JsonReaderException jre)
+            catch (JsonReaderException)
             {
                 return false;
             }

@@ -141,12 +141,15 @@ namespace WinFormDemo
         {
             if (currentSpectrometer is null)
             {
+                logger.debug("updateCurrentSpectrometer: null");
                 groupBoxSettings.Enabled =
-                groupBoxControl.Enabled =
-                toolStripMenuItemTest.Enabled = false;
+                    groupBoxControl.Enabled =
+                    toolStripMenuItemTest.Enabled = false;
+                updateStartButton(false);
                 return;
             }
 
+            logger.debug($"updateCurrentSpectrometer: {currentSpectrometer.serialNumber}");
             SpectrometerState state = spectrometerStates[currentSpectrometer];
 
             // update tree view
@@ -276,6 +279,12 @@ namespace WinFormDemo
                     var spec = pair.Key;
                     var state = pair.Value;
 
+                    if (!useTasks)
+                    {
+                        logger.debug("cancelAsync {0}", spec.serialNumber);
+                        state.worker.CancelAsync();
+                    }
+
                     const int delayMS = 200;
                     while (state.running)
                     {
@@ -316,10 +325,11 @@ namespace WinFormDemo
                         s.integrationTimeMS = opts.integrationTimeMS;
 
                     comboBoxSpectrometer.SelectedIndex = comboBoxSpectrometer.Items.Count - 1;
-                    Thread.Sleep(minThreadSleepMS);
+                    await Task.Delay(minThreadSleepMS);
 
+                    logger.debug($"clicking Start button for {s.serialNumber}");
                     buttonStart_Click(null, null);
-                    Thread.Sleep(minThreadSleepMS);
+                    await Task.Delay(minThreadSleepMS);
                 }
 
                 // allow re-initialization (repeat calls to openAllSpectrometers), as some
@@ -340,13 +350,13 @@ namespace WinFormDemo
             mut.ReleaseMutex();
         }
 
-        // This only seems to affect the currently-running spectrometer
+        // This only affects the currently-running spectrometer
         private void buttonStart_Click(object sender, EventArgs e)
         {
             SpectrometerState state = spectrometerStates[currentSpectrometer];
             if (!state.running)
             {
-                logger.info("Starting acquisition");
+                logger.info($"Starting {currentSpectrometer.serialNumber}");
                 updateStartButton(true);
                 if (useTasks)
                     _ = Task_DoWork(currentSpectrometer);
@@ -355,8 +365,10 @@ namespace WinFormDemo
             }
             else
             {
-                logger.info("Stopping acquisition");
+                logger.info($"Stopping {currentSpectrometer.serialNumber}");
                 state.stopping = true;
+                if (!useTasks)
+                    state.worker.CancelAsync();
             }
         }
 
@@ -614,7 +626,10 @@ namespace WinFormDemo
             {
                 Thread.Sleep(minThreadSleepMS);
                 if (worker.CancellationPending || shutdownPending)
+                {
+                    e.Cancel = false;
                     break;
+                }
 
                 chart1.BeginInvoke(new MethodInvoker(delegate { updateGraph(); }));
 
@@ -684,17 +699,24 @@ namespace WinFormDemo
             state.stopping = false;
 
             BackgroundWorker worker = sender as BackgroundWorker;
+            Thread.CurrentThread.Name = $"worker-{spectrometer.serialNumber}";
+
             while (true)
             {
                 // end thread if we've been asked to cancel
                 if (worker.CancellationPending || state.stopping || shutdownPending)
+                {
+                    logger.debug("worker closing because cancellationPending or stopping or shutdownPending");
+                    e.Cancel = false;
                     break;
+                }
 
                 bool ok = doAcquireIteration(state).Result;
                 if (!ok)
                     break;
             }
 
+            logger.debug("worker closing");
             e.Result = spectrometer; // pass spectrometer handle to _Completed callback
         }
 
@@ -729,8 +751,11 @@ namespace WinFormDemo
             double[] raw = state.spectrometer.getSpectrum();
             if (raw is null)
             {
-                await Task.Delay(minTaskDelayMS);
-                return true;
+                if (useTasks)
+                    await Task.Delay(minTaskDelayMS);
+                else
+                    Thread.Sleep(minTaskDelayMS);
+                return false;
             }
 
             // process for graphing
@@ -753,9 +778,13 @@ namespace WinFormDemo
                 var elapsedMS = (endTime - startTime).TotalMilliseconds;
                 delayMS = (int)(opts.scanIntervalSec * 1000.0 - elapsedMS);
             }
-            delayMS = Math.Max(delayMS, minTaskDelayMS);
 
-            await Task.Delay(delayMS);
+            delayMS = Math.Max(delayMS, minTaskDelayMS);
+            if (delayMS > 0)
+                if (useTasks)
+                    await Task.Delay(delayMS);
+                else
+                    Thread.Sleep(delayMS);
 
             logger.debug("doAcquireIteration: done");
             return true;
@@ -763,12 +792,15 @@ namespace WinFormDemo
 
         private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            doComplete(e.Result as Spectrometer);
+            var spectrometer = e.Result as Spectrometer;
+            logger.debug($"Worker complete: {spectrometer.serialNumber}");
+            doComplete(spectrometer);
         }
 
         // can be called from either BackgroundWorker or Task
         void doComplete(Spectrometer spectrometer)
         {
+            logger.debug($"doComplete: {spectrometer.serialNumber}");
             if (spectrometer == currentSpectrometer)
                 updateStartButton(false);
 
