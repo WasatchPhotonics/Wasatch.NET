@@ -28,6 +28,7 @@ namespace WasatchNET
         static Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
 
+        bool opened = false;
         bool suppressErrors = false;
         int resetCount = 0;
 
@@ -264,6 +265,7 @@ namespace WasatchNET
 
             logger.debug($"openAllSpectrometers: returning {spectrometers.Count}");
 
+            opened = true;
             return spectrometers.Count;
         }
 
@@ -305,6 +307,12 @@ namespace WasatchNET
         /// </summary>
         public void closeAllSpectrometers()
         {
+            if (!opened)
+            {
+                logger.debug("closeAllSpectrometers: not opened");
+                return;
+            }
+
             logger.debug("closeAllSpectrometers: start");
 
             lock (this)
@@ -329,6 +337,7 @@ namespace WasatchNET
                 UsbDevice.Exit();
             }
 
+            opened = false;
             logger.debug("closeAllSpectrometers: done");
         }
 
