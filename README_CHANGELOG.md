@@ -1,9 +1,11 @@
 # Wasatch.NET Changelog
 
-- 2020-09-08 2.3.16
+- 2020-09-09 2.3.16
     - added DomainTest
     - added Logger.close
     - cleanly close logger in Driver dtor
+    - added SpectrometerUptime
+    - updated WinFormDemo to partially support re-initialization of one device without changing other spectrometers' settings
 - 2020-09-04 2.3.15
     - fixed issue with trying to set laser power in OCT spectrometer
 	- fixed subtle bug with mock spectrometers with single samples for a source

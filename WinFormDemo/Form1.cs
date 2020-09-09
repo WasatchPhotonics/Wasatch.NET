@@ -139,9 +139,8 @@ namespace WinFormDemo
             if (!s.isARM)
                 s.triggerSource = TRIGGER_SOURCE.INTERNAL;
 
-            s.integrationTimeMS = s.eeprom.minIntegrationTimeMS;
             numericUpDownIntegTimeMS.Minimum = s.eeprom.minIntegrationTimeMS;
-            numericUpDownIntegTimeMS.Value = s.eeprom.minIntegrationTimeMS;
+            numericUpDownIntegTimeMS.Value = s.integrationTimeMS;
             // numericUpDownIntegTimeMS.Maximum = s.eeprom.maxIntegrationTimeMS; // disabled to allow long integration times
 
             if (s.pixels > 0)
@@ -320,9 +319,10 @@ namespace WinFormDemo
                             Thread.Sleep(delayMS);
                     }
                 }
-                
+
                 // note that we never actually call closeAllSpectrometers;
                 // that is in fact the point of this test
+                driver.closeAllSpectrometers();
             }
 
             logger.debug("initialization proceeding");
@@ -336,7 +336,6 @@ namespace WinFormDemo
 
             if (driver.openAllSpectrometers() > 0)
             {
-
                 for (int i = 0; i < driver.getNumberOfSpectrometers(); i++)
                 {
                     Spectrometer s = driver.getSpectrometer(i);
@@ -418,7 +417,9 @@ namespace WinFormDemo
 
         private void numericUpDownIntegTimeMS_ValueChanged(object sender, EventArgs e)
         {
-            currentSpectrometer.integrationTimeMS = (uint)numericUpDownIntegTimeMS.Value;
+            var ms = (uint)numericUpDownIntegTimeMS.Value;
+            logger.debug($"changing currentSpectrometer {currentSpectrometer.serialNumber} integration time to {ms}");
+            currentSpectrometer.integrationTimeMS = ms;
         }
 
         private void numericUpDownScanAveraging_ValueChanged(object sender, EventArgs e)
