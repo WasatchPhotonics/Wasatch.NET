@@ -104,6 +104,23 @@ namespace WinFormDemo
         // Business Logic
         ////////////////////////////////////////////////////////////////////////
 
+        SpectrometerState currentSpectrometerState(string label="???")
+        {
+            if (currentSpectrometer is null)
+            {
+                logger.error($"Unexpected[{label}]: no current spectrometer");
+                return null;
+            }
+
+            if (!spectrometerStates.ContainsKey(currentSpectrometer))
+            {
+                logger.error($"Unexpected[{label}]: missing state for {currentSpectrometer.serialNumber}");
+                return null;
+            }
+
+            return spectrometerStates[currentSpectrometer];
+        }
+
         void initializeSpectrometer(Spectrometer s)
         {
             SpectrometerState state = new SpectrometerState(s, opts);
@@ -150,13 +167,15 @@ namespace WinFormDemo
             }
 
             logger.debug($"updateCurrentSpectrometer: {currentSpectrometer.serialNumber}");
-            SpectrometerState state = spectrometerStates[currentSpectrometer];
+            var state = currentSpectrometerState();
+            if (state is null)
+                return;
 
             // update tree view
             treeViewSettings_DoubleClick(null, null);
 
             // update start button
-            updateStartButton(spectrometerStates[currentSpectrometer].running);
+            updateStartButton(state.running);
 
             // update basic controls
             DemoUtil.expandNUD(numericUpDownIntegTimeMS, (int)currentSpectrometer.integrationTimeMS);
@@ -216,9 +235,10 @@ namespace WinFormDemo
         {
             lock (spectrometers)
             {
-                foreach (Spectrometer spectrometer in spectrometers)
+                foreach (var pair in spectrometerStates)
                 {
-                    SpectrometerState state = spectrometerStates[spectrometer];
+                    var spectrometer = pair.Key;
+                    var state = pair.Value;
 
                     if (state.spectrum is null)
                         continue;
@@ -274,22 +294,26 @@ namespace WinFormDemo
 
                 // not really sure what behavior would be considered "ideal" in this case,
                 // but I'm stopping all "running" background threads
+                const int delayMS = 1000;
                 foreach (var pair in spectrometerStates)
                 {
                     var spec = pair.Key;
                     var state = pair.Value;
 
-                    if (!useTasks)
+                    if (useTasks)
                     {
-                        logger.debug("cancelAsync {0}", spec.serialNumber);
+                        state.stopping = true;
+                        await Task.Delay(delayMS);
+                    }
+                    else
+                    {
                         state.worker.CancelAsync();
+                        Thread.Sleep(delayMS);
                     }
 
-                    const int delayMS = 200;
                     while (state.running)
                     {
                         logger.debug("waiting to stop {0}", spec.serialNumber);
-                        state.stopping = true;
                         if (useTasks)
                             await Task.Delay(delayMS);
                         else
@@ -353,7 +377,10 @@ namespace WinFormDemo
         // This only affects the currently-running spectrometer
         private void buttonStart_Click(object sender, EventArgs e)
         {
-            SpectrometerState state = spectrometerStates[currentSpectrometer];
+            var state = currentSpectrometerState();
+            if (state is null)
+                return;
+
             if (!state.running)
             {
                 logger.info($"Starting {currentSpectrometer.serialNumber}");
@@ -411,7 +438,10 @@ namespace WinFormDemo
 
         private void checkBoxTakeDark_CheckedChanged(object sender, EventArgs e)
         {
-            SpectrometerState state = spectrometerStates[currentSpectrometer];
+            var state = currentSpectrometerState();
+            if (state is null)
+                return;
+
             lock (spectrometers)
             {
                 if (checkBoxTakeDark.Checked)
@@ -441,7 +471,10 @@ namespace WinFormDemo
 
         private void checkBoxTakeReference_CheckedChanged(object sender, EventArgs e)
         {
-            SpectrometerState state = spectrometerStates[currentSpectrometer];
+            var state = currentSpectrometerState();
+            if (state is null)
+                return;
+
             lock (spectrometers)
             {
                 bool success = false;
@@ -477,22 +510,30 @@ namespace WinFormDemo
 
         private void radioButtonModeScope_CheckedChanged(object sender, EventArgs e)
         {
-            spectrometerStates[currentSpectrometer].processingMode = SpectrometerState.ProcessingModes.SCOPE;
+            var state = currentSpectrometerState();
+            if (state != null)
+                state.processingMode = SpectrometerState.ProcessingModes.SCOPE;
         }
 
         private void radioButtonModeAbsorbance_CheckedChanged(object sender, EventArgs e)
         {
-            spectrometerStates[currentSpectrometer].processingMode = SpectrometerState.ProcessingModes.ABSORBANCE;
+            var state = currentSpectrometerState();
+            if (state != null)
+                state.processingMode = SpectrometerState.ProcessingModes.ABSORBANCE;
         }
 
         private void radioButtonModeTransmission_CheckedChanged(object sender, EventArgs e)
         {
-            spectrometerStates[currentSpectrometer].processingMode = SpectrometerState.ProcessingModes.TRANSMISSION;
+            var state = currentSpectrometerState();
+            if (state != null)
+                state.processingMode = SpectrometerState.ProcessingModes.TRANSMISSION;
         }
 
         private void buttonAddTrace_Click(object sender, EventArgs e)
         {
-            SpectrometerState state = spectrometerStates[currentSpectrometer];
+            var state = currentSpectrometerState();
+            if (state is null)
+                return;
 
             Series trace = new Series();
             trace.IsVisibleInLegend = false;
@@ -538,8 +579,8 @@ namespace WinFormDemo
 
             lock (spectrometers)
             {
-                SpectrometerState state = spectrometerStates[currentSpectrometer];
-                if (state.spectrum is null)
+                var state = currentSpectrometerState();
+                if (state is null || state.spectrum is null)
                     return;
 
                 state.save();
@@ -639,13 +680,14 @@ namespace WinFormDemo
                     if (mut.WaitOne(10))
                     {
                         int count = 0;
-                        foreach (Spectrometer s in spectrometers)
+                        foreach (var pair in spectrometerStates)
                         {
-                            count += s.spectrumCount;
-                            if (!s.isARM)
+                            var spectrometer = pair.Key;
+                            count += spectrometer.spectrumCount;
+                            if (!spectrometer.isARM)
                             {
-                                SpectrometerState state = spectrometerStates[s];
-                                state.detTempDegC = s.detectorTemperatureDegC;
+                                var state = pair.Value;
+                                state.detTempDegC = spectrometer.detectorTemperatureDegC;
                             }
                         }
                         labelSpectrumCount.BeginInvoke(new MethodInvoker(delegate { labelSpectrumCount.Text = $"{count}"; }));
@@ -693,7 +735,12 @@ namespace WinFormDemo
         private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             Spectrometer spectrometer = (Spectrometer) e.Argument;
-            SpectrometerState state = spectrometerStates[spectrometer];
+            if (!spectrometerStates.ContainsKey(spectrometer))
+            {
+                logger.error("Unexpected: missing state for {spectrometer.serialNumber}");
+                return;
+            }
+            var state = spectrometerStates[spectrometer];
 
             state.running = true;
             state.stopping = false;
@@ -717,12 +764,18 @@ namespace WinFormDemo
             }
 
             logger.debug("worker closing");
+            state.running = false; // shouldn't need this, but RunWorkerCompleted isn't always firing?
             e.Result = spectrometer; // pass spectrometer handle to _Completed callback
         }
 
         async Task<bool> Task_DoWork(Spectrometer spectrometer)
         {
-            SpectrometerState state = spectrometerStates[spectrometer];
+            if (!spectrometerStates.ContainsKey(spectrometer))
+            {
+                logger.error("Unexpected: missing state for {spectrometer.serialNumber}");
+                return false;
+            }
+            var state = spectrometerStates[spectrometer];
 
             state.running = true;
             state.stopping = false;
@@ -804,6 +857,13 @@ namespace WinFormDemo
             if (spectrometer == currentSpectrometer)
                 updateStartButton(false);
 
+            if (!spectrometerStates.ContainsKey(spectrometer))
+            {
+                // this can happen during deliberate disconnect events
+                logger.error($"Unexpected: spectrometer {spectrometer.serialNumber} has no tracked state");
+                return;
+            }
+
             var state = spectrometerStates[spectrometer];
             state.running = false;
 
@@ -815,6 +875,12 @@ namespace WinFormDemo
                 {
                     foreach (Spectrometer s in spectrometers)
                     {
+                        if (!spectrometerStates.ContainsKey(s))
+                        {
+                            logger.error($"Unexpected: missing spectrometerState {s.serialNumber}");
+                            continue;
+                        }
+
                         SpectrometerState ss = spectrometerStates[s];
                         if (ss.scanCount < opts.scanCount)
                             waitList.Add(s.serialNumber);
