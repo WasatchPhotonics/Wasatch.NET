@@ -27,7 +27,6 @@ namespace WasatchNET
 
         static Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
-        SortedSet<string> previouslyOpened = new SortedSet<string>();
 
         bool suppressErrors = false;
         int resetCount = 0;
@@ -35,8 +34,12 @@ namespace WasatchNET
         public Logger logger { get; } = Logger.getInstance();
         public string version { get; }
 
-        public enum LastKnownState { SUCCESS, ERROR };
-        public Dictionary<string, LastKnownState> lastKnownStates = new Dictionary<string, LastKnownState>();
+        // This is a Driver-level (singleton) object which tracks whether any
+        // given spectrometer is believed to be in an "error state" (requiring
+        // re-initialization) or not.  It is passed into each Spectrometer so 
+        // they can update it with their state over time, but there is only one 
+        // instance in the process.
+        SpectrometerUptime uptime = new SpectrometerUptime();
 
         ////////////////////////////////////////////////////////////////////////
         // static methods
@@ -108,9 +111,16 @@ namespace WasatchNET
                     (ushort) usbRegistry.Rev,
                     usbRegistry[SPDRP.DeviceDesc]);
 
+                // Generate a "unique key" for the spectrometer based on its 
+                // "physical" USB properties (no EEPROM fields involved).  This 
+                // is being explored as a way to better recognize individual
+                // spectrometers within a set, where one spectrometer has been
+                // power-cycled or re-enumerated, but the others have not (and
+                // the caller doesn't necessarily know which, so a repeat call
+                // to "openAllSpectrometers" is intended to "get the new one(s)
+                // running, without disrupting the old one(s)".
                 logger.debug("USB Registry for: {0}", desc);
-                string uniqueKey = generatePhysicalKey(usbRegistry);
-                bool alreadyOpened = previouslyOpened.Contains(uniqueKey);
+                logDevice(usbRegistry);
 
                 if (usbRegistry.Vid == 0x24aa && usbRegistry.Pid == 0x5000)
                 {
@@ -125,12 +135,10 @@ namespace WasatchNET
                 }
                 else if (usbRegistry.Vid == 0x24aa)
                 {
-                    Spectrometer spectrometer = new Spectrometer(usbRegistry) { uniqueKey = uniqueKey };
+                    Spectrometer spectrometer = new Spectrometer(usbRegistry) { uptime = uptime };
                     if (spectrometer.open())
                     {
                         // sort them by model, serial (allow duplicates for unconfigured)
-                        // TODO: is there any way to deterministically sort between units
-                        //       without a configured unique serial number?
                         string key = String.Format("{0}-{1}", spectrometer.eeprom.model, spectrometer.eeprom.serialNumber);
                         if (!sorted.ContainsKey(key))
                             sorted.Add(key, new List<Spectrometer>());
@@ -339,21 +347,11 @@ namespace WasatchNET
             closeAllSpectrometers();
         }
 
-        /// <summary>
-        /// This generates a string identifier for the spectrometer which should be enough
-        /// to distinguish it from others with the same VID/PID using nothing but UsbRegistry
-        /// information (e.g. bus address).  Note that this is to be used for recognizing
-        /// previously-opened spectrometers BEFORE reading their EEPROM.
-        /// </summary>
-        /// <param name="usbRegistry"></param>
-        /// <returns></returns>
-        string generatePhysicalKey(UsbRegistry usbRegistry)
+        void logDevice(UsbRegistry usbRegistry)
         {
             UsbDevice device;
             if (!usbRegistry.Open(out device))
-                return "error";
-
-            SortedDictionary<string, string> uniqueProps = new SortedDictionary<string, string>();
+                return;
 
             // split device.Info's string representation on linefeeds
             //   iterateDevice: Vid:0x2457 Pid:0x101E (rev:2) - Ocean Optics USB2000+ (WinUSB)
@@ -390,50 +388,27 @@ namespace WasatchNET
                         logNameValuePairs(endpointInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), "    ");
                     }
                 }
-
-                // log SymbolicName 
-                UsbSymbolicName symName = UsbSymbolicName.Parse(usbRegistry.SymbolicName);
-                logger.debug("Symbolic Name:");
-                logger.debug("  VID:          0x{0:x4}", symName.Vid);
-                logger.debug("  PID:          0x{0:x4}", symName.Pid);
-                logger.debug("  SerialNumber: {0}", symName.SerialNumber);
-                logger.debug("  Class Guid:   {0}", symName.ClassGuid);
-
-                logger.debug("Device Properties:");
-                foreach (KeyValuePair<string, object> pair in usbRegistry.DeviceProperties)
-                {
-                    string key = pair.Key;
-                    object value = pair.Value;
-
-                    // handle array values
-                    string rendered = null;
-                    if (value is string[])
-                        rendered = string.Format("[ {0} ]", string.Join(", ", value as string[]));
-                    else if (value is string)
-                        rendered = value as string;
-
-                    if (rendered != null)
-                    {
-                        logger.debug("  {0}: {1}", key, rendered);
-
-                        // save for the unique key
-                        if (key == "LocationInformation" ||
-                            key == "PhysicalDeviceObjectName" ||
-                            key == "Address" ||
-                            key == "Driver")
-                            uniqueProps[key] = rendered;
-                    }
-                }
-
-                logger.debug(" ");
             }
             device.Close();
 
-            // flatten key
-            List<string> tok = new List<string>();
-            foreach (var pair in uniqueProps)
-                tok.Add($"{pair.Key}={pair.Value}");
-            return string.Join("|", tok);
+            UsbSymbolicName symName = UsbSymbolicName.Parse(usbRegistry.SymbolicName);
+            logger.debug("Symbolic Name:");
+            logger.debug("  VID:          0x{0:x4}", symName.Vid);
+            logger.debug("  PID:          0x{0:x4}", symName.Pid);
+            logger.debug("  SerialNumber: {0}", symName.SerialNumber);
+            logger.debug("  Class Guid:   {0}", symName.ClassGuid);
+
+            logger.debug("Device Properties:");
+            foreach (KeyValuePair<string, object> pair in usbRegistry.DeviceProperties)
+            {
+                string key = pair.Key;
+                object value = pair.Value;
+
+                if (value is string[])
+                    logger.debug("  {0}: {1}", key, string.Format("[ {0} ]", string.Join(", ", value as string[])));
+                else if (value is string)
+                    logger.debug("  {0}: {1}", key, value as string);
+            }
         }
 
         void logNameValuePairs(string[] pairs, string prefix = "  ")

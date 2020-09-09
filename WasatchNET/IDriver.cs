@@ -27,6 +27,24 @@ namespace WasatchNET
         /// and return the number found. Individual spectrometers can then be
         /// accessed via the getSpectrometer(index) call.
         /// </summary>
+        ///
+        /// <remarks>
+        /// The intent is that this method will only be called once per application
+        /// session, at startup, and that all spectrometers will be opened and
+        /// initialized once and then continue operating throughout the application
+        /// lifetime.
+        /// 
+        /// However, long-running (process monitoring) applications may find that
+        /// individual spectrometers may need to be power-cycled or re-enumerated
+        /// during an application session, and the customer may not wish to call
+        /// closeAllSpectrometers() to halt all spectrometer activity while 
+        /// resetting one device.  Therefore, openAllSpectrometers will attempt 
+        /// to "quietly" (non-destructively) re-open spectrometers which were 
+        /// last seen to be in a "working" state (successfully retrieving spectra),
+        /// and only forcibly re-initialize (to default values) spectrometers who
+        /// were last seen to fail on an attempt to read spectra.
+        /// </remarks>
+        ///
         /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
         int openAllSpectrometers();
 

@@ -24,6 +24,7 @@ namespace WinFormDemo
         Driver driver = Driver.getInstance();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
         Spectrometer currentSpectrometer;
+        Mutex mut = new Mutex();
 
         Dictionary<Spectrometer, SpectrometerState> spectrometerStates = new Dictionary<Spectrometer, SpectrometerState>();
         List<Series> traces = new List<Series>();
@@ -128,7 +129,7 @@ namespace WinFormDemo
             updateStartButton(spectrometerStates[currentSpectrometer].running);
 
             // update basic controls
-            numericUpDownIntegTimeMS.Value = currentSpectrometer.integrationTimeMS;
+            DemoUtil.expandNUD(numericUpDownIntegTimeMS, (int)currentSpectrometer.integrationTimeMS);
             numericUpDownBoxcarHalfWidth.Value = currentSpectrometer.boxcarHalfWidth;
             numericUpDownScanAveraging.Value = currentSpectrometer.scanAveraging;
 
@@ -229,13 +230,17 @@ namespace WinFormDemo
             logger.level = checkBoxVerbose.Checked ? LogLevel.DEBUG : LogLevel.INFO;
         }
 
-        private void buttonInitialize_Click(object sender, EventArgs e)
+        private async void buttonInitialize_Click(object sender, EventArgs e)
         {
+            logger.debug("buttonInitialize clicked");
+            mut.WaitOne();
+
             groupBoxSpectrometers.Enabled = false;
 
             if (spectrometerStates.Count > 0)
             {
                 // this is a re-initialization
+                logger.debug("starting reinitialize");
 
                 // not really sure what behavior would be considered "ideal" in this case,
                 // but I'm stopping all "running" background threads
@@ -244,21 +249,42 @@ namespace WinFormDemo
                     var spec = pair.Key;
                     var state = pair.Value;
 
-                    while (state.running)
+                    if (useTasks)
                     {
-                        state.stopping = true;
-                        Thread.Sleep(100);
+                        while (state.running)
+                        {
+                            logger.debug("waiting to stop {0}", spec.serialNumber);
+                            state.stopping = true;
+                            await Task.Delay(200);
+                        }
                     }
-                    // conceivably, could call spec.Close(), but trying to simulate
-                    // customer code which does not
+                    else
+                    {
+                        if (state.worker.IsBusy)
+                        {
+                            state.worker.CancelAsync();
+                            while (state.worker.IsBusy)
+                            {
+                                Thread.Sleep(200);
+                            }
+                        }
+                    }
+
                 }
+
+                // todo: try to remove the need for this
+                logger.debug("closing all spectrometers");
+                driver.closeAllSpectrometers();
             }
+
+            logger.debug("initialization proceeding");
 
             // at this point, no background acquisitions should be running, and we
             // can completely restart state
             comboBoxSpectrometer.Items.Clear();
             spectrometers.Clear();
             spectrometerStates.Clear();
+            chart1.Series.Clear();
 
             if (driver.openAllSpectrometers() > 0)
             {
@@ -295,6 +321,8 @@ namespace WinFormDemo
             {
                 logger.info("No Wasatch Photonics spectrometers were found.");
             }
+
+            mut.ReleaseMutex();
         }
 
         // This only seems to affect the currently-running spectrometer
@@ -578,18 +606,22 @@ namespace WinFormDemo
                 // once a second, update temperatures
                 if (lowFreqOperations++ > 10)
                 {
-                    int count = 0;
-                    foreach (Spectrometer s in spectrometers)
+                    if (mut.WaitOne(10))
                     {
-                        count += s.spectrumCount;
-                        if (!s.isARM)
+                        int count = 0;
+                        foreach (Spectrometer s in spectrometers)
                         {
-                            SpectrometerState state = spectrometerStates[s];
-                            state.detTempDegC = s.detectorTemperatureDegC;
+                            count += s.spectrumCount;
+                            if (!s.isARM)
+                            {
+                                SpectrometerState state = spectrometerStates[s];
+                                state.detTempDegC = s.detectorTemperatureDegC;
+                            }
                         }
+                        labelSpectrumCount.BeginInvoke(new MethodInvoker(delegate { labelSpectrumCount.Text = $"{count}"; }));
+                        lowFreqOperations = 0;
+                        mut.ReleaseMutex();
                     }
-                    labelSpectrumCount.BeginInvoke(new MethodInvoker(delegate { labelSpectrumCount.Text = $"{count}"; }));
-                    lowFreqOperations = 0;
                 }
             }
             logger.debug("GUIUpdate thread exiting");
@@ -664,6 +696,7 @@ namespace WinFormDemo
                 if (shutdownPending || state.stopping)
                     break;
 
+                logger.debug("Task_DoWork: not stopping");
                 if (!await doAcquireIteration(state))
                     break;
             }
@@ -677,7 +710,7 @@ namespace WinFormDemo
         {
             DateTime startTime = DateTime.Now;
 
-            // logger.debug("workerAcquisition: getting spectrum");
+            logger.debug("doAcquireIteration: getting spectrum");
             double[] raw = state.spectrometer.getSpectrum();
             if (raw is null)
             {
@@ -686,10 +719,12 @@ namespace WinFormDemo
             }
 
             // process for graphing
+            logger.debug("doAcquireIteration: processing spectrum");
             lock (spectrometers)
             {
                 state.processSpectrum(raw);
             }
+            logger.debug("doAcquireIteration: done processing spectrum");
 
             // end thread if we've completed our allocated acquisitions
             if (opts.scanCount > 0 && state.scanCount >= opts.scanCount)
@@ -706,6 +741,8 @@ namespace WinFormDemo
             delayMS = Math.Max(delayMS, minTaskDelayMS);
 
             await Task.Delay(delayMS);
+
+            logger.debug("doAcquireIteration: done");
             return true;
         }
 

@@ -126,15 +126,15 @@ namespace WasatchNET
         {
             get
             {
-                if (_pixelAxis != null)
-                    return _pixelAxis;
-                _pixelAxis = new double[pixels];
+                if (pixelAxis_ != null)
+                    return pixelAxis_;
+                pixelAxis_ = new double[pixels];
                 for (int i = 0; i < pixels; i++)
-                    _pixelAxis[i] = i;
-                return _pixelAxis;
+                    pixelAxis_[i] = i;
+                return pixelAxis_;
             }
         }
-        double[] _pixelAxis = null;
+        double[] pixelAxis_ = null;
 
         /// <summary>
         /// Useful if you lost the results of getSpectrum, or if you want to 
@@ -171,14 +171,14 @@ namespace WasatchNET
             get
             {
                 // if we decide to keep this, change to EEPROM.featureMask.hasFraming
-                return _hasMarker || eeprom.model == "WPX-8CHANNEL";
+                return hasMarker_ || eeprom.model == "WPX-8CHANNEL";
             }
             set
             {
-                _hasMarker = value;
+                hasMarker_ = value;
             }
         }
-        bool _hasMarker;
+        bool hasMarker_;
 
         /// <summary>spectrometer serial number</summary>
         public virtual string serialNumber
@@ -266,14 +266,14 @@ namespace WasatchNET
         /// </remarks>
         public bool autoTrigger 
         {
-            get => _autoTrigger;
+            get => autoTrigger_;
             set
             {
                 logger.debug($"Spectrometer.autoTrigger -> {value}");
-                _autoTrigger = value;
+                autoTrigger_ = value;
             }
         }
-        bool _autoTrigger = true;
+        bool autoTrigger_ = true;
 
         /// <summary>
         /// Whether the "scanAveraging" property should automatically configure
@@ -474,6 +474,7 @@ namespace WasatchNET
         public int spectrumCount { get; protected set; } = 0;
 
         public string uniqueKey { get; set; }
+        internal SpectrometerUptime uptime;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -1313,7 +1314,7 @@ namespace WasatchNET
                 //else
                 // {
 
-                return _areaScanEnabled;
+                return areaScanEnabled_;
 
                 /*
                  byte[] pack = getCmd(Opcodes.GET_AREA_SCAN_ENABLE, 1);
@@ -1323,10 +1324,10 @@ namespace WasatchNET
             }
             set
             {
-                sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((_areaScanEnabled = value) ? 1 : 0), 0, new byte[]{0,0,0,0,0,0,0,0,0,0});
+                sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[]{0,0,0,0,0,0,0,0,0,0});
             }
         }
-        bool _areaScanEnabled = false;
+        bool areaScanEnabled_ = false;
 
         public virtual float laserTemperatureDegC
         {
@@ -1692,10 +1693,12 @@ namespace WasatchNET
         // Lifecycle
         ////////////////////////////////////////////////////////////////////////
 
+        // keywords: ctor, constructor
         internal Spectrometer(UsbRegistry usbReg)
         {
             usbRegistry = usbReg;
             pixels = 0;
+            uniqueKey = generateUniqueKey(usbReg);
         }
 
         virtual internal bool open()
@@ -1703,14 +1706,10 @@ namespace WasatchNET
             logger.header($"Spectrometer.open: VID = 0x{usbRegistry.Vid:x4}, PID = 0x{usbRegistry.Pid:x4}");
 
             // decide if we need to [re]initialize all settings to defaults
-            var driver = Driver.getInstance();
-            bool initialize = true;
-            if (uniqueKey != null &&
-                driver.lastKnownStates.ContainsKey(uniqueKey) &&
-                driver.lastKnownStates[uniqueKey] == Driver.LastKnownState.SUCCESS)
-                initialize = false;
-            logger.debug($"initialize = {initialize}");
-            driver.lastKnownStates.Remove(uniqueKey);
+            // (arguably Driver could pass this to open())
+            bool needsInitialization = uptime.needsInitialization(uniqueKey);
+            uptime.setUnknown(uniqueKey);
+            logger.debug($"needsInitialization = {needsInitialization}");
 
             // clear cache
             readOnce.Clear();
@@ -1805,17 +1804,25 @@ namespace WasatchNET
 
             // if this was intended to be a relatively lightweight "change as
             // little as possible" re-opening, we're done now
-            if (!initialize)
+            if (!needsInitialization)
             {
-                logger.debug("retaining existing spectrometer hardware state:");
-                logger.debug("  laserEnabled        = {0}", laserEnabled); // I'm nervous about this one
-                logger.debug("  integrationTimeMS   = {0}", integrationTimeMS);
-                logger.debug("  detectorGain        = {0:f2}", detectorGain);
-                logger.debug("  detectorOffset      = {0}", detectorOffset);
-                logger.debug("  detectorGainOdd     = {0:f2}", detectorGainOdd);
-                logger.debug("  detectorOffsetOdd   = {0}", detectorOffsetOdd);
+                ////////////////////////////////////////////////////////////////
+                // IMPORTANT: these debug lines HAVE SIDE-EFFECTS, in that they
+                // literally READ AND CACHE the current values from the 
+                // spectrometer hardware.  DO NOT try to disable them with 
+                // "if (logger.debugEnabled)" etc.  (Yes, I just wrote "don't 
+                // remove this debug printf() or the application will fail" :-)
+                ////////////////////////////////////////////////////////////////
 
-                logger.debug("Spectrometer.open: complete (not initializing)");
+                logger.debug("retaining existing spectrometer hardware state:");
+                logger.debug("  laserEnabled        = {0}",    laserEnabled); // I'm nervous about this one
+                logger.debug("  integrationTimeMS   = {0}",    integrationTimeMS);
+                logger.debug("  detectorGain        = {0:f2}", detectorGain);
+                logger.debug("  detectorOffset      = {0}",    detectorOffset);
+                logger.debug("  detectorGainOdd     = {0:f2}", detectorGainOdd);
+                logger.debug("  detectorOffsetOdd   = {0}",    detectorOffsetOdd);
+
+                logger.debug("Spectrometer.open: complete (initialization not required)");
                 return true;
             }
 
@@ -1892,6 +1899,47 @@ namespace WasatchNET
                 usbDevice = null;
             }
             logger.debug($"Spectrometer.close: {id} closed");
+        }
+
+        /// <summary>
+        /// This generates a string identifier for the spectrometer which should be enough
+        /// to distinguish it from others with the same VID/PID using nothing but UsbRegistry
+        /// information (e.g. bus address).  Note that this is to be used for recognizing
+        /// previously-opened spectrometers BEFORE reading their EEPROM.
+        /// </summary>
+        /// <param name="usbRegistry"></param>
+        /// <returns></returns>
+        string generateUniqueKey(UsbRegistry usbRegistry)
+        {
+            UsbDevice device;
+            if (!usbRegistry.Open(out device))
+                return "error";
+
+            SortedDictionary<string, string> props = new SortedDictionary<string, string>();
+            foreach (KeyValuePair<string, object> pair in usbRegistry.DeviceProperties)
+            {
+                string key = pair.Key;
+                object value = pair.Value;
+
+                // we only include these properties in our key
+                if (key != "LocationInformation" &&
+                    key != "PhysicalDeviceObjectName" &&
+                    key != "Address" &&
+                    key != "Driver")
+                    continue;
+
+                if (value is string[])
+                    props[key] = string.Format("[ {0} ]", string.Join(", ", value as string[]));
+                else if (value is string)
+                    props[key] = value as string;
+            }
+            device.Close();
+
+            // flatten 
+            List<string> tok = new List<string>();
+            foreach (var pair in props)
+                tok.Add($"{pair.Key}={pair.Value}");
+            return string.Join("|", tok);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -2394,7 +2442,7 @@ namespace WasatchNET
             var driver = Driver.getInstance();
             lock (acquisitionLock)
             {
-                driver.lastKnownStates[uniqueKey] = Driver.LastKnownState.ERROR;
+                uptime.setError(uniqueKey); // assume acquisition may fail
                 currentAcquisitionCancelled = false;
 
                 int retries = 0;
@@ -2482,17 +2530,12 @@ namespace WasatchNET
                     _ = detectorTemperatureDegC;
 
                 spectrumCount++;
-                driver.lastKnownStates[uniqueKey] = Driver.LastKnownState.SUCCESS;
+                uptime.setSuccess(uniqueKey);
+
                 if (boxcarHalfWidth_ > 0)
-                {
-                    // logger.debug("getSpectrum: returning boxcar");
                     return Util.applyBoxcar(boxcarHalfWidth_, sum);
-                }
                 else
-                {
-                    // logger.debug("getSpectrum: returning sum");
                     return sum;
-                }
             }
         }
 
