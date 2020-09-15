@@ -90,8 +90,6 @@ namespace WasatchNET
         {
             eeprom = new BoulderEEPROM(this);
 
-            int errorReader = 0;
-
             lock (acquisitionLock)
             {
                 if (!commError)
@@ -548,7 +546,6 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////////
 
             double[] spec = new double[pixels]; // default to all zeros
-            int errorReader = 0;
 
             var task = Task.Run(async () => spec = await getSpectrumAsync());
             task.Wait();

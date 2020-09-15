@@ -28,11 +28,19 @@ namespace WasatchNET
         static Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
 
+        bool opened = false;
         bool suppressErrors = false;
         int resetCount = 0;
 
         public Logger logger { get; } = Logger.getInstance();
         public string version { get; }
+
+        // This is a Driver-level (singleton) object which tracks whether any
+        // given spectrometer is believed to be in an "error state" (requiring
+        // re-initialization) or not.  It is passed into each Spectrometer so 
+        // they can update it with their state over time, but there is only one 
+        // instance in the process.
+        SpectrometerUptime uptime = new SpectrometerUptime();
 
         ////////////////////////////////////////////////////////////////////////
         // static methods
@@ -57,6 +65,16 @@ namespace WasatchNET
         /// and return the number found. Individual spectrometers can then be
         /// accessed via the getSpectrometer(index) call.
         /// </summary>
+        /// <remarks>
+        /// If called multiple times during an application session WITHOUT calling
+        /// closeAllSpectrometers() in between, will only add/open "new" 
+        /// spectrometers which have been "hotplugged" since the previous call.
+        /// 
+        /// It is unclear how reliable this method will be on subsequent calls
+        /// if a previously-opened spectrometer has been power-cycled or otherwise
+        /// reset, but not formally "closed" via Spectrometer.close() or 
+        /// Driver.closeAllSpectrometers().
+        /// </remarks>
         /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
         public int openAllSpectrometers()
         {
@@ -86,8 +104,6 @@ namespace WasatchNET
 
             UsbRegDeviceList deviceRegistries = UsbDevice.AllDevices;
 
-            //UsbDeviceFinder usbDeviceFinder = UsbDevice.
-
             foreach (UsbRegistry usbRegistry in deviceRegistries)
             {
                 String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
@@ -96,11 +112,16 @@ namespace WasatchNET
                     (ushort) usbRegistry.Rev,
                     usbRegistry[SPDRP.DeviceDesc]);
 
-                if (logger.debugEnabled())
-                {
-                    logger.debug("USB Registry for: {0}", desc);
-                    logDevice(usbRegistry);
-                }
+                // Generate a "unique key" for the spectrometer based on its 
+                // "physical" USB properties (no EEPROM fields involved).  This 
+                // is being explored as a way to better recognize individual
+                // spectrometers within a set, where one spectrometer has been
+                // power-cycled or re-enumerated, but the others have not (and
+                // the caller doesn't necessarily know which, so a repeat call
+                // to "openAllSpectrometers" is intended to "get the new one(s)
+                // running, without disrupting the old one(s)".
+                logger.debug("USB Registry for: {0}", desc);
+                logDevice(usbRegistry);
 
                 if (usbRegistry.Vid == 0x24aa && usbRegistry.Pid == 0x5000)
                 {
@@ -115,12 +136,10 @@ namespace WasatchNET
                 }
                 else if (usbRegistry.Vid == 0x24aa)
                 {
-                    Spectrometer spectrometer = new Spectrometer(usbRegistry);
+                    Spectrometer spectrometer = new Spectrometer(usbRegistry) { uptime = uptime };
                     if (spectrometer.open())
                     {
                         // sort them by model, serial (allow duplicates for unconfigured)
-                        // TODO: is there any way to deterministically sort between units
-                        //       without a configured unique serial number?
                         string key = String.Format("{0}-{1}", spectrometer.eeprom.model, spectrometer.eeprom.serialNumber);
                         if (!sorted.ContainsKey(key))
                             sorted.Add(key, new List<Spectrometer>());
@@ -154,95 +173,99 @@ namespace WasatchNET
             // Add Wasatch Photonics SPI spectrometers
             ////////////////////////////////////////////////////////////////////
 
-            if (spectrometers.Count == 0)
+            if (Environment.GetEnvironmentVariable("WASATCHNET_USE_SPI") != null)
             {
-                string currentDir = Directory.GetCurrentDirectory(); // pushdir
-                logger.debug("caching directory {0}", currentDir);
-                try
-                {
-                    // to load FTD2XX.dll, we apparently need to be in its directory
-                    string dllDir = Path.Combine(new string[] {
-                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),  // "Program Files" or "(ibid) x86" as appropriate
-                    "Wasatch Photonics",
-                    "Wasatch.NET" });
-                    logger.debug("changing directory to {0}", dllDir);
-                    Directory.SetCurrentDirectory(dllDir);
-                    logger.debug("directory now {0}", Directory.GetCurrentDirectory());
+                logger.debug("Checking for SPI spectrometers");
 
-                    SPISpectrometer spiSpec = new SPISpectrometer(null);
-                    logger.debug("attempting to open spi spectrometer");
-                    bool opened = spiSpec.open();
-                    if (opened)
-                    {
-                        logger.debug("found SPISpectrometer");
-                        spectrometers.Add(spiSpec);
-                    }
-                    else
-                    {
-                        logger.debug("no SPISpectrometer found");
-                    }
-                }
-                catch
+                if (spectrometers.Count == 0)
                 {
-                    logger.debug("Unable to check for SPISpectrometer");
-                }
-                finally
-                {
-                    logger.debug("restoring directory {0}", currentDir);
-                    Directory.SetCurrentDirectory(currentDir); // popdir
+                    string currentDir = Directory.GetCurrentDirectory(); // pushdir
+                    logger.debug("caching directory {0}", currentDir);
+                    try
+                    {
+                        // to load FTD2XX.dll, we apparently need to be in its directory
+                        string dllDir = Path.Combine(new string[] {
+                        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),  // "Program Files" or "(ibid) x86" as appropriate
+                        "Wasatch Photonics",
+                        "Wasatch.NET" });
+                        logger.debug("changing directory to {0}", dllDir);
+                        Directory.SetCurrentDirectory(dllDir);
+                        logger.debug("directory now {0}", Directory.GetCurrentDirectory());
+
+                        SPISpectrometer spiSpec = new SPISpectrometer(null);
+                        logger.debug("attempting to open spi spectrometer");
+                        bool opened = spiSpec.open();
+                        if (opened)
+                        {
+                            logger.debug("found SPISpectrometer");
+                            spectrometers.Add(spiSpec);
+                        }
+                        else
+                        {
+                            logger.debug("no SPISpectrometer found");
+                        }
+                    }
+                    catch
+                    {
+                        logger.debug("Unable to check for SPISpectrometer");
+                    }
+                    finally
+                    {
+                        logger.debug("restoring directory {0}", currentDir);
+                        Directory.SetCurrentDirectory(currentDir); // popdir
+                    }
                 }
             }
+
             ////////////////////////////////////////////////////////////////////
             // Add 3rd-party USB spectrometers (e.g. Ocean Optics, etc)
             ////////////////////////////////////////////////////////////////////
 
-            // Add 3rd-party USB spectrometers (e.g. Ocean Optics, etc)
-            bool sbPresent = false;
-            sbPresent = CheckLibrary("SeaBreeze");
-
-
-            if (sbPresent)
-                logger.debug("SeaBreeze appears installed");
-            else
-                logger.debug("SeaBreeze not installed");
-
-            if (deviceRegistries.Count > 0 && Environment.Is64BitProcess && sbPresent)
+            if (Environment.GetEnvironmentVariable("WASATCHNET_USE_SEABREEZE") != null)
             {
-                UsbRegistry usbRegistry2 = deviceRegistries[0];
-                String desc2 = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
-                    usbRegistry2.Vid,
-                    usbRegistry2.Pid,
-                    (ushort)usbRegistry2.Rev,
-                    usbRegistry2[SPDRP.DeviceDesc]);
+                logger.debug("Checking for SeaBreeze and Ocean Optics spectrometers");
 
-                int boulderIndex = 0;
-                try
+                // Add 3rd-party USB spectrometers (e.g. Ocean Optics, etc)
+                bool sbPresent = CheckLibrary("SeaBreeze");
+                logger.debug("SeaBreeze {0} installed", sbPresent ? "appears" : "not");
+
+                if (deviceRegistries.Count > 0 && Environment.Is64BitProcess && sbPresent)
                 {
-                    BoulderSpectrometer boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
+                    UsbRegistry usbRegistry2 = deviceRegistries[0];
+                    String desc2 = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
+                        usbRegistry2.Vid,
+                        usbRegistry2.Pid,
+                        (ushort)usbRegistry2.Rev,
+                        usbRegistry2[SPDRP.DeviceDesc]);
 
-                    while (boulderSpectrometer.open())
+                    int boulderIndex = 0;
+                    try
                     {
-                        boulderSpectrometer.detectorTECSetpointDegC = 15.0f; 
-                        spectrometers.Add(boulderSpectrometer);
-                        ++boulderIndex;
-                        boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
-                    }
+                        BoulderSpectrometer boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
 
-                    if (boulderIndex == 0)
-                    {
-                        logger.debug("openAllSpectrometers: failed to open {0}", desc2);
+                        while (boulderSpectrometer.open())
+                        {
+                            boulderSpectrometer.detectorTECSetpointDegC = 15.0f;
+                            spectrometers.Add(boulderSpectrometer);
+                            ++boulderIndex;
+                            boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
+                        }
+
+                        if (boulderIndex == 0)
+                        {
+                            logger.debug("openAllSpectrometers: failed to open {0}", desc2);
+                        }
                     }
-                }
-                catch (DllNotFoundException)
-                {
-                    logger.debug("SeaBreeze does not appear to be installed, not trying to open relevant Spectrometers");
+                    catch (DllNotFoundException)
+                    {
+                        logger.debug("SeaBreeze does not appear to be installed, not trying to open relevant Spectrometers");
+                    }
                 }
             }
 
-            logger.debug($"OpenAllSpectrometers: returning {spectrometers.Count}");
+            logger.debug($"openAllSpectrometers: returning {spectrometers.Count}");
 
-            logger.info("Testing Version Updates");
-
+            opened = true;
             return spectrometers.Count;
         }
 
@@ -284,18 +307,38 @@ namespace WasatchNET
         /// </summary>
         public void closeAllSpectrometers()
         {
-            lock(this)
+            if (!opened)
+            {
+                logger.debug("closeAllSpectrometers: not opened");
+                return;
+            }
+
+            logger.debug("closeAllSpectrometers: start");
+
+            lock (this)
             {
                 if (spectrometers.Count > 0)
                 {
                     foreach (Spectrometer spectrometer in spectrometers)
                     {
+                        logger.debug("closeAllSpectrometers: closing spectrometer");
                         spectrometer.close();
                     }
                     spectrometers.Clear();
-                    UsbDevice.Exit();
+
                 }
+                else
+                    logger.debug("closeAllSpectrometers: no spectrometers to close");
+
+                logger.debug("closeAllSpectrometers: unregistering error handler");
+                UsbDevice.UsbErrorEvent -= OnUsbError;
+
+                logger.debug("closeAllSpectrometers: exiting UsbDevice");
+                UsbDevice.Exit();
             }
+
+            opened = false;
+            logger.debug("closeAllSpectrometers: done");
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -309,6 +352,7 @@ namespace WasatchNET
 
         ~Driver()
         {
+            logger.close();
             closeAllSpectrometers();
         }
 
@@ -327,11 +371,11 @@ namespace WasatchNET
                 logger.debug("Summary: {0}", line);
 
             // SiG-VIS doesn't seem to like the advanced logging?
-            if (usbRegistry.Pid == 0x4000)
-            {
-                device.Close();
-                return;
-            }
+            // if (usbRegistry.Pid == 0x4000)
+            // {
+            //     device.Close();
+            //     return;
+            // }
 
             foreach (UsbConfigInfo cfgInfo in device.Configs)
             {
@@ -353,36 +397,27 @@ namespace WasatchNET
                         logNameValuePairs(endpointInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), "    ");
                     }
                 }
-
-                // log SymbolicName 
-                UsbSymbolicName symName = UsbSymbolicName.Parse(usbRegistry.SymbolicName);
-                logger.debug("Symbolic Name:");
-                logger.debug("  VID:          0x{0:x4}", symName.Vid);
-                logger.debug("  PID:          0x{0:x4}", symName.Pid);
-                logger.debug("  SerialNumber: {0}", symName.SerialNumber);
-                logger.debug("  Class Guid:   {0}", symName.ClassGuid);
-
-                logger.debug("Device Properties:");
-                foreach (KeyValuePair<string, object> pair in usbRegistry.DeviceProperties)
-                {
-                    string key = pair.Key;
-                    object value = pair.Value;
-
-                    // handle array values
-                    if (value is string[])
-                    {
-                        string[] values = value as string[];
-                        logger.debug("  {0}: [ {1} ]", key, string.Join(", ", values));
-                    }
-                    else
-                    {
-                        logger.debug("  {0}: {1}", key, value);
-                    }
-                }
-
-                logger.debug(" ");
             }
             device.Close();
+
+            UsbSymbolicName symName = UsbSymbolicName.Parse(usbRegistry.SymbolicName);
+            logger.debug("Symbolic Name:");
+            logger.debug("  VID:          0x{0:x4}", symName.Vid);
+            logger.debug("  PID:          0x{0:x4}", symName.Pid);
+            logger.debug("  SerialNumber: {0}", symName.SerialNumber);
+            logger.debug("  Class Guid:   {0}", symName.ClassGuid);
+
+            logger.debug("Device Properties:");
+            foreach (KeyValuePair<string, object> pair in usbRegistry.DeviceProperties)
+            {
+                string key = pair.Key;
+                object value = pair.Value;
+
+                if (value is string[])
+                    logger.debug("  {0}: {1}", key, string.Format("[ {0} ]", string.Join(", ", value as string[])));
+                else if (value is string)
+                    logger.debug("  {0}: {1}", key, value as string);
+            }
         }
 
         void logNameValuePairs(string[] pairs, string prefix = "  ")
@@ -481,7 +516,13 @@ namespace WasatchNET
             else if (sender is Type)
             {
                 Type t = sender as Type;
-                logger.error("{0} [Type]: type = {1}", prefix, t.Name);
+
+                // reduce log level on these, as they seem to flood during 
+                // recovery from errors logged elsewhere:
+                if (sender.GetType().ToString() == "System.RuntimeType" && t.Name == "LibUsbDriverIO")
+                    logger.debug("{0} [Type]: type = {1}", prefix, t.Name);
+                else
+                    logger.error("{0} [Type]: type = {1}", prefix, t.Name);
             }
             else
             {   

@@ -66,16 +66,34 @@ namespace WasatchNET
         public void setPathname(string path)
         {
             if (null != Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_FORCE"))
+            {
+                debug($"Logger.setPathname({path}): ignoring due to WASATCHNET_LOGGER_FORCE");
                 return;
+            }
 
             try
             {
                 outfile = new StreamWriter(path);
-                debug("log path set to {0}", path);
+                info($"log path set to {path}");
             }
             catch (Exception e)
             {
+                outfile = null;
                 error("Can't set log pathname: {0}", e);
+            }
+        }
+
+        public void close()
+        {
+            lock (instance)
+            {
+                textBox = null;
+                if (outfile != null)
+                {
+                    outfile.Flush();
+                    outfile.Close();
+                    outfile = null;
+                }
             }
         }
 
@@ -265,7 +283,7 @@ namespace WasatchNET
             {
                 Console.WriteLine(msg);
 
-                if (outfile != null)
+                if (outfile != null && outfile.BaseStream != null)
                 {
                     outfile.WriteLine(msg);
                     outfile.Flush();

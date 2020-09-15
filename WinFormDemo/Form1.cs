@@ -12,7 +12,7 @@ namespace WinFormDemo
 {
     public partial class Form1 : Form
     {
-        const bool useTasks = true; // whether you want to use BackgroundWorkers or async
+        const bool useTasks = false; // whether you want to use BackgroundWorkers or async
         const int minThreadSleepMS = 100;
         const int minTaskDelayMS = 250;  // Task.Delay is less accurate than Thread.Sleep
 
@@ -24,6 +24,7 @@ namespace WinFormDemo
         Driver driver = Driver.getInstance();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
         Spectrometer currentSpectrometer;
+        Mutex mut = new Mutex();
 
         Dictionary<Spectrometer, SpectrometerState> spectrometerStates = new Dictionary<Spectrometer, SpectrometerState>();
         List<Series> traces = new List<Series>();
@@ -68,13 +69,57 @@ namespace WinFormDemo
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            logger.setTextBox(null);
-            shutdownPending = true;
+            logger.debug("OnFormClosing: start");
+            if (!shutdownPending)
+            {
+                backgroundWorkerGUIUpdate.CancelAsync();
+                Thread.Sleep(minThreadSleepMS);
+
+                bool readyToShutdown = true;
+                lock (spectrometers)
+                {
+                    foreach (var pair in spectrometerStates)
+                    {
+                        var state = pair.Value;
+                        if (state.running)
+                            readyToShutdown = false;
+                    }
+                }
+
+                if (!readyToShutdown)
+                {
+                    logger.debug("OnFormClosing: raised shutdownPending");
+                    shutdownPending = true;
+                    e.Cancel = true;
+                    return;
+                }
+            }
+
+            logger.debug("OnFormClosing: completing");
+            logger.close();
+            // driver.closeAllSpectrometers();
         }   
 
         ////////////////////////////////////////////////////////////////////////
         // Business Logic
         ////////////////////////////////////////////////////////////////////////
+
+        SpectrometerState currentSpectrometerState(string label="???")
+        {
+            if (currentSpectrometer is null)
+            {
+                logger.error($"Unexpected[{label}]: no current spectrometer");
+                return null;
+            }
+
+            if (!spectrometerStates.ContainsKey(currentSpectrometer))
+            {
+                logger.error($"Unexpected[{label}]: missing state for {currentSpectrometer.serialNumber}");
+                return null;
+            }
+
+            return spectrometerStates[currentSpectrometer];
+        }
 
         void initializeSpectrometer(Spectrometer s)
         {
@@ -94,9 +139,8 @@ namespace WinFormDemo
             if (!s.isARM)
                 s.triggerSource = TRIGGER_SOURCE.INTERNAL;
 
-            s.integrationTimeMS = s.eeprom.minIntegrationTimeMS;
             numericUpDownIntegTimeMS.Minimum = s.eeprom.minIntegrationTimeMS;
-            numericUpDownIntegTimeMS.Value = s.eeprom.minIntegrationTimeMS;
+            numericUpDownIntegTimeMS.Value = s.integrationTimeMS;
             // numericUpDownIntegTimeMS.Maximum = s.eeprom.maxIntegrationTimeMS; // disabled to allow long integration times
 
             if (s.pixels > 0)
@@ -113,23 +157,27 @@ namespace WinFormDemo
         {
             if (currentSpectrometer is null)
             {
+                logger.debug("updateCurrentSpectrometer: null");
                 groupBoxSettings.Enabled =
-                groupBoxControl.Enabled =
-                toolStripMenuItemTest.Enabled = false;
+                    groupBoxControl.Enabled =
+                    toolStripMenuItemTest.Enabled = false;
+                updateStartButton(false);
                 return;
             }
 
-            SpectrometerState state = spectrometerStates[currentSpectrometer];
+            logger.debug($"updateCurrentSpectrometer: {currentSpectrometer.serialNumber}");
+            var state = currentSpectrometerState();
+            if (state is null)
+                return;
 
             // update tree view
-            // if (!state.spectrometer.isARM())
-                treeViewSettings_DoubleClick(null, null);
+            treeViewSettings_DoubleClick(null, null);
 
             // update start button
-            updateStartButton(spectrometerStates[currentSpectrometer].running);
+            updateStartButton(state.running);
 
             // update basic controls
-            numericUpDownIntegTimeMS.Value = currentSpectrometer.integrationTimeMS;
+            DemoUtil.expandNUD(numericUpDownIntegTimeMS, (int)currentSpectrometer.integrationTimeMS);
             numericUpDownBoxcarHalfWidth.Value = currentSpectrometer.boxcarHalfWidth;
             numericUpDownScanAveraging.Value = currentSpectrometer.scanAveraging;
 
@@ -186,29 +234,23 @@ namespace WinFormDemo
         {
             lock (spectrometers)
             {
-                foreach (Spectrometer spectrometer in spectrometers)
+                foreach (var pair in spectrometerStates)
                 {
-                    SpectrometerState state = spectrometerStates[spectrometer];
+                    var spectrometer = pair.Key;
+                    var state = pair.Value;
 
                     if (state.spectrum is null)
-                    {
-                        // logger.debug("not graphing because spectrum null");
                         continue;
-                    }
 
                     Series series = state.series;
                     series.Points.Clear();
 
                     if (graphWavenumbers && spectrometer.wavenumbers != null)
-                    {
                         for (uint i = 0; i < spectrometer.pixels; i++)
                             series.Points.AddXY(spectrometer.wavenumbers[i], state.spectrum[i]);
-                    }
                     else
-                    {
                         for (uint i = 0; i < spectrometer.pixels; i++)
                             series.Points.AddXY(spectrometer.wavelengths[i], state.spectrum[i]);
-                    }
 
                     // extra handling for current spectrometer
                     if (spectrometer == currentSpectrometer)
@@ -237,14 +279,63 @@ namespace WinFormDemo
             logger.level = checkBoxVerbose.Checked ? LogLevel.DEBUG : LogLevel.INFO;
         }
 
-        private void buttonInitialize_Click(object sender, EventArgs e)
+        private async void buttonInitialize_Click(object sender, EventArgs e)
         {
-            comboBoxSpectrometer.Items.Clear();
+            logger.debug("buttonInitialize clicked");
+            mut.WaitOne();
+
             groupBoxSpectrometers.Enabled = false;
+
+            if (spectrometerStates.Count > 0)
+            {
+                // this is a re-initialization
+                logger.debug("starting reinitialize");
+
+                // not really sure what behavior would be considered "ideal" in this case,
+                // but I'm stopping all "running" background threads
+                const int delayMS = 1000;
+                foreach (var pair in spectrometerStates)
+                {
+                    var spec = pair.Key;
+                    var state = pair.Value;
+
+                    if (useTasks)
+                    {
+                        state.stopping = true;
+                        await Task.Delay(delayMS);
+                    }
+                    else
+                    {
+                        state.worker.CancelAsync();
+                        Thread.Sleep(delayMS);
+                    }
+
+                    while (state.running)
+                    {
+                        logger.debug("waiting to stop {0}", spec.serialNumber);
+                        if (useTasks)
+                            await Task.Delay(delayMS);
+                        else
+                            Thread.Sleep(delayMS);
+                    }
+                }
+
+                // note that we never actually call closeAllSpectrometers;
+                // that is in fact the point of this test
+                driver.closeAllSpectrometers();
+            }
+
+            logger.debug("initialization proceeding");
+
+            // at this point, no background acquisitions should be running, and we
+            // can completely restart state
+            comboBoxSpectrometer.Items.Clear();
+            spectrometers.Clear();
+            spectrometerStates.Clear();
+            chart1.Series.Clear();
 
             if (driver.openAllSpectrometers() > 0)
             {
-                spectrometers.Clear();
                 for (int i = 0; i < driver.getNumberOfSpectrometers(); i++)
                 {
                     Spectrometer s = driver.getSpectrometer(i);
@@ -257,13 +348,17 @@ namespace WinFormDemo
                         s.integrationTimeMS = opts.integrationTimeMS;
 
                     comboBoxSpectrometer.SelectedIndex = comboBoxSpectrometer.Items.Count - 1;
-                    Thread.Sleep(minThreadSleepMS);
+                    await Task.Delay(minThreadSleepMS);
 
+                    logger.debug($"clicking Start button for {s.serialNumber}");
                     buttonStart_Click(null, null);
-                    Thread.Sleep(minThreadSleepMS);
+                    await Task.Delay(minThreadSleepMS);
                 }
 
-                buttonInitialize.Enabled = false;
+                // allow re-initialization (repeat calls to openAllSpectrometers), as some
+                // customers do this when power-cycling "one of many" connected units
+                // buttonInitialize.Enabled = false;
+
                 groupBoxSpectrometers.Enabled = true;
 
                 comboBoxSpectrometer.SelectedIndex = 0;
@@ -274,14 +369,20 @@ namespace WinFormDemo
             {
                 logger.info("No Wasatch Photonics spectrometers were found.");
             }
+
+            mut.ReleaseMutex();
         }
 
+        // This only affects the currently-running spectrometer
         private void buttonStart_Click(object sender, EventArgs e)
         {
-            SpectrometerState state = spectrometerStates[currentSpectrometer];
+            var state = currentSpectrometerState();
+            if (state is null)
+                return;
+
             if (!state.running)
             {
-                logger.info("Starting acquisition");
+                logger.info($"Starting {currentSpectrometer.serialNumber}");
                 updateStartButton(true);
                 if (useTasks)
                     _ = Task_DoWork(currentSpectrometer);
@@ -290,10 +391,9 @@ namespace WinFormDemo
             }
             else
             {
-                logger.info("Stopping acquisition");
-                if (useTasks)
-                    state.stopping = true;
-                else
+                logger.info($"Stopping {currentSpectrometer.serialNumber}");
+                state.stopping = true;
+                if (!useTasks)
                     state.worker.CancelAsync();
             }
         }
@@ -317,7 +417,9 @@ namespace WinFormDemo
 
         private void numericUpDownIntegTimeMS_ValueChanged(object sender, EventArgs e)
         {
-            currentSpectrometer.integrationTimeMS = (uint)numericUpDownIntegTimeMS.Value;
+            var ms = (uint)numericUpDownIntegTimeMS.Value;
+            logger.debug($"changing currentSpectrometer {currentSpectrometer.serialNumber} integration time to {ms}");
+            currentSpectrometer.integrationTimeMS = ms;
         }
 
         private void numericUpDownScanAveraging_ValueChanged(object sender, EventArgs e)
@@ -337,7 +439,10 @@ namespace WinFormDemo
 
         private void checkBoxTakeDark_CheckedChanged(object sender, EventArgs e)
         {
-            SpectrometerState state = spectrometerStates[currentSpectrometer];
+            var state = currentSpectrometerState();
+            if (state is null)
+                return;
+
             lock (spectrometers)
             {
                 if (checkBoxTakeDark.Checked)
@@ -367,7 +472,10 @@ namespace WinFormDemo
 
         private void checkBoxTakeReference_CheckedChanged(object sender, EventArgs e)
         {
-            SpectrometerState state = spectrometerStates[currentSpectrometer];
+            var state = currentSpectrometerState();
+            if (state is null)
+                return;
+
             lock (spectrometers)
             {
                 bool success = false;
@@ -403,22 +511,30 @@ namespace WinFormDemo
 
         private void radioButtonModeScope_CheckedChanged(object sender, EventArgs e)
         {
-            spectrometerStates[currentSpectrometer].processingMode = SpectrometerState.ProcessingModes.SCOPE;
+            var state = currentSpectrometerState();
+            if (state != null)
+                state.processingMode = SpectrometerState.ProcessingModes.SCOPE;
         }
 
         private void radioButtonModeAbsorbance_CheckedChanged(object sender, EventArgs e)
         {
-            spectrometerStates[currentSpectrometer].processingMode = SpectrometerState.ProcessingModes.ABSORBANCE;
+            var state = currentSpectrometerState();
+            if (state != null)
+                state.processingMode = SpectrometerState.ProcessingModes.ABSORBANCE;
         }
 
         private void radioButtonModeTransmission_CheckedChanged(object sender, EventArgs e)
         {
-            spectrometerStates[currentSpectrometer].processingMode = SpectrometerState.ProcessingModes.TRANSMISSION;
+            var state = currentSpectrometerState();
+            if (state != null)
+                state.processingMode = SpectrometerState.ProcessingModes.TRANSMISSION;
         }
 
         private void buttonAddTrace_Click(object sender, EventArgs e)
         {
-            SpectrometerState state = spectrometerStates[currentSpectrometer];
+            var state = currentSpectrometerState();
+            if (state is null)
+                return;
 
             Series trace = new Series();
             trace.IsVisibleInLegend = false;
@@ -464,8 +580,8 @@ namespace WinFormDemo
 
             lock (spectrometers)
             {
-                SpectrometerState state = spectrometerStates[currentSpectrometer];
-                if (state.spectrum is null)
+                var state = currentSpectrometerState();
+                if (state is null || state.spectrum is null)
                     return;
 
                 state.save();
@@ -552,22 +668,33 @@ namespace WinFormDemo
             {
                 Thread.Sleep(minThreadSleepMS);
                 if (worker.CancellationPending || shutdownPending)
+                {
+                    e.Cancel = false;
                     break;
+                }
 
                 chart1.BeginInvoke(new MethodInvoker(delegate { updateGraph(); }));
 
                 // once a second, update temperatures
                 if (lowFreqOperations++ > 10)
                 {
-                    foreach (Spectrometer s in spectrometers)
+                    if (mut.WaitOne(10))
                     {
-                        if (!s.isARM)
+                        int count = 0;
+                        foreach (var pair in spectrometerStates)
                         {
-                            SpectrometerState state = spectrometerStates[s];
-                            state.detTempDegC = s.detectorTemperatureDegC;
+                            var spectrometer = pair.Key;
+                            count += spectrometer.spectrumCount;
+                            if (!spectrometer.isARM)
+                            {
+                                var state = pair.Value;
+                                state.detTempDegC = spectrometer.detectorTemperatureDegC;
+                            }
                         }
+                        labelSpectrumCount.BeginInvoke(new MethodInvoker(delegate { labelSpectrumCount.Text = $"{count}"; }));
+                        lowFreqOperations = 0;
+                        mut.ReleaseMutex();
                     }
-                    lowFreqOperations = 0;
                 }
             }
             logger.debug("GUIUpdate thread exiting");
@@ -609,30 +736,47 @@ namespace WinFormDemo
         private void backgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             Spectrometer spectrometer = (Spectrometer) e.Argument;
-            SpectrometerState state = spectrometerStates[spectrometer];
+            if (!spectrometerStates.ContainsKey(spectrometer))
+            {
+                logger.error("Unexpected: missing state for {spectrometer.serialNumber}");
+                return;
+            }
+            var state = spectrometerStates[spectrometer];
 
             state.running = true;
             state.stopping = false;
 
             BackgroundWorker worker = sender as BackgroundWorker;
+            Thread.CurrentThread.Name = $"worker-{spectrometer.serialNumber}";
+
             while (true)
             {
                 // end thread if we've been asked to cancel
-                if (worker.CancellationPending || state.stopping)
+                if (worker.CancellationPending || state.stopping || shutdownPending)
+                {
+                    logger.debug("worker closing because cancellationPending or stopping or shutdownPending");
+                    e.Cancel = false;
                     break;
+                }
 
                 bool ok = doAcquireIteration(state).Result;
                 if (!ok)
                     break;
             }
 
-            state.running = false;
+            logger.debug("worker closing");
+            state.running = false; // shouldn't need this, but RunWorkerCompleted isn't always firing?
             e.Result = spectrometer; // pass spectrometer handle to _Completed callback
         }
 
         async Task<bool> Task_DoWork(Spectrometer spectrometer)
         {
-            SpectrometerState state = spectrometerStates[spectrometer];
+            if (!spectrometerStates.ContainsKey(spectrometer))
+            {
+                logger.error("Unexpected: missing state for {spectrometer.serialNumber}");
+                return false;
+            }
+            var state = spectrometerStates[spectrometer];
 
             state.running = true;
             state.stopping = false;
@@ -643,12 +787,12 @@ namespace WinFormDemo
                 if (shutdownPending || state.stopping)
                     break;
 
+                logger.debug("Task_DoWork: not stopping");
                 if (!await doAcquireIteration(state))
                     break;
             }
 
             logger.debug("Task_DoWork closing");
-            state.running = false;
             doComplete(spectrometer);
             return true;
         }
@@ -657,19 +801,24 @@ namespace WinFormDemo
         {
             DateTime startTime = DateTime.Now;
 
-            // logger.debug("workerAcquisition: getting spectrum");
+            logger.debug("doAcquireIteration: getting spectrum");
             double[] raw = state.spectrometer.getSpectrum();
             if (raw is null)
             {
-                await Task.Delay(minTaskDelayMS);
-                return true;
+                if (useTasks)
+                    await Task.Delay(minTaskDelayMS);
+                else
+                    Thread.Sleep(minTaskDelayMS);
+                return false;
             }
 
             // process for graphing
+            logger.debug("doAcquireIteration: processing spectrum");
             lock (spectrometers)
             {
                 state.processSpectrum(raw);
             }
+            logger.debug("doAcquireIteration: done processing spectrum");
 
             // end thread if we've completed our allocated acquisitions
             if (opts.scanCount > 0 && state.scanCount >= opts.scanCount)
@@ -683,38 +832,66 @@ namespace WinFormDemo
                 var elapsedMS = (endTime - startTime).TotalMilliseconds;
                 delayMS = (int)(opts.scanIntervalSec * 1000.0 - elapsedMS);
             }
-            delayMS = Math.Max(delayMS, minTaskDelayMS);
 
-            await Task.Delay(delayMS);
+            delayMS = Math.Max(delayMS, minTaskDelayMS);
+            if (delayMS > 0)
+                if (useTasks)
+                    await Task.Delay(delayMS);
+                else
+                    Thread.Sleep(delayMS);
+
+            logger.debug("doAcquireIteration: done");
             return true;
         }
 
         private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            doComplete(e.Result as Spectrometer);
+            var spectrometer = e.Result as Spectrometer;
+            logger.debug($"Worker complete: {spectrometer.serialNumber}");
+            doComplete(spectrometer);
         }
 
         // can be called from either BackgroundWorker or Task
         void doComplete(Spectrometer spectrometer)
         {
+            logger.debug($"doComplete: {spectrometer.serialNumber}");
             if (spectrometer == currentSpectrometer)
                 updateStartButton(false);
 
-            // should we auto-exit?
-            if (opts.autoStart && opts.scanCount > 0)
+            if (!spectrometerStates.ContainsKey(spectrometer))
             {
-                bool shutdown = true;
+                // this can happen during deliberate disconnect events
+                logger.error($"Unexpected: spectrometer {spectrometer.serialNumber} has no tracked state");
+                return;
+            }
+
+            var state = spectrometerStates[spectrometer];
+            state.running = false;
+
+            // should we auto-exit?
+            if (shutdownPending || (opts.autoStart && opts.scanCount > 0))
+            {
+                List<string> waitList = new List<string>();
                 lock (spectrometers)
                 {
                     foreach (Spectrometer s in spectrometers)
                     {
+                        if (!spectrometerStates.ContainsKey(s))
+                        {
+                            logger.error($"Unexpected: missing spectrometerState {s.serialNumber}");
+                            continue;
+                        }
+
                         SpectrometerState ss = spectrometerStates[s];
                         if (ss.scanCount < opts.scanCount)
-                            shutdown = false;
+                            waitList.Add(s.serialNumber);
                     }
                 }
-                if (shutdown)
-                    Close();
+
+                if (waitList.Count == 0)
+                    Close(); // will re-trigger OnFormClosing
+                else
+                    logger.debug("shutdown still pending %s", string.Join(", ", waitList));
             }
         }
     }

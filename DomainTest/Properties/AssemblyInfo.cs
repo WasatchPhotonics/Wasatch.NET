@@ -5,22 +5,22 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Wasatch.NET")]
-[assembly: AssemblyDescription(".NET application wrapper for Wasatch Photonics spectrometers")]
+[assembly: AssemblyTitle("DomainTest")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Wasatch Photonics")]
-[assembly: AssemblyProduct("Wasatch.NET")]
-[assembly: AssemblyCopyright("Copyright © 2020, Wasatch Photonics")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("DomainTest")]
+[assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible
 // to COM components.  If you need to access a type in this assembly from
 // COM, set the ComVisible attribute to true on that type.
-[assembly: ComVisible(true)]
+[assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("6c29d82f-9444-4ca0-a061-213f1a56de8d")]
+[assembly: Guid("65590fa8-a1e8-4009-b8d1-b8f8796542ea")]
 
 // Version information for an assembly consists of the following four values:
 //
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2.3.16.0")]
-[assembly: AssemblyFileVersion("2.3.16.0")]
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
