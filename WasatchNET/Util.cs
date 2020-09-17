@@ -28,12 +28,13 @@ namespace WasatchNET
                 return null;
             }
 
+            
             if (pixels > 2048)
             {
-                logger.error("generateWavelengths: unlikely pixel count {0}", pixels);
-                return null;
+                logger.info("generateWavelengths: unlikely pixel count {0}", pixels);
             }
-                
+              
+            
             double[] wavelengths = new double[pixels];
             for (uint pixel = 0; pixel < pixels; pixel++)
             {

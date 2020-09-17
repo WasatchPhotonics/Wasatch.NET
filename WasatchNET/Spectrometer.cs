@@ -1912,7 +1912,7 @@ namespace WasatchNET
         string generateUniqueKey(UsbRegistry usbRegistry)
         {
             UsbDevice device;
-            if (!usbRegistry.Open(out device))
+            if (usbRegistry == null || !usbRegistry.Open(out device))
                 return "error";
 
             SortedDictionary<string, string> props = new SortedDictionary<string, string>();
