@@ -314,6 +314,13 @@ namespace WasatchNET
             return true;
         }
 
+        /// <summary>
+        /// Mock spectrometer does not play very nice with the current unique key system since it
+        /// doesn't actually use USB. So here we remove the error calls (we wouldn't really anticipate
+        /// USB errors anyway!)
+        /// </summary>
+        /// <param name="forceNew"></param>
+        /// <returns></returns>
         public override double[] getSpectrum(bool forceNew = false)
         {
             var driver = Driver.getInstance();
