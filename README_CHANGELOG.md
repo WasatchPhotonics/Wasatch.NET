@@ -1,7 +1,7 @@
 # Wasatch.NET Changelog
 
 - 2020-09-17 2.3.17
-    - (internal) made some fixes around mock spectrometer and last version
+    - made some fixes around mock spectrometer and last version
 	- attempt at fixing SPI issues
 - 2020-09-09 2.3.16
     - added DomainTest
