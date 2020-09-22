@@ -314,6 +314,114 @@ namespace WasatchNET
             return true;
         }
 
+        /// <summary>
+        /// Mock spectrometer does not play very nice with the current unique key system since it
+        /// doesn't actually use USB. So here we remove the error calls (we wouldn't really anticipate
+        /// USB errors anyway!)
+        /// </summary>
+        /// <param name="forceNew"></param>
+        /// <returns></returns>
+        public override double[] getSpectrum(bool forceNew = false)
+        {
+            var driver = Driver.getInstance();
+            lock (acquisitionLock)
+            {
+                currentAcquisitionCancelled = false;
+
+                int retries = 0;
+                double[] sum = null;
+                while (true)
+                {
+                    if (currentAcquisitionCancelled || shuttingDown)
+                        return null;
+
+                    sum = getSpectrumRaw();
+
+                    if (currentAcquisitionCancelled || shuttingDown)
+                        return null;
+
+                    if (sum != null)
+                        break;
+
+                    if (retries++ < acquisitionMaxRetries)
+                    {
+                        // retry the whole thing (including ACQUIRE)
+                        logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                        continue;
+                    }
+                    else if (errorOnTimeout)
+                    {
+                        // display error if configured
+                        logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                    }
+                    return null;
+                }
+                logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+                if (scanAveraging_ > 1)
+                {
+                    // logger.debug("getSpectrum: getting additional spectra for averaging");
+                    for (uint i = 1; i < scanAveraging_; i++)
+                    {
+                        // don't send a new SW trigger if using continuous acquisition
+                        double[] tmp;
+                        while (true)
+                        {
+                            if (currentAcquisitionCancelled || shuttingDown)
+                                return null;
+
+                            tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
+
+                            if (currentAcquisitionCancelled || shuttingDown)
+                                return null;
+
+                            if (tmp != null)
+                                break;
+
+                            if (retries++ < acquisitionMaxRetries)
+                            {
+                                // retry the whole thing (including ACQUIRE)
+                                logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                                continue;
+                            }
+                            else if (errorOnTimeout)
+                            {
+                                // display error if configured
+                                logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                            }
+                            return null;
+                        }
+                        if (tmp is null)
+                            return null;
+
+                        for (int px = 0; px < pixels; px++)
+                            sum[px] += tmp[px];
+                    }
+
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] /= scanAveraging_;
+                }
+
+                correctBadPixels(ref sum);
+
+                if (dark != null && dark.Length == sum.Length)
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] -= dark_[px];
+
+                // this should be enough to update the cached value
+                if (readTemperatureAfterSpectrum && eeprom.hasCooling)
+                    _ = detectorTemperatureDegC;
+
+                spectrumCount++;
+
+                if (boxcarHalfWidth_ > 0)
+                    return Util.applyBoxcar(boxcarHalfWidth_, sum);
+                else
+                    return sum;
+            }
+        }
+
+
         protected override double[] getSpectrumRaw(bool skipTrigger = false)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");

@@ -284,6 +284,8 @@ namespace WasatchNET
                 return false;
             }
 
+            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
+
             logger.debug("Trying to get pixel count");
 
             byte[] payload = new byte[0];
