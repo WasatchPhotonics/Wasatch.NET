@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-09-24 2.3.18
+    - fixed lingering EEPROM to JSON bug with older EEPROM formats on read
 - 2020-09-17 2.3.17
     - made some fixes around mock spectrometer and last version
 	- attempt at fixing SPI issues

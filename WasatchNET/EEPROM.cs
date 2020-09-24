@@ -1437,7 +1437,17 @@ namespace WasatchNET
             {
                 json.RelIntCorrCoeffs = new double[json.RelIntCorrOrder];
                 for (int i = 0; i < json.RelIntCorrOrder; ++i)
-                    json.RelIntCorrCoeffs[i] = intensityCorrectionCoeffs[i];
+                {
+                    if (intensityCorrectionCoeffs != null && i < intensityCorrectionCoeffs.Length)
+                    {
+                        json.RelIntCorrCoeffs[i] = intensityCorrectionCoeffs[i];
+                    }
+                    else
+                    {
+                        json.RelIntCorrCoeffs = null;
+                        break;
+                    }
+                }
             }
             json.Bin2x2 = featureMask.bin2x2;
             json.FlipXAxis = featureMask.invertXAxis;
