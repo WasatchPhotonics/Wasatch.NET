@@ -35,6 +35,8 @@ namespace WasatchNET
 
             serialNumber = "";
 
+            wavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
+
             baudRate = 0;
 
             hasCooling = true;
