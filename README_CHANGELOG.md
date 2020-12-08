@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-12-08 2.3.22
+    - internal
 - 2020-12-08 2.3.21
     - internal
 - 2020-12-07 2.3.20

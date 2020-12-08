@@ -498,14 +498,16 @@ namespace WasatchNET
 
                 //Thread.Sleep(100);
 
-                transmitData = new byte[0];
+                Thread.Sleep(2);
 
-                
+                /*
+                transmitData = new byte[0];
                 command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 100); 
                 logger.hexdump(command, String.Format("buffer read back command for page {0}: ", page));
                 result = spi.readWrite(command);
 
                 logger.hexdump(result, "response: ");
+                */
 
                 //Thread.Sleep(100);
 
@@ -517,6 +519,8 @@ namespace WasatchNET
                 result = spi.readWrite(command);
 
                 logger.hexdump(result, "response: ");
+
+                Thread.Sleep(2);
             }
 
             return true;
