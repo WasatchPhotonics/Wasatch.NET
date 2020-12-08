@@ -432,6 +432,7 @@ namespace WasatchNET
 
                 logger.hexdump(result, "response: ");
 
+                /*
                 transmitData = new byte[1] { currPage };
                 command = wrapCommand(EEPROM_OPS, transmitData, STANDARD_PADDING);
                 logger.hexdump(command, String.Format("sending second b0 command to read {0}: ", page));
@@ -446,8 +447,8 @@ namespace WasatchNET
                 result = spi.readWrite(command);
 
                 logger.hexdump(result, "response: ");
-
-                //Thread.Sleep(100);
+                */
+                Thread.Sleep(2);
 
                 transmitData = new byte[0];
                 command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 100);
