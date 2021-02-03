@@ -2323,6 +2323,30 @@ namespace WasatchNET
             return true;
         }
 
+        public virtual float laserPowerSetpointMW
+        {
+            get
+            {
+                // Normal cache doesn't work, because there is no opcode to read
+                // TEC setpoint in DegC, because that isn't a spectrometer property.
+                return laserPowerSetpointMW_;
+            }
+            set
+            {
+                // generate and cache the DegC version
+                laserPowerSetpointMW_ = Math.Min(eeprom.maxLaserPowerMW, Math.Max(eeprom.minLaserPowerMW, value));
+
+                // convert to raw and apply
+                float perc = eeprom.laserPowerCoeffs[0]
+                          + eeprom.laserPowerCoeffs[1] * laserPowerSetpointMW_
+                          + eeprom.laserPowerCoeffs[2] * laserPowerSetpointMW_ * laserPowerSetpointMW_
+                          + eeprom.laserPowerCoeffs[3] * laserPowerSetpointMW_ * laserPowerSetpointMW_ * laserPowerSetpointMW_;
+                setLaserPowerPercentage(perc);
+            }
+        }
+        protected float laserPowerSetpointMW_ = 0;
+
+
         public ushort getDAC_UNUSED() { return Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEC_SETPOINT, 2, 1)); }
 
         // this is not a Property because it has no value and cannot be undone
