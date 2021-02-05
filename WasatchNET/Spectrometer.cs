@@ -1329,6 +1329,8 @@ namespace WasatchNET
         }
         bool areaScanEnabled_ = false;
 
+        public bool fastAreaScan = false;
+
         public virtual float laserTemperatureDegC
         {
             get
@@ -2341,6 +2343,7 @@ namespace WasatchNET
                           + eeprom.laserPowerCoeffs[1] * laserPowerSetpointMW_
                           + eeprom.laserPowerCoeffs[2] * laserPowerSetpointMW_ * laserPowerSetpointMW_
                           + eeprom.laserPowerCoeffs[3] * laserPowerSetpointMW_ * laserPowerSetpointMW_ * laserPowerSetpointMW_;
+                perc /= 100;
                 setLaserPowerPercentage(perc);
             }
         }
@@ -2661,7 +2664,21 @@ namespace WasatchNET
                         }
                         else
                         {
-                            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                            if (areaScanEnabled && fastAreaScan)
+                            {
+                                uint[] temp = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                                subspectrum = new uint[temp.Length * eeprom.activePixelsVert];
+                                temp.CopyTo(subspectrum, 0);
+                                for (int i = 1; i < eeprom.activePixelsVert; ++i)
+                                {
+                                    temp = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                                    temp.CopyTo(subspectrum, i * temp.Length);
+                                }
+                            }
+                            else
+                            {
+                                subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                            }
                         }
                         break;
                     }

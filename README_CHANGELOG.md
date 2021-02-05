@@ -2,6 +2,7 @@
 
 - 2020-02-?? 2.3.23
 	- added control over laser power via direct MW set
+	- added optional fast area scan ability
 - 2020-12-08 2.3.22
     - internal
 - 2020-12-08 2.3.21
