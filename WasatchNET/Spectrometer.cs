@@ -2479,8 +2479,21 @@ namespace WasatchNET
                     if (currentAcquisitionCancelled || shuttingDown)
                         return null;
 
-                    sum = getSpectrumRaw();
-
+                    if (areaScanEnabled && fastAreaScan)
+                    {
+                        double[] temp = getSpectrumRaw();
+                        sum = new double[temp.Length * eeprom.activePixelsVert];
+                        temp.CopyTo(sum, 0);
+                        for (int i = 1; i < eeprom.activePixelsVert; ++i)
+                        {
+                            temp = getSpectrumRaw();
+                            temp.CopyTo(sum, temp.Length * i);
+                        }
+                    }
+                    else
+                    {
+                        sum = getSpectrumRaw();
+                    }
                     if (currentAcquisitionCancelled || shuttingDown)
                         return null;
 
@@ -2514,7 +2527,21 @@ namespace WasatchNET
                             if (currentAcquisitionCancelled || shuttingDown)
                                 return null;
 
-                            tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
+                            if (areaScanEnabled && fastAreaScan)
+                            {
+                                double[] temp = getSpectrumRaw();
+                                tmp = new double[temp.Length * eeprom.activePixelsVert];
+                                temp.CopyTo(tmp, 0);
+                                for (int j = 1; j < eeprom.activePixelsVert; ++j)
+                                {
+                                    temp = getSpectrumRaw();
+                                    temp.CopyTo(tmp, temp.Length * j);
+                                }
+                            }
+                            else
+                            {
+                                tmp = getSpectrumRaw();
+                            }
 
                             if (currentAcquisitionCancelled || shuttingDown)
                                 return null;
@@ -2538,11 +2565,11 @@ namespace WasatchNET
                         if (tmp is null)
                             return null;
 
-                        for (int px = 0; px < pixels; px++)
+                        for (int px = 0; px < sum.Length; px++)
                             sum[px] += tmp[px];
                     }
 
-                    for (int px = 0; px < pixels; px++)
+                    for (int px = 0; px < sum.Length; px++)
                         sum[px] /= scanAveraging_;
                 }
 
@@ -2664,21 +2691,7 @@ namespace WasatchNET
                         }
                         else
                         {
-                            if (areaScanEnabled && fastAreaScan)
-                            {
-                                uint[] temp = readSubspectrum(spectralReader, pixelsPerEndpoint);
-                                subspectrum = new uint[temp.Length * eeprom.activePixelsVert];
-                                temp.CopyTo(subspectrum, 0);
-                                for (int i = 1; i < eeprom.activePixelsVert; ++i)
-                                {
-                                    temp = readSubspectrum(spectralReader, pixelsPerEndpoint);
-                                    temp.CopyTo(subspectrum, i * temp.Length);
-                                }
-                            }
-                            else
-                            {
-                                subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
-                            }
+                            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
                         }
                         break;
                     }
