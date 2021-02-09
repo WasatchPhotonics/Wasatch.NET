@@ -1324,7 +1324,7 @@ namespace WasatchNET
             }
             set
             {
-                sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[]{0,0,0,0,0,0,0,0,0,0});
+                bool trash = sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[]{0,0,0,0,0,0,0,0,0,0});
             }
         }
         bool areaScanEnabled_ = false;
@@ -2481,14 +2481,27 @@ namespace WasatchNET
 
                     if (areaScanEnabled && fastAreaScan)
                     {
-                        double[] temp = getSpectrumRaw();
-                        sum = new double[temp.Length * eeprom.activePixelsVert];
-                        temp.CopyTo(sum, 0);
-                        for (int i = 1; i < eeprom.activePixelsVert; ++i)
+                        try
                         {
-                            temp = getSpectrumRaw();
-                            temp.CopyTo(sum, temp.Length * i);
+                            /*
+                            double[] temp = getSpectrumRaw();
+                            sum = new double[temp.Length * eeprom.activePixelsVert];
+                            temp.CopyTo(sum, 0);
+                            for (int i = 1; i < eeprom.activePixelsVert; ++i)
+                            {
+                                temp = getSpectrumRaw(true);
+                                temp.CopyTo(sum, temp.Length * i);
+                            }
+                            */
+
+                            sum = getAreaScanLightweight();
+
                         }
+                        catch (Exception e)
+                        {
+                            logger.error("Area scan failed out with error {0}", e.Message);
+                        }
+
                     }
                     else
                     {
@@ -2529,6 +2542,7 @@ namespace WasatchNET
 
                             if (areaScanEnabled && fastAreaScan)
                             {
+                                /*
                                 double[] temp = getSpectrumRaw();
                                 tmp = new double[temp.Length * eeprom.activePixelsVert];
                                 temp.CopyTo(tmp, 0);
@@ -2537,6 +2551,9 @@ namespace WasatchNET
                                     temp = getSpectrumRaw();
                                     temp.CopyTo(tmp, temp.Length * j);
                                 }
+                                */
+
+                                tmp = getAreaScanLightweight();
                             }
                             else
                             {
@@ -2653,7 +2670,7 @@ namespace WasatchNET
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
                 sendSWTrigger();
 
-            if (true || isStroker)
+            if ((!skipTrigger || isStroker) && !areaScanEnabled)
             {
                 logger.debug("getSpectrumRaw: extra Stroker delay");
                 Thread.Sleep((int)integrationTimeMS_ + 5);
@@ -2794,6 +2811,37 @@ namespace WasatchNET
 
             lastSpectrum = spec;
             return spec;
+        }
+
+        protected virtual double[] getAreaScanLightweight()
+        {
+            double[] temp = new double[pixels]; // default to all zeros
+            double[] sum = new double[temp.Length * eeprom.activePixelsVert]; 
+            
+            sendSWTrigger();
+
+            lock (commsLock)
+            {
+                for (int i = 0; i < eeprom.activePixelsVert; ++i)
+                {
+                    //temp = getSpectrumRaw(true)
+                    int pixelsRead = 0;
+                    foreach (UsbEndpointReader spectralReader in endpoints)
+                    {
+                        // read all expected pixels from the endpoint
+                        uint[] subspectrum = null;
+                        subspectrum = readSubspectrumLightweight(spectralReader, pixelsPerEndpoint);
+                        for (int j = 0; j < pixelsPerEndpoint; j++)
+                            temp[j + pixelsRead] = subspectrum[j];
+
+                        pixelsRead += pixelsPerEndpoint;
+                    }
+
+                    temp.CopyTo(sum, temp.Length * i);
+                }
+            }
+
+            return sum;
         }
 
         public virtual ushort[] getFrame()
@@ -3122,6 +3170,97 @@ namespace WasatchNET
                 subspectrum[i] = (uint)(subspectrumBytes[i * 2] | (subspectrumBytes[i * 2 + 1] << 8));  // LSB-MSB
 
             logger.debug("readSubspectrum: returning subspectrum");
+            return subspectrum;
+        }
+
+        uint[] readSubspectrumLightweight(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
+        {
+            ////////////////////////////////////////////////////////////////////
+            // Read all the expected bytes.  Don't mess with demarshalling into
+            // pixels yet, because we might get them in odd-sized batches.
+            ////////////////////////////////////////////////////////////////////
+
+            int bytesPerEndpoint = pixelsPerEndpoint * 2;
+            bool triggerWasExternal = triggerSource == TRIGGER_SOURCE.EXTERNAL;
+
+            byte[] subspectrumBytes = new byte[bytesPerEndpoint];  // initialize to zeros
+
+            int bytesReadThisEndpoint = 0;
+            int bytesRemainingToRead = bytesPerEndpoint;
+
+            while (bytesReadThisEndpoint < bytesPerEndpoint)
+            {
+                // compute this inside the loop, just in case (if doing external
+                // triggering), someone changes integration time during trigger wait
+                int timeoutMS = generateTimeoutMS();
+
+                // read the next block of data
+                ErrorCode err = new ErrorCode();
+                int bytesRead = 0;
+                try
+                {
+                    int bytesToRead = bytesPerEndpoint - bytesReadThisEndpoint;
+                    err = spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, bytesPerEndpoint - bytesReadThisEndpoint, timeoutMS, out bytesRead);
+                }
+                catch (Exception ex)
+                {
+                    return null;
+                }
+
+                bytesReadThisEndpoint += bytesRead;
+                if (bytesReadThisEndpoint == bytesPerEndpoint)
+                    break;
+
+                if (bytesRead == 0 && !triggerWasExternal)
+                {
+                    return null;
+                }
+
+                if (bytesReadThisEndpoint > bytesPerEndpoint)
+                {
+                    break;
+                }
+
+                if (triggerWasExternal && triggerSource != TRIGGER_SOURCE.EXTERNAL)
+                {
+                    // need to do this so software can send an ACQUIRE command, else we'll
+                    // loop forever
+                    return null;
+                }
+
+                if (currentAcquisitionCancelled)
+                {
+                    return null;
+                }
+
+                if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
+                {
+                    // Note that we may fall down this path following a SW-triggered
+                    // throwaway initiated by integration time change, even if the overall
+                    // triggering strategy is external.  In that case the following error
+                    // is misleading (it wasn't externally-triggered) but valid (it did
+                    // timeout).
+
+                    // if we were given an explicit timeout, give up
+                    if (acquisitionTimeoutMS != null || acquisitionTimeoutTimestamp != null)
+                    {
+                        acquisitionTimeoutTimestamp = null;
+                        return null;
+                    }
+                }
+
+                return null;
+            }
+
+            ////////////////////////////////////////////////////////////////////
+            // To get here, we should have exactly the expected number of bytes
+            ////////////////////////////////////////////////////////////////////
+
+            // demarshall into pixels
+            uint[] subspectrum = new uint[pixelsPerEndpoint];
+            for (int i = 0; i < pixelsPerEndpoint; i++)
+                subspectrum[i] = (uint)(subspectrumBytes[i * 2] | (subspectrumBytes[i * 2 + 1] << 8));  // LSB-MSB
+
             return subspectrum;
         }
 
