@@ -1,5 +1,15 @@
 # Wasatch.NET Changelog
 
+- 2020-02-19 2.3.23
+	- added control over laser power via direct MW set
+	- added optional fast area scan ability
+	- fixed bug where buffer too small for some commands on ARM spectrometers
+- 2020-12-08 2.3.22
+    - internal
+- 2020-12-08 2.3.21
+    - internal
+- 2020-12-07 2.3.20
+    - internal
 - 2020-11-16 2.3.19
     - changed default wavecal values on some spectrometers, which was causing downstream issues
 - 2020-09-24 2.3.18
