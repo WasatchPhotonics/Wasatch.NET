@@ -2221,7 +2221,7 @@ namespace WasatchNET
             if (shuttingDown)
                 return false;
 
-            if ((isARM || isStroker) && buf is null)
+            if ((isARM || isStroker) && (buf is null || buf.Length < 8))
                 buf = new byte[8];
 
             ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
