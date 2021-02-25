@@ -415,34 +415,47 @@ namespace WasatchNET
             //CHANGES
             for (ushort page = 0; page < EEPROM.MAX_PAGES; page++)
             {
+                
                 byte[] transmitData = new byte[0];
                 byte[] command = wrapCommand(PREP_FPGA, transmitData, STANDARD_PADDING);
+                logger.hexdump(command, String.Format("preparing fpga to read {0}: ", page));
                 byte[] result = spi.readWrite(command);
                 byte currPage = (byte)(0x40 | (uint)page);
 
+                logger.hexdump(result, "response: ");
                 //Thread.Sleep(100);
 
                 transmitData = new byte[1]{ currPage };
                 command = wrapCommand(EEPROM_OPS, transmitData, STANDARD_PADDING);
+                logger.hexdump(command, String.Format("sending first b0 command to read {0}: ", page));
                 result = spi.readWrite(command);
 
+                logger.hexdump(result, "response: ");
+
+                /*
                 transmitData = new byte[1] { currPage };
                 command = wrapCommand(EEPROM_OPS, transmitData, STANDARD_PADDING);
+                logger.hexdump(command, String.Format("sending second b0 command to read {0}: ", page));
                 result = spi.readWrite(command);
 
-
+                logger.hexdump(result, "response: ");
                 //Thread.Sleep(100);
 
                 transmitData = new byte[0];
                 command = wrapCommand(PREP_FPGA, transmitData, STANDARD_PADDING);
+                logger.hexdump(command, String.Format("preparing fpga to read {0}: ", page));
                 result = spi.readWrite(command);
 
-                //Thread.Sleep(100);
+                logger.hexdump(result, "response: ");
+                */
+                Thread.Sleep(2);
 
                 transmitData = new byte[0];
                 command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 100);
+                logger.hexdump(command, String.Format("reading buffer for page {0}: ", page));
                 result = spi.readWrite(command);
 
+                logger.hexdump(result, "response: ");
                 //Thread.Sleep(100);
 
                 int index = 0;
@@ -470,17 +483,31 @@ namespace WasatchNET
             {
                 byte[] transmitData = pages[page];
 
+
+                logger.hexdump(transmitData, String.Format("preparing to write page {0}: ", page));
+
                 //we've had issues with writing EEPROM using SPI so the attempt here is to give extra time before telling the FPGA to write.
                 //a thread sleep might be more prudent, but this needs work in some way regardless
                 byte[] command = wrapCommand(WRITE_EEPROM_BUFFER, transmitData, STANDARD_PADDING * 4);
 
+                logger.hexdump(command, String.Format("write command for page {0}: ", page));
+
                 byte[] result = spi.readWrite(command);
+
+                logger.hexdump(result, "response: ");
 
                 //Thread.Sleep(100);
 
+                Thread.Sleep(2);
+
+                /*
                 transmitData = new byte[0];
-                command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 100);
+                command = wrapCommand(READ_EEPROM_BUFFER, transmitData, 100); 
+                logger.hexdump(command, String.Format("buffer read back command for page {0}: ", page));
                 result = spi.readWrite(command);
+
+                logger.hexdump(result, "response: ");
+                */
 
                 //Thread.Sleep(100);
 
@@ -488,7 +515,12 @@ namespace WasatchNET
 
                 transmitData = new byte[1] { currPage };
                 command = wrapCommand(EEPROM_OPS, transmitData, STANDARD_PADDING);
+                logger.hexdump(command, String.Format("commit to EEPROM command for page {0}: ", page));
                 result = spi.readWrite(command);
+
+                logger.hexdump(result, "response: ");
+
+                Thread.Sleep(2);
             }
 
             return true;

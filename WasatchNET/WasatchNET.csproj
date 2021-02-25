@@ -82,6 +82,9 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>WasatchNETStrongName.pfx.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
+  <PropertyGroup>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="FTD2XX_NET">
       <HintPath>..\lib\FTD2XX_NET.dll</HintPath>
