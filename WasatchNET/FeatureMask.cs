@@ -10,14 +10,18 @@
     {
         enum Flags 
         { 
-            INVERT_X_AXIS   = 0x0001, // 2^0 
-            BIN_2X2         = 0x0002  // 2^1
+            INVERT_X_AXIS     = 0x0001, // 2^0 
+            BIN_2X2           = 0x0002, // 2^1
+            GEN15             = 0x0004, // 2^2
+            CUTOFF_INSTALLED  = 0x0008  // 2^3
         }
 
         public FeatureMask(ushort value = 0)
         {
-            invertXAxis = 0 != (value & (ushort)Flags.INVERT_X_AXIS);
-            bin2x2      = 0 != (value & (ushort)Flags.BIN_2X2);
+            invertXAxis      = 0 != (value & (ushort)Flags.INVERT_X_AXIS);
+            bin2x2           = 0 != (value & (ushort)Flags.BIN_2X2);
+            gen15            = 0 != (value & (ushort)Flags.GEN15);
+            cutoffInstalled  = 0 != (value & (ushort)Flags.CUTOFF_INSTALLED);
         }
 
         public ushort toUInt16()
@@ -58,5 +62,20 @@
         /// Spectrometer.getSpectrumRaw.
         /// </summary>
         public bool bin2x2 { get; set; }
+
+        /// <summary>
+        /// Starting in 2021, some of our spectrometers have what is called a 
+        /// "Gen 1.5 Connector" for interfacing with various external functionality.
+        /// 
+        /// More information to come later.
+        /// </summary>
+        public bool gen15 { get; set; }
+
+        /// <summary>
+        /// In some downstream applications, especially related to "range-finding,"
+        /// whether or not there's a cutoff filter can greatly affect our in-house 
+        /// algorithms.
+        /// </summary>
+        public bool cutoffInstalled { get; set; }
     }
 }

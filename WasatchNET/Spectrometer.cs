@@ -2329,21 +2329,23 @@ namespace WasatchNET
         {
             get
             {
-                // Normal cache doesn't work, because there is no opcode to read
-                // TEC setpoint in DegC, because that isn't a spectrometer property.
                 return laserPowerSetpointMW_;
             }
             set
             {
-                // generate and cache the DegC version
+                // generate and cache the MW
                 laserPowerSetpointMW_ = Math.Min(eeprom.maxLaserPowerMW, Math.Max(eeprom.minLaserPowerMW, value));
 
-                // convert to raw and apply
+                // convert to percent and apply
                 float perc = eeprom.laserPowerCoeffs[0]
                           + eeprom.laserPowerCoeffs[1] * laserPowerSetpointMW_
                           + eeprom.laserPowerCoeffs[2] * laserPowerSetpointMW_ * laserPowerSetpointMW_
                           + eeprom.laserPowerCoeffs[3] * laserPowerSetpointMW_ * laserPowerSetpointMW_ * laserPowerSetpointMW_;
                 perc /= 100;
+                if (perc > 1.0f)
+                    perc = 1.0f;
+                if (perc < 0.0f)
+                    perc = 0.0f;
                 setLaserPowerPercentage(perc);
             }
         }
