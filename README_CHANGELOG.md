@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2020-03-02 2.3.24
+	- upgraded EEPROM to format 10
+	- clamp pct in laser mw set, fixing issue with squishiness on edges
 - 2020-02-19 2.3.23
 	- added control over laser power via direct MW set
 	- added optional fast area scan ability

@@ -499,6 +499,19 @@ namespace WasatchNET
         }
 
         ushort _activePixelsVert;
+        public byte laserWarmupSec
+        {
+            get { return _laserWarmupSec; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _laserWarmupSec = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        byte _laserWarmupSec;
+
         public uint minIntegrationTimeMS
         {
             get { return _minIntegrationTimeMS; }
@@ -1132,6 +1145,11 @@ namespace WasatchNET
 
                 if (format >= 9)
                     featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
+                if (format >= 10)
+                    laserWarmupSec = pages[2][18];
+                else
+                    laserWarmupSec = 20;
+
             }
             catch (Exception ex)
             {
@@ -1600,7 +1618,7 @@ namespace WasatchNET
 
             if (!ParseData.writeString(detectorName, pages[2], 0, 16)) return false;
             if (!ParseData.writeUInt16(activePixelsHoriz, pages[2], 16)) return false;
-            // skip 18
+            pages[2][18] = laserWarmupSec;
             if (!ParseData.writeUInt16(activePixelsVert, pages[2], 19)) return false;
             if (!ParseData.writeFloat(wavecalCoeffs[4], pages[2], 21)) return false;
 
