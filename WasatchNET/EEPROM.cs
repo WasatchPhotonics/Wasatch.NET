@@ -28,16 +28,37 @@ namespace WasatchNET
         // private attributes
         /////////////////////////////////////////////////////////////////////////       
 
-        //internal const int MAX_PAGES = 256; // really 8, but last 2 are unallocated
+        /// <summary>
+        /// How many pages (64-bytes each) are available to be read from the EEPROM
+        /// </summary>
+        /// <remarks>
+        /// This has been verified to be physically 512, all of which are 
+        /// accessible from existing firmware on our ARM models.  A future update
+        /// to /FX2 firmware will make them available on all spectrometers.
+        /// </remarks>
         internal const int MAX_PAGES = 8;
-        protected const byte FORMAT = 9;
+        internal const int MAX_PAGES_REAL = 512;
+
+        /// <summary>
+        /// Current EEPROM format
+        /// </summary>
+        /// <remarks>
+        /// - rev 11
+        ///     - added subformat 4 (identical to subformat 1, but with page 7 used for Handheld Device settings)
+        ///     - added subformat 4, page 7
+        ///         - added libraryType
+        ///         - added libraryID
+        ///         - added startupScansToAverage
+        ///         - added librarySpectrum
+        /// </remarks>
+        protected const byte FORMAT = 11;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
 
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
-        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, RESERVED };
+        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, HANDHELD_DEVICE, RESERVED };
 
         /////////////////////////////////////////////////////////////////////////       
         //
@@ -59,7 +80,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _format = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -73,7 +94,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _model = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -87,7 +108,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _serialNumber = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -101,7 +122,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _baudRate = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -115,7 +136,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _hasCooling = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -129,7 +150,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _hasBattery = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -143,7 +164,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _hasLaser = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -159,7 +180,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _excitationNM = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -173,7 +194,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _slitSizeUM = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -187,12 +208,12 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _startupIntegrationTimeMS = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
         ushort _startupIntegrationTimeMS;
-        public short  startupDetectorTemperatureDegC
+        public short startupDetectorTemperatureDegC
         {
             get { return _startupDetectorTemperatureDegC; }
             set
@@ -200,12 +221,12 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _startupDetectorTemperatureDegC = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
         short _startupDetectorTemperatureDegC;
-        public byte   startupTriggeringMode
+        public byte startupTriggeringMode
         {
             get { return _startupTriggeringMode; }
             set
@@ -213,12 +234,12 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _startupTriggeringMode = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
         byte _startupTriggeringMode;
-        public float  detectorGain
+        public float detectorGain
         {
             get { return _detectorGain; }
             set
@@ -226,12 +247,12 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _detectorGain = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
         float _detectorGain;
-        public short  detectorOffset
+        public short detectorOffset
         {
             get { return _detectorOffset; }
             set
@@ -239,12 +260,12 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _detectorOffset = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
         short _detectorOffset;
-        public float  detectorGainOdd
+        public float detectorGainOdd
         {
             get { return _detectorGainOdd; }
             set
@@ -252,12 +273,12 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _detectorGainOdd = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
         float _detectorGainOdd;
-        public short  detectorOffsetOdd
+        public short detectorOffsetOdd
         {
             get { return _detectorOffsetOdd; }
             set
@@ -265,7 +286,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _detectorOffsetOdd = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -318,12 +339,12 @@ namespace WasatchNET
                     }
                 }
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
         float[] _wavecalCoeffs;
-        
+
         /// <summary>
         /// These are used to convert the user's desired setpoint in degrees 
         /// Celsius to raw 12-bit DAC inputs for passing to the detector's 
@@ -345,7 +366,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _degCToDACCoeffs = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -358,7 +379,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _detectorTempMin = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -371,7 +392,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _detectorTempMax = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -400,7 +421,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _adcToDegCCoeffs = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -413,7 +434,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _thermistorResistanceAt298K = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -426,7 +447,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 _thermistorBeta = value;
                 handler?.Invoke(this, new EventArgs());
-                
+
             }
         }
 
@@ -726,7 +747,7 @@ namespace WasatchNET
                 EventHandler handler = EEPROMChanged;
                 userData = new byte[value.Length];
                 for (int i = 0; i < value.Length; i++)
-                    userData[i] = (byte) value[i];
+                    userData[i] = (byte)value[i];
                 handler?.Invoke(this, new EventArgs());
             }
         }
@@ -785,6 +806,7 @@ namespace WasatchNET
         /////////////////////////////////////////////////////////////////////////       
         // Page 6
         /////////////////////////////////////////////////////////////////////////  
+
         public float[] intensityCorrectionCoeffs
         {
             get { return _intensityCorrectionCoeffs; }
@@ -812,8 +834,56 @@ namespace WasatchNET
         byte _intensityCorrectionOrder;
 
         /////////////////////////////////////////////////////////////////////////       
-        // Page 7 unallocated
+        // Page 7 Handheld Devices
         /////////////////////////////////////////////////////////////////////////  
+
+        public byte libraryType
+        {
+            get { return _libraryType; }
+            set
+            {
+                _libraryType = value;
+                EEPROMChanged.Invoke(this, new EventArgs());
+            }
+        }
+        byte _libraryType;
+
+        public UInt16 libraryID
+        {
+            get { return _libraryID; }
+            set
+            {
+                _libraryID = value;
+                EEPROMChanged.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _libraryID;
+
+        public byte startupScansToAverage
+        {
+            get { return _startupScansToAverage; }
+            set
+            {
+                _startupScansToAverage = value;
+                EEPROMChanged.Invoke(this, new EventArgs());
+            }
+        }
+        byte _startupScansToAverage;
+
+        /////////////////////////////////////////////////////////////////////////
+        // Pages 10-73 (subformat HANDHELD_DEVICE)
+        /////////////////////////////////////////////////////////////////////////
+
+        public List<UInt16> librarySpectrum
+        {
+            get { return _librarySpectrum; }
+            set
+            {
+                _librarySpectrum = value;
+                EEPROMChanged.Invoke(this, new EventArgs());
+            }
+        }
+        List<UInt16> _librarySpectrum;
 
         /////////////////////////////////////////////////////////////////////////
         // Compound Fields
@@ -834,7 +904,6 @@ namespace WasatchNET
                     model = value;
             }
         }
-
 
         /////////////////////////////////////////////////////////////////////////       
         //
@@ -953,7 +1022,10 @@ namespace WasatchNET
             //                                                            //
             ////////////////////////////////////////////////////////////////
 
-            // read all pages into cache
+            ////////////////////////////////////////////////////////////////
+            // read all (standard) pages into cache
+            ////////////////////////////////////////////////////////////////
+
             pages = new List<byte[]>();
             for (ushort page = 0; page < MAX_PAGES; page++)
             {
@@ -974,7 +1046,36 @@ namespace WasatchNET
                 logger.hexdump(buf, String.Format("read page {0}: ", page));
             }
 
+            ////////////////////////////////////////////////////////////////
+            // determine format and subformat early
+            ////////////////////////////////////////////////////////////////
+
             format = pages[0][63];
+            if (format >= 8)
+                subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
+            else if (format >= 6)
+                subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
+            else
+                subformat = PAGE_SUBFORMAT.USER_DATA;
+
+            ////////////////////////////////////////////////////////////////
+            // newer formats support more pages
+            ////////////////////////////////////////////////////////////////
+
+            ////////////////////////////////////////////////////////////////
+            // parse pages according to format and subformat
+            ////////////////////////////////////////////////////////////////
+
+            if (subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
+            {
+                // read pages 8-73 (no need to do all MAX_PAGES_REAL)
+                for (ushort page = MAX_PAGES; page < 74; page++)
+                {
+                    byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                    pages.Add(buf);
+                    logger.hexdump(buf, String.Format("read page {0}: ", page));
+                }
+            }
 
             try
             {
@@ -1079,8 +1180,11 @@ namespace WasatchNET
                 else
                     productConfiguration = "";
 
-                if (format >= 6)
+                if (format >= 6 && (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
+                                    subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE))
                 {
+                    // load Raman Intensity Correction whether subformat is 1 or 4
+                    logger.debug("loading Raman Intensity Correction");
                     intensityCorrectionOrder = ParseData.toUInt8(pages[6], 0);
                     uint numCoeffs = (uint)intensityCorrectionOrder + 1;
 
@@ -1111,7 +1215,6 @@ namespace WasatchNET
                 if (format >= 8)
                 {
                     wavecalCoeffs[4] = ParseData.toFloat(pages[2], 21);
-                    subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
                     if (subformat == PAGE_SUBFORMAT.USER_DATA)
                     {
                         intensityCorrectionOrder = 0;
@@ -1135,13 +1238,6 @@ namespace WasatchNET
                     }
                     */
                 }
-                else
-                {
-                    if (format >= 6)
-                        subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
-                    else
-                        subformat = PAGE_SUBFORMAT.USER_DATA;
-                }
 
                 if (format >= 9)
                     featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
@@ -1150,6 +1246,30 @@ namespace WasatchNET
                 else
                     laserWarmupSec = 20;
 
+                if (format >= 11)
+                {
+                    if (subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
+                    {
+                        logger.debug("loading handheld device configuration");
+                        libraryType = pages[7][0];
+                        libraryID = ParseData.toUInt16(pages[7], 1);
+                        startupScansToAverage = pages[7][3];
+
+                        logger.debug("loading handheld device library spectrum");
+                        librarySpectrum = new List<UInt16>();
+                        for (int page = 10; page < 74; page++)
+                        {
+                            for (int pagePixel = 0; pagePixel < 32; pagePixel++)
+                            {
+                                UInt16 lsb = pages[page][pagePixel * 2];
+                                UInt16 msb = pages[page][pagePixel * 2 + 1];
+                                UInt16 intensity = (UInt16) ((msb << 8) | lsb);
+                                librarySpectrum.Add(intensity);
+                            }
+                        }
+                        logger.debug("loaded library spectrum of {0} values", librarySpectrum.Count);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -1363,6 +1483,7 @@ namespace WasatchNET
                     intensityCorrectionCoeffs[i] = (float)json.RelIntCorrCoeffs[i];
             }
         }
+
         public EEPROMJSON toJSON()
         {
             EEPROMJSON json = new EEPROMJSON();
@@ -1469,6 +1590,7 @@ namespace WasatchNET
             }
             json.Bin2x2 = featureMask.bin2x2;
             json.FlipXAxis = featureMask.invertXAxis;
+            // @todo: there are new FeatureMask fields
 
             return json;
         }
@@ -1713,7 +1835,9 @@ namespace WasatchNET
                     Array.Copy(userDataChunk2, 0, pages[6], 0, 64);
                     Array.Copy(userDataChunk3, 0, pages[7], 0, 64);
                 }
-                else if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION)
+                
+                if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
+                    subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
                 {
                     if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
                     if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
@@ -1721,6 +1845,30 @@ namespace WasatchNET
                         for (int i = 0; i <= intensityCorrectionOrder; ++i)
                         {
                             if (!ParseData.writeFloat(intensityCorrectionCoeffs[i], pages[6], 1 + 4 * i)) return false;
+                        }
+                    }
+                }
+
+                if (subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
+                {
+                    if (!ParseData.writeByte(libraryType, pages[7], 0)) return false;
+                    if (!ParseData.writeUInt16(libraryID, pages[7], 1)) return false;
+                    if (!ParseData.writeByte(startupScansToAverage, pages[7], 3)) return false;
+
+                    if (librarySpectrum != null && librarySpectrum.Count <= 2048)
+                    {
+                        int pixel = 0;
+                        while (pixel < librarySpectrum.Count)
+                        {
+                            int page = (pixel * 2) / 64;
+                            int offset = (pixel * 2) % 64;
+                            if (!ParseData.writeUInt16(librarySpectrum[pixel], pages[page], offset))
+                            {
+                                logger.error("failed to write librarySpectrum pixel {0} page {1} offset {2}", 
+                                    pixel, page, offset);
+                                return false;
+                            }
+                            pixel++;
                         }
                     }
                 }
