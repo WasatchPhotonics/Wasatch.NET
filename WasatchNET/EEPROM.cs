@@ -39,6 +39,9 @@ namespace WasatchNET
         internal const int MAX_PAGES = 8;
         internal const int MAX_PAGES_REAL = 512;
 
+        internal const int LIBRARY_START_PAGE = 10;
+        internal const int LIBRARY_STOP_PAGE = 74;
+
         /// <summary>
         /// Current EEPROM format
         /// </summary>
@@ -1075,11 +1078,11 @@ namespace WasatchNET
             if (subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
             {
                 // read pages 8-73 (no need to do all MAX_PAGES_REAL)
-                for (ushort page = MAX_PAGES; page < 74; page++)
+                for (ushort page = MAX_PAGES; page <= LIBRARY_STOP_PAGE; page++)
                 {
                     byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                     pages.Add(buf);
-                    logger.hexdump(buf, String.Format("read page {0}: ", page));
+                    logger.hexdump(buf, String.Format("read extra page {0}: ", page));
                 }
             }
 
@@ -1263,10 +1266,11 @@ namespace WasatchNET
 
                         logger.debug("loading handheld device library spectrum");
                         librarySpectrum = new List<UInt16>();
-                        for (int page = 10; page < 74; page++)
+                        for (int page = LIBRARY_START_PAGE; page <= LIBRARY_STOP_PAGE; page++)
                         {
                             for (int pagePixel = 0; pagePixel < 32; pagePixel++)
                             {
+                                // crashing here on non-existent page
                                 UInt16 lsb = pages[page][pagePixel * 2];
                                 UInt16 msb = pages[page][pagePixel * 2 + 1];
                                 UInt16 intensity = (UInt16) ((msb << 8) | lsb);
@@ -1861,24 +1865,9 @@ namespace WasatchNET
                     if (!ParseData.writeUInt16(libraryID, pages[7], 1)) return false;
                     if (!ParseData.writeByte(startupScansToAverage, pages[7], 3)) return false;
 
-                    if (librarySpectrum != null && librarySpectrum.Count <= 2048)
-                    {
-                        int pixel = 0;
-                        while (pixel < librarySpectrum.Count)
-                        {
-                            // YOU ARE HERE: pages[] is still only 8, because it was loaded at format <11.
-                            int page = (pixel * 2) / 64;
-                            int offset = (pixel * 2) % 64;
-                            if (!ParseData.writeUInt16(librarySpectrum[pixel], pages[page], offset))
-                            {
-                                logger.error("failed to write librarySpectrum pixel {0} page {1} offset {2}", 
-                                    pixel, page, offset);
-                                return false;
-                            }
-                            pixel++;
-                        }
-                    }
+                    // writing the library itself is done with a manual call to writeLibrary()
                 }
+
             }
 
             else if (format >= 6)
@@ -1894,6 +1883,39 @@ namespace WasatchNET
             }
 
             pages[0][63] = format;
+
+            return true;
+        }
+
+        public bool writeLibrary()
+        {
+            if (subformat != PAGE_SUBFORMAT.HANDHELD_DEVICE)
+            {
+                logger.error("EEPROM.writeLibrary inapplicable on subformat 0x{0:2x}", subformat);
+                return false;
+            }
+
+            if (librarySpectrum != null && librarySpectrum.Count <= 2048)
+            {
+                int pixel = 0;
+                while (pixel < librarySpectrum.Count)
+                {
+                    int page = LIBRARY_START_PAGE + (pixel * 2) / 64;
+                    int offset = (pixel * 2) % 64;
+                    while (page >= pages.Count)
+                    {
+                        logger.debug("appending new page {0}", pages.Count);
+                        pages.Add(new byte[64]);
+                    }
+                    if (!ParseData.writeUInt16(librarySpectrum[pixel], pages[page], offset))
+                    {
+                        logger.error("failed to write librarySpectrum pixel {0} page {1} offset {2}",
+                            pixel, page, offset);
+                        return false;
+                    }
+                    pixel++;
+                }
+            }
 
             return true;
         }
