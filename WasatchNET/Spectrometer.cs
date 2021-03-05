@@ -1692,6 +1692,31 @@ namespace WasatchNET
         uint triggerDelay_;
 
         ////////////////////////////////////////////////////////////////////////
+        // Handheld
+        ////////////////////////////////////////////////////////////////////////
+
+        byte[] getStorageBlock(UInt16 page)
+        {
+            // YOU ARE HERE
+            // 0x25
+            return null;
+        }
+
+        bool eraseStorage()
+        {
+            // YOU ARE HERE
+            // 0x26
+            return false;
+        }
+
+        bool triggerFeedback(UInt16 sequence)
+        {
+            // YOU ARE HERE
+            // 0x27
+            return false;
+        }
+
+        ////////////////////////////////////////////////////////////////////////
         // Lifecycle
         ////////////////////////////////////////////////////////////////////////
 

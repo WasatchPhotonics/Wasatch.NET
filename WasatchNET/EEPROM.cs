@@ -843,7 +843,7 @@ namespace WasatchNET
             set
             {
                 _libraryType = value;
-                EEPROMChanged.Invoke(this, new EventArgs());
+                EEPROMChanged?.Invoke(this, new EventArgs());
             }
         }
         byte _libraryType;
@@ -854,7 +854,7 @@ namespace WasatchNET
             set
             {
                 _libraryID = value;
-                EEPROMChanged.Invoke(this, new EventArgs());
+                EEPROMChanged?.Invoke(this, new EventArgs());
             }
         }
         UInt16 _libraryID;
@@ -865,7 +865,7 @@ namespace WasatchNET
             set
             {
                 _startupScansToAverage = value;
-                EEPROMChanged.Invoke(this, new EventArgs());
+                EEPROMChanged?.Invoke(this, new EventArgs());
             }
         }
         byte _startupScansToAverage;
@@ -880,7 +880,7 @@ namespace WasatchNET
             set
             {
                 _librarySpectrum = value;
-                EEPROMChanged.Invoke(this, new EventArgs());
+                EEPROMChanged?.Invoke(this, new EventArgs());
             }
         }
         List<UInt16> _librarySpectrum;
@@ -914,6 +914,7 @@ namespace WasatchNET
         /// <summary>
         /// Save updated EEPROM fields to the device.
         /// </summary>
+        ///
         /// <remarks>
         /// Only a handful of fields are recommended to be changed by users: 
         ///
@@ -937,6 +938,12 @@ namespace WasatchNET
         /// utility to let you manually write EEPROM fields; contact your sales rep
         /// for a copy.
         /// </remarks>
+        ///
+        /// <todo>
+        /// add an optional "indexes" argument which, if provided, only 
+        /// writes the requested page numbers.
+        /// </todo>
+        ///
         /// <returns>true on success, false on failure</returns>
         public virtual bool write()
         {
@@ -987,7 +994,6 @@ namespace WasatchNET
             }
             defaultValues = false;
             return true;
-            
         }
 
         /////////////////////////////////////////////////////////////////////////       
@@ -1860,6 +1866,7 @@ namespace WasatchNET
                         int pixel = 0;
                         while (pixel < librarySpectrum.Count)
                         {
+                            // YOU ARE HERE: pages[] is still only 8, because it was loaded at format <11.
                             int page = (pixel * 2) / 64;
                             int offset = (pixel * 2) % 64;
                             if (!ParseData.writeUInt16(librarySpectrum[pixel], pages[page], offset))
