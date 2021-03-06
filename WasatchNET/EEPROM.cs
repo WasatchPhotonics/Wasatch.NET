@@ -948,7 +948,7 @@ namespace WasatchNET
         /// </todo>
         ///
         /// <returns>true on success, false on failure</returns>
-        public virtual bool write()
+        public virtual bool write(bool allPages=false)
         {
             ////////////////////////////////////////////////////////////////
             //                                                            //
@@ -956,7 +956,7 @@ namespace WasatchNET
             //                                                            //
             ////////////////////////////////////////////////////////////////
 
-            if (pages is null || pages.Count != MAX_PAGES)
+            if (pages is null || pages.Count < MAX_PAGES)
             {
                 logger.error("EEPROM.write: need to perform a read first");
                 return false;
@@ -964,8 +964,9 @@ namespace WasatchNET
 
             if (!writeParse())
                 return false;
-            
-            for (short page = 0; page < pages.Count; page++)
+
+            int pagesToWrite = allPages ? pages.Count : MAX_PAGES;
+            for (short page = 0; page < pagesToWrite; page++)
             {
                 bool ok = false;
                 if (spectrometer.isARM)
@@ -1270,7 +1271,9 @@ namespace WasatchNET
                         {
                             for (int pagePixel = 0; pagePixel < 32; pagePixel++)
                             {
-                                // crashing here on non-existent page
+                                if (librarySpectrum.Count >= activePixelsHoriz)
+                                    break;
+
                                 UInt16 lsb = pages[page][pagePixel * 2];
                                 UInt16 msb = pages[page][pagePixel * 2 + 1];
                                 UInt16 intensity = (UInt16) ((msb << 8) | lsb);
@@ -1865,9 +1868,49 @@ namespace WasatchNET
                     if (!ParseData.writeUInt16(libraryID, pages[7], 1)) return false;
                     if (!ParseData.writeByte(startupScansToAverage, pages[7], 3)) return false;
 
-                    // writing the library itself is done with a manual call to writeLibrary()
-                }
+                    if (subformat != PAGE_SUBFORMAT.HANDHELD_DEVICE)
+                    {
+                        logger.error("EEPROM.writeLibrary inapplicable on subformat 0x{0:2x}", subformat);
+                        return false;
+                    }
 
+                    if (librarySpectrum == null)
+                    {
+                        logger.error("EEPROM.writeLibrary: no librarySpectrum");
+                        return false;
+                    }
+
+                    if (librarySpectrum.Count > 2048)
+                    {
+                        logger.error("EEPROM.writeLibrary: librarySpectrum only sized for 2048 pixels");
+                        return false; 
+                    }
+
+                    int pixel = 0;
+                    while (pixel < librarySpectrum.Count)
+                    {
+                        int page = LIBRARY_START_PAGE + pixel / 32;
+                        int offset = 2 * (pixel % 32);
+
+                        // fill-in any pages that weren't loaded/created at start
+                        // (e.g. if a different subformat had been in effect)
+                        while (page >= pages.Count)
+                        {
+                            logger.debug("appending new page {0}", pages.Count);
+                            pages.Add(new byte[64]);
+                        }
+
+                        // logger.debug("writeLibrary: writing pixel {0,4} to page {1,4} offset {2,4} value {3,6}", 
+                        //     pixel, page, offset, librarySpectrum[pixel]);
+                        if (!ParseData.writeUInt16(librarySpectrum[pixel], pages[page], offset))
+                        {
+                            logger.error("failed to write librarySpectrum pixel {0} page {1} offset {2}",
+                                pixel, page, offset);
+                            return false;
+                        }
+                        pixel++;
+                    }
+                }
             }
 
             else if (format >= 6)
@@ -1887,41 +1930,9 @@ namespace WasatchNET
             return true;
         }
 
-        public bool writeLibrary()
-        {
-            if (subformat != PAGE_SUBFORMAT.HANDHELD_DEVICE)
-            {
-                logger.error("EEPROM.writeLibrary inapplicable on subformat 0x{0:2x}", subformat);
-                return false;
-            }
-
-            if (librarySpectrum != null && librarySpectrum.Count <= 2048)
-            {
-                int pixel = 0;
-                while (pixel < librarySpectrum.Count)
-                {
-                    int page = LIBRARY_START_PAGE + (pixel * 2) / 64;
-                    int offset = (pixel * 2) % 64;
-                    while (page >= pages.Count)
-                    {
-                        logger.debug("appending new page {0}", pages.Count);
-                        pages.Add(new byte[64]);
-                    }
-                    if (!ParseData.writeUInt16(librarySpectrum[pixel], pages[page], offset))
-                    {
-                        logger.error("failed to write librarySpectrum pixel {0} page {1} offset {2}",
-                            pixel, page, offset);
-                        return false;
-                    }
-                    pixel++;
-                }
-            }
-
-            return true;
-        }
-
         protected void dump()
         {
+            logger.debug("Format                = {0}", format);
             logger.debug("Model                 = {0}", model);
             logger.debug("serialNumber          = {0}", serialNumber);
             logger.debug("baudRate              = {0}", baudRate);
@@ -1979,6 +1990,7 @@ namespace WasatchNET
                 logger.debug("badPixels[{0,2}]         = {1}", i, badPixels[i]);
 
             logger.debug("productConfiguration  = {0}", productConfiguration);
+            logger.debug("Subformat             = {0}", subformat);
         }
     }
 }
