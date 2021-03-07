@@ -1932,8 +1932,8 @@ namespace WasatchNET
 
         protected void dump()
         {
-            logger.debug("Format                = {0}", format);
-            logger.debug("Model                 = {0}", model);
+            logger.debug("format                = {0}", format);
+            logger.debug("model                 = {0}", model);
             logger.debug("serialNumber          = {0}", serialNumber);
             logger.debug("baudRate              = {0}", baudRate);
             logger.debug("hasCooling            = {0}", hasCooling);
@@ -1990,7 +1990,7 @@ namespace WasatchNET
                 logger.debug("badPixels[{0,2}]         = {1}", i, badPixels[i]);
 
             logger.debug("productConfiguration  = {0}", productConfiguration);
-            logger.debug("Subformat             = {0}", subformat);
+            logger.debug("subformat             = {0}", subformat);
         }
     }
 }
