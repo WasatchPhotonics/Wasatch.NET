@@ -118,7 +118,7 @@ namespace WasatchNET
             return true;
         }
 
-        public override bool write()
+        public override bool write(bool allPages=false)
         {
             defaultValues = false;
             return true;

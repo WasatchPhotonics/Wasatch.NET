@@ -676,7 +676,7 @@ namespace WinFormDemo
                 chart1.BeginInvoke(new MethodInvoker(delegate { updateGraph(); }));
 
                 // once a second, update temperatures
-                if (lowFreqOperations++ > 10)
+                if (lowFreqOperations++ > 5)
                 {
                     if (mut.WaitOne(10))
                     {

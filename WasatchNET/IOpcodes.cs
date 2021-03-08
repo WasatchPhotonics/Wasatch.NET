@@ -12,6 +12,7 @@ namespace WasatchNET
     public enum Opcodes
     {
         ACQUIRE_SPECTRUM,
+        ERASE_STORAGE,
         FPGA_RESET,
         GET_ACTUAL_FRAMES,
         GET_ACTUAL_INTEGRATION_TIME,
@@ -33,6 +34,7 @@ namespace WasatchNET
         GET_DETECTOR_TEMPERATURE,
         GET_FIRMWARE_REVISION,
         GET_FPGA_REVISION,
+        GET_STORAGE,
         GET_HORIZONTAL_BINNING,
         GET_INTEGRATION_TIME,
         GET_LASER_ENABLE,
@@ -74,6 +76,7 @@ namespace WasatchNET
         SET_DETECTOR_TEC_ENABLE,
         SET_DETECTOR_TEC_SETPOINT,
         SET_DFU_MODE,
+        SET_FEEDBACK,
         SET_HORIZONTAL_BINNING,
         SET_INTEGRATION_TIME,
         SET_LASER_ENABLE,

@@ -1692,6 +1692,31 @@ namespace WasatchNET
         uint triggerDelay_;
 
         ////////////////////////////////////////////////////////////////////////
+        // Handheld
+        ////////////////////////////////////////////////////////////////////////
+
+        public byte[] getStorage(UInt16 page)
+        {
+            if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                return null;
+            return getCmd2(Opcodes.GET_STORAGE, 64, page);
+        }
+
+        public bool eraseStorage()
+        {
+            if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                return false;
+            return sendCmd2(Opcodes.ERASE_STORAGE);
+        }
+
+        public bool sendFeedback(UInt16 sequence)
+        {
+            if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                return false;
+            return sendCmd2(Opcodes.SET_FEEDBACK, sequence);
+        }
+
+        ////////////////////////////////////////////////////////////////////////
         // Lifecycle
         ////////////////////////////////////////////////////////////////////////
 
@@ -2239,7 +2264,7 @@ namespace WasatchNET
                 if (opcode != Opcodes.SECOND_TIER_COMMAND)
                     expectedSuccessResult = armInvertedRetvals.Contains(opcode);
                 else
-                    expectedSuccessResult = null; // no easy way to know, as we don't pass wValue as enum
+                    expectedSuccessResult = null; // no easy way to know, as we don't pass wValue as enum (MZ: whut?)
             }
 
             lock (commsLock)
@@ -2262,6 +2287,39 @@ namespace WasatchNET
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// send a single 2nd-tier control transfer command (response not checked)
+        /// </summary>
+        /// <param name="opcode">the desired command</param>
+        /// <param name="wIndex">an optional secondary argument used by some 2nd-tier commands</param>
+        /// <param name="buf">a data buffer used by some commands</param>
+        /// <returns>true on success, false on error</returns>
+        /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
+        internal bool sendCmd2(Opcodes opcode, ushort wIndex = 0, byte[] buf = null)
+        {
+            if (shuttingDown)
+                return false;
+
+            if ((isARM || isStroker) && (buf is null || buf.Length < 8))
+                buf = new byte[8];
+
+            ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
+
+            UsbSetupPacket packet = new UsbSetupPacket(
+                HOST_TO_DEVICE,                     // bRequestType
+                cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest
+                cmd[opcode],                        // wValue
+                wIndex,                             // wIndex
+                wLength);                           // wLength
+
+            lock (commsLock)
+            {
+                waitForUsbAvailable();
+                logger.debug("sendCmd2: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
+                return usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////
