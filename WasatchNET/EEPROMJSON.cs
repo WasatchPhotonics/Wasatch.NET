@@ -59,6 +59,9 @@ namespace WasatchNET
         {
             var item = obj as EEPROMJSON;
 
+            if (item == null)
+                return false;
+
             if (item.Serial != this.Serial)
                 return false;
             if (item.Model != this.Model)

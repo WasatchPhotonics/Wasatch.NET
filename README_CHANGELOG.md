@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-03-04 2.3.25
+	- fixing esoteric bug with EEPROMJSON
 - 2020-03-02 2.3.24
 	- upgraded EEPROM to format 10
 	- clamp pct in laser mw set, fixing issue with squishiness on edges
