@@ -119,6 +119,9 @@ namespace WasatchNET
             cmd[Opcodes.GET_OPT_ACTUAL_INTEGRATION_TIME        ] = 0x0b;
             cmd[Opcodes.GET_OPT_HORIZONTAL_BINNING             ] = 0x0c;
             cmd[Opcodes.GET_BATTERY_STATE                      ] = 0x13;
+            cmd[Opcodes.GET_STORAGE                            ] = 0x25;
+            cmd[Opcodes.ERASE_STORAGE                          ] = 0x26;
+            cmd[Opcodes.SET_FEEDBACK                           ] = 0x27;
 
             // TODO: implement, test and document these 2nd-tier commands (see vend_ax.h)
             //

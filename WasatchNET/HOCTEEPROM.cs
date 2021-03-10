@@ -28,7 +28,7 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
-        public override bool write()
+        public override bool write(bool allPages=false)
         {
             byte[] buffer = new byte[32];
 

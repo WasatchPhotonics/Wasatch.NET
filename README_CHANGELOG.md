@@ -1,11 +1,14 @@
 # Wasatch.NET Changelog
 
-- 2020-03-04 2.3.25
+- 2020-??-?? 2.3.26
 	- fixing esoteric bug with EEPROMJSON
-- 2020-03-02 2.3.24
+- 2021-??-?? 2.3.25
+    - added subformat 4 (handheld)
+    - added GET\_STORAGE, ERASE\_STORAGE, SET\_FEEDBACK
+- 2021-03-02 2.3.24
 	- upgraded EEPROM to format 10
 	- clamp pct in laser mw set, fixing issue with squishiness on edges
-- 2020-02-19 2.3.23
+- 2021-02-19 2.3.23
 	- added control over laser power via direct MW set
 	- added optional fast area scan ability
 	- fixed bug where buffer too small for some commands on ARM spectrometers
