@@ -1,6 +1,6 @@
 # Wasatch.NET Changelog
 
-- 2021-??-?? 2.3.25
+- 2021-03-15 2.3.25
     - added subformat 4 (handheld)
     - added GET\_STORAGE, ERASE\_STORAGE, SET\_FEEDBACK
 - 2021-03-02 2.3.24
