@@ -829,6 +829,14 @@ namespace WasatchNET
             set
             {
                 EventHandler handler = EEPROMChanged;
+                if (_intensityCorrectionOrder != value)
+                {
+                    float[] temp = new float[_intensityCorrectionCoeffs.Length];
+                    _intensityCorrectionCoeffs.CopyTo(temp, 0);
+                    _intensityCorrectionCoeffs = new float[value + 1];
+                    for (int i = 0; (i < temp.Length && i < _intensityCorrectionCoeffs.Length); ++i)
+                        _intensityCorrectionCoeffs[i] = temp[i];
+                }
                 _intensityCorrectionOrder = value;
                 handler?.Invoke(this, new EventArgs());
             }
@@ -1413,6 +1421,8 @@ namespace WasatchNET
 
             featureMask.bin2x2 = json.Bin2x2;
             featureMask.invertXAxis = json.FlipXAxis;
+            featureMask.gen15 = json.Gen15;
+            featureMask.cutoffInstalled = json.CutoffFilter;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -1458,6 +1468,7 @@ namespace WasatchNET
 
             maxLaserPowerMW = (float)json.MaxLaserPowerMW;
             minLaserPowerMW = (float)json.MinLaserPowerMW;
+            laserWarmupSec = json.LaserWarmupS;
             laserExcitationWavelengthNMFloat = (float)json.ExcitationWavelengthNM;
             avgResolution = (float)json.AvgResolution;
             laserPowerCoeffs[0] = (float)json.LaserPowerCoeffs[0];
@@ -1490,6 +1501,7 @@ namespace WasatchNET
             intensityCorrectionOrder = (byte)json.RelIntCorrOrder;
             if (json.RelIntCorrOrder > 0)
             {
+                intensityCorrectionCoeffs = new float[intensityCorrectionOrder + 1];
                 subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
 
                 for (int i = 0; i < intensityCorrectionCoeffs.Length; ++i)
@@ -1603,7 +1615,10 @@ namespace WasatchNET
             }
             json.Bin2x2 = featureMask.bin2x2;
             json.FlipXAxis = featureMask.invertXAxis;
-            // @todo: there are new FeatureMask fields
+            json.Gen15 = featureMask.gen15;
+            json.CutoffFilter = featureMask.cutoffInstalled;
+
+            json.LaserWarmupS = laserWarmupSec;
 
             return json;
         }

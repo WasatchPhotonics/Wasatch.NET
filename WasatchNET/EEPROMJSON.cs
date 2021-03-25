@@ -54,6 +54,9 @@ namespace WasatchNET
         public double[] RelIntCorrCoeffs;
         public bool Bin2x2;
         public bool FlipXAxis;
+        public bool Gen15;
+        public bool CutoffFilter;
+        public byte LaserWarmupS;
 
         public override bool Equals(object obj)
         {
@@ -157,6 +160,12 @@ namespace WasatchNET
             if (item.Bin2x2 != this.Bin2x2)
                 return false;
             if (item.FlipXAxis != this.FlipXAxis)
+                return false;
+            if (item.Gen15 != this.Gen15)
+                return false;
+            if (item.CutoffFilter != this.CutoffFilter)
+                return false;
+            if (item.LaserWarmupS != this.LaserWarmupS)
                 return false;
 
             return true;
