@@ -1,9 +1,6 @@
 # Wasatch.NET Changelog
 
-- 2020-03-25 2.3.26
-	- fixing bugs with EEPROMJSON and misalignment between relative intensity order and coefficient array length
-	- adding new fields to JSON representation of EEPROM
-- 2021-??-?? 2.3.25
+- 2021-03-15 2.3.25
     - added subformat 4 (handheld)
     - added GET\_STORAGE, ERASE\_STORAGE, SET\_FEEDBACK
 - 2021-03-02 2.3.24
