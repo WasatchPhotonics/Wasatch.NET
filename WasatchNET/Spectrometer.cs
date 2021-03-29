@@ -101,6 +101,9 @@ namespace WasatchNET
         int pixelsPerEndpoint = 0;
         ulong throwawaySum = 0;
 
+        public IntegrationOptimizer integrationOptimizer;
+        public bool integrationOptimizationEnabled = false;
+
         ////////////////////////////////////////////////////////////////////////
         // Convenience lookups
         ////////////////////////////////////////////////////////////////////////
@@ -1726,6 +1729,8 @@ namespace WasatchNET
             usbRegistry = usbReg;
             pixels = 0;
             uniqueKey = generateUniqueKey(usbReg);
+
+            integrationOptimizer = new IntegrationOptimizer(this);
         }
 
         virtual internal bool open()
@@ -2662,6 +2667,9 @@ namespace WasatchNET
 
                 spectrumCount++;
                 uptime.setSuccess(uniqueKey);
+
+                if (integrationOptimizationEnabled)
+                    integrationOptimizer.process();
 
                 if (boxcarHalfWidth_ > 0)
                     return Util.applyBoxcar(boxcarHalfWidth_, sum);

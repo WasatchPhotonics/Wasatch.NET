@@ -54,6 +54,9 @@ namespace WasatchNET
         /// <summary>initial integration time for first iteration</summary>
         public uint startMS = 10;
 
+        public int consecutiveRoundDowns { get; private set; } = 0;
+        public int consecutiveRoundUps { get; private set; } = 0;
+
         /// <summary>the Spectrometer being optimized</summary>
         public Spectrometer spec;
         Logger logger = Logger.getInstance();
@@ -94,13 +97,75 @@ namespace WasatchNET
                 spec.scanAveraging = saveAvg;
         }
 
+        /// <summary>
+        /// If we are "continuously optimizing" integration time to hold at a 
+        /// configured peak intensity, use the latest spectrum to adjust 
+        /// integration time.
+        /// </summary>
+        /// <returns>true if integration time optimal, false if otherwise</returns>
+        public bool process()
+        { 
+            status = Status.PENDING;
+            var sn = spec.serialNumber;
+            var spectrum = spec.lastSpectrum;
+
+            if (spec.shuttingDown || spectrum is null)
+            {
+                status = Status.ERROR;
+                return false;
+            }
+
+            double peakCounts = spectrum.Max();
+
+            ////////////////////////////////////////////////////////////////
+            // are we optimal?
+            ////////////////////////////////////////////////////////////////
+
+            if (Math.Abs(peakCounts - targetCounts) <= targetCountThreshold)
+            {
+                logger.debug($"{sn}:   integration time at {spec.integrationTimeMS}ms is optimal (max {peakCounts}, target {targetCounts}, threshold {targetCountThreshold})");
+                status = Status.SUCCESS;
+                return true;
+            }
+
+            ////////////////////////////////////////////////////////////////
+            // not yet optimal, so adjust
+            ////////////////////////////////////////////////////////////////
+
+            var ms = spec.integrationTimeMS;
+            if (peakCounts > targetCounts)
+                ms /= 2;
+            else
+            {
+                var tmp = (uint) Math.Round(ms * targetCounts / peakCounts);
+                if (tmp == ms)
+                    tmp++;
+                ms = tmp;
+            }
+            logger.debug($"{sn}:   scaling integration time to {ms}");
+
+            // clamp
+            if (ms > maxSaneIntegrationTimeMS)
+            {
+                logger.debug($"{sn}:   rounding {ms} down to {maxSaneIntegrationTimeMS}");
+                ms = maxSaneIntegrationTimeMS;
+            }
+            else if (ms < spec.eeprom.minIntegrationTimeMS)
+            {
+                logger.debug($"{sn}:   rounding {ms} up to {spec.eeprom.minIntegrationTimeMS}");
+                ms = spec.eeprom.minIntegrationTimeMS;
+            }
+
+            spec.integrationTimeMS = ms;
+            return false;
+        }
+
         void run()
         { 
-            double peakCounts = 0;
             int iterations = 0;
-            int consecutiveRoundUps = 0;
-            int consecutiveRoundDowns = 0;
-            int maxConsecutiveRounding = 2;
+            consecutiveRoundUps = 0;
+            consecutiveRoundDowns = 0;
+            const int maxConsecutiveRounding = 2;
 
             status = Status.PENDING;
             spec.integrationTimeMS = startMS;
@@ -118,7 +183,7 @@ namespace WasatchNET
                     return;
                 }
 
-                peakCounts = spectrum.Max();
+                double peakCounts = spectrum.Max();
                 logger.debug($"{sn}:   max = {peakCounts}");
 
                 ////////////////////////////////////////////////////////////////
