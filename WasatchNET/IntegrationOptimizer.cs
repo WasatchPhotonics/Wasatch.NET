@@ -54,9 +54,6 @@ namespace WasatchNET
         /// <summary>initial integration time for first iteration</summary>
         public uint startMS = 10;
 
-        public int consecutiveRoundDowns { get; private set; } = 0;
-        public int consecutiveRoundUps { get; private set; } = 0;
-
         /// <summary>the Spectrometer being optimized</summary>
         public Spectrometer spec;
         Logger logger = Logger.getInstance();
@@ -163,9 +160,9 @@ namespace WasatchNET
         void run()
         { 
             int iterations = 0;
-            consecutiveRoundUps = 0;
-            consecutiveRoundDowns = 0;
-            const int maxConsecutiveRounding = 2;
+            int consecutiveRoundUps = 0;
+            int consecutiveRoundDowns = 0;
+            int maxConsecutiveRounding = 2;
 
             status = Status.PENDING;
             spec.integrationTimeMS = startMS;

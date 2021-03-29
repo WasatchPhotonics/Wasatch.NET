@@ -101,7 +101,10 @@ namespace WasatchNET
         int pixelsPerEndpoint = 0;
         ulong throwawaySum = 0;
 
+        /// <summary>Use this to configure free-running integration time optimization</summary>
         public IntegrationOptimizer integrationOptimizer;
+
+        /// <summary>Enable this to automatically optimize integration time to configured thresholds over subsequent calls to getSpectrum()</summary>
         public bool integrationOptimizationEnabled = false;
 
         ////////////////////////////////////////////////////////////////////////
