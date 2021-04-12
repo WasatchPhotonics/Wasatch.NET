@@ -881,6 +881,39 @@ namespace WasatchNET
         }
         byte _startupScansToAverage;
 
+        public byte matchingMinRampPixels
+        {
+            get { return _matchingMinRampPixels; }            
+            set
+            {
+                _matchingMinRampPixels = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _matchingMinRampPixels = 10;
+
+        public UInt16 matchingMinPeakHeight
+        {
+            get { return _matchingMinPeakHeight; }
+            set
+            {
+                _matchingMinPeakHeight = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _matchingMinPeakHeight = 500;
+
+        public byte matchingThreshold
+        {
+            get { return _matchingThreshold; }            
+            set
+            {
+                _matchingThreshold = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _matchingThreshold = 90;
+
         /////////////////////////////////////////////////////////////////////////
         // Pages 10-73 (subformat HANDHELD_DEVICE)
         /////////////////////////////////////////////////////////////////////////
@@ -1269,9 +1302,12 @@ namespace WasatchNET
                     if (subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
                     {
                         logger.debug("loading handheld device configuration");
-                        libraryType = pages[7][0];
+                        libraryType = ParseData.toUInt8(pages[7], 0);
                         libraryID = ParseData.toUInt16(pages[7], 1);
-                        startupScansToAverage = pages[7][3];
+                        startupScansToAverage = ParseData.toUInt8(pages[7], 3);
+                        matchingMinRampPixels = ParseData.toUInt8(pages[7], 4);
+                        matchingMinPeakHeight = ParseData.toUInt16(pages[7], 5);
+                        matchingThreshold = ParseData.toUInt8(pages[7], 7);
 
                         logger.debug("loading handheld device library spectrum");
                         librarySpectrum = new List<UInt16>();
