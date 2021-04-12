@@ -1915,15 +1915,12 @@ namespace WasatchNET
 
                 if (subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
                 {
-                    if (!ParseData.writeByte(libraryType, pages[7], 0)) return false;
-                    if (!ParseData.writeUInt16(libraryID, pages[7], 1)) return false;
-                    if (!ParseData.writeByte(startupScansToAverage, pages[7], 3)) return false;
-
-                    if (subformat != PAGE_SUBFORMAT.HANDHELD_DEVICE)
-                    {
-                        logger.error("EEPROM.writeLibrary inapplicable on subformat 0x{0:2x}", subformat);
-                        return false;
-                    }
+                    if (!ParseData.writeByte(libraryType,               pages[7], 0)) return false;
+                    if (!ParseData.writeUInt16(libraryID,               pages[7], 1)) return false;
+                    if (!ParseData.writeByte(startupScansToAverage,     pages[7], 3)) return false;
+                    if (!ParseData.writeByte(matchingMinRampPixels,     pages[7], 4)) return false;
+                    if (!ParseData.writeUInt16(matchingMinPeakHeight,   pages[7], 5)) return false;
+                    if (!ParseData.writeByte(matchingThreshold,         pages[7], 7)) return false;
 
                     if (librarySpectrum == null)
                     {
