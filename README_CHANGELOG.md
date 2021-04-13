@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-04-12 2.3.27
+    - added matchingThreshold, matchingMinPeakHeight, matchingMinRampPixels
 - 2020-03-25 2.3.26
 	- fixing bugs with EEPROMJSON and misalignment between relative intensity order and coefficient array length
 	- adding new fields to JSON representation of EEPROM
