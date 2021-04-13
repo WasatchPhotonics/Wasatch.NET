@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2020-03-29 2.3.27
+    - added IntegrationOptimizer to Spectrometer with new optimizeIntegrationEnable flag
 - 2020-03-25 2.3.26
 	- fixing bugs with EEPROMJSON and misalignment between relative intensity order and coefficient array length
 	- adding new fields to JSON representation of EEPROM

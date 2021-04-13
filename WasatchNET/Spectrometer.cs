@@ -101,6 +101,12 @@ namespace WasatchNET
         int pixelsPerEndpoint = 0;
         ulong throwawaySum = 0;
 
+        /// <summary>Use this to configure free-running integration time optimization</summary>
+        public IntegrationOptimizer integrationOptimizer;
+
+        /// <summary>Enable this to automatically optimize integration time to configured thresholds over subsequent calls to getSpectrum()</summary>
+        public bool integrationOptimizationEnabled = false;
+
         ////////////////////////////////////////////////////////////////////////
         // Convenience lookups
         ////////////////////////////////////////////////////////////////////////
@@ -1726,6 +1732,8 @@ namespace WasatchNET
             usbRegistry = usbReg;
             pixels = 0;
             uniqueKey = generateUniqueKey(usbReg);
+
+            integrationOptimizer = new IntegrationOptimizer(this);
         }
 
         virtual internal bool open()
@@ -2662,6 +2670,9 @@ namespace WasatchNET
 
                 spectrumCount++;
                 uptime.setSuccess(uniqueKey);
+
+                if (integrationOptimizationEnabled)
+                    integrationOptimizer.process();
 
                 if (boxcarHalfWidth_ > 0)
                     return Util.applyBoxcar(boxcarHalfWidth_, sum);

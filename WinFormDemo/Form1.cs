@@ -180,6 +180,7 @@ namespace WinFormDemo
             DemoUtil.expandNUD(numericUpDownIntegTimeMS, (int)currentSpectrometer.integrationTimeMS);
             numericUpDownBoxcarHalfWidth.Value = currentSpectrometer.boxcarHalfWidth;
             numericUpDownScanAveraging.Value = currentSpectrometer.scanAveraging;
+            checkBoxOptimize.Checked = currentSpectrometer.integrationOptimizationEnabled;
 
             // update TEC controls
             numericUpDownDetectorSetpointDegC.Minimum = (int)currentSpectrometer.eeprom.detectorTempMin;
@@ -649,6 +650,15 @@ namespace WinFormDemo
         {
             opts.scanIntervalSec = (uint)(sender as NumericUpDown).Value;
         }
+
+        private void checkBoxOptimize_CheckedChanged(object sender, EventArgs e)
+        {
+            if (currentSpectrometer is null)
+                return;
+
+            currentSpectrometer.integrationOptimizationEnabled = checkBoxOptimize.Checked;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // BackgroundWorker: GUI Updates
         ////////////////////////////////////////////////////////////////////////
@@ -819,6 +829,11 @@ namespace WinFormDemo
                 state.processSpectrum(raw);
             }
             logger.debug("doAcquireIteration: done processing spectrum");
+
+            // update displayed integration time if optimizing
+            if (state.spectrometer.integrationOptimizationEnabled)
+                numericUpDownIntegTimeMS.BeginInvoke(new MethodInvoker(delegate {
+                    numericUpDownIntegTimeMS.Value = state.spectrometer.integrationTimeMS; }));
 
             // end thread if we've completed our allocated acquisitions
             if (opts.scanCount > 0 && state.scanCount >= opts.scanCount)
