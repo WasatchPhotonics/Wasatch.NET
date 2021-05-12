@@ -47,12 +47,7 @@ namespace WasatchNET
         /// </summary>
         /// <remarks>
         /// - rev 11
-        ///     - added subformat 4 (identical to subformat 1, but with page 7 used for Handheld Device settings)
-        ///     - added subformat 4, page 7
-        ///         - added libraryType
-        ///         - added libraryID
-        ///         - added startupScansToAverage
-        ///         - added librarySpectrum
+        ///     - added subformat 3 (identical to subformat 1, but with page 7 used for Handheld Device settings)
         /// </remarks>
         protected const byte FORMAT = 11;
 
@@ -61,7 +56,7 @@ namespace WasatchNET
 
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
-        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, HANDHELD_DEVICE, RESERVED };
+        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, HANDHELD_DEVICE };
 
         /////////////////////////////////////////////////////////////////////////       
         //
@@ -1234,7 +1229,7 @@ namespace WasatchNET
                 if (format >= 6 && (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
                                     subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE))
                 {
-                    // load Raman Intensity Correction whether subformat is 1 or 4
+                    // load Raman Intensity Correction whether subformat is 1 or 3
                     logger.debug("loading Raman Intensity Correction");
                     intensityCorrectionOrder = ParseData.toUInt8(pages[6], 0);
                     uint numCoeffs = (uint)intensityCorrectionOrder + 1;

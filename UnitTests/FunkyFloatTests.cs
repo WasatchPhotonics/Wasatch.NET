@@ -8,11 +8,19 @@ namespace UnitTests
     public class FunkyFloatTests
     {
         [TestMethod]
-        public void fromFloatTest()
+        public void fromFloatTest19()
         {
             float f = 1.9f;
             ushort word = FunkyFloat.fromFloat(f);
             Assert.AreEqual(0x01e6, word);
+        }
+
+        [TestMethod]
+        public void fromFloatTest099()
+        {
+            float f = 0.99f;
+            ushort word = FunkyFloat.fromFloat(f);
+            Assert.AreEqual(253, word);
         }
 
         [TestMethod]
