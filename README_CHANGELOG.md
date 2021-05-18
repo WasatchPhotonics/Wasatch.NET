@@ -1,8 +1,10 @@
 # Wasatch.NET Changelog
 
-- 2020-04-12 2.3.27
+- 2021-05-18 2.3.28
+	- added user configurable field to control how long temperatures are cached
+- 2021-04-12 2.3.27
     - added matchingThreshold, matchingMinPeakHeight, matchingMinRampPixels
-- 2020-03-25 2.3.26
+- 2021-03-25 2.3.26
 	- fixing bugs with EEPROMJSON and misalignment between relative intensity order and coefficient array length
 	- adding new fields to JSON representation of EEPROM
 - 2021-03-15 2.3.25

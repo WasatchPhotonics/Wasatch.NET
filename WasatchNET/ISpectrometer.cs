@@ -131,6 +131,7 @@ namespace WasatchNET
 
         float detectorTemperatureDegC { get; }
         ushort detectorTemperatureRaw { get; }
+        double detectorTemperatureCacheTimeMS { get; set; }
 
         string firmwareRevision { get; }
         string fpgaRevision { get; }

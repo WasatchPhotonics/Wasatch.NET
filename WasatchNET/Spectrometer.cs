@@ -927,7 +927,7 @@ namespace WasatchNET
                     return 0;
 
                 DateTime now = DateTime.Now;
-                if (detectorTemperatureRaw_ == 0 || ((now - detectorTemperatureRawTimestamp).TotalSeconds >= 1.0))
+                if (detectorTemperatureRaw_ == 0 || ((now - detectorTemperatureRawTimestamp).TotalMilliseconds >= detectorTemperatureCacheTimeMS))
                 {
                     detectorTemperatureRaw_ = swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
                     detectorTemperatureRawTimestamp = now;
@@ -937,6 +937,7 @@ namespace WasatchNET
         }
         ushort detectorTemperatureRaw_ = 0;
         DateTime detectorTemperatureRawTimestamp = DateTime.Now;
+        public double detectorTemperatureCacheTimeMS { get; set; } = 1000;
 
         public virtual string firmwareRevision
         {
