@@ -1,5 +1,9 @@
 # Wasatch.NET Changelog
 
+- 2021-05-28 2.3.29
+    - updated docs
+    - strengthened EEPROM.hasLaserPowerCalibration
+    - updated WinFormDemo with tabbed controls and laserPowerMW
 - 2021-05-18 2.3.28
 	- added user configurable field to control how long temperatures are cached
 - 2021-04-12 2.3.27

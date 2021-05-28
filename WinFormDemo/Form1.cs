@@ -192,10 +192,22 @@ namespace WinFormDemo
                 numericUpDownLaserPowerPerc.Enabled =
                 checkBoxLaserEnable.Enabled = true;
                 checkBoxLaserEnable.Checked = currentSpectrometer.laserEnabled;
+
+                if (currentSpectrometer.eeprom.hasLaserPowerCalibration())
+                {
+                    numericUpDownLaserPowerMW.Enabled = true;
+                    numericUpDownLaserPowerMW.Maximum = (decimal)currentSpectrometer.eeprom.maxLaserPowerMW;
+                    numericUpDownLaserPowerMW.Minimum = (decimal)currentSpectrometer.eeprom.minLaserPowerMW;
+                }
+                else
+                {
+                    numericUpDownLaserPowerMW.Enabled = false;
+                }
             }
             else
             {
                 numericUpDownLaserPowerPerc.Enabled =
+                numericUpDownLaserPowerMW.Enabled =
                 checkBoxLaserEnable.Enabled =
                 checkBoxLaserEnable.Checked = false;
             }
@@ -622,6 +634,12 @@ namespace WinFormDemo
                 currentSpectrometer.setLaserPowerPercentage(((float)numericUpDownLaserPowerPerc.Value) / 100.0f);
         }
 
+        private void numericUpDownLaserPowerMW_ValueChanged(object sender, EventArgs e)
+        {
+            if (currentSpectrometer != null)
+                currentSpectrometer.laserPowerSetpointMW = (float)numericUpDownLaserPowerMW.Value;
+        }
+
         private void numericUpDownDetectorSetpointDegC_ValueChanged(object sender, EventArgs e)
         {
             if (currentSpectrometer != null)
@@ -894,5 +912,6 @@ namespace WinFormDemo
                     logger.debug("shutdown still pending %s", string.Join(", ", waitList));
             }
         }
+
     }
 }
