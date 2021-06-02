@@ -2337,6 +2337,10 @@ namespace WasatchNET
         /// Technically you don't need to call this function at all, and can set 
         /// the laserModulationPulseWidth, laserModulationPulsePeriod and 
         /// laserModulationEnabled properties directly if you wish.
+        ///
+        /// Alternately, you can use the laserPowerSetpointMW property to set
+        /// laser power in mW, provided a suitable laser power calibration is
+        /// loaded onto the EEPROM.
         /// </remarks>
         public virtual bool setLaserPowerPercentage(float perc)
         {
@@ -2384,6 +2388,23 @@ namespace WasatchNET
             return true;
         }
 
+        /// <summary>
+        /// Use this to set the laser output power in milliWatts.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// You should only attempt to set this property if you have already 
+        /// verified EEPROM.hasLaserPowerCalibration().
+        ///
+        /// You should only attempt to read this property AFTER setting a value;
+        /// the getter simply returns the most recently successfully set setpoint.
+        ///
+        /// Setting this property will yield undefined results if no laser power 
+        /// calibration is provided in the spectrometer, but never outside the 
+        /// physical PWM duty cycle bounds (0, 100%).
+        /// </remarks>
+        ///
+        /// <see cref="EEPROM.hasLaserPowerCalibration"/>
         public virtual float laserPowerSetpointMW
         {
             get
@@ -2392,6 +2413,13 @@ namespace WasatchNET
             }
             set
             {
+                if (!eeprom.hasLaserPowerCalibration())
+                {
+                    logger.error("can't set laser power in mW without a laser power calibration");
+                    laserPowerSetpointMW_ = 0;
+                    return;
+                }
+
                 // generate and cache the MW
                 laserPowerSetpointMW_ = Math.Min(eeprom.maxLaserPowerMW, Math.Max(eeprom.minLaserPowerMW, value));
 

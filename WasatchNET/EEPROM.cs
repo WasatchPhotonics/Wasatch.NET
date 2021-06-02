@@ -1654,7 +1654,22 @@ namespace WasatchNET
             return json;
         }
 
-
+        /// <summary>
+        /// Reports whether the Spectrometer's EEPROM contains four valid 
+        /// coefficients for converting a requested output power setpoint in 
+        /// milliWatts into the calibrated fractional PWM duty cycle as a 
+        /// percentage of full (continuous) power.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// All this does is confirm that four floating-point values were 
+        /// successfully demarshalled from the appropriate 16 bytes of the EEPROM
+        /// page, and that at least one of them is non-zero and positive.  It 
+        /// does not guarantee that the floats together represent an accurate 
+        /// laser power calibration for the current spectrometer.
+        /// </remarks>
+        ///
+        /// <returns>whether a seeming-valid calibration was found</returns>
         public bool hasLaserPowerCalibration()
         {
             if (maxLaserPowerMW <= 0)
@@ -1663,11 +1678,14 @@ namespace WasatchNET
             if (laserPowerCoeffs is null || laserPowerCoeffs.Length < 4)
                 return false;
 
+            bool onePos = false;
             foreach (double d in laserPowerCoeffs)
                 if (Double.IsNaN(d))
                     return false;
+                else if (d > 0)
+                    onePos = true;
 
-            return true;
+            return onePos;
         }
 
         protected void enforceReasonableDefaults()
