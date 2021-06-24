@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2021-06-24 2.3.30
+    - added support for software even/odd gain/offset correction for InGaAs units
+	- added option for 0 noise TEC readbacks on mocks
 - 2021-05-28 2.3.29
     - updated docs
     - strengthened EEPROM.hasLaserPowerCalibration

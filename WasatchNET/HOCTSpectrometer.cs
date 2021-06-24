@@ -1270,7 +1270,7 @@ namespace WasatchNET
         }
 
         public override bool isARM => false;
-
+        public override bool isInGaAs => false;
         public override float excitationWavelengthNM
         {
             get => 840f;

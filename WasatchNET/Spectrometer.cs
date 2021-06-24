@@ -1976,7 +1976,8 @@ namespace WasatchNET
 
         public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
         public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx");
-        
+        public virtual bool isInGaAs => featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2;
+
         public virtual bool hasLaser
         {
             get
@@ -2040,6 +2041,31 @@ namespace WasatchNET
             byte lsb = (byte)(raw & 0xff);
             byte msb = (byte)((raw >> 8) & 0xff);
             return (ushort)((lsb << 8) | msb);
+        }
+
+        uint[] correctIngaasEvenOdd(uint[] spectrum)
+        {
+            uint[] final = new uint[spectrum.Length];
+            if (eeprom.detectorGain == eeprom.detectorGainOdd && eeprom.detectorOffset == eeprom.detectorOffsetOdd)
+                return spectrum;
+
+            for (int i = 0; i < spectrum.Length; ++i)
+            {
+                if (i % 2 == 0)
+                {
+                    final[i] = spectrum[i];
+                }
+                else
+                {
+                    double old = spectrum[i];
+                    double raw = (old - eeprom.detectorOffset) / eeprom.detectorGain;
+                    double newVal = (raw * eeprom.detectorGainOdd) + eeprom.detectorOffsetOdd;
+
+                    final[i] = (uint)Math.Round(Math.Max(0,Math.Min(newVal, 0xffff)));
+                }
+            }
+
+            return final;
         }
 
         public virtual void changeSPITrigger(bool edge, bool firmwareThrow)
@@ -2842,6 +2868,9 @@ namespace WasatchNET
                         readoutMutex.ReleaseMutex();
                     return null;
                 }
+
+                if (isInGaAs)
+                    subspectrum = correctIngaasEvenOdd(subspectrum);
 
                 // append while converting to double
                 for (int i = 0; i < pixelsPerEndpoint; i++)

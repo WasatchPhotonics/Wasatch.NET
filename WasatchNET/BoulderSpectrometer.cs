@@ -696,7 +696,7 @@ namespace WasatchNET
         public override short detectorOffsetOdd { get => 0; }
 
         public override bool isARM => false;
-
+        public override bool isInGaAs => false;
         public override TRIGGER_SOURCE triggerSource
         {
             get => TRIGGER_SOURCE.EXTERNAL;

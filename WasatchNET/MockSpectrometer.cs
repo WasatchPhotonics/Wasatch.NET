@@ -17,7 +17,7 @@ namespace WasatchNET
         double sensitivity = 1.0;
         string currentSource = "";
         Random noiseMaker = new Random();
-
+        public bool noisy = true;
         public enum SAMPLE_METHOD { EXACT, LINEAR_INTERPOLATION, NOISY_LINEAR_INTERPOLATION };
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace WasatchNET
         {
             get
             {
-                return (float)addNoise(detectorTECSetpointDegC, .1, .03);
+                return noisy ? (float)addNoise(detectorTECSetpointDegC, .1, .03) : detectorTECSetpointDegC;
             }
         }
 
@@ -308,7 +308,8 @@ namespace WasatchNET
         }
 
         public override bool isARM => false;
-
+        public override bool isInGaAs => InGaAs;
+        bool InGaAs = false;
         public override bool reconnect()
         {
             return true;
@@ -540,6 +541,8 @@ namespace WasatchNET
             if (json.EEPROM != null)
             {
                 eeprom.setFromJSON(json.EEPROM);
+                if (pixels != eeprom.activePixelsHoriz)
+                    pixels = eeprom.activePixelsHoriz;
 
                 regenerateWavelengths();
             }
