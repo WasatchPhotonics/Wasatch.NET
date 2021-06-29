@@ -753,7 +753,7 @@ namespace WasatchNET
         public override short detectorOffsetOdd { get => 0; set { } }
 
         public override bool isARM => false;
-
+        public override bool isInGaAs => eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase);
         public override TRIGGER_SOURCE triggerSource
         {
             get => TRIGGER_SOURCE.EXTERNAL;

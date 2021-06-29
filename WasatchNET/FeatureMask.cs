@@ -10,18 +10,20 @@
     {
         enum Flags 
         { 
-            INVERT_X_AXIS     = 0x0001, // 2^0 
-            BIN_2X2           = 0x0002, // 2^1
-            GEN15             = 0x0004, // 2^2
-            CUTOFF_INSTALLED  = 0x0008  // 2^3
+            INVERT_X_AXIS                = 0x0001, // 2^0 
+            BIN_2X2                      = 0x0002, // 2^1
+            GEN15                        = 0x0004, // 2^2
+            CUTOFF_INSTALLED             = 0x0008, // 2^3
+            HARDWARE_EVEN_ODD_CORRECTION = 0x0010  // 2^4
         }
 
         public FeatureMask(ushort value = 0)
         {
-            invertXAxis      = 0 != (value & (ushort)Flags.INVERT_X_AXIS);
-            bin2x2           = 0 != (value & (ushort)Flags.BIN_2X2);
-            gen15            = 0 != (value & (ushort)Flags.GEN15);
-            cutoffInstalled  = 0 != (value & (ushort)Flags.CUTOFF_INSTALLED);
+            invertXAxis              = 0 != (value & (ushort)Flags.INVERT_X_AXIS);
+            bin2x2                   = 0 != (value & (ushort)Flags.BIN_2X2);
+            gen15                    = 0 != (value & (ushort)Flags.GEN15);
+            cutoffInstalled          = 0 != (value & (ushort)Flags.CUTOFF_INSTALLED);
+            evenOddHardwareCorrected = 0 != (value & (ushort)Flags.HARDWARE_EVEN_ODD_CORRECTION);
         }
 
         public ushort toUInt16()
@@ -77,5 +79,15 @@
         /// algorithms.
         /// </summary>
         public bool cutoffInstalled { get; set; }
+
+        /// <summary>
+        /// Our InGaAs detector spectrometers have a sawtooth pattern between their
+        /// even/odd pixels. We use differentiated gain and offsets to correct this
+        /// difference. We did not have hardware level correction for this pattern
+        /// until late 2021. This field is used to indicate whether software level
+        /// even/odd correction need be applied, or if the correction is already
+        /// taken care of at a hardware level.
+        /// </summary>
+        public bool evenOddHardwareCorrected { get; set; }
     }
 }
