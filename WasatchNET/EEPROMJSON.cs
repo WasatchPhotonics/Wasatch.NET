@@ -56,6 +56,7 @@ namespace WasatchNET
         public bool FlipXAxis;
         public bool Gen15;
         public bool CutoffFilter;
+        public bool EvenOddHardwareCorrected;
         public byte LaserWarmupS;
 
         public override bool Equals(object obj)
@@ -164,6 +165,8 @@ namespace WasatchNET
             if (item.Gen15 != this.Gen15)
                 return false;
             if (item.CutoffFilter != this.CutoffFilter)
+                return false;
+            if (item.EvenOddHardwareCorrected != this.EvenOddHardwareCorrected)
                 return false;
             if (item.LaserWarmupS != this.LaserWarmupS)
                 return false;
@@ -335,6 +338,10 @@ namespace WasatchNET
             
             addField(sb, indent,"Bin2x2", Bin2x2);
             sb.AppendFormat("{0}\"{1}\": {2}", indent, "FlipXAxis", FlipXAxis ? "true" : "false");
+            addField(sb, indent, "Gen15", Gen15);
+            addField(sb, indent, "CutoffFilter", CutoffFilter);
+            addField(sb, indent, "EvenOddHardwareCorrected", EvenOddHardwareCorrected);
+            addField(sb, indent, "LaserWarmupS", LaserWarmupS);
 
             return "{\n" + sb.ToString() + "\n" + finalIndent + "}";
         }

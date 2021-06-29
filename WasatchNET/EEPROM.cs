@@ -49,7 +49,7 @@ namespace WasatchNET
         /// - rev 11
         ///     - added subformat 3 (identical to subformat 1, but with page 7 used for Handheld Device settings)
         /// </remarks>
-        protected const byte FORMAT = 11;
+        protected const byte FORMAT = 12;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
@@ -1287,6 +1287,8 @@ namespace WasatchNET
 
                 if (format >= 9)
                     featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
+                if (format < 12)
+                    featureMask.evenOddHardwareCorrected = false;
                 if (format >= 10)
                     laserWarmupSec = pages[2][18];
                 else

@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiChannelDemo", "MultiCh
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomainTest", "DomainTest\DomainTest.csproj", "{65590FA8-A1E8-4009-B8D1-B8F8796542EA}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "SetupAnyCPU", "SetupAnyCPU\SetupAnyCPU.vdproj", "{68C61618-E608-439C-AAD5-DEAD0C32DF37}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -103,6 +105,18 @@ Global
 		{65590FA8-A1E8-4009-B8D1-B8F8796542EA}.Release|x64.Build.0 = Release|Any CPU
 		{65590FA8-A1E8-4009-B8D1-B8F8796542EA}.Release|x86.ActiveCfg = Release|Any CPU
 		{65590FA8-A1E8-4009-B8D1-B8F8796542EA}.Release|x86.Build.0 = Release|Any CPU
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Debug|Any CPU.ActiveCfg = Debug
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Debug|Any CPU.Build.0 = Debug
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Debug|x64.ActiveCfg = Debug
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Debug|x64.Build.0 = Debug
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Debug|x86.ActiveCfg = Debug
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Debug|x86.Build.0 = Debug
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Release|Any CPU.ActiveCfg = Release
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Release|Any CPU.Build.0 = Release
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Release|x64.ActiveCfg = Release
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Release|x64.Build.0 = Release
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Release|x86.ActiveCfg = Release
+		{68C61618-E608-439C-AAD5-DEAD0C32DF37}.Release|x86.Build.0 = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

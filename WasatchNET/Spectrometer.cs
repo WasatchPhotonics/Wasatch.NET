@@ -1976,7 +1976,7 @@ namespace WasatchNET
 
         public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
         public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx");
-        public virtual bool isInGaAs => featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2;
+        public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase));
 
         public virtual bool hasLaser
         {
@@ -2869,7 +2869,7 @@ namespace WasatchNET
                     return null;
                 }
 
-                if (isInGaAs)
+                if (isInGaAs && !eeprom.featureMask.evenOddHardwareCorrected)
                     subspectrum = correctIngaasEvenOdd(subspectrum);
 
                 // append while converting to double
