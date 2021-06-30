@@ -97,6 +97,7 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            this.label10 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -138,7 +139,7 @@
             // 
             this.splitContainerTopVsLog.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainerTopVsLog.Location = new System.Drawing.Point(0, 0);
-            this.splitContainerTopVsLog.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.splitContainerTopVsLog.Margin = new System.Windows.Forms.Padding(2);
             this.splitContainerTopVsLog.Name = "splitContainerTopVsLog";
             this.splitContainerTopVsLog.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -159,7 +160,7 @@
             this.splitContainerGraphVsControls.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainerGraphVsControls.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.splitContainerGraphVsControls.Location = new System.Drawing.Point(0, 0);
-            this.splitContainerGraphVsControls.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.splitContainerGraphVsControls.Margin = new System.Windows.Forms.Padding(2);
             this.splitContainerGraphVsControls.Name = "splitContainerGraphVsControls";
             // 
             // splitContainerGraphVsControls.Panel1
@@ -171,7 +172,7 @@
             // 
             this.splitContainerGraphVsControls.Panel2.Controls.Add(this.flowLayoutPanel3);
             this.splitContainerGraphVsControls.Size = new System.Drawing.Size(794, 585);
-            this.splitContainerGraphVsControls.SplitterDistance = 562;
+            this.splitContainerGraphVsControls.SplitterDistance = 563;
             this.splitContainerGraphVsControls.SplitterWidth = 3;
             this.splitContainerGraphVsControls.TabIndex = 6;
             // 
@@ -190,9 +191,9 @@
             legend1.Name = "Legend1";
             this.chart1.Legends.Add(legend1);
             this.chart1.Location = new System.Drawing.Point(0, 24);
-            this.chart1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.chart1.Margin = new System.Windows.Forms.Padding(2);
             this.chart1.Name = "chart1";
-            this.chart1.Size = new System.Drawing.Size(562, 561);
+            this.chart1.Size = new System.Drawing.Size(563, 561);
             this.chart1.TabIndex = 0;
             this.chart1.Text = "chart1";
             // 
@@ -204,7 +205,7 @@
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Padding = new System.Windows.Forms.Padding(3, 1, 0, 1);
-            this.menuStrip1.Size = new System.Drawing.Size(562, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(563, 24);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -243,7 +244,7 @@
             this.flowLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel3.Location = new System.Drawing.Point(0, 0);
             this.flowLayoutPanel3.Name = "flowLayoutPanel3";
-            this.flowLayoutPanel3.Size = new System.Drawing.Size(229, 585);
+            this.flowLayoutPanel3.Size = new System.Drawing.Size(228, 585);
             this.flowLayoutPanel3.TabIndex = 2;
             // 
             // groupBoxSetup
@@ -253,9 +254,9 @@
             this.groupBoxSetup.Controls.Add(this.checkBoxVerbose);
             this.groupBoxSetup.Controls.Add(this.buttonInitialize);
             this.groupBoxSetup.Location = new System.Drawing.Point(2, 2);
-            this.groupBoxSetup.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxSetup.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSetup.Name = "groupBoxSetup";
-            this.groupBoxSetup.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxSetup.Padding = new System.Windows.Forms.Padding(2);
             this.groupBoxSetup.Size = new System.Drawing.Size(210, 66);
             this.groupBoxSetup.TabIndex = 0;
             this.groupBoxSetup.TabStop = false;
@@ -278,7 +279,7 @@
             "Wavelength",
             "Wavenumber"});
             this.comboBoxXAxis.Location = new System.Drawing.Point(4, 39);
-            this.comboBoxXAxis.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.comboBoxXAxis.Margin = new System.Windows.Forms.Padding(2);
             this.comboBoxXAxis.Name = "comboBoxXAxis";
             this.comboBoxXAxis.Size = new System.Drawing.Size(92, 21);
             this.comboBoxXAxis.TabIndex = 2;
@@ -288,7 +289,7 @@
             // 
             this.checkBoxVerbose.AutoSize = true;
             this.checkBoxVerbose.Location = new System.Drawing.Point(82, 18);
-            this.checkBoxVerbose.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkBoxVerbose.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxVerbose.Name = "checkBoxVerbose";
             this.checkBoxVerbose.Size = new System.Drawing.Size(64, 17);
             this.checkBoxVerbose.TabIndex = 1;
@@ -299,7 +300,7 @@
             // buttonInitialize
             // 
             this.buttonInitialize.Location = new System.Drawing.Point(4, 17);
-            this.buttonInitialize.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonInitialize.Margin = new System.Windows.Forms.Padding(2);
             this.buttonInitialize.Name = "buttonInitialize";
             this.buttonInitialize.Size = new System.Drawing.Size(56, 20);
             this.buttonInitialize.TabIndex = 0;
@@ -313,9 +314,9 @@
             this.groupBoxSpectrometers.Controls.Add(this.groupBoxControl);
             this.groupBoxSpectrometers.Enabled = false;
             this.groupBoxSpectrometers.Location = new System.Drawing.Point(2, 72);
-            this.groupBoxSpectrometers.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxSpectrometers.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSpectrometers.Name = "groupBoxSpectrometers";
-            this.groupBoxSpectrometers.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxSpectrometers.Padding = new System.Windows.Forms.Padding(2);
             this.groupBoxSpectrometers.Size = new System.Drawing.Size(210, 317);
             this.groupBoxSpectrometers.TabIndex = 1;
             this.groupBoxSpectrometers.TabStop = false;
@@ -325,7 +326,7 @@
             // 
             this.comboBoxSpectrometer.FormattingEnabled = true;
             this.comboBoxSpectrometer.Location = new System.Drawing.Point(4, 17);
-            this.comboBoxSpectrometer.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.comboBoxSpectrometer.Margin = new System.Windows.Forms.Padding(2);
             this.comboBoxSpectrometer.Name = "comboBoxSpectrometer";
             this.comboBoxSpectrometer.Size = new System.Drawing.Size(201, 21);
             this.comboBoxSpectrometer.TabIndex = 0;
@@ -335,9 +336,9 @@
             // 
             this.groupBoxControl.Controls.Add(this.flowLayoutPanel1);
             this.groupBoxControl.Location = new System.Drawing.Point(0, 41);
-            this.groupBoxControl.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxControl.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxControl.Name = "groupBoxControl";
-            this.groupBoxControl.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxControl.Padding = new System.Windows.Forms.Padding(2);
             this.groupBoxControl.Size = new System.Drawing.Size(205, 271);
             this.groupBoxControl.TabIndex = 1;
             this.groupBoxControl.TabStop = false;
@@ -351,7 +352,7 @@
             this.flowLayoutPanel1.Controls.Add(this.flowLayoutPanel2);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.Location = new System.Drawing.Point(2, 15);
-            this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(201, 254);
             this.flowLayoutPanel1.TabIndex = 3;
@@ -363,7 +364,7 @@
             this.tabControl1.Controls.Add(this.tabPageTEC);
             this.tabControl1.Controls.Add(this.tabPageMisc);
             this.tabControl1.Location = new System.Drawing.Point(2, 2);
-            this.tabControl1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabControl1.Margin = new System.Windows.Forms.Padding(2);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(196, 131);
@@ -373,9 +374,9 @@
             // 
             this.tabPageAcquisition.Controls.Add(this.tableLayoutPanel1);
             this.tabPageAcquisition.Location = new System.Drawing.Point(4, 22);
-            this.tabPageAcquisition.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabPageAcquisition.Margin = new System.Windows.Forms.Padding(2);
             this.tabPageAcquisition.Name = "tabPageAcquisition";
-            this.tabPageAcquisition.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabPageAcquisition.Padding = new System.Windows.Forms.Padding(2);
             this.tabPageAcquisition.Size = new System.Drawing.Size(188, 105);
             this.tabPageAcquisition.TabIndex = 0;
             this.tabPageAcquisition.Text = "Acquisition";
@@ -395,7 +396,7 @@
             this.tableLayoutPanel1.Controls.Add(this.checkBoxExternalTriggerSource, 1, 3);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(2, 2);
-            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 4;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -408,7 +409,7 @@
             // numericUpDownIntegTimeMS
             // 
             this.numericUpDownIntegTimeMS.Location = new System.Drawing.Point(2, 2);
-            this.numericUpDownIntegTimeMS.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.numericUpDownIntegTimeMS.Margin = new System.Windows.Forms.Padding(2);
             this.numericUpDownIntegTimeMS.Maximum = new decimal(new int[] {
             300000,
             0,
@@ -443,7 +444,7 @@
             // numericUpDownScanAveraging
             // 
             this.numericUpDownScanAveraging.Location = new System.Drawing.Point(2, 26);
-            this.numericUpDownScanAveraging.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.numericUpDownScanAveraging.Margin = new System.Windows.Forms.Padding(2);
             this.numericUpDownScanAveraging.Minimum = new decimal(new int[] {
             1,
             0,
@@ -473,7 +474,7 @@
             // numericUpDownBoxcarHalfWidth
             // 
             this.numericUpDownBoxcarHalfWidth.Location = new System.Drawing.Point(2, 50);
-            this.numericUpDownBoxcarHalfWidth.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.numericUpDownBoxcarHalfWidth.Margin = new System.Windows.Forms.Padding(2);
             this.numericUpDownBoxcarHalfWidth.Name = "numericUpDownBoxcarHalfWidth";
             this.numericUpDownBoxcarHalfWidth.Size = new System.Drawing.Size(59, 20);
             this.numericUpDownBoxcarHalfWidth.TabIndex = 4;
@@ -505,9 +506,9 @@
             // 
             this.tabPageLaser.Controls.Add(this.tableLayoutPanel2);
             this.tabPageLaser.Location = new System.Drawing.Point(4, 22);
-            this.tabPageLaser.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabPageLaser.Margin = new System.Windows.Forms.Padding(2);
             this.tabPageLaser.Name = "tabPageLaser";
-            this.tabPageLaser.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabPageLaser.Padding = new System.Windows.Forms.Padding(2);
             this.tabPageLaser.Size = new System.Drawing.Size(188, 105);
             this.tabPageLaser.TabIndex = 1;
             this.tabPageLaser.Text = "Laser";
@@ -525,7 +526,7 @@
             this.tableLayoutPanel2.Controls.Add(this.checkBoxLaserEnable, 1, 2);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(2, 2);
-            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 3;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -567,7 +568,7 @@
             // numericUpDownLaserPowerMW
             // 
             this.numericUpDownLaserPowerMW.Location = new System.Drawing.Point(2, 28);
-            this.numericUpDownLaserPowerMW.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.numericUpDownLaserPowerMW.Margin = new System.Windows.Forms.Padding(2);
             this.numericUpDownLaserPowerMW.Name = "numericUpDownLaserPowerMW";
             this.numericUpDownLaserPowerMW.Size = new System.Drawing.Size(49, 20);
             this.numericUpDownLaserPowerMW.TabIndex = 16;
@@ -588,7 +589,7 @@
             // 
             this.checkBoxLaserEnable.AutoSize = true;
             this.checkBoxLaserEnable.Location = new System.Drawing.Point(56, 52);
-            this.checkBoxLaserEnable.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkBoxLaserEnable.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxLaserEnable.Name = "checkBoxLaserEnable";
             this.checkBoxLaserEnable.Size = new System.Drawing.Size(83, 17);
             this.checkBoxLaserEnable.TabIndex = 6;
@@ -600,9 +601,9 @@
             // 
             this.tabPageTEC.Controls.Add(this.tableLayoutPanel3);
             this.tabPageTEC.Location = new System.Drawing.Point(4, 22);
-            this.tabPageTEC.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabPageTEC.Margin = new System.Windows.Forms.Padding(2);
             this.tabPageTEC.Name = "tabPageTEC";
-            this.tabPageTEC.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabPageTEC.Padding = new System.Windows.Forms.Padding(2);
             this.tabPageTEC.Size = new System.Drawing.Size(188, 105);
             this.tabPageTEC.TabIndex = 2;
             this.tabPageTEC.Text = "TEC";
@@ -619,7 +620,7 @@
             this.tableLayoutPanel3.Controls.Add(this.label9, 1, 1);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(2, 2);
-            this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
             this.tableLayoutPanel3.RowCount = 2;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -630,7 +631,7 @@
             // numericUpDownDetectorSetpointDegC
             // 
             this.numericUpDownDetectorSetpointDegC.Location = new System.Drawing.Point(2, 2);
-            this.numericUpDownDetectorSetpointDegC.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.numericUpDownDetectorSetpointDegC.Margin = new System.Windows.Forms.Padding(2);
             this.numericUpDownDetectorSetpointDegC.Name = "numericUpDownDetectorSetpointDegC";
             this.numericUpDownDetectorSetpointDegC.Size = new System.Drawing.Size(59, 20);
             this.numericUpDownDetectorSetpointDegC.TabIndex = 16;
@@ -671,7 +672,7 @@
             // 
             this.tabPageMisc.Controls.Add(this.tableLayoutPanel4);
             this.tabPageMisc.Location = new System.Drawing.Point(4, 22);
-            this.tabPageMisc.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tabPageMisc.Margin = new System.Windows.Forms.Padding(2);
             this.tabPageMisc.Name = "tabPageMisc";
             this.tabPageMisc.Size = new System.Drawing.Size(188, 105);
             this.tabPageMisc.TabIndex = 3;
@@ -683,13 +684,14 @@
             this.tableLayoutPanel4.ColumnCount = 2;
             this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
-            this.tableLayoutPanel4.Controls.Add(this.labelSpectrumCount, 1, 2);
             this.tableLayoutPanel4.Controls.Add(this.label7, 1, 0);
             this.tableLayoutPanel4.Controls.Add(this.numericUpDownAcquisitionPeriodMS, 0, 0);
             this.tableLayoutPanel4.Controls.Add(this.checkBoxContinuousAcquisition, 1, 1);
+            this.tableLayoutPanel4.Controls.Add(this.labelSpectrumCount, 0, 2);
+            this.tableLayoutPanel4.Controls.Add(this.label10, 1, 2);
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel4.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
             this.tableLayoutPanel4.RowCount = 3;
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -701,11 +703,11 @@
             // labelSpectrumCount
             // 
             this.labelSpectrumCount.AutoSize = true;
-            this.labelSpectrumCount.Location = new System.Drawing.Point(68, 49);
+            this.labelSpectrumCount.Location = new System.Drawing.Point(3, 49);
             this.labelSpectrumCount.Name = "labelSpectrumCount";
-            this.labelSpectrumCount.Size = new System.Drawing.Size(42, 13);
+            this.labelSpectrumCount.Size = new System.Drawing.Size(21, 13);
             this.labelSpectrumCount.TabIndex = 5;
-            this.labelSpectrumCount.Text = "spectra";
+            this.labelSpectrumCount.Text = "##";
             // 
             // label7
             // 
@@ -742,9 +744,9 @@
             this.groupBoxMode.Controls.Add(this.radioButtonModeAbsorbance);
             this.groupBoxMode.Controls.Add(this.radioButtonModeScope);
             this.groupBoxMode.Location = new System.Drawing.Point(2, 137);
-            this.groupBoxMode.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxMode.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxMode.Name = "groupBoxMode";
-            this.groupBoxMode.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxMode.Padding = new System.Windows.Forms.Padding(2);
             this.groupBoxMode.Size = new System.Drawing.Size(196, 40);
             this.groupBoxMode.TabIndex = 13;
             this.groupBoxMode.TabStop = false;
@@ -755,7 +757,7 @@
             this.radioButtonModeTransmission.AutoSize = true;
             this.radioButtonModeTransmission.Enabled = false;
             this.radioButtonModeTransmission.Location = new System.Drawing.Point(130, 17);
-            this.radioButtonModeTransmission.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.radioButtonModeTransmission.Margin = new System.Windows.Forms.Padding(2);
             this.radioButtonModeTransmission.Name = "radioButtonModeTransmission";
             this.radioButtonModeTransmission.Size = new System.Drawing.Size(67, 17);
             this.radioButtonModeTransmission.TabIndex = 2;
@@ -770,7 +772,7 @@
             this.radioButtonModeAbsorbance.AutoSize = true;
             this.radioButtonModeAbsorbance.Enabled = false;
             this.radioButtonModeAbsorbance.Location = new System.Drawing.Point(54, 17);
-            this.radioButtonModeAbsorbance.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.radioButtonModeAbsorbance.Margin = new System.Windows.Forms.Padding(2);
             this.radioButtonModeAbsorbance.Name = "radioButtonModeAbsorbance";
             this.radioButtonModeAbsorbance.Size = new System.Drawing.Size(81, 17);
             this.radioButtonModeAbsorbance.TabIndex = 1;
@@ -785,7 +787,7 @@
             this.radioButtonModeScope.AutoSize = true;
             this.radioButtonModeScope.Checked = true;
             this.radioButtonModeScope.Location = new System.Drawing.Point(4, 17);
-            this.radioButtonModeScope.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.radioButtonModeScope.Margin = new System.Windows.Forms.Padding(2);
             this.radioButtonModeScope.Name = "radioButtonModeScope";
             this.radioButtonModeScope.Size = new System.Drawing.Size(54, 17);
             this.radioButtonModeScope.TabIndex = 0;
@@ -802,7 +804,7 @@
             this.buttonStart.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonStart.ForeColor = System.Drawing.Color.White;
             this.buttonStart.Location = new System.Drawing.Point(2, 181);
-            this.buttonStart.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonStart.Margin = new System.Windows.Forms.Padding(2);
             this.buttonStart.Name = "buttonStart";
             this.buttonStart.Size = new System.Drawing.Size(196, 31);
             this.buttonStart.TabIndex = 9;
@@ -818,7 +820,7 @@
             this.flowLayoutPanel2.Controls.Add(this.buttonAddTrace);
             this.flowLayoutPanel2.Controls.Add(this.buttonClearTraces);
             this.flowLayoutPanel2.Location = new System.Drawing.Point(2, 216);
-            this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.flowLayoutPanel2.Margin = new System.Windows.Forms.Padding(2);
             this.flowLayoutPanel2.Name = "flowLayoutPanel2";
             this.flowLayoutPanel2.Size = new System.Drawing.Size(196, 41);
             this.flowLayoutPanel2.TabIndex = 4;
@@ -830,7 +832,7 @@
             this.checkBoxTakeDark.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.checkBoxTakeDark.Enabled = false;
             this.checkBoxTakeDark.Location = new System.Drawing.Point(2, 2);
-            this.checkBoxTakeDark.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkBoxTakeDark.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxTakeDark.Name = "checkBoxTakeDark";
             this.checkBoxTakeDark.Size = new System.Drawing.Size(34, 32);
             this.checkBoxTakeDark.TabIndex = 7;
@@ -845,7 +847,7 @@
             this.checkBoxTakeReference.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.checkBoxTakeReference.Enabled = false;
             this.checkBoxTakeReference.Location = new System.Drawing.Point(40, 2);
-            this.checkBoxTakeReference.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkBoxTakeReference.Margin = new System.Windows.Forms.Padding(2);
             this.checkBoxTakeReference.Name = "checkBoxTakeReference";
             this.checkBoxTakeReference.Size = new System.Drawing.Size(34, 32);
             this.checkBoxTakeReference.TabIndex = 8;
@@ -859,7 +861,7 @@
             this.buttonSave.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.buttonSave.Enabled = false;
             this.buttonSave.Location = new System.Drawing.Point(78, 2);
-            this.buttonSave.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonSave.Margin = new System.Windows.Forms.Padding(2);
             this.buttonSave.Name = "buttonSave";
             this.buttonSave.Size = new System.Drawing.Size(28, 32);
             this.buttonSave.TabIndex = 10;
@@ -873,7 +875,7 @@
             this.buttonAddTrace.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.buttonAddTrace.Enabled = false;
             this.buttonAddTrace.Location = new System.Drawing.Point(110, 2);
-            this.buttonAddTrace.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonAddTrace.Margin = new System.Windows.Forms.Padding(2);
             this.buttonAddTrace.Name = "buttonAddTrace";
             this.buttonAddTrace.Size = new System.Drawing.Size(33, 32);
             this.buttonAddTrace.TabIndex = 11;
@@ -887,7 +889,7 @@
             this.buttonClearTraces.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.buttonClearTraces.Enabled = false;
             this.buttonClearTraces.Location = new System.Drawing.Point(147, 2);
-            this.buttonClearTraces.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonClearTraces.Margin = new System.Windows.Forms.Padding(2);
             this.buttonClearTraces.Name = "buttonClearTraces";
             this.buttonClearTraces.Size = new System.Drawing.Size(33, 32);
             this.buttonClearTraces.TabIndex = 12;
@@ -900,10 +902,10 @@
             this.groupBoxSettings.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.groupBoxSettings.Controls.Add(this.treeViewSettings);
             this.groupBoxSettings.Location = new System.Drawing.Point(2, 393);
-            this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.MinimumSize = new System.Drawing.Size(100, 100);
             this.groupBoxSettings.Name = "groupBoxSettings";
-            this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2);
             this.groupBoxSettings.Size = new System.Drawing.Size(210, 129);
             this.groupBoxSettings.TabIndex = 2;
             this.groupBoxSettings.TabStop = false;
@@ -913,7 +915,7 @@
             // 
             this.treeViewSettings.Dock = System.Windows.Forms.DockStyle.Fill;
             this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
-            this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2);
             this.treeViewSettings.Name = "treeViewSettings";
             this.treeViewSettings.Size = new System.Drawing.Size(206, 112);
             this.treeViewSettings.TabIndex = 0;
@@ -925,9 +927,9 @@
             this.groupBoxEventLog.Controls.Add(this.textBoxEventLog);
             this.groupBoxEventLog.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxEventLog.Location = new System.Drawing.Point(0, 0);
-            this.groupBoxEventLog.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxEventLog.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxEventLog.Name = "groupBoxEventLog";
-            this.groupBoxEventLog.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxEventLog.Padding = new System.Windows.Forms.Padding(2);
             this.groupBoxEventLog.Size = new System.Drawing.Size(794, 68);
             this.groupBoxEventLog.TabIndex = 0;
             this.groupBoxEventLog.TabStop = false;
@@ -938,7 +940,7 @@
             this.textBoxEventLog.Dock = System.Windows.Forms.DockStyle.Fill;
             this.textBoxEventLog.Font = new System.Drawing.Font("Consolas", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.textBoxEventLog.Location = new System.Drawing.Point(2, 15);
-            this.textBoxEventLog.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.textBoxEventLog.Margin = new System.Windows.Forms.Padding(2);
             this.textBoxEventLog.Multiline = true;
             this.textBoxEventLog.Name = "textBoxEventLog";
             this.textBoxEventLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
@@ -954,6 +956,15 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(68, 49);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(42, 13);
+            this.label10.TabIndex = 22;
+            this.label10.Text = "spectra";
+            // 
             // Form1
             // 
             this.AcceptButton = this.buttonInitialize;
@@ -964,7 +975,7 @@
             this.Controls.Add(this.splitContainerTopVsLog);
             this.ImeMode = System.Windows.Forms.ImeMode.Off;
             this.MainMenuStrip = this.menuStrip1;
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "Form1";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.Text = "Wasatch.NET WinForm Demo";
@@ -1084,6 +1095,7 @@
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;
         private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Label label10;
     }
 }
 
