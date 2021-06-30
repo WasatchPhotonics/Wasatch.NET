@@ -1632,7 +1632,7 @@ namespace WasatchNET
             json.RelIntCorrOrder = intensityCorrectionOrder;
             if (json.RelIntCorrOrder > 0)
             {
-                json.RelIntCorrCoeffs = new double[json.RelIntCorrOrder];
+                json.RelIntCorrCoeffs = new double[intensityCorrectionCoeffs.Length];
                 for (int i = 0; i < json.RelIntCorrOrder; ++i)
                 {
                     if (intensityCorrectionCoeffs != null && i < intensityCorrectionCoeffs.Length)
