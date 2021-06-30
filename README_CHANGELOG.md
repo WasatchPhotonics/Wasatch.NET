@@ -1,5 +1,9 @@
 # Wasatch.NET Changelog
 
+- 2021-06-30 2.3.33
+    - added AnyCPU target to scripts/deploy
+    - updated Newtonsoft to 12.x
+    - WinFormDemo tweaks
 - 2021-06-30 2.3.32
 	- patch to long-standing serious small bug with EEPROM JSON/string
 - 2021-06-29 2.3.31
