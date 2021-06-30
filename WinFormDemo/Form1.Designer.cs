@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend4 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerGraphVsControls = new System.Windows.Forms.SplitContainer();
@@ -39,8 +39,12 @@
             this.toolStripMenuItemTest = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemTestWriteEEPROM = new System.Windows.Forms.ToolStripMenuItem();
             this.setDFUModeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.groupBoxSettings = new System.Windows.Forms.GroupBox();
-            this.treeViewSettings = new System.Windows.Forms.TreeView();
+            this.flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
+            this.groupBoxSetup = new System.Windows.Forms.GroupBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.comboBoxXAxis = new System.Windows.Forms.ComboBox();
+            this.checkBoxVerbose = new System.Windows.Forms.CheckBox();
+            this.buttonInitialize = new System.Windows.Forms.Button();
             this.groupBoxSpectrometers = new System.Windows.Forms.GroupBox();
             this.comboBoxSpectrometer = new System.Windows.Forms.ComboBox();
             this.groupBoxControl = new System.Windows.Forms.GroupBox();
@@ -65,9 +69,12 @@
             this.tabPageTEC = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.numericUpDownDetectorSetpointDegC = new System.Windows.Forms.NumericUpDown();
+            this.labelDetTempDegC = new System.Windows.Forms.Label();
             this.label6 = new System.Windows.Forms.Label();
+            this.label9 = new System.Windows.Forms.Label();
             this.tabPageMisc = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+            this.labelSpectrumCount = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.numericUpDownAcquisitionPeriodMS = new System.Windows.Forms.NumericUpDown();
             this.checkBoxContinuousAcquisition = new System.Windows.Forms.CheckBox();
@@ -82,20 +89,14 @@
             this.buttonSave = new System.Windows.Forms.Button();
             this.buttonAddTrace = new System.Windows.Forms.Button();
             this.buttonClearTraces = new System.Windows.Forms.Button();
-            this.groupBoxSetup = new System.Windows.Forms.GroupBox();
-            this.labelSpectrumCount = new System.Windows.Forms.Label();
-            this.labelDetTempDegC = new System.Windows.Forms.Label();
-            this.label4 = new System.Windows.Forms.Label();
-            this.comboBoxXAxis = new System.Windows.Forms.ComboBox();
-            this.checkBoxVerbose = new System.Windows.Forms.CheckBox();
-            this.buttonInitialize = new System.Windows.Forms.Button();
+            this.groupBoxSettings = new System.Windows.Forms.GroupBox();
+            this.treeViewSettings = new System.Windows.Forms.TreeView();
             this.groupBoxEventLog = new System.Windows.Forms.GroupBox();
             this.textBoxEventLog = new System.Windows.Forms.TextBox();
             this.backgroundWorkerGUIUpdate = new System.ComponentModel.BackgroundWorker();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -106,7 +107,8 @@
             this.splitContainerGraphVsControls.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.menuStrip1.SuspendLayout();
-            this.groupBoxSettings.SuspendLayout();
+            this.flowLayoutPanel3.SuspendLayout();
+            this.groupBoxSetup.SuspendLayout();
             this.groupBoxSpectrometers.SuspendLayout();
             this.groupBoxControl.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
@@ -128,9 +130,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAcquisitionPeriodMS)).BeginInit();
             this.groupBoxMode.SuspendLayout();
             this.flowLayoutPanel2.SuspendLayout();
-            this.groupBoxSetup.SuspendLayout();
+            this.groupBoxSettings.SuspendLayout();
             this.groupBoxEventLog.SuspendLayout();
-            this.flowLayoutPanel3.SuspendLayout();
             this.SuspendLayout();
             // 
             // splitContainerTopVsLog
@@ -149,7 +150,7 @@
             // 
             this.splitContainerTopVsLog.Panel2.Controls.Add(this.groupBoxEventLog);
             this.splitContainerTopVsLog.Size = new System.Drawing.Size(794, 656);
-            this.splitContainerTopVsLog.SplitterDistance = 586;
+            this.splitContainerTopVsLog.SplitterDistance = 585;
             this.splitContainerTopVsLog.SplitterWidth = 3;
             this.splitContainerTopVsLog.TabIndex = 0;
             // 
@@ -169,29 +170,29 @@
             // splitContainerGraphVsControls.Panel2
             // 
             this.splitContainerGraphVsControls.Panel2.Controls.Add(this.flowLayoutPanel3);
-            this.splitContainerGraphVsControls.Size = new System.Drawing.Size(794, 586);
-            this.splitContainerGraphVsControls.SplitterDistance = 561;
+            this.splitContainerGraphVsControls.Size = new System.Drawing.Size(794, 585);
+            this.splitContainerGraphVsControls.SplitterDistance = 562;
             this.splitContainerGraphVsControls.SplitterWidth = 3;
             this.splitContainerGraphVsControls.TabIndex = 6;
             // 
             // chart1
             // 
-            chartArea4.AxisX.LabelStyle.Format = "F2";
-            chartArea4.CursorX.IsUserEnabled = true;
-            chartArea4.CursorX.IsUserSelectionEnabled = true;
-            chartArea4.CursorY.IsUserEnabled = true;
-            chartArea4.CursorY.IsUserSelectionEnabled = true;
-            chartArea4.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea4);
+            chartArea1.AxisX.LabelStyle.Format = "F2";
+            chartArea1.CursorX.IsUserEnabled = true;
+            chartArea1.CursorX.IsUserSelectionEnabled = true;
+            chartArea1.CursorY.IsUserEnabled = true;
+            chartArea1.CursorY.IsUserSelectionEnabled = true;
+            chartArea1.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea1);
             this.chart1.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend4.Alignment = System.Drawing.StringAlignment.Center;
-            legend4.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
-            legend4.Name = "Legend1";
-            this.chart1.Legends.Add(legend4);
+            legend1.Alignment = System.Drawing.StringAlignment.Center;
+            legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
+            legend1.Name = "Legend1";
+            this.chart1.Legends.Add(legend1);
             this.chart1.Location = new System.Drawing.Point(0, 24);
             this.chart1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.chart1.Name = "chart1";
-            this.chart1.Size = new System.Drawing.Size(561, 562);
+            this.chart1.Size = new System.Drawing.Size(562, 561);
             this.chart1.TabIndex = 0;
             this.chart1.Text = "chart1";
             // 
@@ -203,7 +204,7 @@
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Padding = new System.Windows.Forms.Padding(3, 1, 0, 1);
-            this.menuStrip1.Size = new System.Drawing.Size(561, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(562, 24);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -233,30 +234,78 @@
             this.setDFUModeToolStripMenuItem.ToolTipText = "WARNING: used for reflashing ARM firmware!";
             this.setDFUModeToolStripMenuItem.Click += new System.EventHandler(this.setDFUModeToolStripMenuItem_Click);
             // 
-            // groupBoxSettings
+            // flowLayoutPanel3
             // 
-            this.groupBoxSettings.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.groupBoxSettings.Controls.Add(this.treeViewSettings);
-            this.groupBoxSettings.Location = new System.Drawing.Point(2, 393);
-            this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.groupBoxSettings.MinimumSize = new System.Drawing.Size(100, 100);
-            this.groupBoxSettings.Name = "groupBoxSettings";
-            this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.groupBoxSettings.Size = new System.Drawing.Size(210, 129);
-            this.groupBoxSettings.TabIndex = 2;
-            this.groupBoxSettings.TabStop = false;
-            this.groupBoxSettings.Text = "Settings";
+            this.flowLayoutPanel3.AutoScroll = true;
+            this.flowLayoutPanel3.Controls.Add(this.groupBoxSetup);
+            this.flowLayoutPanel3.Controls.Add(this.groupBoxSpectrometers);
+            this.flowLayoutPanel3.Controls.Add(this.groupBoxSettings);
+            this.flowLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowLayoutPanel3.Location = new System.Drawing.Point(0, 0);
+            this.flowLayoutPanel3.Name = "flowLayoutPanel3";
+            this.flowLayoutPanel3.Size = new System.Drawing.Size(229, 585);
+            this.flowLayoutPanel3.TabIndex = 2;
             // 
-            // treeViewSettings
+            // groupBoxSetup
             // 
-            this.treeViewSettings.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
-            this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.treeViewSettings.Name = "treeViewSettings";
-            this.treeViewSettings.Size = new System.Drawing.Size(206, 112);
-            this.treeViewSettings.TabIndex = 0;
-            this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
-            this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
+            this.groupBoxSetup.Controls.Add(this.label4);
+            this.groupBoxSetup.Controls.Add(this.comboBoxXAxis);
+            this.groupBoxSetup.Controls.Add(this.checkBoxVerbose);
+            this.groupBoxSetup.Controls.Add(this.buttonInitialize);
+            this.groupBoxSetup.Location = new System.Drawing.Point(2, 2);
+            this.groupBoxSetup.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxSetup.Name = "groupBoxSetup";
+            this.groupBoxSetup.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxSetup.Size = new System.Drawing.Size(210, 66);
+            this.groupBoxSetup.TabIndex = 0;
+            this.groupBoxSetup.TabStop = false;
+            this.groupBoxSetup.Text = "Setup";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(100, 43);
+            this.label4.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(36, 13);
+            this.label4.TabIndex = 3;
+            this.label4.Text = "X-Axis";
+            // 
+            // comboBoxXAxis
+            // 
+            this.comboBoxXAxis.FormattingEnabled = true;
+            this.comboBoxXAxis.Items.AddRange(new object[] {
+            "Wavelength",
+            "Wavenumber"});
+            this.comboBoxXAxis.Location = new System.Drawing.Point(4, 39);
+            this.comboBoxXAxis.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.comboBoxXAxis.Name = "comboBoxXAxis";
+            this.comboBoxXAxis.Size = new System.Drawing.Size(92, 21);
+            this.comboBoxXAxis.TabIndex = 2;
+            this.comboBoxXAxis.SelectedIndexChanged += new System.EventHandler(this.comboBoxXAxis_SelectedIndexChanged);
+            // 
+            // checkBoxVerbose
+            // 
+            this.checkBoxVerbose.AutoSize = true;
+            this.checkBoxVerbose.Location = new System.Drawing.Point(82, 18);
+            this.checkBoxVerbose.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkBoxVerbose.Name = "checkBoxVerbose";
+            this.checkBoxVerbose.Size = new System.Drawing.Size(64, 17);
+            this.checkBoxVerbose.TabIndex = 1;
+            this.checkBoxVerbose.Text = "verbose";
+            this.checkBoxVerbose.UseVisualStyleBackColor = true;
+            this.checkBoxVerbose.CheckedChanged += new System.EventHandler(this.checkBoxVerbose_CheckedChanged);
+            // 
+            // buttonInitialize
+            // 
+            this.buttonInitialize.Location = new System.Drawing.Point(4, 17);
+            this.buttonInitialize.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonInitialize.Name = "buttonInitialize";
+            this.buttonInitialize.Size = new System.Drawing.Size(56, 20);
+            this.buttonInitialize.TabIndex = 0;
+            this.buttonInitialize.Text = "Initialize";
+            this.buttonInitialize.UseVisualStyleBackColor = true;
+            this.buttonInitialize.Click += new System.EventHandler(this.buttonInitialize_Click);
             // 
             // groupBoxSpectrometers
             // 
@@ -565,7 +614,9 @@
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel3.Controls.Add(this.numericUpDownDetectorSetpointDegC, 0, 0);
+            this.tableLayoutPanel3.Controls.Add(this.labelDetTempDegC, 0, 1);
             this.tableLayoutPanel3.Controls.Add(this.label6, 1, 0);
+            this.tableLayoutPanel3.Controls.Add(this.label9, 1, 1);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(2, 2);
             this.tableLayoutPanel3.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
@@ -586,15 +637,35 @@
             this.numericUpDownDetectorSetpointDegC.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.numericUpDownDetectorSetpointDegC.ValueChanged += new System.EventHandler(this.numericUpDownDetectorSetpointDegC_ValueChanged);
             // 
+            // labelDetTempDegC
+            // 
+            this.labelDetTempDegC.AutoSize = true;
+            this.labelDetTempDegC.Location = new System.Drawing.Point(3, 24);
+            this.labelDetTempDegC.Name = "labelDetTempDegC";
+            this.labelDetTempDegC.Size = new System.Drawing.Size(30, 13);
+            this.labelDetTempDegC.TabIndex = 4;
+            this.labelDetTempDegC.Text = "10°C";
+            this.labelDetTempDegC.Visible = false;
+            // 
             // label6
             // 
             this.label6.AutoSize = true;
             this.label6.Location = new System.Drawing.Point(65, 0);
             this.label6.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(130, 13);
+            this.label6.Size = new System.Drawing.Size(124, 13);
             this.label6.TabIndex = 17;
-            this.label6.Text = "detector TEC setpoint (°C)";
+            this.label6.Text = "detector TEC setpoint °C";
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(65, 24);
+            this.label9.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(105, 13);
+            this.label9.TabIndex = 18;
+            this.label9.Text = "detector temperature";
             // 
             // tabPageMisc
             // 
@@ -612,6 +683,7 @@
             this.tableLayoutPanel4.ColumnCount = 2;
             this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanel4.Controls.Add(this.labelSpectrumCount, 1, 2);
             this.tableLayoutPanel4.Controls.Add(this.label7, 1, 0);
             this.tableLayoutPanel4.Controls.Add(this.numericUpDownAcquisitionPeriodMS, 0, 0);
             this.tableLayoutPanel4.Controls.Add(this.checkBoxContinuousAcquisition, 1, 1);
@@ -619,11 +691,21 @@
             this.tableLayoutPanel4.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
-            this.tableLayoutPanel4.RowCount = 2;
+            this.tableLayoutPanel4.RowCount = 3;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel4.Size = new System.Drawing.Size(188, 105);
             this.tableLayoutPanel4.TabIndex = 0;
+            // 
+            // labelSpectrumCount
+            // 
+            this.labelSpectrumCount.AutoSize = true;
+            this.labelSpectrumCount.Location = new System.Drawing.Point(68, 49);
+            this.labelSpectrumCount.Name = "labelSpectrumCount";
+            this.labelSpectrumCount.Size = new System.Drawing.Size(42, 13);
+            this.labelSpectrumCount.TabIndex = 5;
+            this.labelSpectrumCount.Text = "spectra";
             // 
             // label7
             // 
@@ -813,89 +895,30 @@
             this.buttonClearTraces.UseVisualStyleBackColor = true;
             this.buttonClearTraces.Click += new System.EventHandler(this.buttonClearTraces_Click);
             // 
-            // groupBoxSetup
+            // groupBoxSettings
             // 
-            this.groupBoxSetup.Controls.Add(this.labelSpectrumCount);
-            this.groupBoxSetup.Controls.Add(this.labelDetTempDegC);
-            this.groupBoxSetup.Controls.Add(this.label4);
-            this.groupBoxSetup.Controls.Add(this.comboBoxXAxis);
-            this.groupBoxSetup.Controls.Add(this.checkBoxVerbose);
-            this.groupBoxSetup.Controls.Add(this.buttonInitialize);
-            this.groupBoxSetup.Location = new System.Drawing.Point(2, 2);
-            this.groupBoxSetup.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.groupBoxSetup.Name = "groupBoxSetup";
-            this.groupBoxSetup.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.groupBoxSetup.Size = new System.Drawing.Size(210, 66);
-            this.groupBoxSetup.TabIndex = 0;
-            this.groupBoxSetup.TabStop = false;
-            this.groupBoxSetup.Text = "Setup";
+            this.groupBoxSettings.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.groupBoxSettings.Controls.Add(this.treeViewSettings);
+            this.groupBoxSettings.Location = new System.Drawing.Point(2, 393);
+            this.groupBoxSettings.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxSettings.MinimumSize = new System.Drawing.Size(100, 100);
+            this.groupBoxSettings.Name = "groupBoxSettings";
+            this.groupBoxSettings.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxSettings.Size = new System.Drawing.Size(210, 129);
+            this.groupBoxSettings.TabIndex = 2;
+            this.groupBoxSettings.TabStop = false;
+            this.groupBoxSettings.Text = "Settings";
             // 
-            // labelSpectrumCount
+            // treeViewSettings
             // 
-            this.labelSpectrumCount.AutoSize = true;
-            this.labelSpectrumCount.ForeColor = System.Drawing.SystemColors.ControlDark;
-            this.labelSpectrumCount.Location = new System.Drawing.Point(154, 44);
-            this.labelSpectrumCount.Name = "labelSpectrumCount";
-            this.labelSpectrumCount.Size = new System.Drawing.Size(42, 13);
-            this.labelSpectrumCount.TabIndex = 5;
-            this.labelSpectrumCount.Text = "spectra";
-            // 
-            // labelDetTempDegC
-            // 
-            this.labelDetTempDegC.AutoSize = true;
-            this.labelDetTempDegC.ForeColor = System.Drawing.SystemColors.ControlDark;
-            this.labelDetTempDegC.Location = new System.Drawing.Point(151, 20);
-            this.labelDetTempDegC.Name = "labelDetTempDegC";
-            this.labelDetTempDegC.Size = new System.Drawing.Size(30, 13);
-            this.labelDetTempDegC.TabIndex = 4;
-            this.labelDetTempDegC.Text = "10°C";
-            this.labelDetTempDegC.Visible = false;
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(100, 43);
-            this.label4.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(36, 13);
-            this.label4.TabIndex = 3;
-            this.label4.Text = "X-Axis";
-            // 
-            // comboBoxXAxis
-            // 
-            this.comboBoxXAxis.FormattingEnabled = true;
-            this.comboBoxXAxis.Items.AddRange(new object[] {
-            "Wavelength",
-            "Wavenumber"});
-            this.comboBoxXAxis.Location = new System.Drawing.Point(4, 39);
-            this.comboBoxXAxis.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.comboBoxXAxis.Name = "comboBoxXAxis";
-            this.comboBoxXAxis.Size = new System.Drawing.Size(92, 21);
-            this.comboBoxXAxis.TabIndex = 2;
-            this.comboBoxXAxis.SelectedIndexChanged += new System.EventHandler(this.comboBoxXAxis_SelectedIndexChanged);
-            // 
-            // checkBoxVerbose
-            // 
-            this.checkBoxVerbose.AutoSize = true;
-            this.checkBoxVerbose.Location = new System.Drawing.Point(82, 18);
-            this.checkBoxVerbose.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.checkBoxVerbose.Name = "checkBoxVerbose";
-            this.checkBoxVerbose.Size = new System.Drawing.Size(64, 17);
-            this.checkBoxVerbose.TabIndex = 1;
-            this.checkBoxVerbose.Text = "verbose";
-            this.checkBoxVerbose.UseVisualStyleBackColor = true;
-            this.checkBoxVerbose.CheckedChanged += new System.EventHandler(this.checkBoxVerbose_CheckedChanged);
-            // 
-            // buttonInitialize
-            // 
-            this.buttonInitialize.Location = new System.Drawing.Point(4, 17);
-            this.buttonInitialize.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.buttonInitialize.Name = "buttonInitialize";
-            this.buttonInitialize.Size = new System.Drawing.Size(56, 20);
-            this.buttonInitialize.TabIndex = 0;
-            this.buttonInitialize.Text = "Initialize";
-            this.buttonInitialize.UseVisualStyleBackColor = true;
-            this.buttonInitialize.Click += new System.EventHandler(this.buttonInitialize_Click);
+            this.treeViewSettings.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.treeViewSettings.Location = new System.Drawing.Point(2, 15);
+            this.treeViewSettings.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.treeViewSettings.Name = "treeViewSettings";
+            this.treeViewSettings.Size = new System.Drawing.Size(206, 112);
+            this.treeViewSettings.TabIndex = 0;
+            this.toolTip1.SetToolTip(this.treeViewSettings, "Double-click to update");
+            this.treeViewSettings.DoubleClick += new System.EventHandler(this.treeViewSettings_DoubleClick);
             // 
             // groupBoxEventLog
             // 
@@ -905,7 +928,7 @@
             this.groupBoxEventLog.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.groupBoxEventLog.Name = "groupBoxEventLog";
             this.groupBoxEventLog.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.groupBoxEventLog.Size = new System.Drawing.Size(794, 67);
+            this.groupBoxEventLog.Size = new System.Drawing.Size(794, 68);
             this.groupBoxEventLog.TabIndex = 0;
             this.groupBoxEventLog.TabStop = false;
             this.groupBoxEventLog.Text = "Event Log";
@@ -919,7 +942,7 @@
             this.textBoxEventLog.Multiline = true;
             this.textBoxEventLog.Name = "textBoxEventLog";
             this.textBoxEventLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBoxEventLog.Size = new System.Drawing.Size(790, 50);
+            this.textBoxEventLog.Size = new System.Drawing.Size(790, 51);
             this.textBoxEventLog.TabIndex = 0;
             // 
             // backgroundWorkerGUIUpdate
@@ -930,18 +953,6 @@
             // backgroundWorkerSettings
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
-            // 
-            // flowLayoutPanel3
-            // 
-            this.flowLayoutPanel3.AutoScroll = true;
-            this.flowLayoutPanel3.Controls.Add(this.groupBoxSetup);
-            this.flowLayoutPanel3.Controls.Add(this.groupBoxSpectrometers);
-            this.flowLayoutPanel3.Controls.Add(this.groupBoxSettings);
-            this.flowLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanel3.Location = new System.Drawing.Point(0, 0);
-            this.flowLayoutPanel3.Name = "flowLayoutPanel3";
-            this.flowLayoutPanel3.Size = new System.Drawing.Size(230, 586);
-            this.flowLayoutPanel3.TabIndex = 2;
             // 
             // Form1
             // 
@@ -970,7 +981,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
-            this.groupBoxSettings.ResumeLayout(false);
+            this.flowLayoutPanel3.ResumeLayout(false);
+            this.groupBoxSetup.ResumeLayout(false);
+            this.groupBoxSetup.PerformLayout();
             this.groupBoxSpectrometers.ResumeLayout(false);
             this.groupBoxControl.ResumeLayout(false);
             this.flowLayoutPanel1.ResumeLayout(false);
@@ -997,11 +1010,9 @@
             this.groupBoxMode.ResumeLayout(false);
             this.groupBoxMode.PerformLayout();
             this.flowLayoutPanel2.ResumeLayout(false);
-            this.groupBoxSetup.ResumeLayout(false);
-            this.groupBoxSetup.PerformLayout();
+            this.groupBoxSettings.ResumeLayout(false);
             this.groupBoxEventLog.ResumeLayout(false);
             this.groupBoxEventLog.PerformLayout();
-            this.flowLayoutPanel3.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -1072,6 +1083,7 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel2;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel3;
+        private System.Windows.Forms.Label label9;
     }
 }
 

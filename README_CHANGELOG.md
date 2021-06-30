@@ -1,5 +1,9 @@
 # Wasatch.NET Changelog
 
+- 2021-06-30 2.3.32
+    - added AnyCPU target to scripts/deploy
+    - updated Newtonsoft to 12.x
+    - WinFormDemo tweaks
 - 2021-06-29 2.3.31
 	- upgraded to EEPROM format 12 and changes around IsInGaAs
 - 2021-06-24 2.3.30
