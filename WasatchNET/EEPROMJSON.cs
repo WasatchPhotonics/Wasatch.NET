@@ -334,14 +334,14 @@ namespace WasatchNET
             
             addField(sb, indent,"RelIntCorrOrder", RelIntCorrOrder);
             if (RelIntCorrCoeffs != null)
-                addField(sb, indent,"RelIntCorrCoeff", RelIntCorrCoeffs);
+                addField(sb, indent, "RelIntCorrCoeffs", RelIntCorrCoeffs);
             
             addField(sb, indent,"Bin2x2", Bin2x2);
-            sb.AppendFormat("{0}\"{1}\": {2}", indent, "FlipXAxis", FlipXAxis ? "true" : "false");
+            addField(sb, indent, "FlipXAxis", FlipXAxis);
             addField(sb, indent, "Gen15", Gen15);
             addField(sb, indent, "CutoffFilter", CutoffFilter);
             addField(sb, indent, "EvenOddHardwareCorrected", EvenOddHardwareCorrected);
-            addField(sb, indent, "LaserWarmupS", LaserWarmupS);
+            sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
 
             return "{\n" + sb.ToString() + "\n" + finalIndent + "}";
         }

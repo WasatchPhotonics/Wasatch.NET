@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2021-06-30 2.3.32
+	- patch to long-standing serious small bug with EEPROM JSON/string
 - 2021-06-29 2.3.31
 	- upgraded to EEPROM format 12 and changes around IsInGaAs
 - 2021-06-24 2.3.30
