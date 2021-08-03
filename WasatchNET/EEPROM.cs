@@ -40,7 +40,7 @@ namespace WasatchNET
         internal const int MAX_PAGES_REAL = 512;
 
         internal const int LIBRARY_START_PAGE = 10;
-        internal const int LIBRARY_STOP_PAGE = 74;
+        internal const int LIBRARY_STOP_PAGE = 506;
 
         /// <summary>
         /// Current EEPROM format
@@ -909,6 +909,17 @@ namespace WasatchNET
         }
         byte _matchingThreshold = 90;
 
+        public byte librarySize
+        {
+            get { return _librarySize; }
+            set
+            {
+                _librarySize = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _librarySize = 1;
+
         /////////////////////////////////////////////////////////////////////////
         // Pages 10-73 (subformat HANDHELD_DEVICE)
         /////////////////////////////////////////////////////////////////////////
@@ -943,6 +954,17 @@ namespace WasatchNET
                     model = value;
             }
         }
+
+        public List<string> lib_names
+        {
+            get { return _lib_names; }
+            set
+            {
+                _lib_names = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        List<string> _lib_names;
 
         /////////////////////////////////////////////////////////////////////////       
         //
@@ -1305,6 +1327,32 @@ namespace WasatchNET
                         matchingMinRampPixels = ParseData.toUInt8(pages[7], 4);
                         matchingMinPeakHeight = ParseData.toUInt16(pages[7], 5);
                         matchingThreshold = ParseData.toUInt8(pages[7], 7);
+                        librarySize = ParseData.toUInt8(pages[7], 8);
+                        List<string> read_names = new List<string>();
+                        int num_names = 0;
+                        int name_page;
+                        int start_index;
+                        for(int i = 0; i < librarySize; i++)
+                        {
+                            if(num_names < 4)
+                            {
+                                name_page = 8;
+                            }
+                            else
+                            {
+                                name_page = 9;
+                            }
+                            /*
+                             * Compacted this with some math so thought a comment was good
+                             * i % 4 because each page holds 4 names so at 4 the index becomes 0 again
+                             * and then each length is 16 so that's constant and the start just gets
+                             * mulitplied by 16 each time
+                             * */
+                            start_index = (i % 4) * 16;
+                            read_names.Add(ParseData.toString(pages[name_page],start_index,16));
+                            num_names++;
+                        }
+                        lib_names = read_names;
 
                         logger.debug("loading handheld device library spectrum");
                         librarySpectrum = new List<UInt16>();
@@ -1312,7 +1360,7 @@ namespace WasatchNET
                         {
                             for (int pagePixel = 0; pagePixel < 32; pagePixel++)
                             {
-                                if (librarySpectrum.Count >= activePixelsHoriz)
+                                if (librarySpectrum.Count >= activePixelsHoriz*librarySize)
                                     break;
 
                                 UInt16 lsb = pages[page][pagePixel * 2];
@@ -1936,20 +1984,23 @@ namespace WasatchNET
                     if (!ParseData.writeByte(matchingMinRampPixels,     pages[7], 4)) return false;
                     if (!ParseData.writeUInt16(matchingMinPeakHeight,   pages[7], 5)) return false;
                     if (!ParseData.writeByte(matchingThreshold,         pages[7], 7)) return false;
-
+                    if (!ParseData.writeByte(librarySize,               pages[7], 8)) return false;
+                    int names_written = 0;
+                    int name_page;
                     if (librarySpectrum == null)
                     {
                         logger.error("EEPROM.writeLibrary: no librarySpectrum");
                         return false;
                     }
 
-                    if (librarySpectrum.Count > 2048)
+                    if (librarySpectrum.Count > 1952*8)
                     {
-                        logger.error("EEPROM.writeLibrary: librarySpectrum only sized for 2048 pixels");
+                        logger.error("EEPROM.writeLibrary: librarySpectrum only sized for 8 spectra of size 1952 pixels");
                         return false; 
                     }
 
                     int pixel = 0;
+                    logger.info($"Wasatch.NET: writing spectrum of length {librarySpectrum.Count}");
                     while (pixel < librarySpectrum.Count)
                     {
                         int page = LIBRARY_START_PAGE + pixel / 32;
@@ -1972,6 +2023,21 @@ namespace WasatchNET
                             return false;
                         }
                         pixel++;
+                    }
+                    int start_index;
+                    foreach(string libName in lib_names)
+                    {
+                        if(names_written < 4)
+                        {
+                            name_page = 8;
+                        }
+                        else
+                        {
+                            name_page = 9;
+                        }
+                        start_index = (names_written % 4) * 16;
+                        if (!ParseData.writeString(libName, pages[name_page], start_index, libName.Length - 1)) return false;
+                        names_written++;
                     }
                 }
             }
