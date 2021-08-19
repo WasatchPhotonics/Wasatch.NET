@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="FTD2XX_NET" />
+    <None Remove="LibUsbDotNet" />
+    <None Remove="MPSSELight" />
+    <None Remove="WasatchMath" />
+    <None Remove="WasatchNET" />
+    <None Remove="Newtonsoft.Json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="FTD2XX_NET">
+      <HintPath>..\lib\FTD2XX_NET.dll</HintPath>
+    </Reference>
+    <Reference Include="LibUsbDotNet">
+      <HintPath>..\lib\LibUsbDotNet.dll</HintPath>
+    </Reference>
+    <Reference Include="MPSSELight">
+      <HintPath>..\lib\MPSSELight.dll</HintPath>
+    </Reference>
+    <Reference Include="WasatchNET">
+      <HintPath>..\WasatchNET\bin\x64\Debug\WasatchNET.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\WasatchNET\bin\x64\Debug\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="WasatchMath">
+      <HintPath>..\lib\WasatchMath.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

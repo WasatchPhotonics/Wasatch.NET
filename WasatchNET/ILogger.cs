@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
 namespace WasatchNET
@@ -17,14 +16,7 @@ namespace WasatchNET
     public interface ILogger
     {
         LogLevel level { get; set; }
-
-        /// <summary>
-        /// If you're developing in WinForms, pass a TextBook into the Logger 
-        /// for instant visualization!
-        /// </summary>
-        /// <param name="tb">the TextBox control where you would like log messages to appear</param>
-        void setTextBox(TextBox tb);
-
+       
         /// <summary>
         /// If you'd like log messages written to a text file, specify the path here.
         /// </summary>

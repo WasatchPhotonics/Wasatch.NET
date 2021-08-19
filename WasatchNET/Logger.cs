@@ -2,7 +2,6 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -33,7 +32,6 @@ namespace WasatchNET
         LinkedList<string> errors = new LinkedList<string>();
         int errorCount;
 
-        TextBox textBox = null;
         StreamWriter outfile;
 
         ////////////////////////////////////////////////////////////////////////
@@ -56,11 +54,6 @@ namespace WasatchNET
         static public Logger getInstance()
         {
             return instance;
-        }
-
-        public void setTextBox(TextBox tb)
-        {
-            textBox = tb;
         }
 
         public void setPathname(string path)
@@ -87,7 +80,6 @@ namespace WasatchNET
         {
             lock (instance)
             {
-                textBox = null;
                 if (outfile != null)
                 {
                     outfile.Flush();
@@ -191,16 +183,9 @@ namespace WasatchNET
 
         public void save(string pathname)
         {
-            if (textBox == null)
-            {
-                error("can't save a log without a TextBox");
-                return;
-            }
-
             try
             {
                 TextWriter tw = new StreamWriter(pathname);
-                tw.WriteLine(textBox.Text);
                 tw.Close();
             }
             catch (Exception e)
@@ -288,9 +273,6 @@ namespace WasatchNET
                     outfile.WriteLine(msg);
                     outfile.Flush();
                 }
-
-                if (textBox != null)
-                    textBox.BeginInvoke(new MethodInvoker(delegate { if (textBox != null) textBox.AppendText(msg + Environment.NewLine); }));
             }
         }
     }
