@@ -89,9 +89,6 @@
     <Reference Include="FTD2XX_NET">
       <HintPath>..\lib\FTD2XX_NET.dll</HintPath>
     </Reference>
-    <Reference Include="LibUsbDotNet">
-      <HintPath>..\lib\LibUsbDotNet.dll</HintPath>
-    </Reference>
     <Reference Include="MPSSELight">
       <HintPath>..\lib\MPSSELight.dll</HintPath>
     </Reference>
@@ -105,6 +102,10 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="LibUsbDotNet.LibUsbDotNet">
+      <HintPath>..\packages\LibUsbDotNet.2.2.29\lib\net45\LibUsbDotNet.LibUsbDotNet.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AcquisitionStatus.cs" />
