@@ -1338,7 +1338,7 @@ namespace WasatchNET
                             Dictionary<string, int> pageIdxs = new Dictionary<string, int>();
                             for(int i = 0; i < librarySpectraNum; i++)
                             {
-                                pageIdxs = namePageIndecies(namesWritten);
+                                pageIdxs = namePageIndices(namesWritten);
                                 readNames.Add(ParseData.toString(pages[pageIdxs["namePage"]],pageIdxs["startIndex"],16));
                                 namesWritten++;
                             }
@@ -2016,7 +2016,7 @@ namespace WasatchNET
                     Dictionary<string, int> pageIdx = new Dictionary<string, int>();
                     foreach(string libName in libNames)
                     {
-                        pageIdx = namePageIndecies(namesWritten);
+                        pageIdx = namePageIndices(namesWritten);
                         if (!ParseData.writeString(libName, pages[pageIdx["namePage"]], pageIdx["startIndex"], libName.Length - 1)) return false;
                         namesWritten++;
                     }
@@ -2040,7 +2040,7 @@ namespace WasatchNET
             return true;
         }
 
-        private Dictionary<string,int> namePageIndecies(int namesWritten)
+        private Dictionary<string,int> namePageIndices(int namesWritten)
         {
             Dictionary<string, int> pageIndecies = new Dictionary<string, int>();
             int namePage;
