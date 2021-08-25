@@ -20,14 +20,14 @@
     <Reference Include="MPSSELight">
       <HintPath>..\lib\MPSSELight.dll</HintPath>
     </Reference>
-    <Reference Include="WasatchNET">
-      <HintPath>..\WasatchNET\bin\x64\Debug\WasatchNET.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\WasatchNET\bin\x64\Debug\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="WasatchMath">
       <HintPath>..\lib\WasatchMath.dll</HintPath>
+    </Reference>
+    <Reference Include="WasatchNET">
+      <HintPath>..\WasatchNET\bin\x64\Debug\WasatchNET.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

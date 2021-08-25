@@ -26,13 +26,13 @@ namespace WasatchNET
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
 
-        static readonly Logger instance = new Logger();
+        protected static readonly Logger instance = Logger.IsLinux ? new Logger() : new LoggerTB();
 
         const int MAX_ERRORS = 100; // how many to queue for retrieval by getErrors()
         LinkedList<string> errors = new LinkedList<string>();
         int errorCount;
 
-        StreamWriter outfile;
+        protected StreamWriter outfile;
 
         ////////////////////////////////////////////////////////////////////////
         // Public attributes
@@ -76,7 +76,7 @@ namespace WasatchNET
             }
         }
 
-        public void close()
+        public virtual void close()
         {
             lock (instance)
             {
@@ -181,7 +181,7 @@ namespace WasatchNET
                 log(lvl, msg);
         }
 
-        public void save(string pathname)
+        public virtual void save(string pathname)
         {
             try
             {
@@ -218,7 +218,7 @@ namespace WasatchNET
         // Private methods
         ////////////////////////////////////////////////////////////////////////
 
-        private Logger()
+        protected Logger()
         {
             var envLevel = Environment.GetEnvironmentVariable("WASATCHNET_LOGGER_LEVEL");
             if (envLevel != null)
@@ -245,12 +245,12 @@ namespace WasatchNET
             }
         }
 
-        string getTimestamp()
+        protected string getTimestamp()
         {
             return DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.ffffff", CultureInfo.InvariantCulture);
         }
 
-        void log(LogLevel lvl, string fmt, params Object[] obj)
+        protected virtual void log(LogLevel lvl, string fmt, params Object[] obj)
         {
             string threadName = null;
             if (Thread.CurrentThread.Name != null)
@@ -275,5 +275,15 @@ namespace WasatchNET
                 }
             }
         }
+
+        private static bool IsLinux
+        {
+            get
+            {
+                int p = (int)Environment.OSVersion.Platform;
+                return (p == 4) || (p == 6) || (p == 128);
+            }
+        }
+
     }
 }
