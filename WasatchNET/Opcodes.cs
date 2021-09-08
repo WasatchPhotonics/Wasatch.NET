@@ -73,7 +73,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_TRIGGER_DELAY                      ] = 0xab;
             cmd[Opcodes.GET_TRIGGER_OUTPUT                     ] = 0xe1;
             cmd[Opcodes.GET_TRIGGER_SOURCE                     ] = 0xd3;
-            cmd[Opcodes.POLL_DATA                              ] = 0xd4;
+            cmd[Opcodes.POLL_DATA                              ] = 0xd4; // aka, GET_UNTETHERED_CAPTURE_STATUS
             cmd[Opcodes.SECOND_TIER_COMMAND                    ] = 0xff;
             //cmd[Opcodes.SET_AREA_SCAN_ENABLE                   ] = 0xe9; // was: SET_LASER_RAMPING_ENABLE
             cmd[Opcodes.SET_AREA_SCAN_ENABLE                   ] = 0xeb; //LMAOOOOOOO, legacy opcode

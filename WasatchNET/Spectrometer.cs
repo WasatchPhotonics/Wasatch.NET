@@ -55,6 +55,8 @@ namespace WasatchNET
         /// </remarks>
         public enum LaserPowerResolution { LASER_POWER_RESOLUTION_100, LASER_POWER_RESOLUTION_1000, LASER_POWER_RESOLUTION_MANUAL }
 
+        public enum UntetheredCaptureStatus {  IDLE = 0, DARK = 1, WARMUP = 2, SAMPLE = 3, PROCESSING = 4, ERROR = 5 }
+
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
@@ -475,6 +477,12 @@ namespace WasatchNET
 
         public string uniqueKey { get; set; }
         internal SpectrometerUptime uptime;
+
+        /// <summary>
+        /// Untethered operation requires an argument to ACQUIRE, and polls
+        /// before reading spectrum.
+        /// </summary>
+        public bool untetheredMode { get; set; } = false;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -1589,10 +1597,10 @@ namespace WasatchNET
                 if (haveCache(op))
                     return triggerSource_;
 
-                if (featureIdentification.boardType != BOARD_TYPES.ARM)
+                if (featureIdentification.boardType != BOARD_TYPES.ARM || isSiG)
                 {
                     // possibly no longer true...but only log once in any case
-                    logger.debug("GET_TRIGGER_SOURCE disabled for boardType {0}", featureIdentification.boardType.ToString());
+                    logger.debug("GET_TRIGGER_SOURCE disabled for boardType {0} and SiG", featureIdentification.boardType.ToString());
                     readOnce.Add(op);
                     return triggerSource_;
                 }
@@ -1693,7 +1701,7 @@ namespace WasatchNET
         uint triggerDelay_;
 
         ////////////////////////////////////////////////////////////////////////
-        // Handheld
+        // Untethered
         ////////////////////////////////////////////////////////////////////////
 
         public byte[] getStorage(UInt16 page)
@@ -1715,6 +1723,18 @@ namespace WasatchNET
             if (featureIdentification.boardType != BOARD_TYPES.ARM)
                 return false;
             return sendCmd2(Opcodes.SET_FEEDBACK, sequence);
+        }
+
+        public UntetheredCaptureStatus getUntetheredCaptureStatus()
+        {
+            UntetheredCaptureStatus status = UntetheredCaptureStatus.ERROR;
+            if (!isSiG)
+                return status;
+
+            byte result = Unpack.toByte(getCmd(Opcodes.POLL_DATA, 1));
+            if (result < (byte)UntetheredCaptureStatus.ERROR)
+                status = (UntetheredCaptureStatus)result;
+            return status;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -2598,25 +2618,12 @@ namespace WasatchNET
                     {
                         try
                         {
-                            /*
-                            double[] temp = getSpectrumRaw();
-                            sum = new double[temp.Length * eeprom.activePixelsVert];
-                            temp.CopyTo(sum, 0);
-                            for (int i = 1; i < eeprom.activePixelsVert; ++i)
-                            {
-                                temp = getSpectrumRaw(true);
-                                temp.CopyTo(sum, temp.Length * i);
-                            }
-                            */
-
                             sum = getAreaScanLightweight();
-
                         }
                         catch (Exception e)
                         {
                             logger.error("Area scan failed out with error {0}", e.Message);
                         }
-
                     }
                     else
                     {
@@ -2628,7 +2635,7 @@ namespace WasatchNET
                     if (sum != null)
                         break;
 
-                    if (retries++ < acquisitionMaxRetries)
+                    if (retries++ < acquisitionMaxRetries && !untetheredMode)
                     {
                         // retry the whole thing (including ACQUIRE)
                         logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
@@ -2657,17 +2664,6 @@ namespace WasatchNET
 
                             if (areaScanEnabled && fastAreaScan)
                             {
-                                /*
-                                double[] temp = getSpectrumRaw();
-                                tmp = new double[temp.Length * eeprom.activePixelsVert];
-                                temp.CopyTo(tmp, 0);
-                                for (int j = 1; j < eeprom.activePixelsVert; ++j)
-                                {
-                                    temp = getSpectrumRaw();
-                                    temp.CopyTo(tmp, temp.Length * j);
-                                }
-                                */
-
                                 tmp = getAreaScanLightweight();
                             }
                             else
@@ -2733,7 +2729,8 @@ namespace WasatchNET
 
             logger.debug("sending SW trigger");
             acquireCount++;
-            return sendCmd(Opcodes.ACQUIRE_SPECTRUM, buf: buf);
+            var wValue = (ushort)(untetheredMode ? 1 : 0);
+            return sendCmd(Opcodes.ACQUIRE_SPECTRUM, wValue, buf: buf);
         }
 
         /// <summary>
@@ -2787,9 +2784,14 @@ namespace WasatchNET
 
             if ((!skipTrigger || isStroker) && !areaScanEnabled)
             {
-                logger.debug("getSpectrumRaw: extra Stroker delay");
-                Thread.Sleep((int)integrationTimeMS_ + 5);
+                var strokerDelayMS = integrationTimeMS_ + 5;
+                logger.debug($"getSpectrumRaw: extra Stroker delay {strokerDelayMS}ms");
+                Thread.Sleep((int)strokerDelayMS);
             }
+
+            if (untetheredMode)
+                if (!waitForUntetheredData())
+                    return null;
 
             ////////////////////////////////////////////////////////////////////
             // read spectrum
@@ -2929,6 +2931,21 @@ namespace WasatchNET
 
             lastSpectrum = spec;
             return spec;
+        }
+
+        /// <returns>true if poll was successful (data ready), false on error</returns>
+        bool waitForUntetheredData()
+        {
+            while (true)
+            {
+                Thread.Sleep(1000);
+                var status = getUntetheredCaptureStatus();
+                logger.debug($"waitForUntetheredData: UntetheredCaptureStatus {status}");
+                if (status == UntetheredCaptureStatus.IDLE)
+                    return true;
+                else if (status == UntetheredCaptureStatus.ERROR)
+                    return false;
+            }
         }
 
         protected virtual double[] getAreaScanLightweight()
