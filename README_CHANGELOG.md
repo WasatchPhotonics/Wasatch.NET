@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2021-09-08 2.3.34
+    - updated POLL\_DATA for untethered capture status
 - 2021-06-30 2.3.33
     - added AnyCPU target to scripts/deploy
     - updated Newtonsoft to 12.x
