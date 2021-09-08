@@ -912,6 +912,28 @@ namespace WasatchNET
         }
         byte _matchingThreshold = 90;
 
+        public byte throwAwayCount
+        {
+            get { return _throwAwayCount; }
+            set
+            {
+                _throwAwayCount = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _throwAwayCount;
+
+        public byte untetheredMode
+        {
+            get { return _untetheredMode;  }
+            set
+            {
+                _untetheredMode = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _untetheredMode;
+
         public byte librarySpectraNum
         {
             get { return _librarySpectraNum; }
@@ -1343,6 +1365,8 @@ namespace WasatchNET
                                 namesWritten++;
                             }
                             libNames = readNames;
+                            throwAwayCount = ParseData.toUInt8(pages[7], 9);
+                            untetheredMode = ParseData.toUInt8(pages[7], 10);
                         }
                         logger.debug("loading handheld device library spectrum");
                         librarySpectrum = new List<UInt16>();
@@ -1975,6 +1999,8 @@ namespace WasatchNET
                     if (!ParseData.writeUInt16(matchingMinPeakHeight,   pages[7], 5)) return false;
                     if (!ParseData.writeByte(matchingThreshold,         pages[7], 7)) return false;
                     if (!ParseData.writeByte(librarySpectraNum,               pages[7], 8)) return false;
+                    if (!ParseData.writeByte(throwAwayCount,               pages[7], 9)) return false;
+                    if (!ParseData.writeByte(untetheredMode,               pages[7], 8)) return false;
                     int namesWritten = 0;
                     if (librarySpectrum == null)
                     {
