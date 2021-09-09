@@ -2000,7 +2000,7 @@ namespace WasatchNET
                     if (!ParseData.writeByte(matchingThreshold,         pages[7], 7)) return false;
                     if (!ParseData.writeByte(librarySpectraNum,               pages[7], 8)) return false;
                     if (!ParseData.writeByte(throwAwayCount,               pages[7], 9)) return false;
-                    if (!ParseData.writeByte(untetheredMode,               pages[7], 8)) return false;
+                    if (!ParseData.writeByte(untetheredMode,               pages[7], 10)) return false;
                     int namesWritten = 0;
                     if (librarySpectrum == null)
                     {
