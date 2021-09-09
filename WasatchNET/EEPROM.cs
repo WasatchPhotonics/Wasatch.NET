@@ -59,7 +59,7 @@ namespace WasatchNET
 
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
-        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, HANDHELD_DEVICE };
+        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE };
 
         /////////////////////////////////////////////////////////////////////////       
         //
@@ -912,6 +912,28 @@ namespace WasatchNET
         }
         byte _matchingThreshold = 90;
 
+        public byte throwAwayCount
+        {
+            get { return _throwAwayCount; }
+            set
+            {
+                _throwAwayCount = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _throwAwayCount;
+
+        public byte untetheredFeatureMask
+        {
+            get { return _untetheredFeatureMask;  }
+            set
+            {
+                _untetheredFeatureMask = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _untetheredFeatureMask;
+
         public byte librarySpectraNum
         {
             get { return _librarySpectraNum; }
@@ -924,7 +946,7 @@ namespace WasatchNET
         byte _librarySpectraNum = 1;
 
         /////////////////////////////////////////////////////////////////////////
-        // Pages 10-73 (subformat HANDHELD_DEVICE)
+        // Pages 10-73 (subformat UNTETHERED_DEVICE)
         /////////////////////////////////////////////////////////////////////////
 
         public List<UInt16> librarySpectrum
@@ -1137,7 +1159,7 @@ namespace WasatchNET
             // parse pages according to format and subformat
             ////////////////////////////////////////////////////////////////
 
-            if (subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
+            if (subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
             {
                 // read pages 8-73 (no need to do all MAX_PAGES_REAL)
                 for (ushort page = MAX_PAGES; page <= LIBRARY_STOP_PAGE; page++)
@@ -1252,7 +1274,7 @@ namespace WasatchNET
                     productConfiguration = "";
 
                 if (format >= 6 && (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
-                                    subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE))
+                                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE))
                 {
                     // load Raman Intensity Correction whether subformat is 1 or 3
                     logger.debug("loading Raman Intensity Correction");
@@ -1321,9 +1343,9 @@ namespace WasatchNET
 
                 if (format >= 11)
                 {
-                    if (subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
+                    if (subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
                     {
-                        logger.debug("loading handheld device configuration");
+                        logger.debug("loading untethered device configuration");
                         libraryType = ParseData.toUInt8(pages[7], 0);
                         libraryID = ParseData.toUInt16(pages[7], 1);
                         startupScansToAverage = ParseData.toUInt8(pages[7], 3);
@@ -1343,8 +1365,10 @@ namespace WasatchNET
                                 namesWritten++;
                             }
                             libNames = readNames;
+                            throwAwayCount = ParseData.toUInt8(pages[7], 9);
+                            untetheredFeatureMask = ParseData.toUInt8(pages[7], 10);
                         }
-                        logger.debug("loading handheld device library spectrum");
+                        logger.debug("loading untethered device library spectrum");
                         librarySpectrum = new List<UInt16>();
                         for (int page = LIBRARY_START_PAGE; page <= LIBRARY_STOP_PAGE; page++)
                         {
@@ -1954,7 +1978,7 @@ namespace WasatchNET
                 }
                 
                 if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
-                    subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
+                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
                 {
                     if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
                     if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)
@@ -1966,7 +1990,7 @@ namespace WasatchNET
                     }
                 }
 
-                if (subformat == PAGE_SUBFORMAT.HANDHELD_DEVICE)
+                if (subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
                 {
                     if (!ParseData.writeByte(libraryType,               pages[7], 0)) return false;
                     if (!ParseData.writeUInt16(libraryID,               pages[7], 1)) return false;
@@ -1975,6 +1999,8 @@ namespace WasatchNET
                     if (!ParseData.writeUInt16(matchingMinPeakHeight,   pages[7], 5)) return false;
                     if (!ParseData.writeByte(matchingThreshold,         pages[7], 7)) return false;
                     if (!ParseData.writeByte(librarySpectraNum,               pages[7], 8)) return false;
+                    if (!ParseData.writeByte(throwAwayCount,               pages[7], 9)) return false;
+                    if (!ParseData.writeByte(untetheredFeatureMask,               pages[7], 10)) return false;
                     int namesWritten = 0;
                     if (librarySpectrum == null)
                     {
