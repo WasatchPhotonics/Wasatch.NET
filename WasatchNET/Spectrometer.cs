@@ -482,7 +482,7 @@ namespace WasatchNET
         /// Untethered operation requires an argument to ACQUIRE, and polls
         /// before reading spectrum.
         /// </summary>
-        public bool untetheredMode { get; set; } = false;
+        public bool untetheredAcquisitionEnabled { get; set; } = false;
 
         ////////////////////////////////////////////////////////////////////////
         // property caching 
@@ -2635,7 +2635,7 @@ namespace WasatchNET
                     if (sum != null)
                         break;
 
-                    if (retries++ < acquisitionMaxRetries && !untetheredMode)
+                    if (retries++ < acquisitionMaxRetries && !untetheredAcquisitionEnabled)
                     {
                         // retry the whole thing (including ACQUIRE)
                         logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
@@ -2729,7 +2729,7 @@ namespace WasatchNET
 
             logger.debug("sending SW trigger");
             acquireCount++;
-            var wValue = (ushort)(untetheredMode ? 1 : 0);
+            var wValue = (ushort)(untetheredAcquisitionEnabled ? 1 : 0);
             return sendCmd(Opcodes.ACQUIRE_SPECTRUM, wValue, buf: buf);
         }
 
@@ -2789,7 +2789,7 @@ namespace WasatchNET
                 Thread.Sleep((int)strokerDelayMS);
             }
 
-            if (untetheredMode)
+            if (untetheredAcquisitionEnabled)
                 if (!waitForUntetheredData())
                     return null;
 
