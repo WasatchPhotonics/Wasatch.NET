@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2021-09-16 2.3.35
+	- fixed issue preventing multiple spectrometer communication when one is SPI
 - 2021-09-08 2.3.34
     - updated POLL\_DATA for untethered capture status
 - 2021-06-30 2.3.33

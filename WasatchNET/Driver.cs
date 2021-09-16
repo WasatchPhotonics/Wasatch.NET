@@ -177,44 +177,42 @@ namespace WasatchNET
             {
                 logger.debug("Checking for SPI spectrometers");
 
-                if (spectrometers.Count == 0)
+                string currentDir = Directory.GetCurrentDirectory(); // pushdir
+                logger.debug("caching directory {0}", currentDir);
+                try
                 {
-                    string currentDir = Directory.GetCurrentDirectory(); // pushdir
-                    logger.debug("caching directory {0}", currentDir);
-                    try
-                    {
-                        // to load FTD2XX.dll, we apparently need to be in its directory
-                        string dllDir = Path.Combine(new string[] {
-                        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),  // "Program Files" or "(ibid) x86" as appropriate
-                        "Wasatch Photonics",
-                        "Wasatch.NET" });
-                        logger.debug("changing directory to {0}", dllDir);
-                        Directory.SetCurrentDirectory(dllDir);
-                        logger.debug("directory now {0}", Directory.GetCurrentDirectory());
+                    // to load FTD2XX.dll, we apparently need to be in its directory
+                    string dllDir = Path.Combine(new string[] {
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),  // "Program Files" or "(ibid) x86" as appropriate
+                    "Wasatch Photonics",
+                    "Wasatch.NET" });
+                    logger.debug("changing directory to {0}", dllDir);
+                    Directory.SetCurrentDirectory(dllDir);
+                    logger.debug("directory now {0}", Directory.GetCurrentDirectory());
 
-                        SPISpectrometer spiSpec = new SPISpectrometer(null);
-                        logger.debug("attempting to open spi spectrometer");
-                        bool opened = spiSpec.open();
-                        if (opened)
-                        {
-                            logger.debug("found SPISpectrometer");
-                            spectrometers.Add(spiSpec);
-                        }
-                        else
-                        {
-                            logger.debug("no SPISpectrometer found");
-                        }
-                    }
-                    catch
+                    SPISpectrometer spiSpec = new SPISpectrometer(null);
+                    logger.debug("attempting to open spi spectrometer");
+                    bool opened = spiSpec.open();
+                    if (opened)
                     {
-                        logger.debug("Unable to check for SPISpectrometer");
+                        logger.debug("found SPISpectrometer");
+                        spectrometers.Add(spiSpec);
                     }
-                    finally
+                    else
                     {
-                        logger.debug("restoring directory {0}", currentDir);
-                        Directory.SetCurrentDirectory(currentDir); // popdir
+                        logger.debug("no SPISpectrometer found");
                     }
                 }
+                catch
+                {
+                    logger.debug("Unable to check for SPISpectrometer");
+                }
+                finally
+                {
+                    logger.debug("restoring directory {0}", currentDir);
+                    Directory.SetCurrentDirectory(currentDir); // popdir
+                }
+                
             }
 
             ////////////////////////////////////////////////////////////////////
