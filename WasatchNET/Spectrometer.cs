@@ -217,8 +217,9 @@ namespace WasatchNET
         public FPGAOptions fpgaOptions { get; private set; }
 
         /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
-        public EEPROM eeprom { get; protected set; }
 
+        public EEPROM eeprom { get; protected set; }
+        public FRAM fram { get; protected set; }
         ////////////////////////////////////////////////////////////////////////
         // internal driver attributes (no direct corresponding HW component)
         ////////////////////////////////////////////////////////////////////////
@@ -1777,6 +1778,7 @@ namespace WasatchNET
             // load EEPROM configuration
             logger.debug("reading EEPROM");
             eeprom = new EEPROM(this);
+            fram = new FRAM(this);
             if (!eeprom.read())
             {
                 logger.error("Spectrometer: failed to GET_MODEL_CONFIG");

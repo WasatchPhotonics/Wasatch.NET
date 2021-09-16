@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WasatchNET
 {
-    class FRAM
+    public class FRAM
     {
         internal const int FRAM_LIB_START = 7511;
         internal const int FRAM_LIB_END = 8000;
@@ -38,7 +38,7 @@ namespace WasatchNET
 
         public List<byte[]> pages { get; protected set; }
 
-        internal FRAM(Spectrometer spec)
+        public FRAM(Spectrometer spec)
         {
             spectrometer = spec;
         }
