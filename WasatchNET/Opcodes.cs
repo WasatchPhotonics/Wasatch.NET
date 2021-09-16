@@ -122,6 +122,8 @@ namespace WasatchNET
             cmd[Opcodes.GET_STORAGE                            ] = 0x25;
             cmd[Opcodes.ERASE_STORAGE                          ] = 0x26;
             cmd[Opcodes.SET_FEEDBACK                           ] = 0x27;
+            cmd[Opcodes.WRITE_LIBRARY                          ] = 0x90;
+            cmd[Opcodes.PROCESS_LIBRARY                        ] = 0x91;
 
             // TODO: implement, test and document these 2nd-tier commands (see vend_ax.h)
             //
@@ -159,6 +161,8 @@ namespace WasatchNET
             armInvertedRetvals.Add(Opcodes.SET_CONTINUOUS_ACQUISITION);
             armInvertedRetvals.Add(Opcodes.SET_CONTINUOUS_FRAMES);
             armInvertedRetvals.Add(Opcodes.SET_MODEL_CONFIG_ARM);
+            armInvertedRetvals.Add(Opcodes.WRITE_LIBRARY);
+            armInvertedRetvals.Add(Opcodes.PROCESS_LIBRARY);
         }
     }
 }
