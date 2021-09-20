@@ -1368,22 +1368,6 @@ namespace WasatchNET
                             throwAwayCount = ParseData.toUInt8(pages[7], 9);
                             untetheredFeatureMask = ParseData.toUInt8(pages[7], 10);
                         }
-                        logger.debug("loading untethered device library spectrum");
-                        librarySpectrum = new List<UInt16>();
-                        for (int page = LIBRARY_START_PAGE; page <= LIBRARY_STOP_PAGE; page++)
-                        {
-                            for (int pagePixel = 0; pagePixel < 32; pagePixel++)
-                            {
-                                if (librarySpectrum.Count >= activePixelsHoriz*librarySpectraNum)
-                                    break;
-
-                                UInt16 lsb = pages[page][pagePixel * 2];
-                                UInt16 msb = pages[page][pagePixel * 2 + 1];
-                                UInt16 intensity = (UInt16) ((msb << 8) | lsb);
-                                librarySpectrum.Add(intensity);
-                            }
-                        }
-                        logger.debug("loaded library spectrum of {0} values", librarySpectrum.Count);
                     }
                 }
             }

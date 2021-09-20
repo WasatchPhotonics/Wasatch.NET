@@ -51,12 +51,10 @@ namespace WasatchNET
             int page_num;
             bool ok;
 
-            logger.info($"number of pages is {pages.Count}");
             for (int page = 0; page < pages.Count; page++)
             {
                 lib_num = page / LIB_PAGE_SIZE;
                 page_num = page % LIB_PAGE_SIZE;
-                logger.info($"writing page {page} with lib number of {lib_num}");
                 ok = spectrometer.sendCmd(
                         opcode: Opcodes.WRITE_LIBRARY,
                         wValue: Convert.ToUInt16(lib_num),
@@ -69,7 +67,6 @@ namespace WasatchNET
         public bool writeParse()
         {
             int pixel = 0;
-            logger.info($"length of library spectrum is {librarySpectrum.Count}");
             while (pixel < librarySpectrum.Count)
             {
                 int page = pixel / 32;
@@ -109,7 +106,6 @@ namespace WasatchNET
                 pages.Add(buf);
                 logger.hexdump(buf, String.Format("read page {0}: ", page));
             }
-            logger.info($"length of pages is {pages[0].Length}");
             for (int page = 0; page < pages.Count; page++)
             {
                 for (int pagePixel = 0; pagePixel < 32; pagePixel++)
