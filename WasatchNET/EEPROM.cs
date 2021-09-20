@@ -1986,43 +1986,6 @@ namespace WasatchNET
                     if (!ParseData.writeByte(throwAwayCount,               pages[7], 9)) return false;
                     if (!ParseData.writeByte(untetheredFeatureMask,               pages[7], 10)) return false;
                     int namesWritten = 0;
-                    if (librarySpectrum == null)
-                    {
-                        logger.error("EEPROM.writeLibrary: no librarySpectrum");
-                        return false;
-                    }
-
-                    if (librarySpectrum.Count > LIBRARY_SIZE_PIXELS*MAX_LIB_ENTRIES)
-                    {
-                        logger.error($"EEPROM.writeLibrary: librarySpectrum only sized for {MAX_LIB_ENTRIES} spectra of size {LIBRARY_SIZE_PIXELS} pixels");
-                        return false; 
-                    }
-
-                    int pixel = 0;
-                    logger.info($"Wasatch.NET: writing spectrum of length {librarySpectrum.Count}");
-                    while (pixel < librarySpectrum.Count)
-                    {
-                        int page = LIBRARY_START_PAGE + pixel / 32;
-                        int offset = 2 * (pixel % 32);
-
-                        // fill-in any pages that weren't loaded/created at start
-                        // (e.g. if a different subformat had been in effect)
-                        while (page >= pages.Count)
-                        {
-                            logger.debug("appending new page {0}", pages.Count);
-                            pages.Add(new byte[64]);
-                        }
-
-                        // logger.debug("writeLibrary: writing pixel {0,4} to page {1,4} offset {2,4} value {3,6}", 
-                        //     pixel, page, offset, librarySpectrum[pixel]);
-                        if (!ParseData.writeUInt16(librarySpectrum[pixel], pages[page], offset))
-                        {
-                            logger.error("failed to write librarySpectrum pixel {0} page {1} offset {2}",
-                                pixel, page, offset);
-                            return false;
-                        }
-                        pixel++;
-                    }
                     Dictionary<string, int> pageIdx = new Dictionary<string, int>();
                     foreach(string libName in libNames)
                     {

@@ -104,8 +104,6 @@ namespace WasatchNET
             cmd[Opcodes.SET_TRIGGER_DELAY                      ] = 0xaa;
             cmd[Opcodes.SET_TRIGGER_OUTPUT                     ] = 0xe0;
             cmd[Opcodes.SET_TRIGGER_SOURCE                     ] = 0xd2;
-            cmd[Opcodes.WRITE_LIBRARY                          ] = 0xa6;
-            cmd[Opcodes.PROCESS_LIBRARY                        ] = 0xb0;
 
             // wValue for SECOND_TIER_COMMAND
             cmd[Opcodes.GET_MODEL_CONFIG                       ] = 0x01;
@@ -124,6 +122,8 @@ namespace WasatchNET
             cmd[Opcodes.GET_STORAGE                            ] = 0x25;
             cmd[Opcodes.ERASE_STORAGE                          ] = 0x26;
             cmd[Opcodes.SET_FEEDBACK                           ] = 0x27;
+            cmd[Opcodes.WRITE_LIBRARY                          ] = 0x28;
+            cmd[Opcodes.PROCESS_LIBRARY                        ] = 0x29;
 
             // TODO: implement, test and document these 2nd-tier commands (see vend_ax.h)
             //

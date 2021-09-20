@@ -49,6 +49,7 @@ namespace WasatchNET
             writeParse();
             int lib_num;
             int page_num;
+            UInt16 combined_val;
             byte[] send_buf = { 1 };
             bool ok;
 
@@ -56,15 +57,16 @@ namespace WasatchNET
             {
                 lib_num = page / LIB_PAGE_SIZE;
                 page_num = page % LIB_PAGE_SIZE;
+                combined_val = Convert.ToUInt16(lib_num << 8 | page_num);
                 ok = spectrometer.sendCmd(
-                        opcode: Opcodes.WRITE_LIBRARY,
-                        wValue: Convert.ToUInt16(lib_num),
-                        wIndex: (ushort)page_num,
+                        opcode: Opcodes.SECOND_TIER_COMMAND,
+                        wValue: spectrometer.cmd[Opcodes.WRITE_LIBRARY],
+                        wIndex: combined_val,
                         buf: pages[page]);
             }
             ok = spectrometer.sendCmd(
-                opcode: Opcodes.PROCESS_LIBRARY,
-                wValue: 0,
+                opcode: Opcodes.SECOND_TIER_COMMAND,
+                wValue: spectrometer.cmd[Opcodes.PROCESS_LIBRARY],
                 wIndex: 0,
                 buf: send_buf);
             return true;
