@@ -49,6 +49,7 @@ namespace WasatchNET
             writeParse();
             int lib_num;
             int page_num;
+            byte[] send_buf = { 1 };
             bool ok;
 
             for (int page = 0; page < pages.Count; page++)
@@ -61,6 +62,11 @@ namespace WasatchNET
                         wIndex: (ushort)page_num,
                         buf: pages[page]);
             }
+            ok = spectrometer.sendCmd(
+                opcode: Opcodes.PROCESS_LIBRARY,
+                wValue: 0,
+                wIndex: 0,
+                buf: send_buf);
             return true;
         }
 

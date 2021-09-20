@@ -105,7 +105,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_TRIGGER_OUTPUT                     ] = 0xe0;
             cmd[Opcodes.SET_TRIGGER_SOURCE                     ] = 0xd2;
             cmd[Opcodes.WRITE_LIBRARY                          ] = 0xa6;
-            cmd[Opcodes.PROCESS_LIBRARY                        ] = 0x91;
+            cmd[Opcodes.PROCESS_LIBRARY                        ] = 0xb0;
 
             // wValue for SECOND_TIER_COMMAND
             cmd[Opcodes.GET_MODEL_CONFIG                       ] = 0x01;
