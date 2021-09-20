@@ -8,7 +8,7 @@ namespace WasatchNET
 {
     public class FRAM
     {
-        internal const int FRAM_LIB_START = 7511;
+        internal const int FRAM_LIB_START = 7512;
         internal const int FRAM_LIB_END = 8000;
         internal const ushort LIB_PAGE_SIZE = 61;
         public event EventHandler FRAMChanged;
@@ -41,21 +41,26 @@ namespace WasatchNET
         public FRAM(Spectrometer spec)
         {
             spectrometer = spec;
+            pages = new List<byte[]>();
         }
 
         public bool write()
         {
             writeParse();
             int lib_num;
+            int page_num;
             bool ok;
 
+            logger.info($"number of pages is {pages.Count}");
             for (int page = 0; page < pages.Count; page++)
             {
                 lib_num = page / LIB_PAGE_SIZE;
+                page_num = page % LIB_PAGE_SIZE;
+                logger.info($"writing page {page} with lib number of {lib_num}");
                 ok = spectrometer.sendCmd(
                         opcode: Opcodes.WRITE_LIBRARY,
                         wValue: Convert.ToUInt16(lib_num),
-                        wIndex: (ushort)page,
+                        wIndex: (ushort)page_num,
                         buf: pages[page]);
             }
             return true;
@@ -64,6 +69,7 @@ namespace WasatchNET
         public bool writeParse()
         {
             int pixel = 0;
+            logger.info($"length of library spectrum is {librarySpectrum.Count}");
             while (pixel < librarySpectrum.Count)
             {
                 int page = pixel / 32;
@@ -92,6 +98,7 @@ namespace WasatchNET
 
         public bool read()
         {
+            librarySpectrum = new List<ushort>();
             for (ushort page = FRAM_LIB_START; page < FRAM_LIB_END; page++)
             {
                 byte[] buf = spectrometer.getStorage(page);
@@ -102,7 +109,8 @@ namespace WasatchNET
                 pages.Add(buf);
                 logger.hexdump(buf, String.Format("read page {0}: ", page));
             }
-            for (int page = 0; page <= pages.Count; page++)
+            logger.info($"length of pages is {pages[0].Length}");
+            for (int page = 0; page < pages.Count; page++)
             {
                 for (int pagePixel = 0; pagePixel < 32; pagePixel++)
                 {

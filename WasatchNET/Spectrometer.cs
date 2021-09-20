@@ -1786,7 +1786,13 @@ namespace WasatchNET
                 return false;
             }
             logger.debug("back from reading EEPROM");
-
+            if (!fram.read())
+            {
+                logger.error("Spectrometer: failed to read FRAM");
+                usbDevice.Close();
+                return false;
+            }
+            logger.debug("back from reading FRAM");
             // see how the FPGA was compiled
             logger.debug("reading FPGA Options");
             fpgaOptions = new FPGAOptions(this);
