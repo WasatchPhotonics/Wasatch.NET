@@ -36,6 +36,8 @@ namespace WasatchNET
         }
         List<UInt16> _librarySpectrum;
 
+        public byte baselineFlags;
+
         public List<byte[]> pages { get; protected set; }
 
         public FRAM(Spectrometer spec)
@@ -67,7 +69,7 @@ namespace WasatchNET
             ok = spectrometer.sendCmd(
                 opcode: Opcodes.SECOND_TIER_COMMAND,
                 wValue: spectrometer.cmd[Opcodes.PROCESS_LIBRARY],
-                wIndex: 0,
+                wIndex: baselineFlags,
                 buf: send_buf);
             return true;
         }
