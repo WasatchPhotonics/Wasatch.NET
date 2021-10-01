@@ -86,6 +86,12 @@
     <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ATMCD32CS">
+      <HintPath>..\lib\ATMCD32CS.dll</HintPath>
+    </Reference>
+    <Reference Include="ATMCD64CS">
+      <HintPath>..\lib\ATMCD64CS.dll</HintPath>
+    </Reference>
     <Reference Include="FTD2XX_NET">
       <HintPath>..\lib\FTD2XX_NET.dll</HintPath>
     </Reference>
@@ -109,6 +115,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AcquisitionStatus.cs" />
+    <Compile Include="AndorSpectrometer.cs" />
     <Compile Include="BoulderEEPROM.cs" />
     <Compile Include="BoulderSpectrometer.cs" />
     <Compile Include="EEPROMJSON.cs" />
