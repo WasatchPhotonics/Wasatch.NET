@@ -20,9 +20,9 @@ namespace WasatchNET
     public class AndorSpectrometer : Spectrometer
     {
 #if WIN32
-        private AndorSDK andorDriver = new ATMCD32CS.AndorSDK();
+        internal AndorSDK andorDriver = new ATMCD32CS.AndorSDK();
 #else
-        private AndorSDK andorDriver = new ATMCD64CS.AndorSDK();
+        internal AndorSDK andorDriver = new ATMCD64CS.AndorSDK();
 #endif
         internal int specIndex;
         int cameraHandle = 0;
@@ -44,13 +44,14 @@ namespace WasatchNET
 
             andorDriver.GetCapabilities(ref capabilities);
             andorDriver.GetTemperatureRange(ref minTemp, ref maxTemp);
-            andorDriver.SetTemperature(minTemp);
+            andorDriver.SetTemperature((minTemp + maxTemp) / 2);
             andorDriver.GetDetector(ref xPixels, ref yPixels);
             andorDriver.CoolerON();
             andorDriver.SetAcquisitionMode(1);
             andorDriver.SetTriggerMode(0);
             andorDriver.SetExposureTime(0.001f);
             pixels = (uint)xPixels;
+            eeprom = new AndorEEPROM(this);
 
         }
 
@@ -317,7 +318,7 @@ namespace WasatchNET
             }
             set
             {
-
+                eeprom.laserExcitationWavelengthNMFloat = value;
             }
         }
 
