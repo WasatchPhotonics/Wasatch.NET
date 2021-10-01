@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text;
@@ -30,6 +31,8 @@ namespace WasatchNET
         {
             int minTemp = 0;
             int maxTemp = 0;
+            int xPixels = 0;
+            int yPixels = 0;
             AndorSDK.AndorCapabilities capabilities = new AndorSDK.AndorCapabilities();
 
             //excitationWavelengthNM = 0;
@@ -42,76 +45,70 @@ namespace WasatchNET
             andorDriver.GetCapabilities(ref capabilities);
             andorDriver.GetTemperatureRange(ref minTemp, ref maxTemp);
             andorDriver.SetTemperature(minTemp);
+            andorDriver.GetDetector(ref xPixels, ref yPixels);
             andorDriver.CoolerON();
-            andorDriver.SetExposureTime(0.1f);
+            andorDriver.SetAcquisitionMode(1);
+            andorDriver.SetTriggerMode(0);
+            andorDriver.SetExposureTime(0.001f);
+            pixels = (uint)xPixels;
 
         }
 
         public override void close()
         {
             //wrapper.shutdown();
-            if (!commError)
-            {
-                lock (acquisitionLock)
-                {
-                    var task = Task.Run(async () => await closeSpectrometerAsync());
-                    task.Wait();
-                }
-            }
+            andorDriver.SetCurrentCamera(cameraHandle);
+            andorDriver.ShutDown();
         }
 
         public override double[] getSpectrum(bool forceNew = false)
         {
-            if (!commError)
+            
+            lock (acquisitionLock)
             {
-                lock (acquisitionLock)
+                double[] sum = getSpectrumRaw();
+                if (sum == null)
                 {
-                    double[] sum = getSpectrumRaw();
-                    if (sum == null)
-                    {
-                        logger.error("getSpectrum: getSpectrumRaw returned null");
-                        return null;
-                    }
-                    logger.debug("getSpectrum: received {0} pixels", sum.Length);
+                    logger.error("getSpectrum: getSpectrumRaw returned null");
+                    return null;
+                }
+                logger.debug("getSpectrum: received {0} pixels", sum.Length);
 
-                    if (scanAveraging_ > 1)
+                if (scanAveraging_ > 1)
+                {
+                    // logger.debug("getSpectrum: getting additional spectra for averaging");
+                    for (uint i = 1; i < scanAveraging_; i++)
                     {
-                        // logger.debug("getSpectrum: getting additional spectra for averaging");
-                        for (uint i = 1; i < scanAveraging_; i++)
-                        {
-                            double[] tmp = getSpectrumRaw();
-                            if (tmp == null)
-                                return null;
-
-                            for (int px = 0; px < pixels; px++)
-                                sum[px] += tmp[px];
-                        }
+                        double[] tmp = getSpectrumRaw();
+                        if (tmp == null)
+                            return null;
 
                         for (int px = 0; px < pixels; px++)
-                            sum[px] /= scanAveraging_;
+                            sum[px] += tmp[px];
                     }
 
-                    if (dark != null && dark.Length == sum.Length)
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] -= dark_[px];
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] /= scanAveraging_;
+                }
 
-                    if (correctPixels)
-                        correctBadPixels(ref sum);
+                if (dark != null && dark.Length == sum.Length)
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] -= dark_[px];
 
-                    if (boxcarHalfWidth > 0)
-                    {
-                        // logger.debug("getSpectrum: returning boxcar");
-                        return Util.applyBoxcar(boxcarHalfWidth, sum);
-                    }
-                    else
-                    {
-                        // logger.debug("getSpectrum: returning sum");
-                        return sum;
-                    }
+                correctBadPixels(ref sum);
+
+                if (boxcarHalfWidth > 0)
+                {
+                    // logger.debug("getSpectrum: returning boxcar");
+                    return Util.applyBoxcar(boxcarHalfWidth, sum);
+                }
+                else
+                {
+                    // logger.debug("getSpectrum: returning sum");
+                    return sum;
                 }
             }
-            else
-                return new double[pixels];
+            
 
         }
 
@@ -122,13 +119,15 @@ namespace WasatchNET
             // read spectrum
             ////////////////////////////////////////////////////////////////////
 
-            double[] spec = new double[pixels]; // default to all zeros
+            int[] spec = new int[pixels]; // default to all zeros
+            andorDriver.StartAcquisition();
+            andorDriver.WaitForAcquisition();
+            andorDriver.GetAcquiredData(spec, pixels);
 
-            var task = Task.Run(async () => spec = await getSpectrumAsync());
-            task.Wait();
+            double[] convertedSpec = Array.ConvertAll(spec, item => (double)item);
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
-            return spec;
+            return convertedSpec;
         }
 
 
@@ -155,19 +154,18 @@ namespace WasatchNET
             {
                 //if (value < wrapper.getMaxIntegrationTimeMillisec())
                 //wrapper.setIntegrationTimeMillisec((long)value);
-                if (!commError)
+                lock (acquisitionLock)
                 {
-                    lock (acquisitionLock)
-                    {
-                        int errorReader = 0;
-                        var task = Task.Run(async () => errorReader = await setIntegrationAsync(value));
-                        task.Wait();
+                    float exposure = 0;
+                    float accumulate = 0;
+                    float kinetic = 0;
+                    andorDriver.SetExposureTime((float)value / 1000);
+                    andorDriver.GetAcquisitionTimings(ref exposure, ref accumulate, ref kinetic);
 
-                        if (errorReader == 0)
-                            integrationTime_ = value;
+                    integrationTime_ = (long)Math.Round(exposure * 1000);
 
-                    }
                 }
+                
             }
         }
         long integrationTime_;
@@ -239,9 +237,11 @@ namespace WasatchNET
             }
             set
             {
-                bool ok = enableDetectorTEC(value);
-                if (ok)
-                    tecEnabled_ = value;
+                if (value)
+                    andorDriver.CoolerON();
+                else
+                    andorDriver.CoolerOFF();
+                tecEnabled_ = value;
             }
         }
         bool tecEnabled_ = false;
@@ -273,10 +273,8 @@ namespace WasatchNET
             get => base.detectorTECSetpointDegC;
             set
             {
-                if (value != detectorTECSetpointDegC_)
-                    setDetectorTECSetpointDegreesC(value);
+                andorDriver.SetTemperature((int)value);
                 detectorTECSetpointDegC_ = value;
-
             }
 
         }
@@ -295,14 +293,6 @@ namespace WasatchNET
             {
                 string retval = "";
 
-                if (!commError)
-                {
-                    lock (acquisitionLock)
-                    {
-                        var task = Task.Run(async () => retval = await getFirmwareRevAsync());
-                        task.Wait();
-                    }
-                }
                 return retval;
             }
         }
@@ -313,31 +303,9 @@ namespace WasatchNET
         {
             get
             {
-                lock (acquisitionLock)
-                {
-                    byte[] cmd = new byte[2];
-                    cmd[0] = 0x6b; // read FPGA register
-                    cmd[1] = 0x04; // read FPGA version number
+                string retval = "";
 
-                    sbWrite(cmd);
-                    byte[] response = sbRead(3);
-
-                    string formatted = "";
-
-                    if (response != null)
-                    {
-                        UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
-
-                        int major = (bytes >> 12) & 0x0f;
-                        int minor = (bytes >> 4) & 0xff;
-                        int build = (bytes) & 0x0f;
-
-                        formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
-                        logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
-                    }
-
-                    return formatted;
-                }
+                return retval;
             }
         }
 
