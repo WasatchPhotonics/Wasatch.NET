@@ -1,6 +1,10 @@
 .vs/
 Setup32/Debug/
 Setup64/Debug/
+Setup32/Release/
+Setup64/Release/
+SetupAnyCPU/Debug/
+SetupAnyCPU/Release/
 WasatchNET/bin/
 WasatchNET/obj/
 WinFormDemo/bin/

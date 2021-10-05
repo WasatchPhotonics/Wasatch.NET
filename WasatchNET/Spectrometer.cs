@@ -217,8 +217,9 @@ namespace WasatchNET
         public FPGAOptions fpgaOptions { get; private set; }
 
         /// <summary>configuration settings stored in the spectrometer's EEPROM</summary>
-        public EEPROM eeprom { get; protected set; }
 
+        public EEPROM eeprom { get; protected set; }
+        public FRAM fram { get; protected set; }
         ////////////////////////////////////////////////////////////////////////
         // internal driver attributes (no direct corresponding HW component)
         ////////////////////////////////////////////////////////////////////////
@@ -1777,6 +1778,7 @@ namespace WasatchNET
             // load EEPROM configuration
             logger.debug("reading EEPROM");
             eeprom = new EEPROM(this);
+            fram = new FRAM(this);
             if (!eeprom.read())
             {
                 logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
@@ -1784,7 +1786,13 @@ namespace WasatchNET
                 return false;
             }
             logger.debug("back from reading EEPROM");
-
+            if (!fram.read())
+            {
+                logger.error("Spectrometer: failed to read FRAM");
+                usbDevice.Close();
+                return false;
+            }
+            logger.debug("back from reading FRAM");
             // see how the FPGA was compiled
             logger.debug("reading FPGA Options");
             fpgaOptions = new FPGAOptions(this);
