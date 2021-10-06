@@ -116,6 +116,7 @@ namespace WasatchNET
             avgResolution = 0.0f;
 
             userData = new byte[63];
+            subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
 
             badPixelSet = new SortedSet<short>();
             productConfiguration = "";

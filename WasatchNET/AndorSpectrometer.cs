@@ -26,13 +26,15 @@ namespace WasatchNET
 #endif
         internal int specIndex;
         int cameraHandle = 0;
+        int yPixels;
+        const int DRV_SUCCESS = 20002;
 
         internal AndorSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             int minTemp = 0;
             int maxTemp = 0;
             int xPixels = 0;
-            int yPixels = 0;
+            uint errorValue = 0;
             AndorSDK.AndorCapabilities capabilities = new AndorSDK.AndorCapabilities();
 
             //excitationWavelengthNM = 0;
@@ -49,11 +51,80 @@ namespace WasatchNET
             andorDriver.CoolerON();
             andorDriver.SetAcquisitionMode(1);
             andorDriver.SetTriggerMode(0);
+            // Set read mode to required setting specified in xxxxWndw.c
+            errorValue = andorDriver.SetReadMode(0);
+
+            int VSnumber = 0;
+            float speed = 0;
+            // Set Vertical speed to recommended
+            andorDriver.GetFastestRecommendedVSSpeed(ref VSnumber, ref speed);
+            errorValue = andorDriver.SetVSSpeed(VSnumber);
+
+            // Set Horizontal Speed to max
+            float STemp = 0;
+            int HSnumber = 0;
+            int ADnumber = 0;
+            int nAD = 0;
+            int sIndex = 0;
+            errorValue = andorDriver.GetNumberADChannels(ref nAD);
+            if (errorValue != DRV_SUCCESS)
+            {
+
+            }
+            else
+            {
+                for (int iAD = 0; iAD < nAD; iAD++)
+                {
+                    andorDriver.GetNumberHSSpeeds(iAD, 0, ref sIndex);
+                    for (int iSpeed = 0; iSpeed < sIndex; iSpeed++)
+                    {
+                        andorDriver.GetHSSpeed(iAD, 0, iSpeed, ref speed);
+                        if (speed > STemp)
+                        {
+                            STemp = speed;
+                            HSnumber = iSpeed;
+                            ADnumber = iAD;
+                        }
+                    }
+                }
+            }
+
+            errorValue = andorDriver.SetADChannel(ADnumber);
+            errorValue = andorDriver.SetHSSpeed(0, HSnumber);
+
+            andorDriver.SetShutterEx(1, 1, 35, 35, 0);
             andorDriver.SetExposureTime(0.001f);
             pixels = (uint)xPixels;
             eeprom = new AndorEEPROM(this);
 
         }
+
+        override internal bool open()
+        {
+            eeprom = new AndorEEPROM(this);
+
+            lock (acquisitionLock)
+            {
+                logger.info("found spectrometer with {0} pixels", pixels);
+
+                if (!eeprom.read())
+                {
+                    logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                    //wrapper.shutdown();
+                    close();
+                    return false;
+                }
+                logger.debug("back from reading EEPROM");
+
+                regenerateWavelengths();
+                //detectorTECSetpointDegC = 15.0f;
+
+                logger.info("Opened Andor Spectrometer with index {0}", specIndex);
+
+                return true;
+            }
+        }
+
 
         public override void close()
         {
@@ -119,11 +190,21 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////////
             // read spectrum
             ////////////////////////////////////////////////////////////////////
+            int[] spec = new int[pixels];
+            //andorDriver.sh
 
-            int[] spec = new int[pixels]; // default to all zeros
-            andorDriver.StartAcquisition();
-            andorDriver.WaitForAcquisition();
-            andorDriver.GetAcquiredData(spec, pixels);
+            for (int size = 1; size <= yPixels; ++size)
+            {
+                spec = new int[size * pixels]; // default to all zeros
+                andorDriver.StartAcquisition();
+                andorDriver.WaitForAcquisition();
+                uint success = andorDriver.GetAcquiredData(spec, (uint)(size * pixels));
+
+                if (success == 20002)
+                    break;
+                if (success == 20067)
+                    continue;
+            }
 
             double[] convertedSpec = Array.ConvertAll(spec, item => (double)item);
 

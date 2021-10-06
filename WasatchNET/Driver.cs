@@ -278,7 +278,8 @@ namespace WasatchNET
                 for (int i = 0; i < numAndorAvailable; ++i)
                 {
                     AndorSpectrometer spec = new AndorSpectrometer(null, i);
-                    spectrometers.Add(spec);
+                    if (spec.open())
+                        spectrometers.Add(spec);
                 }
             }
 
