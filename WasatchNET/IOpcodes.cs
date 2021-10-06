@@ -93,6 +93,8 @@ namespace WasatchNET
         SET_SELECTED_ADC,
         SET_TRIGGER_DELAY,
         SET_TRIGGER_OUTPUT,
-        SET_TRIGGER_SOURCE
+        SET_TRIGGER_SOURCE,
+        WRITE_LIBRARY,
+        PROCESS_LIBRARY,
     }
 }

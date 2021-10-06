@@ -119,6 +119,7 @@
     <Compile Include="AndorSpectrometer.cs" />
     <Compile Include="BoulderEEPROM.cs" />
     <Compile Include="BoulderSpectrometer.cs" />
+    <Compile Include="FRAM.cs" />
     <Compile Include="EEPROMJSON.cs" />
     <Compile Include="FeatureIdentification.cs" />
     <Compile Include="FeatureMask.cs" />
