@@ -27,8 +27,12 @@ namespace WasatchNET
         internal int specIndex;
         int cameraHandle = 0;
         int yPixels;
+
+        //see page 330 of Andor SDK documentation
         const int DRV_SUCCESS = 20002;
-        const int SHUTTER_SPEED = 35;
+
+        // not sure where this comes from...ask Caleb - TS
+        const int SHUTTER_SPEED_MS = 35;
 
         internal AndorSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
@@ -95,7 +99,7 @@ namespace WasatchNET
             errorValue = andorDriver.SetHSSpeed(0, HSnumber);
 
             // Set shutter to fully automatic external with internal always open
-            andorDriver.SetShutterEx(1, 1, SHUTTER_SPEED, SHUTTER_SPEED, 0);
+            andorDriver.SetShutterEx(1, 1, SHUTTER_SPEED_MS, SHUTTER_SPEED_MS, 0);
 
             // set exposure time to 1ms
             andorDriver.SetExposureTime(0.001f);
@@ -137,6 +141,8 @@ namespace WasatchNET
             andorDriver.ShutDown();
         }
 
+        // will eventually need to override getAreaScanLightweight() and/or getFrame()
+        // at that point will need to add calls to change acquisition mode/read mode here
         public override double[] getSpectrum(bool forceNew = false)
         {
             
@@ -188,6 +194,7 @@ namespace WasatchNET
 
         }
 
+        // returns vertically-binned 1D array
         protected override double[] getSpectrumRaw(bool skipTrigger = false)
         {
             logger.debug("requesting spectrum");
@@ -195,20 +202,15 @@ namespace WasatchNET
             // read spectrum
             ////////////////////////////////////////////////////////////////////
             int[] spec = new int[pixels];
-            //andorDriver.sh
 
-            for (int size = 1; size <= yPixels; ++size)
-            {
-                spec = new int[size * pixels]; // default to all zeros
-                andorDriver.StartAcquisition();
-                andorDriver.WaitForAcquisition();
-                uint success = andorDriver.GetAcquiredData(spec, (uint)(size * pixels));
+            // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
+            spec = new int[pixels];     //defaults to all zeros
+            andorDriver.StartAcquisition();
+            andorDriver.WaitForAcquisition();
+            uint success = andorDriver.GetAcquiredData(spec, (uint)(pixels));
 
-                if (success == 20002)
-                    break;
-                if (success == 20067)
-                    continue;
-            }
+            if (success != DRV_SUCCESS)
+                return null;
 
             double[] convertedSpec = Array.ConvertAll(spec, item => (double)item);
 
@@ -233,13 +235,10 @@ namespace WasatchNET
         {
             get
             {
-                //return (uint)wrapper.getIntegrationTimeMillisec();
                 return (uint)integrationTime_;
             }
             set
             {
-                //if (value < wrapper.getMaxIntegrationTimeMillisec())
-                //wrapper.setIntegrationTimeMillisec((long)value);
                 lock (acquisitionLock)
                 {
                     float exposure = 0;
