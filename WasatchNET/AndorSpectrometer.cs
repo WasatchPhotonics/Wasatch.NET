@@ -38,12 +38,13 @@ namespace WasatchNET
             uint errorValue = 0;
             AndorSDK.AndorCapabilities capabilities = new AndorSDK.AndorCapabilities();
 
-            //basic cycle to setup camera
+            // basic cycle to setup camera
             specIndex = index;
             andorDriver.GetCameraHandle(specIndex, ref cameraHandle);
             andorDriver.SetCurrentCamera(cameraHandle);
             andorDriver.Initialize("");
 
+            // set temperature to midpoint, plus get detector information and set acquisition mode to single scan
             andorDriver.GetCapabilities(ref capabilities);
             andorDriver.GetTemperatureRange(ref minTemp, ref maxTemp);
             andorDriver.SetTemperature((minTemp + maxTemp) / 2);
@@ -51,12 +52,13 @@ namespace WasatchNET
             andorDriver.CoolerON();
             andorDriver.SetAcquisitionMode(1);
             andorDriver.SetTriggerMode(0);
-            // Set read mode to required setting specified in xxxxWndw.c
+
+            // Set readout mode to full vertical binning
             errorValue = andorDriver.SetReadMode(0);
 
+            // Set Vertical speed to recommended
             int VSnumber = 0;
             float speed = 0;
-            // Set Vertical speed to recommended
             andorDriver.GetFastestRecommendedVSSpeed(ref VSnumber, ref speed);
             errorValue = andorDriver.SetVSSpeed(VSnumber);
 
@@ -91,11 +93,14 @@ namespace WasatchNET
 
             errorValue = andorDriver.SetADChannel(ADnumber);
             errorValue = andorDriver.SetHSSpeed(0, HSnumber);
+
+            // Set shutter to fully automatic external with internal always open
             andorDriver.SetShutterEx(1, 1, SHUTTER_SPEED, SHUTTER_SPEED, 0);
+
+            // set exposure time to 1ms
             andorDriver.SetExposureTime(0.001f);
             pixels = (uint)xPixels;
             eeprom = new AndorEEPROM(this);
-
         }
 
         override internal bool open()
@@ -243,8 +248,13 @@ namespace WasatchNET
                     andorDriver.SetExposureTime((float)value / 1000);
                     andorDriver.GetAcquisitionTimings(ref exposure, ref accumulate, ref kinetic);
 
-                    integrationTime_ = (long)Math.Round(exposure * 1000);
+                    long time = (long)Math.Round(exposure * 1000);
 
+                    // above logic can result in values of < 1ms, which can have a negative impact on downstream Apps
+                    if (time == 0)
+                        time = 1;
+
+                    integrationTime_ = time;
                 }
                 
             }

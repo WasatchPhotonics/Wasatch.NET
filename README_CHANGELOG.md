@@ -1,7 +1,7 @@
 # Wasatch.NET Changelog
 
 - 2021-10-07 2.4.0
-	- added initial, basic support for Andor camera spectrometers
+	- added initial, basic support for Andor camera spectrometers, area scan pending
 	- added support for bad pixel correction for Ocean spectrometers
 	- continued growing support for untethered spectrometers
 - 2021-09-16 2.3.35

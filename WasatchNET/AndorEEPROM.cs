@@ -62,9 +62,6 @@ namespace WasatchNET
             andorDriver.GetTemperatureRange(ref minTemp, ref maxTemp);
             andorDriver.GetDetector(ref xPixels, ref yPixels);
 
-            if (a.integrationTimeMS < 1)
-                a.integrationTimeMS = 1;
-
             startupIntegrationTimeMS = (ushort)a.integrationTimeMS;
             double temp = a.detectorTECSetpointDegC;
             startupDetectorTemperatureDegC = (short)temp;
