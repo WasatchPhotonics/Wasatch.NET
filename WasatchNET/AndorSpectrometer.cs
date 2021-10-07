@@ -38,8 +38,7 @@ namespace WasatchNET
             uint errorValue = 0;
             AndorSDK.AndorCapabilities capabilities = new AndorSDK.AndorCapabilities();
 
-            //excitationWavelengthNM = 0;
-            //triggerSource = TRIGGER_SOURCE.INTERNAL;
+            //basic cycle to setup camera
             specIndex = index;
             andorDriver.GetCameraHandle(specIndex, ref cameraHandle);
             andorDriver.SetCurrentCamera(cameraHandle);
