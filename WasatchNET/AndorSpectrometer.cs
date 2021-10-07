@@ -28,6 +28,7 @@ namespace WasatchNET
         int cameraHandle = 0;
         int yPixels;
         const int DRV_SUCCESS = 20002;
+        const int SHUTTER_SPEED = 35;
 
         internal AndorSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
@@ -91,8 +92,7 @@ namespace WasatchNET
 
             errorValue = andorDriver.SetADChannel(ADnumber);
             errorValue = andorDriver.SetHSSpeed(0, HSnumber);
-
-            andorDriver.SetShutterEx(1, 1, 35, 35, 0);
+            andorDriver.SetShutterEx(1, 1, SHUTTER_SPEED, SHUTTER_SPEED, 0);
             andorDriver.SetExposureTime(0.001f);
             pixels = (uint)xPixels;
             eeprom = new AndorEEPROM(this);
@@ -315,7 +315,6 @@ namespace WasatchNET
             get
             {
                 return tecEnabled_;
-                //return wrapper.getSpectrometerTECEnabled();
             }
             set
             {
@@ -399,6 +398,7 @@ namespace WasatchNET
             }
             set
             {
+                eeprom.excitationNM = (ushort)value;
                 eeprom.laserExcitationWavelengthNMFloat = value;
             }
         }
