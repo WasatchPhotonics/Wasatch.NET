@@ -22,6 +22,7 @@ namespace WasatchNET
 
         public bool commError = false;
         public int nonSpectrumTimeoutMS = 20000;
+        public bool correctPixels = false;
 
         //internal Wrapper wrapper;
         //internal SeaBreezeWrapper wrapper;
@@ -520,6 +521,9 @@ namespace WasatchNET
                     if (dark != null && dark.Length == sum.Length)
                         for (int px = 0; px < pixels; px++)
                             sum[px] -= dark_[px];
+
+                    if (correctPixels)
+                        correctBadPixels(ref sum);
 
                     if (boxcarHalfWidth > 0)
                     {

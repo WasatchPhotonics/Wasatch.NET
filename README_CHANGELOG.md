@@ -1,5 +1,9 @@
 # Wasatch.NET Changelog
 
+- 2021-10-12 2.3.36
+	- fixed bugs with EEPROM/JSON
+	- fixed bug with pixel correction in some spectrometers
+	- tweaks to how  untethered spectros work
 - 2021-09-16 2.3.35
 	- fixed issue preventing multiple spectrometer communication when one is SPI
 - 2021-09-08 2.3.34
