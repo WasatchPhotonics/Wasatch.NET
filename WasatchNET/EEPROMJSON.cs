@@ -174,15 +174,16 @@ namespace WasatchNET
             return true;
         }
 
-        bool floatEq(double a, double b, double thresh = 0.00001f)
+        bool floatEq(double a, double b, double thresh = 0.0001f)
         {
-            if (Math.Abs(a - b) > thresh)
+            // At default threshold, doubles must be >0.01% different (relative to intensity) to be considered unequal
+            if (Math.Abs(a - b) > (thresh * a))
                 return false;
 
             return true;
         }
 
-        bool floatEq(double[] a, double[] b, double thresh = 0.00001f)
+        bool floatEq(double[] a, double[] b, double thresh = 0.0001f)
         {
             if (a.Length != b.Length)
                 return false;
