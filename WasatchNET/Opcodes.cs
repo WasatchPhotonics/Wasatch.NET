@@ -119,6 +119,10 @@ namespace WasatchNET
             cmd[Opcodes.GET_OPT_ACTUAL_INTEGRATION_TIME        ] = 0x0b;
             cmd[Opcodes.GET_OPT_HORIZONTAL_BINNING             ] = 0x0c;
             cmd[Opcodes.GET_BATTERY_STATE                      ] = 0x13;
+            cmd[Opcodes.SET_DETECTOR_START_LINE                ] = 0x21;
+            cmd[Opcodes.GET_DETECTOR_START_LINE                ] = 0x22;
+            cmd[Opcodes.SET_DETECTOR_STOP_LINE                 ] = 0x23;
+            cmd[Opcodes.GET_DETECTOR_STOP_LINE                 ] = 0x24;
             cmd[Opcodes.GET_STORAGE                            ] = 0x25;
             cmd[Opcodes.ERASE_STORAGE                          ] = 0x26;
             cmd[Opcodes.SET_FEEDBACK                           ] = 0x27;
