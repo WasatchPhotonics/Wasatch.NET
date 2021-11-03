@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2021-11-01 2.3.37
+    - added start/stop detector lines (vertical binning opcodes)
+    - fixed area scan on SiG (disable bin\_2x2 during area scan)
 - 2021-10-12 2.3.36
 	- fixed bugs with EEPROM/JSON
 	- fixed bug with pixel correction in some spectrometers
