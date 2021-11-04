@@ -23,6 +23,11 @@ namespace WasatchNET
     /// so it should be fairly easy to refactor to support Bluetooth, Ethernet 
     /// etc when I get test units.
     /// </remarks>
+    ///
+    /// <todo>
+    /// Should really just add getAreaScan() method, which correctly does 
+    /// everything for whatever spectrometer is connected, returning the 2D array.
+    /// </todo>
     [ComVisible(true)]
     [Guid("06DF0AB6-741E-43D8-92EF-E14CB74070D7")]
     [ProgId("WasatchNET.Spectrometer")]
@@ -36,7 +41,7 @@ namespace WasatchNET
         public const byte HOST_TO_DEVICE = 0x40;
         public const byte DEVICE_TO_HOST = 0xc0;
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
-        public const int LEGACY_VERTICAL_PIXELS = 70;
+        public const int LEGACY_VERTICAL_PIXELS = 70;           //!< for Stroker Area Scan
         public const ushort SPECTRUM_START_MARKER = 0xffff;
 
         ////////////////////////////////////////////////////////////////////////
@@ -830,6 +835,50 @@ namespace WasatchNET
         }
         ushort detectorSensingThreshold_;
 
+        public virtual UInt16 detectorStartLine
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_START_LINE;
+                if (haveCache(op))
+                    return detectorStartLine_;
+                readOnce.Add(op);
+                return detectorStartLine_ = Unpack.toUshort(getCmd2(op, 2));
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_START_LINE;
+                if (haveCache(op) && value == detectorStartLine_)
+                    return;
+                sendCmd2(Opcodes.SET_DETECTOR_START_LINE, (ushort)(detectorStartLine_ = value));
+                readOnce.Add(op);
+            }
+
+        }
+        ushort detectorStartLine_ = 0;
+
+        public virtual UInt16 detectorStopLine
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_STOP_LINE;
+                if (haveCache(op))
+                    return detectorStopLine_;
+                readOnce.Add(op);
+                return detectorStopLine_ = Unpack.toUshort(getCmd2(op, 2));
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_STOP_LINE;
+                if (haveCache(op) && value == detectorStopLine_)
+                    return;
+                sendCmd2(Opcodes.SET_DETECTOR_STOP_LINE, (ushort)(detectorStopLine_ = value));
+                readOnce.Add(op);
+            }
+
+        }
+        ushort detectorStopLine_ = 0;
+
         public virtual bool detectorTECEnabled
         {
             get
@@ -1314,27 +1363,11 @@ namespace WasatchNET
         {
             get
             {
-                /*
-                if (!fpgaOptions.hasAreaScan)
-                {
-                    logger.debug("laserRampingEnabled feature currently disabled");
-                    return false; 
-                }
-                */
-                //else
-                // {
-
                 return areaScanEnabled_;
-
-                /*
-                 byte[] pack = getCmd(Opcodes.GET_AREA_SCAN_ENABLE, 1);
-                 return Unpack.toBool(pack);
-                 */
-                //}
             }
             set
             {
-                bool trash = sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[]{0,0,0,0,0,0,0,0,0,0});
+                _ = sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[]{0,0,0,0,0,0,0,0,0,0}); // MZ: 10?
             }
         }
         bool areaScanEnabled_ = false;
@@ -2924,7 +2957,7 @@ namespace WasatchNET
                 spec[pixels - 1] = spec[pixels - 2];
             }
 
-            if (eeprom.featureMask.bin2x2)
+            if (eeprom.featureMask.bin2x2 && !areaScanEnabled)
             {
                 var smoothed = new double[spec.Length];
                 for (int i = 0; i < spec.Length - 1; i++)
@@ -3345,7 +3378,7 @@ namespace WasatchNET
                     int bytesToRead = bytesPerEndpoint - bytesReadThisEndpoint;
                     err = spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, bytesPerEndpoint - bytesReadThisEndpoint, timeoutMS, out bytesRead);
                 }
-                catch (Exception ex)
+                catch 
                 {
                     return null;
                 }
