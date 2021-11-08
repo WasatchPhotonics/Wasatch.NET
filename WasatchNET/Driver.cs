@@ -6,6 +6,11 @@ using System.Reflection;
 using LibUsbDotNet;
 using LibUsbDotNet.Info;
 using LibUsbDotNet.Main;
+#if WIN32
+using ATMCD32CS;
+#elif x64
+using ATMCD64CS;
+#endif
 
 namespace WasatchNET
 {
@@ -260,6 +265,27 @@ namespace WasatchNET
                     }
                 }
             }
+
+#if WIN32
+            AndorSDK andorDriver = new ATMCD32CS.AndorSDK();
+#elif x64
+            AndorSDK andorDriver = new ATMCD64CS.AndorSDK();
+#endif
+#if WIN32 || x64
+            int numAndorAvailable = 0;
+            andorDriver.GetAvailableCameras(ref numAndorAvailable);
+            logger.info("Found {0} Andor cameras", numAndorAvailable);
+            if (numAndorAvailable > 0)
+            {
+                for (int i = 0; i < numAndorAvailable; ++i)
+                {
+                    logger.info("Attempting to open Andor camera {0}", i);
+                    AndorSpectrometer spec = new AndorSpectrometer(null, i);
+                    if (spec.open())
+                        spectrometers.Add(spec);
+                }
+            }
+#endif
 
             logger.debug($"openAllSpectrometers: returning {spectrometers.Count}");
 
