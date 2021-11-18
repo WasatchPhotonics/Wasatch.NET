@@ -1,5 +1,9 @@
 # Wasatch.NET Changelog
 
+- 2021-11-18 2.4.1
+	- fixed fast area scan functionality with 2k cameras
+- 2021-11-04 2.4.0
+	- added basic support for Andor cameras
 - 2021-11-01 2.3.37
     - added start/stop detector lines (vertical binning opcodes)
     - fixed area scan on SiG (disable bin\_2x2 during area scan)
