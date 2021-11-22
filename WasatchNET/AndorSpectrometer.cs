@@ -220,6 +220,10 @@ namespace WasatchNET
 
             double[] convertedSpec = Array.ConvertAll(spec, item => (double)item);
 
+
+            if (eeprom.featureMask.invertXAxis)
+                Array.Reverse(convertedSpec);
+
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return convertedSpec;
         }

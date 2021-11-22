@@ -1770,7 +1770,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_93AFF5A9C3BA4ADFA66B16C6EE036695"
             {
-            "SourcePath" = "8:..\\WinFormDemo\\obj\\x86\\Debug\\WinFormDemo.exe"
+            "SourcePath" = "8:..\\WinFormDemo\\obj\\Debug\\WinFormDemo.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
@@ -1798,7 +1798,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_AB621B80B1ED4AA99D9915499B1566AA"
             {
-            "SourcePath" = "8:..\\MultiChannelDemo\\obj\\x86\\Debug\\MultiChannelDemo.exe"
+            "SourcePath" = "8:..\\MultiChannelDemo\\obj\\Debug\\MultiChannelDemo.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"

@@ -455,7 +455,7 @@
             "SharedLegacy" = "11:FALSE"
             "PackageAs" = "3:1"
             "Register" = "3:1"
-            "Exclude" = "11:FALSE"
+            "Exclude" = "11:TRUE"
             "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
@@ -506,7 +506,7 @@
             "SharedLegacy" = "11:FALSE"
             "PackageAs" = "3:1"
             "Register" = "3:1"
-            "Exclude" = "11:FALSE"
+            "Exclude" = "11:TRUE"
             "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
@@ -565,7 +565,7 @@
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=2.4.0.0, Culture=neutral, processorArchitecture=AMD64"
+            "AssemblyAsmDisplayName" = "8:WasatchNET, Version=2.4.1.0, Culture=neutral, processorArchitecture=AMD64"
                 "ScatterAssemblies"
                 {
                     "_9D8909607460660DFB387CF2C135F76E"
@@ -1572,7 +1572,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_2FE9422665DA4602AB00AC7F850BB05C"
             {
-            "SourcePath" = "8:..\\WinFormDemo\\obj\\x64\\Debug\\WinFormDemo.exe"
+            "SourcePath" = "8:..\\WinFormDemo\\obj\\Debug\\WinFormDemo.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_6646C110E914486EA00871FD2D0AAC2E"
@@ -1600,7 +1600,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_BBCD7026619843998F66B439D3EDE98E"
             {
-            "SourcePath" = "8:..\\MultiChannelDemo\\obj\\x64\\Debug\\MultiChannelDemo.exe"
+            "SourcePath" = "8:..\\MultiChannelDemo\\obj\\Debug\\MultiChannelDemo.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_6646C110E914486EA00871FD2D0AAC2E"
@@ -1628,7 +1628,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_E1F2580EC8074E01AC816BF55ADB9F98"
             {
-            "SourcePath" = "8:..\\WasatchNET\\obj\\x64\\Debug\\WasatchNET.dll"
+            "SourcePath" = "8:"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_A35CBBE5781F485EBC28659A8EE6F7C3"
