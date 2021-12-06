@@ -1747,7 +1747,7 @@ namespace WasatchNET
                 if (Double.IsNaN(wavecalCoeffs[i]))
                     defaultWavecal = true;
 
-            if (defaultWavecal || format == 0xff)
+            if (defaultWavecal || format > (FORMAT + 1))
             {
                 logger.error("EEPROM appears to be default");
                 defaultValues = true;

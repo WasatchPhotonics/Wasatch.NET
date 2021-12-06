@@ -1368,6 +1368,7 @@ namespace WasatchNET
             set
             {
                 _ = sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[]{0,0,0,0,0,0,0,0,0,0}); // MZ: 10?
+                readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET);
             }
         }
         bool areaScanEnabled_ = false;
@@ -3011,9 +3012,11 @@ namespace WasatchNET
                             temp[j + pixelsRead] = subspectrum[j];
 
                         pixelsRead += pixelsPerEndpoint;
+                        Thread.Sleep(5);
                     }
 
                     temp.CopyTo(sum, temp.Length * i);
+                    //Thread.Sleep(detectorOffset + 1);
                 }
             }
 
