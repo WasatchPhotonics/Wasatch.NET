@@ -459,7 +459,8 @@ namespace WinFormDemo
             {
                 if (checkBoxTakeDark.Checked)
                 {
-                    if (state.spectrum != null)
+                    // a dark can and should only be taken when raman intensity correction is disabled
+                    if (state.spectrum != null && !state.spectrometer.ramanIntensityCorrectionEnabled)
                     {
                         currentSpectrometer.dark = state.spectrum;
                         state.spectrum = new double[currentSpectrometer.pixels];
@@ -913,5 +914,12 @@ namespace WinFormDemo
             }
         }
 
+        private void checkBoxRamanCorrection_CheckedChanged(object sender, EventArgs e)
+        {
+            logger.debug($"changing currentSpectrometer {currentSpectrometer.serialNumber} raman correction to {checkBoxRamanCorrection.Enabled}");
+            currentSpectrometer.ramanIntensityCorrectionEnabled = checkBoxRamanCorrection.Checked;
+            checkBoxTakeDark.Enabled = !checkBoxRamanCorrection.Checked;
+
+        }
     }
 }

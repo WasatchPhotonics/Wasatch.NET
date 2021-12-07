@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2021-12-07 2.4.2
+	- removed "fast re-initialization" code that was causing issues in production
+	- added user accessible, automatic raman intensity correction
 - 2021-11-18 2.4.1
 	- fixed fast area scan functionality with 2k cameras
 - 2021-11-04 2.4.0

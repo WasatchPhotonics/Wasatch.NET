@@ -1894,6 +1894,11 @@ namespace WasatchNET
 
             // if this was intended to be a relatively lightweight "change as
             // little as possible" re-opening, we're done now
+            //
+            // TS: this has caused some weird issues in production when fired.
+            //     It's well intentioned but unnecessary. We can revisit in the
+            //     future.
+            /*
             if (!needsInitialization)
             {
                 ////////////////////////////////////////////////////////////////
@@ -1915,6 +1920,7 @@ namespace WasatchNET
                 logger.debug("Spectrometer.open: complete (initialization not required)");
                 return true;
             }
+            */
 
             ////////////////////////////////////////////////////////////////////
             // initialize default values for newly opened spectrometers
@@ -2635,7 +2641,8 @@ namespace WasatchNET
 
         /// <summary>
         /// Take a single complete spectrum, including any configured scan 
-        /// averaging, boxcar and dark subtraction.
+        /// averaging, boxcar, dark subtraction, inversion, binning, and
+        /// optionally relative intensity correction.
         /// </summary>
         ///
         /// <param name="forceNew">not used in base class (provided for specialized subclasses)</param>
@@ -2749,6 +2756,10 @@ namespace WasatchNET
                     for (int px = 0; px < pixels; px++)
                         sum[px] -= dark_[px];
 
+                // important note on order of operations below - TS
+                if (ramanIntensityCorrectionEnabled)
+                    sum = correctRamanIntensity(sum);
+
                 // this should be enough to update the cached value
                 if (readTemperatureAfterSpectrum && eeprom.hasCooling)
                     _ = detectorTemperatureDegC;
@@ -2762,6 +2773,70 @@ namespace WasatchNET
                     return sum;
             }
         }
+
+
+        /// <summary>
+        /// Performs SRM correction on the given spectrum using the ROI and coefficients on EEPROM.
+        /// Non-ROI pixels are not corrected. If ROI or relative intensity coefficients appear
+        /// invalid, original spectrum is returned.
+        /// </summary>
+        ///
+        /// <returns>The given spectrum, with ROI srm-corrected, as an array of doubles</returns>
+        /// 
+        public double[] correctRamanIntensity(double[] spectrum)
+        {
+            double[] temp = new double[spectrum.Length];
+            spectrum.CopyTo(temp, 0);
+
+            if (eeprom.intensityCorrectionCoeffs != null && eeprom.intensityCorrectionOrder != 0)
+            {
+                for (int i = eeprom.ROIHorizStart; i < eeprom.ROIHorizEnd; ++i) 
+                {
+                    double logTen = 0.0;
+                    for (int j = 0; j < eeprom.intensityCorrectionCoeffs.Length; j++)
+                    {
+                        double x_to_i = Math.Pow(i, j);
+                        double scaled = eeprom.intensityCorrectionCoeffs[j] * x_to_i;
+                        logTen += scaled;
+                    }
+
+                    double expanded = Math.Pow(10, logTen);
+                    temp[i] *= expanded;
+                }
+            }
+
+            return temp;
+        }
+
+        /// <summary>
+        /// Whether to correct the y-axis using SRM-derived correction factors,
+        /// stored as coefficients on the spectrometer.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// This y-axis correction is only considered to be valid for raman spectrometers.
+        /// 
+        /// If a user plans on using dark correction, the dark should be collected BEFORE
+        /// raman correction is enabled, and if the dark needs to be retaken, the correction
+        /// should be toggled around the collection. 
+        /// 
+        /// So, the general flow for dark and y-axis corrected sample collection should be as follows:
+        /// Take Dark -> Enable Correction -> Take Raman Sample(s) -> Disable Correction -> Take Dark -> Repeat
+        /// 
+        /// </remarks>
+        public bool ramanIntensityCorrectionEnabled
+        {
+            get
+            {
+                return _ramanIntensityCorrectionEnabled;
+            }
+            set
+            {
+                _ramanIntensityCorrectionEnabled = value;
+            }
+        }
+
+        bool _ramanIntensityCorrectionEnabled = false;
 
         public bool sendSWTrigger()
         {
