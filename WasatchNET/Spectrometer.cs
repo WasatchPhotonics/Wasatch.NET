@@ -1894,6 +1894,11 @@ namespace WasatchNET
 
             // if this was intended to be a relatively lightweight "change as
             // little as possible" re-opening, we're done now
+            //
+            // TS: this has caused some weird issues in production when fired.
+            //     It's well intentioned but unnecessary. We can revisit in the
+            //     future.
+            /*
             if (!needsInitialization)
             {
                 ////////////////////////////////////////////////////////////////
@@ -1915,6 +1920,7 @@ namespace WasatchNET
                 logger.debug("Spectrometer.open: complete (initialization not required)");
                 return true;
             }
+            */
 
             ////////////////////////////////////////////////////////////////////
             // initialize default values for newly opened spectrometers
@@ -2635,7 +2641,8 @@ namespace WasatchNET
 
         /// <summary>
         /// Take a single complete spectrum, including any configured scan 
-        /// averaging, boxcar and dark subtraction.
+        /// averaging, boxcar, dark subtraction, inversion, binning, and
+        /// optionally relative intensity correction.
         /// </summary>
         ///
         /// <param name="forceNew">not used in base class (provided for specialized subclasses)</param>
@@ -2744,6 +2751,8 @@ namespace WasatchNET
                 }
 
                 correctBadPixels(ref sum);
+                if (useRamanIntensityCorrection)
+                    sum = correctRamanIntensity(sum);
 
                 if (dark != null && dark.Length == sum.Length)
                     for (int px = 0; px < pixels; px++)
@@ -2762,6 +2771,54 @@ namespace WasatchNET
                     return sum;
             }
         }
+
+
+        /// <summary>
+        /// Performs SRM correction on the given spectrum using the ROI and coefficients on EEPROM.
+        /// Non-ROI pixels are not corrected. If ROI or relative intensity coefficients appear
+        /// invalid, original spectrum is returned.
+        /// </summary>
+        ///
+        /// <returns>The given spectrum, with ROI srm-corrected, as an array of doubles</returns>
+        /// 
+        internal double[] correctRamanIntensity(double[] spectrum)
+        {
+            double[] temp = new double[spectrum.Length];
+            spectrum.CopyTo(temp, 0);
+
+            if (eeprom.intensityCorrectionCoeffs != null && eeprom.intensityCorrectionOrder != 0)
+            {
+                for (int i = eeprom.ROIHorizStart; i < eeprom.ROIHorizEnd; ++i) 
+                {
+                    double logTen = 0.0;
+                    for (int j = 0; j < eeprom.intensityCorrectionCoeffs.Length; j++)
+                    {
+                        double x_to_i = Math.Pow(i, j);
+                        double scaled = eeprom.intensityCorrectionCoeffs[j] * x_to_i;
+                        logTen += scaled;
+                    }
+
+                    double expanded = Math.Pow(10, logTen);
+                    temp[i] *= expanded;
+                }
+            }
+
+            return temp;
+        }
+
+        public bool useRamanIntensityCorrection
+        {
+            get
+            {
+                return _useRamanIntensityCorrection;
+            }
+            set
+            {
+                _useRamanIntensityCorrection = value;
+            }
+        }
+
+        bool _useRamanIntensityCorrection = false;
 
         public bool sendSWTrigger()
         {
