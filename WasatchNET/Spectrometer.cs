@@ -2751,12 +2751,14 @@ namespace WasatchNET
                 }
 
                 correctBadPixels(ref sum);
-                if (useRamanIntensityCorrection)
-                    sum = correctRamanIntensity(sum);
 
                 if (dark != null && dark.Length == sum.Length)
                     for (int px = 0; px < pixels; px++)
                         sum[px] -= dark_[px];
+
+                // important note on order of operations below - TS
+                if (ramanIntensityCorrectionEnabled)
+                    sum = correctRamanIntensity(sum);
 
                 // this should be enough to update the cached value
                 if (readTemperatureAfterSpectrum && eeprom.hasCooling)
@@ -2781,7 +2783,7 @@ namespace WasatchNET
         ///
         /// <returns>The given spectrum, with ROI srm-corrected, as an array of doubles</returns>
         /// 
-        internal double[] correctRamanIntensity(double[] spectrum)
+        public double[] correctRamanIntensity(double[] spectrum)
         {
             double[] temp = new double[spectrum.Length];
             spectrum.CopyTo(temp, 0);
@@ -2806,19 +2808,35 @@ namespace WasatchNET
             return temp;
         }
 
-        public bool useRamanIntensityCorrection
+        /// <summary>
+        /// Whether to correct the y-axis using SRM-derived correction factors,
+        /// stored as coefficients on the spectrometer.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// This y-axis correction is only considered to be valid for raman spectrometers.
+        /// 
+        /// If a user plans on using dark correction, the dark should be collected BEFORE
+        /// raman correction is enabled, and if the dark needs to be retaken, the correction
+        /// should be toggled around the collection. 
+        /// 
+        /// So, the general flow for dark and y-axis corrected sample collection should be as follows:
+        /// Take Dark -> Enable Correction -> Take Raman Sample(s) -> Disable Correction -> Take Dark -> Repeat
+        /// 
+        /// </remarks>
+        public bool ramanIntensityCorrectionEnabled
         {
             get
             {
-                return _useRamanIntensityCorrection;
+                return _ramanIntensityCorrectionEnabled;
             }
             set
             {
-                _useRamanIntensityCorrection = value;
+                _ramanIntensityCorrectionEnabled = value;
             }
         }
 
-        bool _useRamanIntensityCorrection = false;
+        bool _ramanIntensityCorrectionEnabled = false;
 
         public bool sendSWTrigger()
         {

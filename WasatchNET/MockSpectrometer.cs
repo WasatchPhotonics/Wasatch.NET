@@ -404,7 +404,7 @@ namespace WasatchNET
                 }
 
                 correctBadPixels(ref sum);
-                if (useRamanIntensityCorrection)
+                if (ramanIntensityCorrectionEnabled)
                     sum = correctRamanIntensity(sum);
 
                 if (dark != null && dark.Length == sum.Length)

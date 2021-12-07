@@ -202,7 +202,7 @@ namespace WasatchNET
         /// </remarks>
         bool areaScanEnabled { get; set; }
 
-        bool useRamanIntensityCorrection { get; set; }
+        bool ramanIntensityCorrectionEnabled { get; set; }
 
         /// <summary>
         /// convert the raw laser temperature reading into degrees centigrade
