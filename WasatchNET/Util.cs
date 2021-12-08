@@ -245,5 +245,38 @@ namespace WasatchNET
             Array.Copy(src, tmp, len);
             return tmp;
         }
+
+        /// <summary>
+        /// Performs SRM correction on the given spectrum using the proivided ROI and coefficients.
+        /// Non-ROI pixels are not corrected. 
+        /// </summary>
+        ///
+        /// <returns>The given spectrum, with ROI srm-corrected, as an array of doubles</returns>
+        /// 
+        public static double[] applyRamanCorrection(double[] spectrum, float[] correctionCoeffs, int roiStart, int roiEnd)
+        {
+            if (roiStart >= roiEnd)
+                return spectrum;
+
+            double[] temp = new double[spectrum.Length];
+            spectrum.CopyTo(temp, 0);
+
+            for (int i = roiStart; i <= roiEnd; ++i)
+            {
+                double logTen = 0.0;
+                for (int j = 0; j < correctionCoeffs.Length; j++)
+                {
+                    double x_to_i = Math.Pow(i, j);
+                    double scaled = correctionCoeffs[j] * x_to_i;
+                    logTen += scaled;
+                }
+
+                double expanded = Math.Pow(10, logTen);
+                temp[i] *= expanded;
+            }
+
+            return temp;
+        }
+
     }
 }

@@ -2783,30 +2783,8 @@ namespace WasatchNET
         ///
         /// <returns>The given spectrum, with ROI srm-corrected, as an array of doubles</returns>
         /// 
-        public double[] correctRamanIntensity(double[] spectrum)
-        {
-            double[] temp = new double[spectrum.Length];
-            spectrum.CopyTo(temp, 0);
-
-            if (eeprom.intensityCorrectionCoeffs != null && eeprom.intensityCorrectionOrder != 0)
-            {
-                for (int i = eeprom.ROIHorizStart; i < eeprom.ROIHorizEnd; ++i) 
-                {
-                    double logTen = 0.0;
-                    for (int j = 0; j < eeprom.intensityCorrectionCoeffs.Length; j++)
-                    {
-                        double x_to_i = Math.Pow(i, j);
-                        double scaled = eeprom.intensityCorrectionCoeffs[j] * x_to_i;
-                        logTen += scaled;
-                    }
-
-                    double expanded = Math.Pow(10, logTen);
-                    temp[i] *= expanded;
-                }
-            }
-
-            return temp;
-        }
+        public double[] correctRamanIntensity(double[] spectrum) => eeprom.intensityCorrectionCoeffs != null && eeprom.intensityCorrectionOrder != 0 ? Util.applyRamanCorrection(spectrum, eeprom.intensityCorrectionCoeffs, eeprom.ROIHorizStart, eeprom.ROIHorizEnd) : spectrum;
+        
 
         /// <summary>
         /// Whether to correct the y-axis using SRM-derived correction factors,
