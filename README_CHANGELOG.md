@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2021-12-08 2.4.3
+	- implemented offline version of raman correction
+	- made end of roi for raman correction inclusive
 - 2021-12-07 2.4.2
 	- removed "fast re-initialization" code that was causing issues in production
 	- added user accessible, automatic raman intensity correction
