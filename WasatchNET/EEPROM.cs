@@ -1607,25 +1607,37 @@ namespace WasatchNET
             json.DetectorOffset = detectorOffset;
             json.DetectorOffsetOdd = detectorOffsetOdd;
             json.WavecalCoeffs = new double[5];
-            json.WavecalCoeffs[0] = wavecalCoeffs[0];
-            json.WavecalCoeffs[1] = wavecalCoeffs[1];
-            json.WavecalCoeffs[2] = wavecalCoeffs[2];
-            json.WavecalCoeffs[3] = wavecalCoeffs[3];
-            json.WavecalCoeffs[4] = wavecalCoeffs[4];
+            if (wavecalCoeffs != null)
+            {
+                json.WavecalCoeffs[0] = wavecalCoeffs[0];
+                json.WavecalCoeffs[1] = wavecalCoeffs[1];
+                json.WavecalCoeffs[2] = wavecalCoeffs[2];
+                json.WavecalCoeffs[3] = wavecalCoeffs[3];
+                json.WavecalCoeffs[4] = wavecalCoeffs[4];
+            }
             json.TempToDACCoeffs = new double[3];
-            json.TempToDACCoeffs[0] = degCToDACCoeffs[0];
-            json.TempToDACCoeffs[1] = degCToDACCoeffs[1];
-            json.TempToDACCoeffs[2] = degCToDACCoeffs[2];
+            if (degCToDACCoeffs != null)
+            {
+                json.TempToDACCoeffs[0] = degCToDACCoeffs[0];
+                json.TempToDACCoeffs[1] = degCToDACCoeffs[1];
+                json.TempToDACCoeffs[2] = degCToDACCoeffs[2];
+            }
             json.ADCToTempCoeffs = new double[3];
-            json.ADCToTempCoeffs[0] = adcToDegCCoeffs[0];
-            json.ADCToTempCoeffs[1] = adcToDegCCoeffs[1];
-            json.ADCToTempCoeffs[2] = adcToDegCCoeffs[2];
+            if (adcToDegCCoeffs != null)
+            {
+                json.ADCToTempCoeffs[0] = adcToDegCCoeffs[0];
+                json.ADCToTempCoeffs[1] = adcToDegCCoeffs[1];
+                json.ADCToTempCoeffs[2] = adcToDegCCoeffs[2];
+            }
             json.LinearityCoeffs = new double[5];
-            json.LinearityCoeffs[0] = linearityCoeffs[0];
-            json.LinearityCoeffs[1] = linearityCoeffs[1];
-            json.LinearityCoeffs[2] = linearityCoeffs[2];
-            json.LinearityCoeffs[3] = linearityCoeffs[3];
-            json.LinearityCoeffs[4] = linearityCoeffs[4];
+            if (linearityCoeffs != null)
+            {
+                json.LinearityCoeffs[0] = linearityCoeffs[0];
+                json.LinearityCoeffs[1] = linearityCoeffs[1];
+                json.LinearityCoeffs[2] = linearityCoeffs[2];
+                json.LinearityCoeffs[3] = linearityCoeffs[3];
+                json.LinearityCoeffs[4] = linearityCoeffs[4];
+            }
             json.DetectorTempMax = detectorTempMax;
             json.DetectorTempMin = detectorTempMin;
             json.ThermistorBeta = thermistorBeta;
@@ -1641,61 +1653,71 @@ namespace WasatchNET
             json.ROIHorizStart = ROIHorizStart;
             json.ROIHorizEnd = ROIHorizEnd;
             json.ROIVertRegionStarts = new int[3];
-            json.ROIVertRegionStarts[0] = ROIVertRegionStart[0];
-            json.ROIVertRegionStarts[1] = ROIVertRegionStart[1];
-            json.ROIVertRegionStarts[2] = ROIVertRegionStart[2];
+            if (ROIVertRegionStart != null)
+            {
+                json.ROIVertRegionStarts[0] = ROIVertRegionStart[0];
+                json.ROIVertRegionStarts[1] = ROIVertRegionStart[1];
+                json.ROIVertRegionStarts[2] = ROIVertRegionStart[2];
+            }
             json.ROIVertRegionEnds = new int[3];
-            json.ROIVertRegionEnds[0] = ROIVertRegionEnd[0];
-            json.ROIVertRegionEnds[1] = ROIVertRegionEnd[1];
-            json.ROIVertRegionEnds[2] = ROIVertRegionEnd[2];
+            if (ROIVertRegionEnd != null)
+            {
+                json.ROIVertRegionEnds[0] = ROIVertRegionEnd[0];
+                json.ROIVertRegionEnds[1] = ROIVertRegionEnd[1];
+                json.ROIVertRegionEnds[2] = ROIVertRegionEnd[2];
+            }
             json.LaserPowerCoeffs = new double[4];
-            json.LaserPowerCoeffs[0] = laserPowerCoeffs[0];
-            json.LaserPowerCoeffs[1] = laserPowerCoeffs[1];
-            json.LaserPowerCoeffs[2] = laserPowerCoeffs[2];
-            json.LaserPowerCoeffs[3] = laserPowerCoeffs[3];
+            if (laserPowerCoeffs != null)
+            {
+                json.LaserPowerCoeffs[0] = laserPowerCoeffs[0];
+                json.LaserPowerCoeffs[1] = laserPowerCoeffs[1];
+                json.LaserPowerCoeffs[2] = laserPowerCoeffs[2];
+                json.LaserPowerCoeffs[3] = laserPowerCoeffs[3];
+            }
             json.MaxLaserPowerMW = maxLaserPowerMW;
             json.MinLaserPowerMW = minLaserPowerMW;
             json.ExcitationWavelengthNM = laserExcitationWavelengthNMFloat;
             json.AvgResolution = avgResolution;
             json.BadPixels = new int[15];
-            json.BadPixels[0] = badPixels[0];
-            json.BadPixels[1] = badPixels[1];
-            json.BadPixels[2] = badPixels[2];
-            json.BadPixels[3] = badPixels[3];
-            json.BadPixels[4] = badPixels[4];
-            json.BadPixels[5] = badPixels[5];
-            json.BadPixels[6] = badPixels[6];
-            json.BadPixels[7] = badPixels[7];
-            json.BadPixels[8] = badPixels[8];
-            json.BadPixels[9] = badPixels[9];
-            json.BadPixels[10] = badPixels[10];
-            json.BadPixels[11] = badPixels[11];
-            json.BadPixels[12] = badPixels[12];
-            json.BadPixels[13] = badPixels[13];
-            json.BadPixels[14] = badPixels[14];
+            if (badPixels != null)
+            {
+                json.BadPixels[0] = badPixels[0];
+                json.BadPixels[1] = badPixels[1];
+                json.BadPixels[2] = badPixels[2];
+                json.BadPixels[3] = badPixels[3];
+                json.BadPixels[4] = badPixels[4];
+                json.BadPixels[5] = badPixels[5];
+                json.BadPixels[6] = badPixels[6];
+                json.BadPixels[7] = badPixels[7];
+                json.BadPixels[8] = badPixels[8];
+                json.BadPixels[9] = badPixels[9];
+                json.BadPixels[10] = badPixels[10];
+                json.BadPixels[11] = badPixels[11];
+                json.BadPixels[12] = badPixels[12];
+                json.BadPixels[13] = badPixels[13];
+                json.BadPixels[14] = badPixels[14];
+            }
             json.UserText = userText;
             json.ProductConfig = productConfiguration;
             json.RelIntCorrOrder = intensityCorrectionOrder;
-            if (json.RelIntCorrOrder > 0)
+            if (json.RelIntCorrOrder > 0 && intensityCorrectionCoeffs != null)
             {
                 json.RelIntCorrCoeffs = new double[intensityCorrectionCoeffs.Length];
                 for (int i = 0; i <= json.RelIntCorrOrder; ++i)
                 {
-                    if (intensityCorrectionCoeffs != null && i < intensityCorrectionCoeffs.Length)
+                    if (i < intensityCorrectionCoeffs.Length)
                     {
                         json.RelIntCorrCoeffs[i] = intensityCorrectionCoeffs[i];
                     }
-                    else
-                    {
-                        json.RelIntCorrCoeffs = null;
-                        break;
-                    }
                 }
             }
-            json.Bin2x2 = featureMask.bin2x2;
-            json.FlipXAxis = featureMask.invertXAxis;
-            json.Gen15 = featureMask.gen15;
-            json.CutoffFilter = featureMask.cutoffInstalled;
+            if (featureMask != null)
+            {
+                json.Bin2x2 = featureMask.bin2x2;
+                json.FlipXAxis = featureMask.invertXAxis;
+                json.Gen15 = featureMask.gen15;
+                json.CutoffFilter = featureMask.cutoffInstalled;
+            }
 
             json.LaserWarmupS = laserWarmupSec;
 
