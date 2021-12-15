@@ -16,8 +16,14 @@ doc docs:
 
 deploy:
 	@for CLIENT in RamanSpecCal CrashTestNET ; \
-     do test -d ../$$CLIENT && \
-        cp -v lib/x86/WasatchNET.dll ../$$CLIENT/dist ; \
+     do \
+        for ARCH in x86 x64 ; \
+        do \
+            if [ -d ../$$CLIENT/dist/$$ARCH ] ; \
+            then \
+                cp -v lib/$$ARCH/WasatchNET.dll ../$$CLIENT/dist/$$ARCH ; \
+            fi ; \
+        done ; \
      done
 
 clean:

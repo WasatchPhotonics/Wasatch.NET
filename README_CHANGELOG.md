@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2021-12-15 2.4.4
+    - added checks for EEPROM.toJSON()
 - 2021-12-08 2.4.3
 	- implemented offline version of raman correction
 	- made end of roi for raman correction inclusive
