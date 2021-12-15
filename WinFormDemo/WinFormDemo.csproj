@@ -151,6 +151,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y  "$(SolutionDir)lib\$(Platform)\FTD2XX.dll" "$(TargetDir)"</PostBuildEvent>
+    <PostBuildEvent>copy /Y  "$(SolutionDir)lib\$(Platform)\FTD2XX.dll" "$(TargetDir)"
+copy /Y  "$(SolutionDir)lib\$(Platform)\ATMCD*.dll" "$(TargetDir)"</PostBuildEvent>
   </PropertyGroup>
 </Project>

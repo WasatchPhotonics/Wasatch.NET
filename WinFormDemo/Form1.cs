@@ -622,7 +622,7 @@ namespace WinFormDemo
                 return;
 
             var eepromJSON = currentSpectrometer.eeprom.toJSON();
-            logger.info(eepromJSON.ToString());
+            logger.info("EEPROM as JSON: {0}", eepromJSON);
         }
 
         private void setDFUModeToolStripMenuItem_Click(object sender, EventArgs e)
