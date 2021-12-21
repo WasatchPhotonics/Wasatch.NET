@@ -616,6 +616,15 @@ namespace WinFormDemo
             eepromForm.ShowDialog();
         }
 
+        private void toolStripMenuItemEEPROMJson_Click(object sender, EventArgs e)
+        {
+            if (currentSpectrometer is null)
+                return;
+
+            var eepromJSON = currentSpectrometer.eeprom.toJSON();
+            logger.info("EEPROM as JSON: {0}", eepromJSON);
+        }
+
         private void setDFUModeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (currentSpectrometer is null)
@@ -921,5 +930,6 @@ namespace WinFormDemo
             checkBoxTakeDark.Enabled = !checkBoxRamanCorrection.Checked;
 
         }
+
     }
 }

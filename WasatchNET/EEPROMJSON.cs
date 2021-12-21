@@ -274,7 +274,9 @@ namespace WasatchNET
             StringBuilder sb = new StringBuilder();
             string indent = new string(' ', level * indentSize);
 
-            string finalIndent = new string(' ', (level - 1) * indentSize);
+            string finalIndent = "";
+            if (level > 0)
+                finalIndent = new string(' ', (level - 1) * indentSize);
 
             addField(sb, indent,"Serial", Serial);
             addField(sb, indent,"Model", Model);
