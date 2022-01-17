@@ -42,6 +42,18 @@ namespace WasatchNET
 
         }
 
+        public override bool areaScanEnabled
+        {
+            get
+            {
+                return areaScanEnabled_;
+            }
+            set
+            {
+
+            }
+        }
+
         public override float batteryPercentage
         {
             get

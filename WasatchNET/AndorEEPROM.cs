@@ -85,9 +85,14 @@ namespace WasatchNET
             calibrationDate = "01/01/2020";
             calibrationBy = "RSC";
 
-            detectorName = "";
+            int cameraSerial = 0;
+            uint error = andorDriver.GetCameraSerialNumber(ref cameraSerial);
+            if (error != AndorSpectrometer.DRV_SUCCESS)
+                detectorName = "";
+            else
+                detectorName = cameraSerial.ToString();
             activePixelsHoriz = (ushort)xPixels;
-            activePixelsVert = (ushort)yPixels;
+            activePixelsVert = (ushort)(yPixels / AndorSpectrometer.BINNING);
             minIntegrationTimeMS = a.integrationTimeMS;
             maxIntegrationTimeMS = 1000000;
             actualPixelsHoriz = (ushort)xPixels;

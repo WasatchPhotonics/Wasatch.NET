@@ -30,10 +30,11 @@ namespace WasatchNET
         int yPixels;
 
         //see page 330 of Andor SDK documentation
-        const int DRV_SUCCESS = 20002;
+        public const int DRV_SUCCESS = 20002;
 
         // not sure where this comes from...ask Caleb - TS
-        const int SHUTTER_SPEED_MS = 35;
+        const int SHUTTER_SPEED_MS = 50;
+        public const int BINNING = 1;
 
         internal AndorSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
@@ -108,6 +109,11 @@ namespace WasatchNET
             float accumulate = 0;
             float kinetic = 0;
             andorDriver.GetAcquisitionTimings(ref exposure, ref accumulate, ref kinetic);
+
+            //get camera serial number
+            int sn = 0;
+            errorValue = andorDriver.GetCameraSerialNumber(ref sn);
+
             integrationTimeMS = (uint)exposure;
             pixels = (uint)xPixels;
             eeprom = new AndorEEPROM(this);
@@ -207,27 +213,83 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////////
             // read spectrum
             ////////////////////////////////////////////////////////////////////
-            int[] spec = new int[pixels];
 
-            // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
-            spec = new int[pixels];     //defaults to all zeros
-            andorDriver.StartAcquisition();
-            andorDriver.WaitForAcquisition();
-            uint success = andorDriver.GetAcquiredData(spec, (uint)(pixels));
+            if (!areaScanEnabled)
+            {
+                int[] spec = new int[pixels];
 
-            if (success != DRV_SUCCESS)
-                return null;
+                // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
+                spec = new int[pixels];     //defaults to all zeros
+                andorDriver.StartAcquisition();
+                andorDriver.WaitForAcquisition();
+                uint success = andorDriver.GetAcquiredData(spec, (uint)(pixels));
 
-            double[] convertedSpec = Array.ConvertAll(spec, item => (double)item);
+                if (success != DRV_SUCCESS)
+                    return null;
+
+                double[] convertedSpec = Array.ConvertAll(spec, item => (double)item);
 
 
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(convertedSpec);
+                if (eeprom.featureMask.invertXAxis)
+                    Array.Reverse(convertedSpec);
 
-            logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
-            return convertedSpec;
+                logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+                return convertedSpec;
+            }
+            else
+            {
+                int[] spec = new int[yPixels * pixels / BINNING];
+
+                // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
+                spec = new int[yPixels * pixels / BINNING];     //defaults to all zeros
+                andorDriver.StartAcquisition();
+                andorDriver.WaitForAcquisition();
+                uint success = andorDriver.GetAcquiredData(spec, (uint)(yPixels * pixels / BINNING));
+
+                if (success != DRV_SUCCESS)
+                    return null;
+
+                double[] convertedSpec = Array.ConvertAll(spec, item => (double)item);
+
+                if (eeprom.featureMask.invertXAxis)
+                    Array.Reverse(convertedSpec);
+
+                logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+                return convertedSpec;
+            }
+
         }
 
+
+        public override bool areaScanEnabled
+        {
+            get
+            {
+                return areaScanEnabled_;
+            }
+            set
+            {
+                areaScanEnabled_ = value;
+                lock (acquisitionLock)
+                {
+                    if (value)
+                    {
+                        uint errorValue = andorDriver.SetReadMode(4);
+                        errorValue = andorDriver.SetImage(1, BINNING, 1, (int)pixels, 1, yPixels);
+                        if (errorValue != DRV_SUCCESS)
+                            areaScanEnabled_ = false;
+                        andorDriver.SetShutterEx(1, 1, SHUTTER_SPEED_MS, SHUTTER_SPEED_MS, 0);
+
+                    }
+                    else
+                    {
+                        // Set readout mode to full vertical binning
+                        uint errorValue = andorDriver.SetReadMode(0);
+                        andorDriver.SetShutterEx(1, 1, SHUTTER_SPEED_MS, SHUTTER_SPEED_MS, 0);
+                    }
+                }
+            }
+        }
 
         public override bool highGainModeEnabled
         {
