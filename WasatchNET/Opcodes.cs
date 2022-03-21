@@ -61,7 +61,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_HORIZONTAL_BINNING                 ] = 0xbc;
             cmd[Opcodes.GET_INTEGRATION_TIME                   ] = 0xbf;
             cmd[Opcodes.GET_LASER_ENABLE                       ] = 0xe2;
-            cmd[Opcodes.GET_LASER_INTERLOCK                    ] = 0xef;
+            cmd[Opcodes.GET_LASER_INTERLOCK                    ] = 0xef; // aka, CAN_LASER_FIRE
             cmd[Opcodes.GET_LASER_MOD_DURATION                 ] = 0xc3;
             cmd[Opcodes.GET_LASER_MOD_ENABLE                   ] = 0xe3;
             cmd[Opcodes.GET_LASER_MOD_PERIOD                   ] = 0xcb;
@@ -118,6 +118,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_OPT_AREA_SCAN                      ] = 0x0a;
             cmd[Opcodes.GET_OPT_ACTUAL_INTEGRATION_TIME        ] = 0x0b;
             cmd[Opcodes.GET_OPT_HORIZONTAL_BINNING             ] = 0x0c;
+            cmd[Opcodes.GET_LASER_FIRING                       ] = 0x0d; // AKA, IS_LASER_FIRING
             cmd[Opcodes.GET_BATTERY_STATE                      ] = 0x13;
             cmd[Opcodes.SET_DETECTOR_START_LINE                ] = 0x21;
             cmd[Opcodes.GET_DETECTOR_START_LINE                ] = 0x22;

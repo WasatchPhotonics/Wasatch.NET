@@ -1193,13 +1193,26 @@ namespace WasatchNET
         }
         bool laserModulationEnabled_;
 
+        public virtual bool laserFiring
+        {
+            get
+            {
+                if (!eeprom.featureMask.hasInterlockFeedback)
+                {
+                    logger.debug("GET_LASER_FIRING requires HAS_INTERLOCK_FEEDBACK");
+                    return false;
+                }
+                return Unpack.toBool(getCmd2(Opcodes.GET_LASER_FIRING, 1));
+            }
+        }
+
         public virtual bool laserInterlockEnabled
         {
             get
             {
-                if (isARM)
+                if (!eeprom.featureMask.hasInterlockFeedback)
                 {
-                    logger.debug("GET_LASER_INTERLOCK not supported on ARM");
+                    logger.debug("GET_LASER_INTERLOCK requires HAS_INTERLOCK_FEEDBACK");
                     return false;
                 }
                 return Unpack.toBool(getCmd(Opcodes.GET_LASER_INTERLOCK, 1));
@@ -1936,7 +1949,7 @@ namespace WasatchNET
 
             if (hasLaser)
             {
-                // ENLIGHTEN doesn't do this
+                // ENLIGHTEN doesn't do this, doesn't seem to matter
                 logger.debug("unlinking laser modulation from integration time");
                 laserModulationLinkedToIntegrationTime = false;
 

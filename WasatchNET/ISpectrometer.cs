@@ -144,8 +144,28 @@ namespace WasatchNET
         /// </summary>
         uint integrationTimeMS { get; set; }
 
+        /// <summary>
+        /// Whether the laser has been REQUESTED TO FIRE by the software and 
+        /// firmware.
+        /// </summary>
         bool laserEnabled { get; set; }
+
+        /// <summary>
+        /// Whether the laser is ACTUALLY FIRING, according to the laser driver
+        /// and laser interlock board.
+        /// 
+        /// Requires FeatureMask.HAS_INTERLOCK_FEEDBACK.
+        /// </summary>
+        bool laserFiring { get; }
+
+        /// <summary>
+        /// True if the laser can fire (interlock circuit is CLOSED), false if 
+        /// the laser cannot fire (interlock circuit is OPEN).  
+        ///
+        /// Requires FeatureMask.HAS_INTERLOCK_FEEDBACK.
+        /// </summary>
         bool laserInterlockEnabled { get; }
+
         bool laserModulationEnabled { get; set; }
         bool laserModulationLinkedToIntegrationTime { get; set; }
         Spectrometer.LaserPowerResolution laserPowerResolution { get; set; }
