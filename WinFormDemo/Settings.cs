@@ -53,6 +53,7 @@ namespace WinFormDemo
             stub("hasLaser",                    "EEPROM/Page 0/Features/Laser");
             stub("excitationNM",                "EEPROM/Page 0/Excitation (nm)");
             stub("slitSizeUM",                  "EEPROM/Page 0/Slit Size (µm)");
+            stub("featureMask",                 "EEPROM/Page 0/Feature Mask");
             stub("startupIntegrationTimeMS",    "EEPROM/Page 0/Startup/Integration Time (ms)");
             stub("startupTemperatureDegC",      "EEPROM/Page 0/Startup/Temperature (°C)");
             stub("startupTriggerScheme",        "EEPROM/Page 0/Startup/Trigger Scheme");
@@ -143,9 +144,9 @@ namespace WinFormDemo
             stub("detectorTECEnabled",          "Spectrometer State/Detector/TEC/Enabled");
             stub("detectorTECSetpointDegC",     "Spectrometer State/Detector/TEC/Setpoint/°C");
             stub("detectorTECSetpointRaw",      "Spectrometer State/Detector/TEC/Setpoint/raw");
-            stub("detectorSensingThresholdEnabled","Spectrometer State/Detector/Sensing/Enabled");
-            stub("detectorSensingThreshold",    "Spectrometer State/Detector/Sensing/Threshold");
-            stub("horizBinning",                "Spectrometer State/Detector/Horizontal Binning/Mode");
+          //stub("detectorSensingThresholdEnabled","Spectrometer State/Detector/Sensing/Enabled");
+          //stub("detectorSensingThreshold",    "Spectrometer State/Detector/Sensing/Threshold");
+          //stub("horizBinning",                "Spectrometer State/Detector/Horizontal Binning/Mode");
             stub("areaScanEnabled",             "Spectrometer State/Detector/Area Scan Enabled");
                                                 
             stub("laserEnabled",                "Spectrometer State/Laser/Enabled");
@@ -153,14 +154,15 @@ namespace WinFormDemo
             stub("laserTemperatureRaw",         "Spectrometer State/Laser/TEC/Temperature (raw)");
           //stub("laserTemperatureSetpointRaw", "Spectrometer State/Laser/TEC/Setpoint (raw)"); 
             stub("laserModEnabled",             "Spectrometer State/Laser/Modulation/Enabled");
-            stub("laserModDuration",            "Spectrometer State/Laser/Modulation/Duration (µs)");
+          //stub("laserModDuration",            "Spectrometer State/Laser/Modulation/Duration (µs)");
             stub("laserModPeriod",              "Spectrometer State/Laser/Modulation/Period (µs)");
             stub("laserModPulseDelay",          "Spectrometer State/Laser/Modulation/Pulse Delay (µs)");
             stub("laserModPulseWidth",          "Spectrometer State/Laser/Modulation/Pulse Width (µs)");
             stub("laserModLinkedToIntegrationTime", 
                                                 "Spectrometer State/Laser/Modulation/Linked to Integration Time");
-            stub("laserRampingEnabled",         "Spectrometer State/Laser/Ramping Enabled");
+          //stub("laserRampingEnabled",         "Spectrometer State/Laser/Ramping Enabled");
             stub("laserInterlock",              "Spectrometer State/Laser/Interlock");
+            stub("laserIsFiring",               "Spectrometer State/Laser/Is Firing");
 
             stub("triggerSource",               "Spectrometer State/Triggering/Source");
             stub("triggerOutput",               "Spectrometer State/Triggering/Output");
@@ -221,6 +223,7 @@ namespace WinFormDemo
             update("ROIHorizStart",                 spec.eeprom.ROIHorizStart);
             update("serialNumber",                  spec.serialNumber);
             update("slitSizeUM",                    spec.eeprom.slitSizeUM);
+            update("featureMask",                   string.Format("0x{0:x4}", spec.eeprom.featureMask.toUInt16()));
             update("thermistorBeta",                spec.eeprom.thermistorResistanceAt298K);
             update("thermistorResistanceAt298K",    spec.eeprom.thermistorResistanceAt298K);
             update("userText",                      spec.eeprom.userText);
@@ -277,8 +280,8 @@ namespace WinFormDemo
             update("detectorOffset",                      spec.detectorOffset); // eeprom or opcode?
             update("detectorGainOdd",                     spec.eeprom.detectorGainOdd);
             update("detectorOffsetOdd",                   spec.eeprom.detectorOffsetOdd);
-            update("detectorSensingThreshold",            spec.detectorSensingThreshold);
-            update("detectorSensingThresholdEnabled",     spec.detectorSensingThresholdEnabled);
+          //update("detectorSensingThreshold",            spec.detectorSensingThreshold);
+          //update("detectorSensingThresholdEnabled",     spec.detectorSensingThresholdEnabled);
             update("triggerSource",                       spec.triggerSource); 
             update("firmwareRev",                         spec.firmwareRevision);
             update("fpgaRev",                             spec.fpgaRevision);
@@ -294,37 +297,48 @@ namespace WinFormDemo
                 update("detectorTECSetpointRaw",          spec.detectorTECSetpointRaw);
                 update("detectorTECSetpointDegC",         spec.detectorTECSetpointDegC);
             }
+            logger.debug("updateAll: past hasCooling");
 
-            if (spec.fpgaOptions.hasActualIntegTime)
-                update("actualIntegrationTimeUS",         spec.actualIntegrationTimeUS);
+            if (false)
+            {
+                if (spec.fpgaOptions.hasActualIntegTime)
+                    update("actualIntegrationTimeUS", spec.actualIntegrationTimeUS);
 
-            if (spec.fpgaOptions.hasHorizBinning)
-                update("horizBinning",                    spec.horizontalBinning);
+                if (spec.fpgaOptions.hasHorizBinning)
+                    update("horizBinning", spec.horizontalBinning);
+            }
 
             if (spec.fpgaOptions.hasAreaScan)
-                update("areaScanEnabled",                 spec.areaScanEnabled);
+                update("areaScanEnabled", spec.areaScanEnabled);
 
-            if (spec.eeprom.hasLaser && spec.fpgaOptions.laserType != FPGA_LASER_TYPE.NONE)
+            logger.debug("updateAll: starting laser");
+            if (spec.eeprom.hasLaser)
             {
-                update("laserInterlock",                  spec.laserInterlockEnabled);
                 update("laserEnabled",                    spec.laserEnabled);
-                update("laserModDuration",                spec.laserModulationDuration);
+              //update("laserModDuration",                spec.laserModulationDuration);
                 update("laserModEnabled",                 spec.laserModulationEnabled);
                 update("laserModLinkedToIntegrationTime", spec.laserModulationLinkedToIntegrationTime);
                 update("laserModPeriod",                  spec.laserModulationPeriod);
                 update("laserModPulseDelay",              spec.laserModulationPulseDelay);
                 update("laserModPulseWidth",              spec.laserModulationPulseWidth);
-                update("laserRampingEnabled",             spec.laserRampingEnabled);
+              //update("laserRampingEnabled",             spec.laserRampingEnabled);
               //update("laserTemperatureSetpointRaw",     spec.laserTemperatureSetpointRaw);
                 update("laserTemperatureRaw",             spec.laserTemperatureRaw);
                 update("laserTemperatureDegC",            spec.laserTemperatureDegC);
+                if (spec.eeprom.featureMask.hasInterlockFeedback)
+                {
+                    update("laserInterlock",              spec.laserInterlockEnabled);
+                    update("laserIsFiring",               spec.laserFiring);
+                }
             }
+            logger.debug("updateAll: past laser");
 
             if (spec.eeprom.hasBattery)
             {
                 update("batteryPercentage", spec.batteryPercentage);
                 update("batteryCharging", spec.batteryCharging);
             }
+            logger.debug("updateAll: done");
         }
 
         void update_NOT_USED<T>(string key, Spectrometer spec, MyDelegate<T> func)
@@ -357,6 +371,8 @@ namespace WinFormDemo
 
             TreeNode node = treeNodes[key].Item1;
             string prefix = treeNodes[key].Item2;
+
+            logger.debug($"updateSetting: prefix {prefix} -> {value}");
 
             // dispatch so this can occur on non-GUI thread
             tv.BeginInvoke(new MethodInvoker(delegate { node.Text = String.Format("{0}: {1}", prefix, value); }));

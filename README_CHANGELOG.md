@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2022-03-21 2.4.5
+    - added FeatureMask.SIG\_LASER\_TEC
+    - added FeatureMask.HAS\_INTERLOCK\_FEEDBACK
 - 2021-12-15 2.4.4
     - added checks for EEPROM.toJSON()
 - 2021-12-08 2.4.3
