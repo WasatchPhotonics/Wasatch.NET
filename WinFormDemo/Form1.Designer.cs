@@ -39,6 +39,7 @@
             this.toolStripMenuItemTest = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemTestWriteEEPROM = new System.Windows.Forms.ToolStripMenuItem();
             this.setDFUModeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemEEPROMJson = new System.Windows.Forms.ToolStripMenuItem();
             this.flowLayoutPanel3 = new System.Windows.Forms.FlowLayoutPanel();
             this.groupBoxSetup = new System.Windows.Forms.GroupBox();
             this.label4 = new System.Windows.Forms.Label();
@@ -99,7 +100,6 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.toolStripMenuItemEEPROMJson = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -236,6 +236,14 @@
             this.setDFUModeToolStripMenuItem.ToolTipText = "WARNING: used for reflashing ARM firmware!";
             this.setDFUModeToolStripMenuItem.Click += new System.EventHandler(this.setDFUModeToolStripMenuItem_Click);
             // 
+            // toolStripMenuItemEEPROMJson
+            // 
+            this.toolStripMenuItemEEPROMJson.Name = "toolStripMenuItemEEPROMJson";
+            this.toolStripMenuItemEEPROMJson.Size = new System.Drawing.Size(235, 26);
+            this.toolStripMenuItemEEPROMJson.Text = "Log EEPROM as JSON";
+            this.toolStripMenuItemEEPROMJson.ToolTipText = "Log the EEPROM contents as JSON";
+            this.toolStripMenuItemEEPROMJson.Click += new System.EventHandler(this.toolStripMenuItemEEPROMJson_Click);
+            // 
             // flowLayoutPanel3
             // 
             this.flowLayoutPanel3.AutoScroll = true;
@@ -243,7 +251,7 @@
             this.flowLayoutPanel3.Controls.Add(this.groupBoxSpectrometers);
             this.flowLayoutPanel3.Controls.Add(this.groupBoxSettings);
             this.flowLayoutPanel3.Location = new System.Drawing.Point(0, 0);
-            this.flowLayoutPanel3.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.flowLayoutPanel3.Margin = new System.Windows.Forms.Padding(4);
             this.flowLayoutPanel3.Name = "flowLayoutPanel3";
             this.flowLayoutPanel3.Size = new System.Drawing.Size(303, 718);
             this.flowLayoutPanel3.TabIndex = 2;
@@ -494,7 +502,7 @@
             // 
             this.checkBoxExternalTriggerSource.AutoSize = true;
             this.checkBoxExternalTriggerSource.Location = new System.Drawing.Point(89, 82);
-            this.checkBoxExternalTriggerSource.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.checkBoxExternalTriggerSource.Margin = new System.Windows.Forms.Padding(4);
             this.checkBoxExternalTriggerSource.Name = "checkBoxExternalTriggerSource";
             this.checkBoxExternalTriggerSource.Size = new System.Drawing.Size(93, 21);
             this.checkBoxExternalTriggerSource.TabIndex = 18;
@@ -506,7 +514,7 @@
             // 
             this.checkBoxRamanCorrection.Dock = System.Windows.Forms.DockStyle.Fill;
             this.checkBoxRamanCorrection.Location = new System.Drawing.Point(89, 111);
-            this.checkBoxRamanCorrection.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.checkBoxRamanCorrection.Margin = new System.Windows.Forms.Padding(4);
             this.checkBoxRamanCorrection.Name = "checkBoxRamanCorrection";
             this.checkBoxRamanCorrection.Size = new System.Drawing.Size(154, 60);
             this.checkBoxRamanCorrection.TabIndex = 19;
@@ -544,6 +552,8 @@
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(247, 175);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
@@ -557,7 +567,7 @@
             0,
             65536});
             this.numericUpDownLaserPowerPerc.Location = new System.Drawing.Point(4, 4);
-            this.numericUpDownLaserPowerPerc.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.numericUpDownLaserPowerPerc.Margin = new System.Windows.Forms.Padding(4);
             this.numericUpDownLaserPowerPerc.Name = "numericUpDownLaserPowerPerc";
             this.numericUpDownLaserPowerPerc.Size = new System.Drawing.Size(64, 22);
             this.numericUpDownLaserPowerPerc.TabIndex = 14;
@@ -725,7 +735,7 @@
             // numericUpDownAcquisitionPeriodMS
             // 
             this.numericUpDownAcquisitionPeriodMS.Location = new System.Drawing.Point(4, 4);
-            this.numericUpDownAcquisitionPeriodMS.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.numericUpDownAcquisitionPeriodMS.Margin = new System.Windows.Forms.Padding(4);
             this.numericUpDownAcquisitionPeriodMS.Name = "numericUpDownAcquisitionPeriodMS";
             this.numericUpDownAcquisitionPeriodMS.Size = new System.Drawing.Size(79, 22);
             this.numericUpDownAcquisitionPeriodMS.TabIndex = 20;
@@ -736,7 +746,7 @@
             // 
             this.checkBoxContinuousAcquisition.AutoSize = true;
             this.checkBoxContinuousAcquisition.Location = new System.Drawing.Point(91, 34);
-            this.checkBoxContinuousAcquisition.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.checkBoxContinuousAcquisition.Margin = new System.Windows.Forms.Padding(4);
             this.checkBoxContinuousAcquisition.Name = "checkBoxContinuousAcquisition";
             this.checkBoxContinuousAcquisition.Size = new System.Drawing.Size(99, 21);
             this.checkBoxContinuousAcquisition.TabIndex = 19;
@@ -981,14 +991,6 @@
             // backgroundWorkerSettings
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
-            // 
-            // toolStripMenuItemEEPROMJson
-            // 
-            this.toolStripMenuItemEEPROMJson.Name = "toolStripMenuItemEEPROMJson";
-            this.toolStripMenuItemEEPROMJson.Size = new System.Drawing.Size(235, 26);
-            this.toolStripMenuItemEEPROMJson.Text = "Log EEPROM as JSON";
-            this.toolStripMenuItemEEPROMJson.ToolTipText = "Log the EEPROM contents as JSON";
-            this.toolStripMenuItemEEPROMJson.Click += new System.EventHandler(this.toolStripMenuItemEEPROMJson_Click);
             // 
             // Form1
             // 
