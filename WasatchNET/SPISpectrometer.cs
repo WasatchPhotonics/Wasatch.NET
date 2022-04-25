@@ -471,6 +471,9 @@ namespace WasatchNET
                     ++index;
                 --index;
 
+                if (index > result.Length - 67)
+                    index = result.Length - 67;
+
                 pages.Add(result.Skip(index + 4).Take(64).ToArray());
             }
 

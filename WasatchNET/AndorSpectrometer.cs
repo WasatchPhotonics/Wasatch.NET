@@ -411,9 +411,12 @@ namespace WasatchNET
         {
             get
             {
-                int temp = 0;
-                andorDriver.GetTemperature(ref temp);
-                return temp;
+                lock (acquisitionLock)
+                {
+                    int temp = 0;
+                    andorDriver.GetTemperature(ref temp);
+                    return temp;
+                }
             }
         }
 

@@ -58,6 +58,7 @@ namespace WasatchNET
         public bool CutoffFilter;
         public bool EvenOddHardwareCorrected;
         public byte LaserWarmupS;
+        public byte Subformat;
 
         public override bool Equals(object obj)
         {

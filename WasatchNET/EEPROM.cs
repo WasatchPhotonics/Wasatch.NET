@@ -49,10 +49,10 @@ namespace WasatchNET
         /// Current EEPROM format
         /// </summary>
         /// <remarks>
-        /// - rev 11
+        /// - rev 14
         ///     - added subformat 3 (identical to subformat 1, but with page 7 used for Handheld Device settings)
         /// </remarks>
-        protected const byte FORMAT = 12;
+        protected const byte FORMAT = 14;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
