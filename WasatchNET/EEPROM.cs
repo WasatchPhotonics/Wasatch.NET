@@ -50,7 +50,7 @@ namespace WasatchNET
         /// </summary>
         /// <remarks>
         /// - rev 14
-        ///     - added subformat 3 (identical to subformat 1, but with page 7 used for Handheld Device settings)
+        ///     - adds SiG laser TEC and Has interlock feedback to feature mask
         /// </remarks>
         protected const byte FORMAT = 14;
 
@@ -60,6 +60,10 @@ namespace WasatchNET
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
         public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS };
+        protected virtual void OnEEPROMChanged(EventArgs e)
+        {
+            EEPROMChanged?.Invoke(this, e);
+        }
 
         /////////////////////////////////////////////////////////////////////////       
         //

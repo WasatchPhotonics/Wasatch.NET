@@ -12,6 +12,14 @@ using ATMCD64CS;
 
 namespace WasatchNET
 {
+    /// <summary>
+    /// Virtualizes the EEPROM fields normally used with physical EEPROM on other spectrometers
+    /// </summary>
+    /// <remarks>
+    /// Our Andor camera spectrometers have no physical EEPROM. All fields here exist only in
+    /// the computer's memory and other systems must be used to maintain these values properly.
+    /// 
+    /// </remarks>
     public class AndorEEPROM : EEPROM
     {
         private AndorSDK andorDriver;
@@ -84,17 +92,17 @@ namespace WasatchNET
             thermistorBeta = 0;
             calibrationDate = "01/01/2020";
             calibrationBy = "RSC";
-
             int cameraSerial = 0;
             uint error = andorDriver.GetCameraSerialNumber(ref cameraSerial);
             if (error != AndorSpectrometer.DRV_SUCCESS)
-                detectorName = "";
+                detectorSerialNumber = "";
             else
-                detectorName = cameraSerial.ToString();
+                detectorSerialNumber = "CCD-" + cameraSerial.ToString();
+            detectorName = "iDus";
             activePixelsHoriz = (ushort)xPixels;
             activePixelsVert = (ushort)(yPixels / AndorSpectrometer.BINNING);
             minIntegrationTimeMS = a.integrationTimeMS;
-            maxIntegrationTimeMS = 1000000;
+            maxIntegrationTimeMS = uint.MaxValue;
             actualPixelsHoriz = (ushort)xPixels;
             ROIHorizStart = 0;
             ROIHorizEnd = 0;
@@ -136,6 +144,18 @@ namespace WasatchNET
             defaultValues = false;
             return true;
         }
+
+        public string detectorSerialNumber
+        {
+            get { return _detectorSerialNumber; }
+            set
+            {
+                _detectorSerialNumber = value;
+                base.OnEEPROMChanged(new EventArgs());
+            }
+        }
+
+        string _detectorSerialNumber;
 
     }
 }
