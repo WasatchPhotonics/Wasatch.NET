@@ -293,7 +293,7 @@ namespace WasatchNET
             byte[] payload = new byte[0];
             byte[] command = wrapCommand(GET_PIXEL_COUNT, payload, STANDARD_PADDING);
 
-            /*
+            
             byte[] result = spi.readWrite(command);
 
             logger.debug("pixel response: ");
@@ -323,7 +323,7 @@ namespace WasatchNET
 
             if (pixels > 10000)
                 return false;
-            */
+            
 
             //sets firmware throwaway
             byte[] transmitData = new byte[1] { 0x01 };
@@ -331,7 +331,7 @@ namespace WasatchNET
             
             command = wrapCommand(0xB2, transmitData, STANDARD_PADDING);
 
-            byte[] result = spi.readWrite(command);
+            result = spi.readWrite(command);
 
             //sets edge trigger
             transmitData = new byte[2] { 0x86, 0x40 };
@@ -340,7 +340,7 @@ namespace WasatchNET
 
             result = spi.readWrite(command);
             
-            int index = 0;
+            index = 0;
             while (index < result.Length)
             {
                 if (result[index] == START_CMD)

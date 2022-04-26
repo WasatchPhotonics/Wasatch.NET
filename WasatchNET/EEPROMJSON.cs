@@ -59,6 +59,7 @@ namespace WasatchNET
         public bool EvenOddHardwareCorrected;
         public byte LaserWarmupS;
         public byte Subformat;
+        EEPROM.PAGE_SUBFORMAT subformat => (EEPROM.PAGE_SUBFORMAT)Subformat;
         public double[] Region1WavecalCoeffs;
         public double[] Region2WavecalCoeffs;
         public double[] Region3WavecalCoeffs;
@@ -70,7 +71,9 @@ namespace WasatchNET
         public int Region3HorizEnd;
         public int Region3VertStart;
         public int Region3VertEnd;
-        EEPROM.PAGE_SUBFORMAT subformat => (EEPROM.PAGE_SUBFORMAT)Subformat;
+        public byte RegionCount;
+        public bool SigLaserTEC;
+        public bool HasInterlockFeedback;
 
         public override bool Equals(object obj)
         {
@@ -183,6 +186,10 @@ namespace WasatchNET
                 return false;
             if (item.LaserWarmupS != this.LaserWarmupS)
                 return false;
+            if (item.SigLaserTEC != this.SigLaserTEC)
+                return false;
+            if (item.HasInterlockFeedback != this.HasInterlockFeedback)
+                return false;
             if (item.Subformat != this.Subformat)
                 return false;
 
@@ -218,7 +225,8 @@ namespace WasatchNET
                 return false;
             if (item.Region3VertEnd != this.Region3VertEnd)
                 return false;
-
+            if (item.RegionCount != this.RegionCount)
+                return false;
 
             return true;
         }
@@ -310,6 +318,8 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + EvenOddHardwareCorrected.GetHashCode();
             hashCode = hashCode * -1521134295 + LaserWarmupS.GetHashCode();
             hashCode = hashCode * -1521134295 + Subformat.GetHashCode();
+            hashCode = hashCode * -1521134295 + SigLaserTEC.GetHashCode();
+            hashCode = hashCode * -1521134295 + HasInterlockFeedback.GetHashCode();
 
             return hashCode;
         }
@@ -400,6 +410,8 @@ namespace WasatchNET
             addField(sb, indent, "Gen15", Gen15);
             addField(sb, indent, "CutoffFilter", CutoffFilter);
             addField(sb, indent, "EvenOddHardwareCorrected", EvenOddHardwareCorrected);
+            addField(sb, indent, "SigLaserTEC", SigLaserTEC);
+            addField(sb, indent, "HasInterlockFeedback", HasInterlockFeedback);
             sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.DETECTOR_REGIONS)
@@ -415,6 +427,7 @@ namespace WasatchNET
                 addField(sb, indent, "Region3HorizEnd", Region3HorizEnd);
                 addField(sb, indent, "Region3VertStart", Region3VertStart);
                 addField(sb, indent, "Region3VertEnd", Region3VertEnd);
+                addField(sb, indent, "RegionCount", RegionCount);
             }
 
 

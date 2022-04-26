@@ -843,7 +843,7 @@ namespace WasatchNET
         byte _intensityCorrectionOrder;
 
         /////////////////////////////////////////////////////////////////////////       
-        // Page 6 (subformat DETECTOR_REGIONS)
+        // Page 6 & 7 (subformat DETECTOR_REGIONS)
         /////////////////////////////////////////////////////////////////////////  
 
         public float[] region1WavecalCoeffs
@@ -1026,6 +1026,16 @@ namespace WasatchNET
         }
         ushort _region3VertEnd;
 
+        public byte regionCount
+        {
+            get { return _regionCount; }
+            set
+            {
+                _regionCount = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _regionCount;
 
         /////////////////////////////////////////////////////////////////////////       
         // Page 7 Handheld Devices
@@ -1582,6 +1592,8 @@ namespace WasatchNET
                         region3WavecalCoeffs[1] = ParseData.toFloat(pages[6], 52);
                         region3WavecalCoeffs[2] = ParseData.toFloat(pages[6], 56);
                         region3WavecalCoeffs[3] = ParseData.toFloat(pages[6], 60);
+
+                        regionCount = ParseData.toUInt8(pages[7], 0);
                     }
                 }
             }
@@ -1716,6 +1728,9 @@ namespace WasatchNET
             featureMask.invertXAxis = json.FlipXAxis;
             featureMask.gen15 = json.Gen15;
             featureMask.cutoffInstalled = json.CutoffFilter;
+            featureMask.evenOddHardwareCorrected = json.EvenOddHardwareCorrected;
+            featureMask.sigLaserTEC = json.SigLaserTEC;
+            featureMask.hasInterlockFeedback = json.HasInterlockFeedback;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -1834,6 +1849,8 @@ namespace WasatchNET
                 region2HorizEnd = (ushort)json.Region2HorizEnd;
                 region3HorizStart = (ushort)json.Region3HorizStart;
                 region3HorizEnd = (ushort)json.Region3HorizEnd;
+
+                regionCount = json.RegionCount;
             }
 
 
@@ -1972,6 +1989,9 @@ namespace WasatchNET
                 json.FlipXAxis = featureMask.invertXAxis;
                 json.Gen15 = featureMask.gen15;
                 json.CutoffFilter = featureMask.cutoffInstalled;
+                json.EvenOddHardwareCorrected = featureMask.evenOddHardwareCorrected;
+                json.SigLaserTEC = featureMask.sigLaserTEC;
+                json.HasInterlockFeedback = featureMask.hasInterlockFeedback;
             }
 
             json.LaserWarmupS = laserWarmupSec;
@@ -2012,6 +2032,7 @@ namespace WasatchNET
                 json.Region3HorizEnd = region3HorizEnd;
                 json.Region3HorizStart = region3HorizStart;
                 json.Region3HorizEnd = region3HorizEnd;
+                json.RegionCount = regionCount;
             }
 
             return json;
@@ -2334,6 +2355,8 @@ namespace WasatchNET
                     if (!ParseData.writeFloat(region3WavecalCoeffs[1], pages[6], 52)) return false;
                     if (!ParseData.writeFloat(region3WavecalCoeffs[2], pages[6], 56)) return false;
                     if (!ParseData.writeFloat(region3WavecalCoeffs[3], pages[6], 60)) return false;
+
+                    if (!ParseData.writeByte(regionCount, pages[7], 0)) return false;
                 }
 
             }
