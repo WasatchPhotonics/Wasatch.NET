@@ -59,6 +59,18 @@ namespace WasatchNET
         public bool EvenOddHardwareCorrected;
         public byte LaserWarmupS;
         public byte Subformat;
+        public double[] Region1WavecalCoeffs;
+        public double[] Region2WavecalCoeffs;
+        public double[] Region3WavecalCoeffs;
+        public int Region1HorizStart;
+        public int Region1HorizEnd;
+        public int Region2HorizStart;
+        public int Region2HorizEnd;
+        public int Region3HorizStart;
+        public int Region3HorizEnd;
+        public int Region3VertStart;
+        public int Region3VertEnd;
+        EEPROM.PAGE_SUBFORMAT subformat => (EEPROM.PAGE_SUBFORMAT)Subformat;
 
         public override bool Equals(object obj)
         {
@@ -171,6 +183,42 @@ namespace WasatchNET
                 return false;
             if (item.LaserWarmupS != this.LaserWarmupS)
                 return false;
+            if (item.Subformat != this.Subformat)
+                return false;
+
+            if (item.Region1WavecalCoeffs != null && this.Region1WavecalCoeffs != null)
+            {
+                if (!floatEq(item.Region1WavecalCoeffs, this.Region1WavecalCoeffs))
+                    return false;
+            }
+            if (item.Region2WavecalCoeffs != null && this.Region2WavecalCoeffs != null)
+            {
+                if (!floatEq(item.Region2WavecalCoeffs, this.Region2WavecalCoeffs))
+                    return false;
+            }
+            if (item.Region3WavecalCoeffs != null && this.Region3WavecalCoeffs != null)
+            {
+                if (!floatEq(item.Region3WavecalCoeffs, this.Region3WavecalCoeffs))
+                    return false;
+            }
+
+            if (item.Region1HorizStart != this.Region1HorizStart)
+                return false;
+            if (item.Region1HorizEnd != this.Region1HorizEnd)
+                return false;
+            if (item.Region2HorizStart != this.Region2HorizStart)
+                return false;
+            if (item.Region2HorizEnd != this.Region2HorizEnd)
+                return false;
+            if (item.Region3HorizStart != this.Region3HorizStart)
+                return false;
+            if (item.Region3HorizEnd != this.Region3HorizEnd)
+                return false;
+            if (item.Region3VertStart != this.Region3VertStart)
+                return false;
+            if (item.Region3VertEnd != this.Region3VertEnd)
+                return false;
+
 
             return true;
         }
@@ -257,6 +305,12 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + EqualityComparer<double[]>.Default.GetHashCode(RelIntCorrCoeffs);
             hashCode = hashCode * -1521134295 + Bin2x2.GetHashCode();
             hashCode = hashCode * -1521134295 + FlipXAxis.GetHashCode();
+            hashCode = hashCode * -1521134295 + Gen15.GetHashCode();
+            hashCode = hashCode * -1521134295 + CutoffFilter.GetHashCode();
+            hashCode = hashCode * -1521134295 + EvenOddHardwareCorrected.GetHashCode();
+            hashCode = hashCode * -1521134295 + LaserWarmupS.GetHashCode();
+            hashCode = hashCode * -1521134295 + Subformat.GetHashCode();
+
             return hashCode;
         }
 
@@ -279,73 +333,90 @@ namespace WasatchNET
             if (level > 0)
                 finalIndent = new string(' ', (level - 1) * indentSize);
 
-            addField(sb, indent,"Serial", Serial);
-            addField(sb, indent,"Model", Model);
-            addField(sb, indent,"SlitWidth", SlitWidth);
-            addField(sb, indent,"BaudRate", BaudRate);
-            addField(sb, indent,"IncBattery", IncBattery);
-            addField(sb, indent,"IncCooling", IncCooling);
-            addField(sb, indent,"IncLaser", IncLaser);
-            
-            addField(sb, indent,"StartupIntTimeMS", StartupIntTimeMS);
-            addField(sb, indent,"StartupTempC", StartupTempC);
-            
-            addField(sb, indent,"StartupTriggerMode", StartupTriggerMode);
-            
-            addField(sb, indent,"DetectorGain", DetectorGain);
-            
-            addField(sb, indent,"DetectorGainOdd", DetectorGainOdd);
-            addField(sb, indent,"DetectorOffset", DetectorOffset);
-            
-            addField(sb, indent,"DetectorOffsetOdd", DetectorOffsetOdd);
-            
-            addField(sb, indent,"WavecalCoeffs", WavecalCoeffs);
-            
-            addField(sb, indent,"TempToDACCoeffs", TempToDACCoeffs);
-            addField(sb, indent,"ADCToTempCoeffs", ADCToTempCoeffs);
-            addField(sb, indent,"LinearityCoeffs", LinearityCoeffs);
-            
-            addField(sb, indent,"DetectorTempMax", DetectorTempMax);
-            addField(sb, indent,"DetectorTempMin", DetectorTempMin);
-            addField(sb, indent,"ThermistorBeta", ThermistorBeta);
-            addField(sb, indent,"ThermistorResAt298K", ThermistorResAt298K);
-            addField(sb, indent,"CalibrationDate", CalibrationDate);
-            addField(sb, indent,"CalibrationBy", CalibrationBy);
-            
-            addField(sb, indent,"DetectorName", DetectorName);
-            addField(sb, indent,"ActualPixelsHoriz", ActualPixelsHoriz);
-            addField(sb, indent,"ActivePixelsHoriz", ActivePixelsHoriz);
-            addField(sb, indent,"ActivePixelsVert", ActivePixelsVert);
-            addField(sb, indent,"MinIntegrationTimeMS", MinIntegrationTimeMS);
-            addField(sb, indent,"MaxIntegrationTimeMS", MaxIntegrationTimeMS);
-            addField(sb, indent,"ROIHorizStart", ROIHorizStart);
-            addField(sb, indent,"ROIHorizEnd", ROIHorizEnd);
-            
-            addField(sb, indent,"ROIVertRegionStarts", ROIVertRegionStarts);
-            addField(sb, indent,"ROIVertRegionEnds", ROIVertRegionEnds);
-            
-            addField(sb, indent,"LaserPowerCoeffs", LaserPowerCoeffs);
-            
-            addField(sb, indent,"MaxLaserPowerMW", MaxLaserPowerMW);
-            addField(sb, indent,"MinLaserPowerMW", MinLaserPowerMW);
-            addField(sb, indent,"ExcitationWavelengthNM", ExcitationWavelengthNM);
-            addField(sb, indent,"AvgResolution", AvgResolution);
-            
-            addField(sb, indent,"BadPixels", BadPixels);
-            
-            addField(sb, indent,"UserText", UserText);
-            addField(sb, indent,"ProductConfig", ProductConfig);
-            
-            addField(sb, indent,"RelIntCorrOrder", RelIntCorrOrder);
+            addField(sb, indent, "Serial", Serial);
+            addField(sb, indent, "Model", Model);
+            addField(sb, indent, "SlitWidth", SlitWidth);
+            addField(sb, indent, "BaudRate", BaudRate);
+            addField(sb, indent, "IncBattery", IncBattery);
+            addField(sb, indent, "IncCooling", IncCooling);
+            addField(sb, indent, "IncLaser", IncLaser);
+
+            addField(sb, indent, "StartupIntTimeMS", StartupIntTimeMS);
+            addField(sb, indent, "StartupTempC", StartupTempC);
+
+            addField(sb, indent, "StartupTriggerMode", StartupTriggerMode);
+
+            addField(sb, indent, "DetectorGain", DetectorGain);
+
+            addField(sb, indent, "DetectorGainOdd", DetectorGainOdd);
+            addField(sb, indent, "DetectorOffset", DetectorOffset);
+
+            addField(sb, indent, "DetectorOffsetOdd", DetectorOffsetOdd);
+
+            addField(sb, indent, "WavecalCoeffs", WavecalCoeffs);
+
+            addField(sb, indent, "TempToDACCoeffs", TempToDACCoeffs);
+            addField(sb, indent, "ADCToTempCoeffs", ADCToTempCoeffs);
+            addField(sb, indent, "LinearityCoeffs", LinearityCoeffs);
+
+            addField(sb, indent, "DetectorTempMax", DetectorTempMax);
+            addField(sb, indent, "DetectorTempMin", DetectorTempMin);
+            addField(sb, indent, "ThermistorBeta", ThermistorBeta);
+            addField(sb, indent, "ThermistorResAt298K", ThermistorResAt298K);
+            addField(sb, indent, "CalibrationDate", CalibrationDate);
+            addField(sb, indent, "CalibrationBy", CalibrationBy);
+
+            addField(sb, indent, "DetectorName", DetectorName);
+            addField(sb, indent, "ActualPixelsHoriz", ActualPixelsHoriz);
+            addField(sb, indent, "ActivePixelsHoriz", ActivePixelsHoriz);
+            addField(sb, indent, "ActivePixelsVert", ActivePixelsVert);
+            addField(sb, indent, "MinIntegrationTimeMS", MinIntegrationTimeMS);
+            addField(sb, indent, "MaxIntegrationTimeMS", MaxIntegrationTimeMS);
+            addField(sb, indent, "ROIHorizStart", ROIHorizStart);
+            addField(sb, indent, "ROIHorizEnd", ROIHorizEnd);
+
+            addField(sb, indent, "ROIVertRegionStarts", ROIVertRegionStarts);
+            addField(sb, indent, "ROIVertRegionEnds", ROIVertRegionEnds);
+
+            addField(sb, indent, "LaserPowerCoeffs", LaserPowerCoeffs);
+
+            addField(sb, indent, "MaxLaserPowerMW", MaxLaserPowerMW);
+            addField(sb, indent, "MinLaserPowerMW", MinLaserPowerMW);
+            addField(sb, indent, "ExcitationWavelengthNM", ExcitationWavelengthNM);
+            addField(sb, indent, "AvgResolution", AvgResolution);
+
+            addField(sb, indent, "BadPixels", BadPixels);
+
+            addField(sb, indent, "UserText", UserText);
+            addField(sb, indent, "ProductConfig", ProductConfig);
+
+            if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE)
+                addField(sb, indent, "RelIntCorrOrder", RelIntCorrOrder);
             if (RelIntCorrCoeffs != null)
                 addField(sb, indent, "RelIntCorrCoeffs", RelIntCorrCoeffs);
-            
-            addField(sb, indent,"Bin2x2", Bin2x2);
+
+            addField(sb, indent, "Bin2x2", Bin2x2);
             addField(sb, indent, "FlipXAxis", FlipXAxis);
             addField(sb, indent, "Gen15", Gen15);
             addField(sb, indent, "CutoffFilter", CutoffFilter);
             addField(sb, indent, "EvenOddHardwareCorrected", EvenOddHardwareCorrected);
             sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
+
+            if (subformat == EEPROM.PAGE_SUBFORMAT.DETECTOR_REGIONS)
+            {
+                addField(sb, indent, "Region1WavecalCoeffs", Region1WavecalCoeffs);
+                addField(sb, indent, "Region2WavecalCoeffs", Region2WavecalCoeffs);
+                addField(sb, indent, "Region3WavecalCoeffs", Region3WavecalCoeffs);
+                addField(sb, indent, "Region1HorizStart", Region1HorizStart);
+                addField(sb, indent, "Region1HorizEnd", Region1HorizEnd);
+                addField(sb, indent, "Region2HorizStart", Region2HorizStart);
+                addField(sb, indent, "Region2HorizEnd", Region2HorizEnd);
+                addField(sb, indent, "Region3HorizStart", Region3HorizStart);
+                addField(sb, indent, "Region3HorizEnd", Region3HorizEnd);
+                addField(sb, indent, "Region3VertStart", Region3VertStart);
+                addField(sb, indent, "Region3VertEnd", Region3VertEnd);
+            }
+
 
             return "{\n" + sb.ToString() + "\n" + finalIndent + "}";
         }
