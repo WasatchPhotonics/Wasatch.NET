@@ -90,8 +90,8 @@ namespace WasatchNET
             adcToDegCCoeffs[2] = 0;
             thermistorResistanceAt298K = 0;
             thermistorBeta = 0;
-            calibrationDate = "01/01/2020";
-            calibrationBy = "RSC";
+            calibrationDate = "";
+            calibrationBy = "";
             int cameraSerial = 0;
             uint error = andorDriver.GetCameraSerialNumber(ref cameraSerial);
             if (error != AndorSpectrometer.DRV_SUCCESS)

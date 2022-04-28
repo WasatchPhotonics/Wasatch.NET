@@ -1663,8 +1663,8 @@ namespace WasatchNET
             adcToDegCCoeffs[2] = 0;
             thermistorResistanceAt298K = 0;
             thermistorBeta = 0;
-            calibrationDate = "01/01/2020";
-            calibrationBy = "RSC";
+            calibrationDate = "";
+            calibrationBy = "";
 
             detectorName = "";
             activePixelsHoriz = (ushort)1024;
