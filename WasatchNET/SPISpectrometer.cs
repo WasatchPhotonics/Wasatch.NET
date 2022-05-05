@@ -276,15 +276,13 @@ namespace WasatchNET
                 logger.debug("Unable to create SPI connection with board. May be missing drivers");
                 return false;
             }
-            
-            /*
+
             if (!eeprom.read())
             {
                 logger.info("Spectrometer: failed to GET_MODEL_CONFIG");
                 close();
                 return false;
             }
-            */
 
             mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
 
@@ -293,7 +291,6 @@ namespace WasatchNET
             byte[] payload = new byte[0];
             byte[] command = wrapCommand(GET_PIXEL_COUNT, payload, STANDARD_PADDING);
 
-            
             byte[] result = spi.readWrite(command);
 
             logger.debug("pixel response: ");
@@ -323,7 +320,6 @@ namespace WasatchNET
 
             if (pixels > 10000)
                 return false;
-            
 
             //sets firmware throwaway
             byte[] transmitData = new byte[1] { 0x01 };
@@ -471,12 +467,9 @@ namespace WasatchNET
                     ++index;
                 }
 
-                while (index < result.Length && result[index] == START_CMD)
+                while (result[index] == START_CMD)
                     ++index;
                 --index;
-
-                if (index > result.Length - 67)
-                    index = result.Length - 67;
 
                 pages.Add(result.Skip(index + 4).Take(64).ToArray());
             }
@@ -578,18 +571,6 @@ namespace WasatchNET
 
             return spec;
             
-        }
-
-        public override bool areaScanEnabled
-        {
-            get
-            {
-                return areaScanEnabled_;
-            }
-            set
-            {
-
-            }
         }
 
         public override bool highGainModeEnabled
