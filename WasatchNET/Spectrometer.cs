@@ -1372,7 +1372,7 @@ namespace WasatchNET
         }
         // bool laserRampingEnabled_;
 
-        public bool areaScanEnabled
+        public virtual bool areaScanEnabled
         {
             get
             {
@@ -1384,7 +1384,7 @@ namespace WasatchNET
                 readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET);
             }
         }
-        bool areaScanEnabled_ = false;
+        protected bool areaScanEnabled_ = false;
 
         public bool fastAreaScan = false;
 

@@ -594,6 +594,17 @@ namespace WasatchNET
             return spec;
         }
 
+        public override bool areaScanEnabled
+        {
+            get
+            {
+                return areaScanEnabled_;
+            }
+            set
+            {
+
+            }
+        }
 
         public override bool highGainModeEnabled
         {

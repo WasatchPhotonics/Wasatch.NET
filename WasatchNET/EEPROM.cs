@@ -49,17 +49,21 @@ namespace WasatchNET
         /// Current EEPROM format
         /// </summary>
         /// <remarks>
-        /// - rev 11
-        ///     - added subformat 3 (identical to subformat 1, but with page 7 used for Handheld Device settings)
+        /// - rev 14
+        ///     - adds SiG laser TEC and Has interlock feedback to feature mask
         /// </remarks>
-        protected const byte FORMAT = 12;
+        protected const byte FORMAT = 14;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
 
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
-        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE };
+        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS };
+        protected virtual void OnEEPROMChanged(EventArgs e)
+        {
+            EEPROMChanged?.Invoke(this, e);
+        }
 
         /////////////////////////////////////////////////////////////////////////       
         //
@@ -843,6 +847,201 @@ namespace WasatchNET
         byte _intensityCorrectionOrder;
 
         /////////////////////////////////////////////////////////////////////////       
+        // Page 6 & 7 (subformat DETECTOR_REGIONS)
+        /////////////////////////////////////////////////////////////////////////  
+
+        public float[] region1WavecalCoeffs
+        {
+            get { return _region1WavecalCoeffs; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                if (region1WavecalCoeffs is null || value.Length == region1WavecalCoeffs.Length)
+                    _region1WavecalCoeffs = value;
+                else
+                {
+                    int index = 0;
+                    while (index < value.Length)
+                    {
+                        _region1WavecalCoeffs[index] = value[index];
+                        ++index;
+                    }
+                    while (index < region1WavecalCoeffs.Length)
+                    {
+                        _region1WavecalCoeffs[index] = 0;
+                        ++index;
+                    }
+                }
+                handler?.Invoke(this, new EventArgs());
+
+            }
+        }
+        float[] _region1WavecalCoeffs;
+
+        public float[] region2WavecalCoeffs
+        {
+            get { return _region2WavecalCoeffs; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                if (region2WavecalCoeffs is null || value.Length == region2WavecalCoeffs.Length)
+                    _region2WavecalCoeffs = value;
+                else
+                {
+                    int index = 0;
+                    while (index < value.Length)
+                    {
+                        _region2WavecalCoeffs[index] = value[index];
+                        ++index;
+                    }
+                    while (index < region2WavecalCoeffs.Length)
+                    {
+                        _region2WavecalCoeffs[index] = 0;
+                        ++index;
+                    }
+                }
+                handler?.Invoke(this, new EventArgs());
+
+            }
+        }
+        float[] _region2WavecalCoeffs;
+
+        public float[] region3WavecalCoeffs
+        {
+            get { return _region3WavecalCoeffs; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                if (region3WavecalCoeffs is null || value.Length == region3WavecalCoeffs.Length)
+                    _region3WavecalCoeffs = value;
+                else
+                {
+                    int index = 0;
+                    while (index < value.Length)
+                    {
+                        _region3WavecalCoeffs[index] = value[index];
+                        ++index;
+                    }
+                    while (index < region3WavecalCoeffs.Length)
+                    {
+                        _region3WavecalCoeffs[index] = 0;
+                        ++index;
+                    }
+                }
+                handler?.Invoke(this, new EventArgs());
+
+            }
+        }
+        float[] _region3WavecalCoeffs;
+
+        public ushort region1HorizStart
+        {
+            get { return _region1HorizStart; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _region1HorizStart = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _region1HorizStart;
+
+        public ushort region1HorizEnd
+        {
+            get { return _region1HorizEnd; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _region1HorizEnd = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _region1HorizEnd;
+
+        public ushort region2HorizStart
+        {
+            get { return _region2HorizStart; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _region2HorizStart = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _region2HorizStart;
+
+        public ushort region2HorizEnd
+        {
+            get { return _region2HorizEnd; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _region2HorizEnd = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _region2HorizEnd;
+        
+        public ushort region3HorizStart
+        {
+            get { return _region3HorizStart; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _region3HorizStart = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _region3HorizStart;
+
+        public ushort region3HorizEnd
+        {
+            get { return _region3HorizEnd; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _region3HorizEnd = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _region3HorizEnd;
+        
+        public ushort region3VertStart
+        {
+            get { return _region3VertStart; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _region3VertStart = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _region3VertStart;
+
+        public ushort region3VertEnd
+        {
+            get { return _region3VertEnd; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _region3VertEnd = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _region3VertEnd;
+
+        public byte regionCount
+        {
+            get { return _regionCount; }
+            set
+            {
+                _regionCount = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _regionCount;
+
+        /////////////////////////////////////////////////////////////////////////       
         // Page 7 Handheld Devices
         /////////////////////////////////////////////////////////////////////////  
 
@@ -1369,6 +1568,37 @@ namespace WasatchNET
                             untetheredFeatureMask = ParseData.toUInt8(pages[7], 10);
                         }
                     }
+                    else if (subformat == PAGE_SUBFORMAT.DETECTOR_REGIONS)
+                    {
+                        region1WavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
+                        region2WavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
+                        region3WavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
+
+                        region1HorizStart = ParseData.toUInt16(pages[6], 0);
+                        region1HorizEnd = ParseData.toUInt16(pages[6], 2);
+                        region1WavecalCoeffs[0] = ParseData.toFloat(pages[6], 4);
+                        region1WavecalCoeffs[1] = ParseData.toFloat(pages[6], 8);
+                        region1WavecalCoeffs[2] = ParseData.toFloat(pages[6], 12);
+                        region1WavecalCoeffs[3] = ParseData.toFloat(pages[6], 16);
+
+                        region2HorizStart = ParseData.toUInt16(pages[6], 20);
+                        region2HorizEnd = ParseData.toUInt16(pages[6], 22);
+                        region2WavecalCoeffs[0] = ParseData.toFloat(pages[6], 24);
+                        region2WavecalCoeffs[1] = ParseData.toFloat(pages[6], 28);
+                        region2WavecalCoeffs[2] = ParseData.toFloat(pages[6], 32);
+                        region2WavecalCoeffs[3] = ParseData.toFloat(pages[6], 36);
+
+                        region3VertStart = ParseData.toUInt16(pages[6], 40);
+                        region3VertEnd = ParseData.toUInt16(pages[6], 42);
+                        region3HorizStart = ParseData.toUInt16(pages[6], 44);
+                        region3HorizEnd = ParseData.toUInt16(pages[6], 46);
+                        region3WavecalCoeffs[0] = ParseData.toFloat(pages[6], 48);
+                        region3WavecalCoeffs[1] = ParseData.toFloat(pages[6], 52);
+                        region3WavecalCoeffs[2] = ParseData.toFloat(pages[6], 56);
+                        region3WavecalCoeffs[3] = ParseData.toFloat(pages[6], 60);
+
+                        regionCount = ParseData.toUInt8(pages[7], 0);
+                    }
                 }
             }
             catch (Exception ex)
@@ -1433,8 +1663,8 @@ namespace WasatchNET
             adcToDegCCoeffs[2] = 0;
             thermistorResistanceAt298K = 0;
             thermistorBeta = 0;
-            calibrationDate = "01/01/2020";
-            calibrationBy = "RSC";
+            calibrationDate = "";
+            calibrationBy = "";
 
             detectorName = "";
             activePixelsHoriz = (ushort)1024;
@@ -1502,6 +1732,9 @@ namespace WasatchNET
             featureMask.invertXAxis = json.FlipXAxis;
             featureMask.gen15 = json.Gen15;
             featureMask.cutoffInstalled = json.CutoffFilter;
+            featureMask.evenOddHardwareCorrected = json.EvenOddHardwareCorrected;
+            featureMask.sigLaserTEC = json.SigLaserTEC;
+            featureMask.hasInterlockFeedback = json.HasInterlockFeedback;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -1577,15 +1810,54 @@ namespace WasatchNET
             if (json.ProductConfig != null)
                 productConfiguration = json.ProductConfig;
 
-            intensityCorrectionOrder = (byte)json.RelIntCorrOrder;
-            if (json.RelIntCorrOrder > 0)
-            {
-                intensityCorrectionCoeffs = new float[intensityCorrectionOrder + 1];
-                subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
+            PAGE_SUBFORMAT jsonSubformat = (PAGE_SUBFORMAT)json.Subformat;
 
-                for (int i = 0; i < intensityCorrectionCoeffs.Length; ++i)
-                    intensityCorrectionCoeffs[i] = (float)json.RelIntCorrCoeffs[i];
+            if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
+            {
+                intensityCorrectionOrder = (byte)json.RelIntCorrOrder;
+                if (json.RelIntCorrOrder > 0)
+                {
+                    intensityCorrectionCoeffs = new float[intensityCorrectionOrder + 1];
+                    subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
+
+                    for (int i = 0; i < intensityCorrectionCoeffs.Length; ++i)
+                        intensityCorrectionCoeffs[i] = (float)json.RelIntCorrCoeffs[i];
+                }
             }
+
+            if (jsonSubformat == PAGE_SUBFORMAT.DETECTOR_REGIONS)
+            {
+                region1WavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
+                region2WavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
+                region3WavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
+
+
+                region1WavecalCoeffs[0] = (float)json.Region1WavecalCoeffs[0];
+                region1WavecalCoeffs[1] = (float)json.Region1WavecalCoeffs[1];
+                region1WavecalCoeffs[2] = (float)json.Region1WavecalCoeffs[2];
+                region1WavecalCoeffs[3] = (float)json.Region1WavecalCoeffs[3];
+
+                region2WavecalCoeffs[0] = (float)json.Region2WavecalCoeffs[0];
+                region2WavecalCoeffs[1] = (float)json.Region2WavecalCoeffs[1];
+                region2WavecalCoeffs[2] = (float)json.Region2WavecalCoeffs[2];
+                region2WavecalCoeffs[3] = (float)json.Region2WavecalCoeffs[3];
+
+                region3WavecalCoeffs[0] = (float)json.Region3WavecalCoeffs[0];
+                region3WavecalCoeffs[1] = (float)json.Region3WavecalCoeffs[1];
+                region3WavecalCoeffs[2] = (float)json.Region3WavecalCoeffs[2];
+                region3WavecalCoeffs[3] = (float)json.Region3WavecalCoeffs[3];
+
+                region1HorizStart = (ushort)json.Region1HorizStart;
+                region1HorizEnd = (ushort)json.Region1HorizEnd;
+                region2HorizStart = (ushort)json.Region2HorizStart;
+                region2HorizEnd = (ushort)json.Region2HorizEnd;
+                region3HorizStart = (ushort)json.Region3HorizStart;
+                region3HorizEnd = (ushort)json.Region3HorizEnd;
+
+                regionCount = json.RegionCount;
+            }
+
+
         }
 
         public EEPROMJSON toJSON()
@@ -1699,27 +1971,73 @@ namespace WasatchNET
             }
             json.UserText = userText;
             json.ProductConfig = productConfiguration;
-            json.RelIntCorrOrder = intensityCorrectionOrder;
-            if (json.RelIntCorrOrder > 0 && intensityCorrectionCoeffs != null)
+            if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
             {
-                json.RelIntCorrCoeffs = new double[intensityCorrectionCoeffs.Length];
-                for (int i = 0; i <= json.RelIntCorrOrder; ++i)
+                json.RelIntCorrOrder = intensityCorrectionOrder;
+                if (json.RelIntCorrOrder > 0 && intensityCorrectionCoeffs != null)
                 {
-                    if (i < intensityCorrectionCoeffs.Length)
+                    json.RelIntCorrCoeffs = new double[intensityCorrectionCoeffs.Length];
+                    for (int i = 0; i <= json.RelIntCorrOrder; ++i)
                     {
-                        json.RelIntCorrCoeffs[i] = intensityCorrectionCoeffs[i];
+                        if (i < intensityCorrectionCoeffs.Length)
+                        {
+                            json.RelIntCorrCoeffs[i] = intensityCorrectionCoeffs[i];
+                        }
                     }
                 }
             }
+
             if (featureMask != null)
             {
                 json.Bin2x2 = featureMask.bin2x2;
                 json.FlipXAxis = featureMask.invertXAxis;
                 json.Gen15 = featureMask.gen15;
                 json.CutoffFilter = featureMask.cutoffInstalled;
+                json.EvenOddHardwareCorrected = featureMask.evenOddHardwareCorrected;
+                json.SigLaserTEC = featureMask.sigLaserTEC;
+                json.HasInterlockFeedback = featureMask.hasInterlockFeedback;
             }
 
             json.LaserWarmupS = laserWarmupSec;
+            json.Subformat = (byte)subformat;
+
+            if (subformat == PAGE_SUBFORMAT.DETECTOR_REGIONS)
+            {
+                json.Region1WavecalCoeffs = new double[4];
+                if (region1WavecalCoeffs != null)
+                {
+                    json.Region1WavecalCoeffs[0] = region1WavecalCoeffs[0];
+                    json.Region1WavecalCoeffs[1] = region1WavecalCoeffs[1];
+                    json.Region1WavecalCoeffs[2] = region1WavecalCoeffs[2];
+                    json.Region1WavecalCoeffs[3] = region1WavecalCoeffs[3];
+                }
+                json.Region2WavecalCoeffs = new double[4];
+                if (region2WavecalCoeffs != null)
+                {
+                    json.Region2WavecalCoeffs[0] = region2WavecalCoeffs[0];
+                    json.Region2WavecalCoeffs[1] = region2WavecalCoeffs[1];
+                    json.Region2WavecalCoeffs[2] = region2WavecalCoeffs[2];
+                    json.Region2WavecalCoeffs[3] = region2WavecalCoeffs[3];
+                }
+                json.Region3WavecalCoeffs = new double[4];
+                if (region3WavecalCoeffs != null)
+                {
+                    json.Region3WavecalCoeffs[0] = region3WavecalCoeffs[0];
+                    json.Region3WavecalCoeffs[1] = region3WavecalCoeffs[1];
+                    json.Region3WavecalCoeffs[2] = region3WavecalCoeffs[2];
+                    json.Region3WavecalCoeffs[3] = region3WavecalCoeffs[3];
+                }
+
+                json.Region1HorizStart = region1HorizStart;
+                json.Region1HorizEnd = region1HorizEnd;
+                json.Region2HorizStart = region2HorizStart;
+                json.Region2HorizEnd = region2HorizEnd;
+                json.Region3HorizStart = region3HorizStart;
+                json.Region3HorizEnd = region3HorizEnd;
+                json.Region3HorizStart = region3HorizStart;
+                json.Region3HorizEnd = region3HorizEnd;
+                json.RegionCount = regionCount;
+            }
 
             return json;
         }
@@ -2016,6 +2334,35 @@ namespace WasatchNET
                         namesWritten++;
                     }
                 }
+
+                if (subformat == PAGE_SUBFORMAT.DETECTOR_REGIONS)
+                {
+                    if (!ParseData.writeUInt16(region1HorizStart, pages[6], 0)) return false;
+                    if (!ParseData.writeUInt16(region1HorizEnd, pages[6], 2)) return false;
+                    if (!ParseData.writeFloat(region1WavecalCoeffs[0], pages[6], 4)) return false;
+                    if (!ParseData.writeFloat(region1WavecalCoeffs[1], pages[6], 8)) return false;
+                    if (!ParseData.writeFloat(region1WavecalCoeffs[2], pages[6], 12)) return false;
+                    if (!ParseData.writeFloat(region1WavecalCoeffs[3], pages[6], 16)) return false;
+
+                    if (!ParseData.writeUInt16(region2HorizStart, pages[6], 20)) return false;
+                    if (!ParseData.writeUInt16(region2HorizEnd, pages[6], 22)) return false;
+                    if (!ParseData.writeFloat(region2WavecalCoeffs[0], pages[6], 24)) return false;
+                    if (!ParseData.writeFloat(region2WavecalCoeffs[1], pages[6], 28)) return false;
+                    if (!ParseData.writeFloat(region2WavecalCoeffs[2], pages[6], 32)) return false;
+                    if (!ParseData.writeFloat(region2WavecalCoeffs[3], pages[6], 36)) return false;
+
+                    if (!ParseData.writeUInt16(region3VertStart, pages[6], 40)) return false;
+                    if (!ParseData.writeUInt16(region3VertEnd, pages[6], 42)) return false;
+                    if (!ParseData.writeUInt16(region3HorizStart, pages[6], 44)) return false;
+                    if (!ParseData.writeUInt16(region3HorizEnd, pages[6], 46)) return false;
+                    if (!ParseData.writeFloat(region3WavecalCoeffs[0], pages[6], 48)) return false;
+                    if (!ParseData.writeFloat(region3WavecalCoeffs[1], pages[6], 52)) return false;
+                    if (!ParseData.writeFloat(region3WavecalCoeffs[2], pages[6], 56)) return false;
+                    if (!ParseData.writeFloat(region3WavecalCoeffs[3], pages[6], 60)) return false;
+
+                    if (!ParseData.writeByte(regionCount, pages[7], 0)) return false;
+                }
+
             }
 
             else if (format >= 6)

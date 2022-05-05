@@ -1,5 +1,10 @@
 # Wasatch.NET Changelog
 
+- 2022-04-26 2.4.6
+	- added region subformat
+	- filled in JSON support for more recent EEPROM fields
+	- some minor updates to Andor camera operation
+	- added guardrails for SPI EEPROM read and temporarily disabled
 - 2022-03-21 2.4.5
     - added FeatureMask.SIG\_LASER\_TEC
     - added FeatureMask.HAS\_INTERLOCK\_FEEDBACK
