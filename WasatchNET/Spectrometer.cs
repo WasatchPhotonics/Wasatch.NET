@@ -1960,16 +1960,12 @@ namespace WasatchNET
                 laserEnabled = false;
             }
 
-            // if we're using a modern EEPROM format, automatically apply the stored gain/offset values
-            if (eeprom.format >= 4)
+            detectorGain = eeprom.detectorGain != 0f ? eeprom.detectorGain : 1.9f;
+            detectorOffset = eeprom.detectorOffset;
+            if (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2)
             {
-                detectorGain = eeprom.detectorGain;
-                detectorOffset = eeprom.detectorOffset;
-                if (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2)
-                {
-                    detectorGainOdd = eeprom.detectorGainOdd;
-                    detectorOffsetOdd = eeprom.detectorOffsetOdd;
-                }
+                detectorGainOdd = eeprom.detectorGainOdd;
+                detectorOffsetOdd = eeprom.detectorOffsetOdd;
             }
 
             logger.debug("Spectrometer.open: complete (initialized)");
