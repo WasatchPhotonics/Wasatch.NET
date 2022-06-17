@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2022-06-17 2.4.7
+    - fix to ensure gain always written (default 1.9 if EEPROM setting is zero)
 - 2022-04-26 2.4.6
 	- added region subformat
 	- filled in JSON support for more recent EEPROM fields
