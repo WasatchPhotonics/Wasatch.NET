@@ -212,6 +212,8 @@ namespace WinFormDemo
                 checkBoxLaserEnable.Checked = false;
             }
 
+            //checkBoxAccessoriesEnabled.Enabled = 
+
             checkBoxTakeDark.Enabled = buttonSave.Enabled = state.spectrum != null;
             checkBoxTakeReference.Enabled = state.spectrum != null && currentSpectrometer.dark != null;
 
@@ -447,6 +449,28 @@ namespace WinFormDemo
         private void checkBoxLaserEnable_CheckedChanged(object sender, EventArgs e)
         {
             currentSpectrometer.laserEnabled = checkBoxLaserEnable.Checked;
+        }
+
+        private void checkBoxRamanCorrection_CheckedChanged(object sender, EventArgs e)
+        {
+            logger.debug($"changing currentSpectrometer {currentSpectrometer.serialNumber} raman correction to {checkBoxRamanCorrection.Enabled}");
+            currentSpectrometer.ramanIntensityCorrectionEnabled = checkBoxRamanCorrection.Checked;
+            checkBoxTakeDark.Enabled = !checkBoxRamanCorrection.Checked;
+
+        }
+
+        private void checkBoxAccessoriesEnabled_CheckedChanged(object sender, EventArgs e)
+        {
+            logger.debug($"changing currentSpectrometer {currentSpectrometer.serialNumber} accessory enabled to {checkBoxAccessoriesEnabled.Enabled}");
+            currentSpectrometer.accessoryEnabled = checkBoxAccessoriesEnabled.Checked;
+            checkBoxLampEnabled.Enabled = checkBoxAccessoriesEnabled.Checked;
+        }
+
+        private void checkBoxLampEnabled_CheckedChanged(object sender, EventArgs e)
+        {
+            logger.debug($"changing currentSpectrometer {currentSpectrometer.serialNumber} lamp enabled to {checkBoxLampEnabled.Enabled}");
+            currentSpectrometer.lampEnabled = checkBoxLampEnabled.Checked;
+            logger.debug($"currentSpectrometer {currentSpectrometer.serialNumber} lamp enabled after set attempt is: {currentSpectrometer.lampEnabled}");
         }
 
         private void checkBoxTakeDark_CheckedChanged(object sender, EventArgs e)
@@ -922,14 +946,5 @@ namespace WinFormDemo
                     logger.debug("shutdown still pending %s", string.Join(", ", waitList));
             }
         }
-
-        private void checkBoxRamanCorrection_CheckedChanged(object sender, EventArgs e)
-        {
-            logger.debug($"changing currentSpectrometer {currentSpectrometer.serialNumber} raman correction to {checkBoxRamanCorrection.Enabled}");
-            currentSpectrometer.ramanIntensityCorrectionEnabled = checkBoxRamanCorrection.Checked;
-            checkBoxTakeDark.Enabled = !checkBoxRamanCorrection.Checked;
-
-        }
-
     }
 }

@@ -40,6 +40,7 @@ namespace WasatchNET
             // bRequest commands
             cmd[Opcodes.ACQUIRE_SPECTRUM                       ] = 0xad;
             cmd[Opcodes.FPGA_RESET                             ] = 0xb5;
+            //TO-DO: add GET_ACCESSORY_ENABLED once implemented
             cmd[Opcodes.GET_ACTUAL_FRAMES                      ] = 0xe4;
             cmd[Opcodes.GET_ACTUAL_INTEGRATION_TIME            ] = 0xdf;
             cmd[Opcodes.GET_ADC_RAW                            ] = 0xd5;
@@ -60,6 +61,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_FPGA_REVISION                      ] = 0xb4;
             cmd[Opcodes.GET_HORIZONTAL_BINNING                 ] = 0xbc;
             cmd[Opcodes.GET_INTEGRATION_TIME                   ] = 0xbf;
+            cmd[Opcodes.GET_LAMP_ENABLE                        ] = 0x33;
             cmd[Opcodes.GET_LASER_ENABLE                       ] = 0xe2;
             cmd[Opcodes.GET_LASER_INTERLOCK                    ] = 0xef; // aka, CAN_LASER_FIRE
             cmd[Opcodes.GET_LASER_MOD_DURATION                 ] = 0xc3;
@@ -76,7 +78,8 @@ namespace WasatchNET
             cmd[Opcodes.POLL_DATA                              ] = 0xd4; // aka, GET_UNTETHERED_CAPTURE_STATUS
             cmd[Opcodes.SECOND_TIER_COMMAND                    ] = 0xff;
             //cmd[Opcodes.SET_AREA_SCAN_ENABLE                   ] = 0xe9; // was: SET_LASER_RAMPING_ENABLE
-            cmd[Opcodes.SET_AREA_SCAN_ENABLE                   ] = 0xeb; //LMAOOOOOOO, legacy opcode
+            cmd[Opcodes.SET_ACCESSORY_ENABLE                   ] = 0x22;
+            cmd[Opcodes.SET_AREA_SCAN_ENABLE                   ] = 0xeb; // legacy opcode...is the actual opcode now
             cmd[Opcodes.SET_CF_SELECT                          ] = 0xeb;
             cmd[Opcodes.SET_CONTINUOUS_ACQUISITION             ] = 0xc8;
             cmd[Opcodes.SET_CONTINUOUS_FRAMES                  ] = 0xc9;
@@ -91,6 +94,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_DFU_MODE                           ] = 0xfe;
             cmd[Opcodes.SET_HORIZONTAL_BINNING                 ] = 0xb8;
             cmd[Opcodes.SET_INTEGRATION_TIME                   ] = 0xb2;
+            cmd[Opcodes.SET_LAMP_ENABLE                        ] = 0x32;
             cmd[Opcodes.SET_LASER_ENABLE                       ] = 0xbe;
             cmd[Opcodes.SET_LASER_MOD_DURATION                 ] = 0xb9;
             cmd[Opcodes.SET_LASER_MOD_ENABLE                   ] = 0xbd;

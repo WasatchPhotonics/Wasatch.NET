@@ -134,6 +134,7 @@ namespace WasatchNET
             productConfiguration = "";
 
             intensityCorrectionOrder = 0;
+            featureMask.gen15 = false;
 
             return true;
         }

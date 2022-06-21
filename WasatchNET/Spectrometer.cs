@@ -157,6 +157,11 @@ namespace WasatchNET
         public bool isSPI { get; protected set; } = false;
 
         /// <summary>
+        /// Whether the spectrometer uses a "Gen 1.5" accessory connector
+        /// </summary>
+        public bool isGen15 { get => eeprom.featureMask.gen15; }
+
+        /// <summary>
         /// Stroker is a legacy board firmware with older PID (not 0x1000, 0x2000 
         /// or 0x4000), doesn't conform to Feature Identification Device (FID) 
         /// Protocol, and lacking an EEPROM.
@@ -260,6 +265,35 @@ namespace WasatchNET
         /// and autoTrigger is enabled (both the default).
         /// </todo>
         public bool throwawayAfterIntegrationTime { get; set; }
+
+
+        /// <summary>
+        /// Determines whether or not the Gen1.5 accessory connector's features can be used
+        /// </summary>
+        ///
+        /// <todo>
+        /// Cache getter and use actual command once implemented...for now it only exists in software
+        /// </todo>
+        public virtual bool accessoryEnabled
+        {
+            get
+            {
+                return accessoryEnabled_;
+            }
+
+            set
+            {
+                if (isGen15)
+                {
+                    //TO-DO: add cache here once GETTER enabled in firmware
+                    if (value == accessoryEnabled_)
+                        return;
+
+                    sendCmd(Opcodes.SET_ACCESSORY_ENABLE, (ushort)((accessoryEnabled_ = value) ? 1 : 0));
+                }
+            }
+        }
+        protected bool accessoryEnabled_ = false;
 
         /// <summary>
         /// Whether the driver should automatically send a software trigger on
@@ -1148,6 +1182,41 @@ namespace WasatchNET
             }
         }
         protected uint integrationTimeMS_;
+
+
+        public virtual bool lampEnabled
+        {
+            get
+            {
+                if (isGen15)
+                {
+                    const Opcodes op = Opcodes.GET_LAMP_ENABLE;
+                    if (haveCache(op))
+                        return lampEnabled_;
+                    readOnce.Add(op);
+                    return lampEnabled_ = Unpack.toBool(getCmd(op, 1));
+                }
+                else
+                {
+                    return lampEnabled_;
+                }
+            }
+            set
+            {
+                if (isGen15 && accessoryEnabled)
+                {
+                    const Opcodes op = Opcodes.GET_LAMP_ENABLE;
+                    if (haveCache(op) && value == lampEnabled_)
+                        return;
+
+                    var buf = isARM ? new byte[8] : new byte[0];
+                    sendCmd(Opcodes.SET_LAMP_ENABLE, (ushort)((lampEnabled_ = value) ? 1 : 0), buf: buf);
+                    readOnce.Add(op);
+                }
+            }
+        }
+        protected bool lampEnabled_ = false;
+
 
         public virtual bool laserEnabled // dangerous one to cache...
         {

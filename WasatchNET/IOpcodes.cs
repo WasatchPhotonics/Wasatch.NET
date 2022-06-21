@@ -14,6 +14,7 @@ namespace WasatchNET
         ACQUIRE_SPECTRUM,
         ERASE_STORAGE,
         FPGA_RESET,
+        GET_ACCESSORY_ENABLE,
         GET_ACTUAL_FRAMES,
         GET_ACTUAL_INTEGRATION_TIME,
         GET_ADC_RAW,
@@ -39,6 +40,7 @@ namespace WasatchNET
         GET_STORAGE,
         GET_HORIZONTAL_BINNING,
         GET_INTEGRATION_TIME,
+        GET_LAMP_ENABLE,
         GET_LASER_ENABLE,
         GET_LASER_FIRING,       // i.e. IS_LASER_FIRING
         GET_LASER_INTERLOCK,    // i.e. CAN_LASER_FIRE
@@ -66,6 +68,7 @@ namespace WasatchNET
         GET_TRIGGER_SOURCE,
         POLL_DATA,
         SECOND_TIER_COMMAND,
+        SET_ACCESSORY_ENABLE,
         SET_AREA_SCAN_ENABLE,
         SET_CF_SELECT,
         SET_CONTINUOUS_ACQUISITION,
@@ -84,6 +87,7 @@ namespace WasatchNET
         SET_FEEDBACK,
         SET_HORIZONTAL_BINNING,
         SET_INTEGRATION_TIME,
+        SET_LAMP_ENABLE,
         SET_LASER_ENABLE,
         SET_LASER_MOD_DURATION,
         SET_LASER_MOD_ENABLE,
