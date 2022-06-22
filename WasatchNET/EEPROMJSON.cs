@@ -234,7 +234,7 @@ namespace WasatchNET
         bool floatEq(double a, double b, double thresh = 0.0001f)
         {
             // At default threshold, doubles must be >0.01% different (relative to intensity) to be considered unequal
-            if (Math.Abs(a - b) > (thresh * a))
+            if (Math.Abs(a - b) > Math.Abs(thresh * a))
                 return false;
 
             return true;
@@ -399,6 +399,7 @@ namespace WasatchNET
 
             addField(sb, indent, "UserText", UserText);
             addField(sb, indent, "ProductConfig", ProductConfig);
+            addField(sb, indent, "Subformat", Subformat);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE)
                 addField(sb, indent, "RelIntCorrOrder", RelIntCorrOrder);
