@@ -135,6 +135,7 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
             productConfiguration = "";
             intensityCorrectionOrder = 0;
+            featureMask.gen15 = false;
 
             return true;
         }

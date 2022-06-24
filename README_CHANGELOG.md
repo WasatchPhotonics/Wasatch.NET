@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2022-06-21 2.4.8
+	- added user control over some Gen1.5 features (in demo as well)
 - 2022-06-17 2.4.7
     - fix to ensure gain always written (default 1.9 if EEPROM setting is zero)
 - 2022-04-26 2.4.6

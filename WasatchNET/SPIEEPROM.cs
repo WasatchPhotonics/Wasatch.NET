@@ -314,6 +314,7 @@ namespace WasatchNET
 
             enforceReasonableDefaults();
             defaultValues = false;
+            featureMask.gen15 = false;
 
             format = FORMAT;
 

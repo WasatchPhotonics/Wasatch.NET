@@ -32,6 +32,7 @@ namespace WasatchNET
         bool isARM { get; }
         bool isSiG { get; }
         bool isSPI { get; }
+        bool isGen15 { get; }
         bool isInGaAs { get; }
         bool hasLaser { get; }
 
@@ -79,6 +80,11 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
         // Properties
         ////////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// Determines whether or not the Gen1.5 accessory connector's features can be used
+        /// </summary>
+        bool accessoryEnabled { get; set; }
 
         /// <summary>
         /// How many frames have been read since last power cycle (has overflow)
@@ -143,6 +149,12 @@ namespace WasatchNET
         /// Current integration time in milliseconds.
         /// </summary>
         uint integrationTimeMS { get; set; }
+
+        /// <summary>
+        /// Whether the lamp attached via Gen 1.5 attachment has been requested to be turned on 
+        /// by the software and firmware.
+        /// </summary>
+        bool lampEnabled { get; set; }
 
         /// <summary>
         /// Whether the laser has been REQUESTED TO FIRE by the software and 
