@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Linq;
 using LibUsbDotNet.Main;
 using MPSSELight;
@@ -361,49 +362,46 @@ namespace WasatchNET
             mpsse.Dispose();
         }
 
-        public override double[] getSpectrum(bool forceNew = false)
+        public override async Task<double[]> getSpectrum(bool forceNew = false)
         {
-            lock (acquisitionLock)
+            double[] sum = await getSpectrumRaw();
+            if (sum == null)
             {
-                double[] sum = getSpectrumRaw();
-                if (sum == null)
-                {
-                    logger.error("getSpectrum: getSpectrumRaw returned null");
-                    return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
+                logger.error("getSpectrum: getSpectrumRaw returned null");
+                return null;
+            }
+            logger.debug("getSpectrum: received {0} pixels", sum.Length);
 
-                if (scanAveraging_ > 1)
+            if (scanAveraging_ > 1)
+            {
+                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                for (uint i = 1; i < scanAveraging_; i++)
                 {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
-                    {
-                        double[] tmp = getSpectrumRaw();
-                        if (tmp == null)
-                            return null;
-
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] += tmp[px];
-                    }
+                    double[] tmp = await getSpectrumRaw();
+                    if (tmp == null)
+                        return null;
 
                     for (int px = 0; px < pixels; px++)
-                        sum[px] /= scanAveraging_;
+                        sum[px] += tmp[px];
                 }
 
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
+                for (int px = 0; px < pixels; px++)
+                    sum[px] /= scanAveraging_;
+            }
 
-                if (boxcarHalfWidth > 0)
-                {
-                    // logger.debug("getSpectrum: returning boxcar");
-                    return Util.applyBoxcar(boxcarHalfWidth, sum);
-                }
-                else
-                {
-                    // logger.debug("getSpectrum: returning sum");
-                    return sum;
-                }
+            if (dark != null && dark.Length == sum.Length)
+                for (int px = 0; px < pixels; px++)
+                    sum[px] -= dark_[px];
+
+            if (boxcarHalfWidth > 0)
+            {
+                // logger.debug("getSpectrum: returning boxcar");
+                return Util.applyBoxcar(boxcarHalfWidth, sum);
+            }
+            else
+            {
+                // logger.debug("getSpectrum: returning sum");
+                return sum;
             }
         }
 
@@ -527,7 +525,7 @@ namespace WasatchNET
         }
 
 
-        protected override double[] getSpectrumRaw(bool skipTrigger=false)
+        protected override async Task<double[]> getSpectrumRaw(bool skipTrigger=false)
         {
             logger.debug("requesting spectrum");
             ////////////////////////////////////////////////////////////////////
@@ -552,7 +550,7 @@ namespace WasatchNET
             byte[] command = padding((int)pixels * 2 + STANDARD_PADDING * 2);
 
             //actual result
-            byte[] result = spi.readWrite(command);
+            byte[] result = await Task.Run(() => spi.readWrite(command));
 
             //unpack pixels
             for (int i = 0; i < pixels; ++i)

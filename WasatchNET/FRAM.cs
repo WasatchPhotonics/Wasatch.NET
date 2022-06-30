@@ -64,13 +64,13 @@ namespace WasatchNET
                         opcode: Opcodes.SECOND_TIER_COMMAND,
                         wValue: spectrometer.cmd[Opcodes.WRITE_LIBRARY],
                         wIndex: combinedVal,
-                        buf: pages[page]);
+                        buf: pages[page]).Result;
             }
             ok = spectrometer.sendCmd(
                 opcode: Opcodes.SECOND_TIER_COMMAND,
                 wValue: spectrometer.cmd[Opcodes.PROCESS_LIBRARY],
                 wIndex: baselineFlags,
-                buf: send_buf);
+                buf: send_buf).Result;
             return true;
         }
 
@@ -108,7 +108,7 @@ namespace WasatchNET
             librarySpectrum = new List<ushort>();
             for (ushort page = FRAM_LIB_START; page < FRAM_LIB_END; page++)
             {
-                byte[] buf = spectrometer.getStorage(page);
+                byte[] buf = spectrometer.getStorage(page).Result;
                 if (buf is null)
                 {
                     return true;

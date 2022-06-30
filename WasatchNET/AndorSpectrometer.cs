@@ -155,59 +155,53 @@ namespace WasatchNET
 
         // will eventually need to override getAreaScanLightweight() and/or getFrame()
         // at that point will need to add calls to change acquisition mode/read mode here
-        public override double[] getSpectrum(bool forceNew = false)
+        public override async Task<double[]> getSpectrum(bool forceNew = false)
         {
-            
-            lock (acquisitionLock)
+            double[] sum = await getSpectrumRaw();
+            if (sum == null)
             {
-                double[] sum = getSpectrumRaw();
-                if (sum == null)
-                {
-                    logger.error("getSpectrum: getSpectrumRaw returned null");
-                    return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
-
-                if (scanAveraging_ > 1)
-                {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
-                    {
-                        double[] tmp = getSpectrumRaw();
-                        if (tmp == null)
-                            return null;
-
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] += tmp[px];
-                    }
-
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] /= scanAveraging_;
-                }
-
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
-
-                correctBadPixels(ref sum);
-
-                if (boxcarHalfWidth > 0)
-                {
-                    // logger.debug("getSpectrum: returning boxcar");
-                    return Util.applyBoxcar(boxcarHalfWidth, sum);
-                }
-                else
-                {
-                    // logger.debug("getSpectrum: returning sum");
-                    return sum;
-                }
+                logger.error("getSpectrum: getSpectrumRaw returned null");
+                return null;
             }
-            
+            logger.debug("getSpectrum: received {0} pixels", sum.Length);
 
+            if (scanAveraging_ > 1)
+            {
+                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                for (uint i = 1; i < scanAveraging_; i++)
+                {
+                    double[] tmp = await getSpectrumRaw();
+                    if (tmp == null)
+                        return null;
+
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] += tmp[px];
+                }
+
+                for (int px = 0; px < pixels; px++)
+                    sum[px] /= scanAveraging_;
+            }
+
+            if (dark != null && dark.Length == sum.Length)
+                for (int px = 0; px < pixels; px++)
+                    sum[px] -= dark_[px];
+
+            correctBadPixels(ref sum);
+
+            if (boxcarHalfWidth > 0)
+            {
+                // logger.debug("getSpectrum: returning boxcar");
+                return Util.applyBoxcar(boxcarHalfWidth, sum);
+            }
+            else
+            {
+                // logger.debug("getSpectrum: returning sum");
+                return sum;
+            }
         }
 
         // returns vertically-binned 1D array
-        protected override double[] getSpectrumRaw(bool skipTrigger = false)
+        protected override async Task<double[]> getSpectrumRaw(bool skipTrigger = false)
         {
             logger.debug("requesting spectrum");
             ////////////////////////////////////////////////////////////////////
@@ -222,7 +216,7 @@ namespace WasatchNET
                 spec = new int[pixels];     //defaults to all zeros
                 andorDriver.StartAcquisition();
                 andorDriver.WaitForAcquisition();
-                uint success = andorDriver.GetAcquiredData(spec, (uint)(pixels));
+                uint success = await Task.Run(() => andorDriver.GetAcquiredData(spec, (uint)(pixels)));
 
                 if (success != DRV_SUCCESS)
                     return null;

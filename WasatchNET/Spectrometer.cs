@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 
@@ -585,7 +586,7 @@ namespace WasatchNET
         {
             get
             {
-                return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES, 2));
+                return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES, 2).Result);
             }
         }
 
@@ -593,7 +594,7 @@ namespace WasatchNET
         {
             get
             {
-                uint value = Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 6));
+                uint value = Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 6).Result);
                 return (value == 0xffffff) ? 0 : value;
             }
         }
@@ -611,7 +612,7 @@ namespace WasatchNET
                 //    return 0;
                 if (isSiG)
                     return 0;
-                ushort orig = Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2));
+                ushort orig = Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2).Result);
                 // ushort corrected = swapBytes(orig);
                 ushort retval = (ushort)(orig & 0xfff);
                 logger.debug("adcRaw: raw 0x{0:x4} ({0,4})  retval 0x{1:x4} ({1,4})",
@@ -635,7 +636,7 @@ namespace WasatchNET
 
                 // Unpack.toUint assumes little-endian order, but this is a custom 
                 // register, so let's re-order the received bytes to match the ICD
-                uint tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, 3));
+                uint tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, 3).Result);
                 uint lsb = (byte)(tmp & 0xff);
                 uint msb = (byte)((tmp >>  8) & 0xff);
                 uint chg = (byte)((tmp >> 16) & 0xff);
@@ -681,7 +682,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return continuousAcquisitionEnable_;
                 readOnce.Add(op);
-                return continuousAcquisitionEnable_ = Unpack.toBool(getCmd(op, 1));
+                return continuousAcquisitionEnable_ = Unpack.toBool(getCmd(op, 1).Result);
             }
             set
             {
@@ -703,7 +704,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return continuousFrames_;
                 readOnce.Add(op);
-                return continuousFrames_ = Unpack.toByte(getCmd(op, 1));
+                return continuousFrames_ = Unpack.toByte(getCmd(op, 1).Result);
             }
             set
             {
@@ -725,7 +726,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorGain_;
                 readOnce.Add(op);
-                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2)));
+                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2).Result));
             }
             set
             {
@@ -752,7 +753,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorGainOdd_;
                 readOnce.Add(op);
-                return detectorGainOdd_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2)));
+                return detectorGainOdd_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2).Result));
             }
             set
             {
@@ -779,7 +780,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorOffset_;
                 readOnce.Add(op);
-                return detectorOffset_ = Unpack.toShort(getCmd(op, 2));
+                return detectorOffset_ = Unpack.toShort(getCmd(op, 2).Result);
             }
             set
             {
@@ -806,7 +807,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorOffsetOdd_;
                 readOnce.Add(op);
-                return detectorOffsetOdd_ = Unpack.toShort(getCmd(op, 2));
+                return detectorOffsetOdd_ = Unpack.toShort(getCmd(op, 2).Result);
             }
             set
             {
@@ -833,7 +834,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorSensingThresholdEnabled_;
                 readOnce.Add(op);
-                return detectorSensingThresholdEnabled_ = Unpack.toBool(getCmd(op, 1));
+                return detectorSensingThresholdEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
             }
             set
             {
@@ -855,7 +856,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorSensingThreshold_;
                 readOnce.Add(op);
-                return detectorSensingThreshold_ = Unpack.toUshort(getCmd(op, 2));
+                return detectorSensingThreshold_ = Unpack.toUshort(getCmd(op, 2).Result);
             }
             set
             {
@@ -877,7 +878,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorStartLine_;
                 readOnce.Add(op);
-                return detectorStartLine_ = Unpack.toUshort(getCmd2(op, 2));
+                return detectorStartLine_ = Unpack.toUshort(getCmd2(op, 2).Result);
             }
             set
             {
@@ -899,7 +900,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorStopLine_;
                 readOnce.Add(op);
-                return detectorStopLine_ = Unpack.toUshort(getCmd2(op, 2));
+                return detectorStopLine_ = Unpack.toUshort(getCmd2(op, 2).Result);
             }
             set
             {
@@ -923,7 +924,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorTECEnabled_;
                 readOnce.Add(op);
-                return detectorTECEnabled_ = Unpack.toBool(getCmd(op, 1));
+                return detectorTECEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
             }
             set
             {
@@ -972,7 +973,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorTECSetpointRaw_;
                 readOnce.Add(op);
-                return detectorTECSetpointRaw_ = Unpack.toUshort(getCmd(op, 2, wIndex: 0));
+                return detectorTECSetpointRaw_ = Unpack.toUshort(getCmd(op, 2, wIndex: 0).Result);
             }
             set
             {
@@ -1021,7 +1022,7 @@ namespace WasatchNET
                 DateTime now = DateTime.Now;
                 if (detectorTemperatureRaw_ == 0 || ((now - detectorTemperatureRawTimestamp).TotalMilliseconds >= detectorTemperatureCacheTimeMS))
                 {
-                    detectorTemperatureRaw_ = swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2)));
+                    detectorTemperatureRaw_ = swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2).Result));
                     detectorTemperatureRawTimestamp = now;
                 }
                 return detectorTemperatureRaw_;
@@ -1038,7 +1039,7 @@ namespace WasatchNET
                 const Opcodes op = Opcodes.GET_FIRMWARE_REVISION;
                 if (haveCache(op))
                     return firmwareRevision_;
-                byte[] buf = getCmd(op, 4);
+                byte[] buf = getCmd(op, 4).Result;
                 if (buf is null)
                     return "ERROR";
                 string s = "";
@@ -1061,7 +1062,7 @@ namespace WasatchNET
                 const Opcodes op = Opcodes.GET_FPGA_REVISION;
                 if (haveCache(op))
                     return fpgaRevision_;
-                byte[] buf = getCmd(op, 7);
+                byte[] buf = getCmd(op, 7).Result;
                 if (buf is null)
                     return "UNKNOWN";
                 string s = "";
@@ -1083,7 +1084,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return highGainModeEnabled_;
                 readOnce.Add(op);
-                return highGainModeEnabled_ = Unpack.toBool(getCmd(op, 1));
+                return highGainModeEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
             }
             set
             {
@@ -1110,7 +1111,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return horizontalBinning_;
                 horizontalBinning_ = HORIZONTAL_BINNING.ERROR;
-                byte[] buf = getCmd(op, 1);
+                byte[] buf = getCmd(op, 1).Result;
                 if (buf != null)
                     switch (buf[0])
                     {
@@ -1143,7 +1144,7 @@ namespace WasatchNET
                 const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
                 if (haveCache(op))
                     return integrationTimeMS_;
-                byte[] buf = getCmd(op, 3, fullLen: 6);
+                byte[] buf = getCmd(op, 3, fullLen: 6).Result;
                 if (buf is null)
                     return 0;
                 readOnce.Add(op);
@@ -1155,30 +1156,30 @@ namespace WasatchNET
                 if (haveCache(op) && value == integrationTimeMS_)
                     return;
 
-                lock (acquisitionLock)
-                {
-                    // temporarily disabled EEPROM range-checking by customer 
-                    // request; range limits in EEPROM are defined as 16-bit 
-                    // values, while integration time is actually a 24-bit value,
-                    // such that the EEPROM is artificially limiting our range.
-                    //
-                    // uint ms = Math.Max(eeprom.minIntegrationTimeMS, Math.Min(eeprom.maxIntegrationTimeMS, value));
+                // temporarily disabled EEPROM range-checking by customer 
+                // request; range limits in EEPROM are defined as 16-bit 
+                // values, while integration time is actually a 24-bit value,
+                // such that the EEPROM is artificially limiting our range.
+                //
+                // uint ms = Math.Max(eeprom.minIntegrationTimeMS, Math.Min(eeprom.maxIntegrationTimeMS, value));
 
-                    uint ms = value;
-                    ushort lsw = (ushort)(ms & 0xffff);
-                    ushort msw = (ushort)((ms >> 16) & 0x00ff);
+                uint ms = value;
+                ushort lsw = (ushort)(ms & 0xffff);
+                ushort msw = (ushort)((ms >> 16) & 0x00ff);
 
-                    // logger.debug("setIntegrationTimeMS: {0} ms = lsw {1:x4} msw {2:x4}", ms, lsw, msw);
-                    byte[] buf = null;
-                    if (isARM || isStroker)
-                        buf = new byte[8];
-                    sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf);
-                    integrationTimeMS_ = ms;
-                    readOnce.Add(op);
+                // logger.debug("setIntegrationTimeMS: {0} ms = lsw {1:x4} msw {2:x4}", ms, lsw, msw);
+                byte[] buf = null;
+                if (isARM || isStroker)
+                    buf = new byte[8];
+                
 
-                    if (throwawayAfterIntegrationTime)
-                        performThrowawaySpectrum();
-                }
+                sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf).Wait();
+                integrationTimeMS_ = ms;
+                readOnce.Add(op);
+
+                if (throwawayAfterIntegrationTime)
+                    performThrowawaySpectrum();
+                
             }
         }
         protected uint integrationTimeMS_;
@@ -1194,7 +1195,7 @@ namespace WasatchNET
                     if (haveCache(op))
                         return lampEnabled_;
                     readOnce.Add(op);
-                    return lampEnabled_ = Unpack.toBool(getCmd(op, 1));
+                    return lampEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
                 }
                 else
                 {
@@ -1226,7 +1227,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserEnabled_;
                 readOnce.Add(op);
-                return laserEnabled_ = Unpack.toBool(getCmd(op, 1));
+                return laserEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
             }
             set
             {
@@ -1248,7 +1249,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationEnabled_;
                 readOnce.Add(op);
-                return laserModulationEnabled_ = Unpack.toBool(getCmd(op, 1));
+                return laserModulationEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
             }
             set
             {
@@ -1271,7 +1272,7 @@ namespace WasatchNET
                     logger.debug("GET_LASER_FIRING requires HAS_INTERLOCK_FEEDBACK");
                     return false;
                 }
-                return Unpack.toBool(getCmd2(Opcodes.GET_LASER_FIRING, 1));
+                return Unpack.toBool(getCmd2(Opcodes.GET_LASER_FIRING, 1).Result);
             }
         }
 
@@ -1284,7 +1285,7 @@ namespace WasatchNET
                     logger.debug("GET_LASER_INTERLOCK requires HAS_INTERLOCK_FEEDBACK");
                     return false;
                 }
-                return Unpack.toBool(getCmd(Opcodes.GET_LASER_INTERLOCK, 1));
+                return Unpack.toBool(getCmd(Opcodes.GET_LASER_INTERLOCK, 1).Result);
             }
         }
 
@@ -1296,7 +1297,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationLinkedToIntegrationTime_;
                 readOnce.Add(op);
-                return laserModulationLinkedToIntegrationTime_ = Unpack.toBool(getCmd(op, 1));
+                return laserModulationLinkedToIntegrationTime_ = Unpack.toBool(getCmd(op, 1).Result);
             }
             set
             {
@@ -1318,7 +1319,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationPulseDelay_;
                 readOnce.Add(op);
-                return Unpack.toUint64(getCmd(op, 5));
+                return Unpack.toUint64(getCmd(op, 5).Result);
             }
             set
             {
@@ -1341,7 +1342,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationDuration_;
                 readOnce.Add(op);
-                return laserModulationDuration_ = Unpack.toUint64(getCmd(op, 5));
+                return laserModulationDuration_ = Unpack.toUint64(getCmd(op, 5).Result);
             }
             set
             {
@@ -1364,7 +1365,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationPeriod_;
                 readOnce.Add(op);
-                return laserModulationPeriod_ = Unpack.toUint64(getCmd(op, 5));
+                return laserModulationPeriod_ = Unpack.toUint64(getCmd(op, 5).Result);
             }
             set
             {
@@ -1387,7 +1388,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationPulseWidth_;
                 readOnce.Add(op);
-                return laserModulationPulseWidth_ = Unpack.toUint64(getCmd(op, 5));
+                return laserModulationPulseWidth_ = Unpack.toUint64(getCmd(op, 5).Result);
             }
             set
             {
@@ -1518,7 +1519,7 @@ namespace WasatchNET
                 if (isSiG) // || featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return 0;
                 readOnce.Add(op);
-                return laserTemperatureSetpointRaw_ = Unpack.toByte(getCmd(op, 1));
+                return laserTemperatureSetpointRaw_ = Unpack.toByte(getCmd(op, 1).Result);
             }
             set
             {
@@ -1543,7 +1544,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return lineLength_;
                 readOnce.Add(op);
-                return lineLength_ = Unpack.toUshort(getCmd2(op, 2));
+                return lineLength_ = Unpack.toUshort(getCmd2(op, 2).Result);
             }
         }
         uint lineLength_;
@@ -1556,7 +1557,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optAreaScan_;
                 readOnce.Add(op);
-                return optAreaScan_ = Unpack.toBool(getCmd2(op, 1));
+                return optAreaScan_ = Unpack.toBool(getCmd2(op, 1).Result);
             }
         }
         bool optAreaScan_;
@@ -1569,7 +1570,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optActualIntegrationTime_;
                 readOnce.Add(op);
-                return optActualIntegrationTime_ = Unpack.toBool(getCmd2(op, 1));
+                return optActualIntegrationTime_ = Unpack.toBool(getCmd2(op, 1).Result);
             }
         }
         bool optActualIntegrationTime_;
@@ -1582,7 +1583,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optCFSelect_;
                 readOnce.Add(op);
-                return optCFSelect_ = Unpack.toBool(getCmd2(op, 1));
+                return optCFSelect_ = Unpack.toBool(getCmd2(op, 1).Result);
             }
         }
         bool optCFSelect_;
@@ -1595,7 +1596,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optDataHeaderTag_;
                 readOnce.Add(op);
-                return optDataHeaderTag_ = fpgaOptions.parseDataHeader(Unpack.toInt(getCmd2(op, 1)));
+                return optDataHeaderTag_ = fpgaOptions.parseDataHeader(Unpack.toInt(getCmd2(op, 1).Result));
             }
         }
         FPGA_DATA_HEADER optDataHeaderTag_ = FPGA_DATA_HEADER.ERROR;
@@ -1608,7 +1609,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optHorizontalBinning_;
                 readOnce.Add(op);
-                return optHorizontalBinning_ = Unpack.toBool(getCmd2(op, 1));
+                return optHorizontalBinning_ = Unpack.toBool(getCmd2(op, 1).Result);
             }
         }
         bool optHorizontalBinning_;
@@ -1621,7 +1622,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optIntegrationTimeResolution_;
                 readOnce.Add(op);
-                return optIntegrationTimeResolution_ = fpgaOptions.parseResolution(Unpack.toInt(getCmd2(op, 1)));
+                return optIntegrationTimeResolution_ = fpgaOptions.parseResolution(Unpack.toInt(getCmd2(op, 1).Result));
             }
         }
         FPGA_INTEG_TIME_RES optIntegrationTimeResolution_ = FPGA_INTEG_TIME_RES.ERROR;
@@ -1634,7 +1635,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optLaserControl_;
                 readOnce.Add(op);
-                return optLaserControl_ = fpgaOptions.parseLaserControl(Unpack.toInt(getCmd2(op, 1)));
+                return optLaserControl_ = fpgaOptions.parseLaserControl(Unpack.toInt(getCmd2(op, 1).Result));
             }
         }
         FPGA_LASER_CONTROL optLaserControl_ = FPGA_LASER_CONTROL.ERROR;
@@ -1647,7 +1648,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optLaserType_;
                 readOnce.Add(op);
-                return optLaserType_ = fpgaOptions.parseLaserType(Unpack.toInt(getCmd2(op, 1)));
+                return optLaserType_ = fpgaOptions.parseLaserType(Unpack.toInt(getCmd2(op, 1).Result));
             }
         }
         FPGA_LASER_TYPE optLaserType_ = FPGA_LASER_TYPE.ERROR;
@@ -1692,7 +1693,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return selectedADC_;
                 readOnce.Add(op);
-                return selectedADC_ = Unpack.toByte(getCmd(op, 1));
+                return selectedADC_ = Unpack.toByte(getCmd(op, 1).Result);
             }
             set
             {
@@ -1722,7 +1723,7 @@ namespace WasatchNET
                     return triggerSource_;
                 }
 
-                byte[] buf = getCmd(Opcodes.GET_TRIGGER_SOURCE, 1);
+                byte[] buf = getCmd(Opcodes.GET_TRIGGER_SOURCE, 1).Result;
                 if (buf is null || buf[0] > 2)
                     return TRIGGER_SOURCE.ERROR;
                 readOnce.Add(op);
@@ -1763,7 +1764,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return triggerOutput_;
                 triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.ERROR;
-                byte[] buf = getCmd(Opcodes.GET_TRIGGER_OUTPUT, 1);
+                byte[] buf = getCmd(Opcodes.GET_TRIGGER_OUTPUT, 1).Result;
                 if (buf != null)
                 {
                     switch (buf[0])
@@ -1799,7 +1800,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return triggerDelay_;
                 readOnce.Add(op);
-                return triggerDelay_ = Unpack.toUint(getCmd(op, 3));
+                return triggerDelay_ = Unpack.toUint(getCmd(op, 3).Result);
             }
             set
             {
@@ -1821,34 +1822,34 @@ namespace WasatchNET
         // Untethered
         ////////////////////////////////////////////////////////////////////////
 
-        public byte[] getStorage(UInt16 page)
+        public async Task<byte[]> getStorage(UInt16 page)
         {
             if (featureIdentification.boardType != BOARD_TYPES.ARM)
                 return null;
-            return getCmd2(Opcodes.GET_STORAGE, 64, page);
+            return await getCmd2(Opcodes.GET_STORAGE, 64, page);
         }
 
-        public bool eraseStorage()
+        public async Task<bool> eraseStorage()
         {
             if (featureIdentification.boardType != BOARD_TYPES.ARM)
                 return false;
-            return sendCmd2(Opcodes.ERASE_STORAGE);
+            return await sendCmd2(Opcodes.ERASE_STORAGE);
         }
 
-        public bool sendFeedback(UInt16 sequence)
+        public async Task<bool> sendFeedback(UInt16 sequence)
         {
             if (featureIdentification.boardType != BOARD_TYPES.ARM)
                 return false;
-            return sendCmd2(Opcodes.SET_FEEDBACK, sequence);
+            return await sendCmd2(Opcodes.SET_FEEDBACK, sequence);
         }
 
-        public UntetheredCaptureStatus getUntetheredCaptureStatus()
+        public async Task<UntetheredCaptureStatus> getUntetheredCaptureStatus()
         {
             UntetheredCaptureStatus status = UntetheredCaptureStatus.ERROR;
             if (!isSiG)
                 return status;
 
-            byte result = Unpack.toByte(getCmd(Opcodes.POLL_DATA, 1));
+            byte result = Unpack.toByte(await getCmd(Opcodes.POLL_DATA, 1));
             if (result < (byte)UntetheredCaptureStatus.ERROR)
                 status = (UntetheredCaptureStatus)result;
             return status;
@@ -2308,7 +2309,7 @@ namespace WasatchNET
         /// <param name="fullLen">the actual number of expected return bytes (not all needed)</param>
         /// <remarks>not sure fullLen is actually required...testing</remarks>
         /// <returns>the array of returned bytes (null on error)</returns>
-        internal byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
+        internal async Task<byte[]> getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
         {
             if (shuttingDown)
                 return null;
@@ -2335,22 +2336,25 @@ namespace WasatchNET
             lock (commsLock)
             {
                 waitForUsbAvailable();
-                logger.debug("getCmd: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
-                bool result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
-
-                if (result != expectedSuccessResult || bytesRead < len)
-                {
-                    logger.error("getCmd: failed to get {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
-                        opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
-                    return null;
-                }
             }
+
+            logger.debug("getCmd: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
+            int bytesRead = 0;
+            bool result = await Task.Run(() => usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out bytesRead));
+
+            if (result != expectedSuccessResult || bytesRead < len)
+            {
+                logger.error("getCmd: failed to get {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
+                    opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
+                return null;
+            }
+            
 
             if (logger.debugEnabled())
                 logger.hexdump(buf, String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex));
 
             // extract just the bytes we really needed
-            return Util.truncateArray(buf, len);
+            return await Task.Run(() => Util.truncateArray(buf, len));
         }
 
         /// <summary>
@@ -2359,7 +2363,7 @@ namespace WasatchNET
         /// <param name="opcode">the wValue to send along with the "second-tier" command</param>
         /// <param name="len">how many bytes of response are expected</param>
         /// <returns>array of returned bytes (null on error)</returns>
-        internal byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0, int fakeBufferLengthARM = 0)
+        internal async Task<byte[]> getCmd2(Opcodes opcode, int len, ushort wIndex = 0, int fakeBufferLengthARM = 0)
         {
             if (shuttingDown)
                 return null;
@@ -2385,17 +2389,20 @@ namespace WasatchNET
             lock (commsLock)
             {
                 waitForUsbAvailable();
-                logger.debug("getCmd2: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
-                result = usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out int bytesRead);
-
-                if (result != expectedSuccessResult || bytesRead < len)
-                {
-                    logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
-                        opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
-                    logger.hexdump(buf, $"{opcode} result");
-                    return null;
-                }
             }
+
+            logger.debug("getCmd2: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
+            int bytesRead = 0;
+            result = await Task.Run(() => usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out bytesRead));
+
+            if (result != expectedSuccessResult || bytesRead < len)
+            {
+                logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
+                    opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
+                logger.hexdump(buf, $"{opcode} result");
+                return null;
+            }
+            
 
             if (logger.debugEnabled())
                 logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->",
@@ -2414,7 +2421,7 @@ namespace WasatchNET
         /// <param name="buf">a data buffer used by some commands</param>
         /// <returns>true on success, false on error</returns>
         /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
-        internal bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
+        internal async Task<bool> sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
             if (shuttingDown)
                 return false;
@@ -2447,18 +2454,19 @@ namespace WasatchNET
                 // and soft synchronization
                 if (opcode != Opcodes.SET_LASER_ENABLE && opcode != Opcodes.ACQUIRE_SPECTRUM)
                     waitForUsbAvailable();
-
-                logger.debug("sendCmd: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
-
-                bool result = usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
-
-                if (expectedSuccessResult != null && expectedSuccessResult.Value != result)
-                {
-                    logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
-                        opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, result, expectedSuccessResult);
-                    return false;
-                }
             }
+
+            logger.debug("sendCmd: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
+
+            bool result = await Task.Run(() => usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten));
+
+            if (expectedSuccessResult != null && expectedSuccessResult.Value != result)
+            {
+                logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
+                    opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, result, expectedSuccessResult);
+                return false;
+            }
+            
             return true;
         }
 
@@ -2470,7 +2478,7 @@ namespace WasatchNET
         /// <param name="buf">a data buffer used by some commands</param>
         /// <returns>true on success, false on error</returns>
         /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
-        internal bool sendCmd2(Opcodes opcode, ushort wIndex = 0, byte[] buf = null)
+        internal async Task<bool> sendCmd2(Opcodes opcode, ushort wIndex = 0, byte[] buf = null)
         {
             if (shuttingDown)
                 return false;
@@ -2479,6 +2487,7 @@ namespace WasatchNET
                 buf = new byte[8];
 
             ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
+
 
             UsbSetupPacket packet = new UsbSetupPacket(
                 HOST_TO_DEVICE,                     // bRequestType
@@ -2490,9 +2499,12 @@ namespace WasatchNET
             lock (commsLock)
             {
                 waitForUsbAvailable();
-                logger.debug("sendCmd2: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
-                return usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
             }
+
+            await Task.Run(() =>logger.debug("sendCmd2: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id));
+            int bytesWritten;
+            return await Task.Run(() => usbDevice.ControlTransfer(ref packet, buf, wLength, out bytesWritten));
+            
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -2611,23 +2623,23 @@ namespace WasatchNET
         protected float laserPowerSetpointMW_ = 0;
 
 
-        public ushort getDAC_UNUSED() { return Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEC_SETPOINT, 2, 1)); }
+        public async Task<ushort> getDAC_UNUSED() { return Unpack.toUshort(await getCmd(Opcodes.GET_DETECTOR_TEC_SETPOINT, 2, 1)); }
 
         // this is not a Property because it has no value and cannot be undone
-        public bool setDFUMode()
+        public async Task<bool> setDFUMode()
         {
             if (!isARM)
                 return logger.error("setDFUMode only applicable to ARM-based spectrometers (not {0})", featureIdentification.boardType);
 
             logger.info("Setting DFU mode");
-            return sendCmd(Opcodes.SET_DFU_MODE);
+            return await sendCmd(Opcodes.SET_DFU_MODE);
         }
 
         // this is not a Property because it has no value and cannot be undone
-        public bool resetFPGA()
+        public async Task<bool> resetFPGA()
         {
             logger.info("Resetting FPGA");
-            return sendCmd(Opcodes.FPGA_RESET);
+            return await sendCmd(Opcodes.FPGA_RESET);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -2726,130 +2738,129 @@ namespace WasatchNET
         /// <param name="forceNew">not used in base class (provided for specialized subclasses)</param>
         ///
         /// <returns>The acquired spectrum as an array of doubles</returns>
-        public virtual double[] getSpectrum(bool forceNew=false)
+        public virtual async Task<double[]> getSpectrum(bool forceNew=false)
         {
             var driver = Driver.getInstance();
-            lock (acquisitionLock)
+            
+            uptime.setError(uniqueKey); // assume acquisition may fail
+            currentAcquisitionCancelled = false;
+
+            int retries = 0;
+            double[] sum = null;
+            while (true)
             {
-                uptime.setError(uniqueKey); // assume acquisition may fail
-                currentAcquisitionCancelled = false;
-
-                int retries = 0;
-                double[] sum = null;
-                while (true)
-                {
-                    if (currentAcquisitionCancelled || shuttingDown)
-                        return null;
-
-                    if (areaScanEnabled && fastAreaScan)
-                    {
-                        try
-                        {
-                            sum = getAreaScanLightweight();
-                        }
-                        catch (Exception e)
-                        {
-                            logger.error("Area scan failed out with error {0}", e.Message);
-                        }
-                    }
-                    else
-                    {
-                        sum = getSpectrumRaw();
-                    }
-                    if (currentAcquisitionCancelled || shuttingDown)
-                        return null;
-
-                    if (sum != null)
-                        break;
-
-                    if (retries++ < acquisitionMaxRetries && !untetheredAcquisitionEnabled)
-                    {
-                        // retry the whole thing (including ACQUIRE)
-                        logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
-                        continue;
-                    }
-                    else if (errorOnTimeout)
-                    {
-                        // display error if configured
-                        logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
-                    }
+                if (currentAcquisitionCancelled || shuttingDown)
                     return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
 
-                if (scanAveraging_ > 1)
+                if (areaScanEnabled && fastAreaScan)
                 {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
+                    try
                     {
-                        // don't send a new SW trigger if using continuous acquisition
-                        double[] tmp;
-                        while (true)
-                        {
-                            if (currentAcquisitionCancelled || shuttingDown)
-                                return null;
-
-                            if (areaScanEnabled && fastAreaScan)
-                            {
-                                tmp = getAreaScanLightweight();
-                            }
-                            else
-                            {
-                                tmp = getSpectrumRaw();
-                            }
-
-                            if (currentAcquisitionCancelled || shuttingDown)
-                                return null;
-
-                            if (tmp != null)
-                                break;
-
-                            if (retries++ < acquisitionMaxRetries)
-                            {
-                                // retry the whole thing (including ACQUIRE)
-                                logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
-                                continue;
-                            }
-                            else if (errorOnTimeout)
-                            {
-                                // display error if configured
-                                logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
-                            }
-                            return null;
-                        }
-                        if (tmp is null)
-                            return null;
-
-                        for (int px = 0; px < sum.Length; px++)
-                            sum[px] += tmp[px];
+                        sum = getAreaScanLightweight();
                     }
+                    catch (Exception e)
+                    {
+                        logger.error("Area scan failed out with error {0}", e.Message);
+                    }
+                }
+                else
+                {
+                    sum = await getSpectrumRaw();
+                }
+                if (currentAcquisitionCancelled || shuttingDown)
+                    return null;
+
+                if (sum != null)
+                    break;
+
+                if (retries++ < acquisitionMaxRetries && !untetheredAcquisitionEnabled)
+                {
+                    // retry the whole thing (including ACQUIRE)
+                    logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                    continue;
+                }
+                else if (errorOnTimeout)
+                {
+                    // display error if configured
+                    logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                }
+                return null;
+            }
+            logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+            if (scanAveraging_ > 1)
+            {
+                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                for (uint i = 1; i < scanAveraging_; i++)
+                {
+                    // don't send a new SW trigger if using continuous acquisition
+                    double[] tmp;
+                    while (true)
+                    {
+                        if (currentAcquisitionCancelled || shuttingDown)
+                            return null;
+
+                        if (areaScanEnabled && fastAreaScan)
+                        {
+                            tmp = getAreaScanLightweight();
+                        }
+                        else
+                        {
+                            tmp = await getSpectrumRaw();
+                        }
+
+                        if (currentAcquisitionCancelled || shuttingDown)
+                            return null;
+
+                        if (tmp != null)
+                            break;
+
+                        if (retries++ < acquisitionMaxRetries)
+                        {
+                            // retry the whole thing (including ACQUIRE)
+                            logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                            continue;
+                        }
+                        else if (errorOnTimeout)
+                        {
+                            // display error if configured
+                            logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                        }
+                        return null;
+                    }
+                    if (tmp is null)
+                        return null;
 
                     for (int px = 0; px < sum.Length; px++)
-                        sum[px] /= scanAveraging_;
+                        sum[px] += tmp[px];
                 }
 
-                correctBadPixels(ref sum);
-
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
-
-                // important note on order of operations below - TS
-                if (ramanIntensityCorrectionEnabled)
-                    sum = correctRamanIntensity(sum);
-
-                // this should be enough to update the cached value
-                if (readTemperatureAfterSpectrum && eeprom.hasCooling)
-                    _ = detectorTemperatureDegC;
-
-                spectrumCount++;
-                uptime.setSuccess(uniqueKey);
-
-                if (boxcarHalfWidth_ > 0)
-                    return Util.applyBoxcar(boxcarHalfWidth_, sum);
-                else
-                    return sum;
+                for (int px = 0; px < sum.Length; px++)
+                    sum[px] /= scanAveraging_;
             }
+
+            correctBadPixels(ref sum);
+
+            if (dark != null && dark.Length == sum.Length)
+                for (int px = 0; px < pixels; px++)
+                    sum[px] -= dark_[px];
+
+            // important note on order of operations below - TS
+            if (ramanIntensityCorrectionEnabled)
+                sum = correctRamanIntensity(sum);
+
+            // this should be enough to update the cached value
+            if (readTemperatureAfterSpectrum && eeprom.hasCooling)
+                _ = detectorTemperatureDegC;
+
+            spectrumCount++;
+            uptime.setSuccess(uniqueKey);
+
+            if (boxcarHalfWidth_ > 0)
+                return Util.applyBoxcar(boxcarHalfWidth_, sum);
+            else
+                return sum;
+            
         }
 
 
@@ -2894,7 +2905,7 @@ namespace WasatchNET
 
         bool _ramanIntensityCorrectionEnabled = false;
 
-        public bool sendSWTrigger()
+        public async Task<bool> sendSWTrigger()
         {
             byte[] buf = null;
             if (isARM)
@@ -2903,7 +2914,7 @@ namespace WasatchNET
             logger.debug("sending SW trigger");
             acquireCount++;
             var wValue = (ushort)(untetheredAcquisitionEnabled ? 1 : 0);
-            return sendCmd(Opcodes.ACQUIRE_SPECTRUM, wValue, buf: buf);
+            return await sendCmd(Opcodes.ACQUIRE_SPECTRUM, wValue, buf: buf);
         }
 
         /// <summary>
@@ -2944,7 +2955,7 @@ namespace WasatchNET
         /// allows getSpectrum to suppress SW triggers when scanAveraging, on scans after
         /// the first, if scanAveragingIsContinuous
         /// </param>
-        protected virtual double[] getSpectrumRaw(bool skipTrigger=false)
+        protected virtual async Task<double[]> getSpectrumRaw(bool skipTrigger=false)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
             byte[] buf = null;
@@ -2963,7 +2974,7 @@ namespace WasatchNET
             }
 
             if (untetheredAcquisitionEnabled)
-                if (!waitForUntetheredData())
+                if (!waitForUntetheredData().Result)
                     return null;
 
             ////////////////////////////////////////////////////////////////////
@@ -2998,7 +3009,7 @@ namespace WasatchNET
                         }
                         else
                         {
-                            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                            subspectrum = await readSubspectrum(spectralReader, pixelsPerEndpoint);
                         }
                         break;
                     }
@@ -3107,12 +3118,12 @@ namespace WasatchNET
         }
 
         /// <returns>true if poll was successful (data ready), false on error</returns>
-        bool waitForUntetheredData()
+        async Task<bool> waitForUntetheredData()
         {
             while (true)
             {
                 Thread.Sleep(1000);
-                var status = getUntetheredCaptureStatus();
+                var status = await getUntetheredCaptureStatus();
                 logger.debug($"waitForUntetheredData: UntetheredCaptureStatus {status}");
                 if (status == UntetheredCaptureStatus.IDLE)
                     return true;
@@ -3376,7 +3387,7 @@ namespace WasatchNET
         // MZ: I don't like that "pixelsPerEndpoint" (which is already a Spectrometer
         //     attribute) is here being "shadowed" (overwritten) by a local parameter
         //     name.  Recommend picking a different parameter name.
-        uint[] readSubspectrum(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
+        async Task<uint[]> readSubspectrum(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
         {
             ////////////////////////////////////////////////////////////////////
             // Read all the expected bytes.  Don't mess with demarshalling into
@@ -3404,7 +3415,7 @@ namespace WasatchNET
                 {
                     int bytesToRead = bytesPerEndpoint - bytesReadThisEndpoint;
                     logger.debug($"readSubspectrum: attempting to read {bytesToRead} bytes of spectrum from endpoint 0x{spectralReader.EpNum:x2} with timeout {timeoutMS}ms ({id})");
-                    err = spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, bytesPerEndpoint - bytesReadThisEndpoint, timeoutMS, out bytesRead);
+                    err = await Task.Run(() => spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, bytesPerEndpoint - bytesReadThisEndpoint, timeoutMS, out bytesRead));
                     logger.debug($"readSubspectrum: read {bytesRead} bytes of spectrum from endpoint 0x{spectralReader.EpNum:x2} ({err}) ({id})");
                 }
                 catch (Exception ex)

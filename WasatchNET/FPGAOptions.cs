@@ -44,7 +44,7 @@ namespace WasatchNET
 
             // NOTE: ENG-0001 says this only returns 2 bytes, but empirical testing on ARM
             // suggests it actually returns more (yet we only use the first two)
-            byte[] buf = spectrometer.getCmd2(Opcodes.GET_COMPILATION_OPTIONS, 2, fakeBufferLengthARM: 8);
+            byte[] buf = spectrometer.getCmd2(Opcodes.GET_COMPILATION_OPTIONS, 2, fakeBufferLengthARM: 8).Result;
             if (buf == null)
                 return;
 

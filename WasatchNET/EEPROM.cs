@@ -1258,7 +1258,7 @@ namespace WasatchNET
                         opcode: Opcodes.SECOND_TIER_COMMAND,
                         wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM],
                         wIndex: (ushort)page,
-                        buf: pages[page]);
+                        buf: pages[page]).Result;
                 }
                 else
                 {
@@ -1269,7 +1269,7 @@ namespace WasatchNET
                         opcode: Opcodes.SET_MODEL_CONFIG_FX2,
                         wValue: pageOffset,
                         wIndex: 0,
-                        buf: pages[page]);
+                        buf: pages[page]).Result;
                 }
                 if (!ok)
                 {
@@ -1321,7 +1321,7 @@ namespace WasatchNET
             pages = new List<byte[]>();
             for (ushort page = 0; page < MAX_PAGES; page++)
             {
-                byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8).Result;
                 if (buf is null)
                 {
                     try
@@ -1363,7 +1363,7 @@ namespace WasatchNET
                 // read pages 8-73 (no need to do all MAX_PAGES_REAL)
                 for (ushort page = MAX_PAGES; page <= LIBRARY_STOP_PAGE; page++)
                 {
-                    byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                    byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8).Result;
                     pages.Add(buf);
                     logger.hexdump(buf, String.Format("read extra page {0}: ", page));
                 }

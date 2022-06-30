@@ -118,7 +118,7 @@ namespace WasatchNET
                     return;
                 }
 
-                peakCounts = spectrum.Max();
+                peakCounts = spectrum.Result.Max();
                 logger.debug($"{sn}:   max = {peakCounts}");
 
                 ////////////////////////////////////////////////////////////////

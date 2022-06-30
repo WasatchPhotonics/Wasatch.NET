@@ -1088,7 +1088,7 @@ namespace WasatchNET
             }
         }
 
-        public override double[] getSpectrum(bool forceNew = false)
+        public override async Task<double[]> getSpectrum(bool forceNew = false)
         {
             if (forceNew)
             {
