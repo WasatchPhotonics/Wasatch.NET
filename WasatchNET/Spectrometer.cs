@@ -2346,8 +2346,9 @@ namespace WasatchNET
 
             logger.debug("getCmd: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
             int bytesRead = 0;
-            bool result = await Task.Run(() => usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out bytesRead));
-
+            Task<bool> task = Task.Run(() => usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out bytesRead));
+            task.Wait();
+            bool result = await task;
             if (result != expectedSuccessResult || bytesRead < len)
             {
                 logger.error("getCmd: failed to get {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
@@ -2399,7 +2400,9 @@ namespace WasatchNET
 
             logger.debug("getCmd2: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
             int bytesRead = 0;
-            result = await Task.Run(() => usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out bytesRead));
+            Task<bool> task = Task.Run(() => usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out bytesRead));
+            task.Wait();
+            result = await task; 
 
             if (result != expectedSuccessResult || bytesRead < len)
             {
