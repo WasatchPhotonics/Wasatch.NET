@@ -1163,6 +1163,12 @@ namespace WasatchNET
                 //
                 // uint ms = Math.Max(eeprom.minIntegrationTimeMS, Math.Min(eeprom.maxIntegrationTimeMS, value));
 
+
+                lock (acquisitionLock)
+                {
+                    logger.debug("acquired acquisition lock for integration time");
+                }
+
                 uint ms = value;
                 ushort lsw = (ushort)(ms & 0xffff);
                 ushort msw = (ushort)((ms >> 16) & 0x00ff);
@@ -2744,6 +2750,11 @@ namespace WasatchNET
             
             uptime.setError(uniqueKey); // assume acquisition may fail
             currentAcquisitionCancelled = false;
+
+            lock (acquisitionLock)
+            {
+                logger.debug("acquired acquisition lock for get spectrum");
+            }
 
             int retries = 0;
             double[] sum = null;
