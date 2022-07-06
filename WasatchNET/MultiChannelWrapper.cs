@@ -534,7 +534,7 @@ namespace WasatchNET
                         continue;
 
                     logger.debug($"sending SW trigger to pos {pos}");
-                    spec.sendSWTrigger();
+                    await spec.sendSWTrigger();
                 }
             }
             lastTriggerSent = DateTime.Now;

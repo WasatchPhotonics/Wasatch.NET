@@ -290,7 +290,7 @@ namespace WasatchNET
                     if (value == accessoryEnabled_)
                         return;
 
-                    sendCmd(Opcodes.SET_ACCESSORY_ENABLE, (ushort)((accessoryEnabled_ = value) ? 1 : 0));
+                    Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_ACCESSORY_ENABLE, (ushort)((accessoryEnabled_ = value) ? 1 : 0)));
                 }
             }
         }
@@ -586,7 +586,8 @@ namespace WasatchNET
         {
             get
             {
-                return Unpack.toUshort(getCmd(Opcodes.GET_ACTUAL_FRAMES, 2).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(Opcodes.GET_ACTUAL_FRAMES, 2));
+                return Unpack.toUshort(task.Result);
             }
         }
 
@@ -594,7 +595,8 @@ namespace WasatchNET
         {
             get
             {
-                uint value = Unpack.toUint(getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 6).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(Opcodes.GET_ACTUAL_INTEGRATION_TIME, 6));
+                uint value = Unpack.toUint(task.Result);
                 return (value == 0xffffff) ? 0 : value;
             }
         }
@@ -612,7 +614,9 @@ namespace WasatchNET
                 //    return 0;
                 if (isSiG)
                     return 0;
-                ushort orig = Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2).Result);
+
+                Task<byte[]> task = Task.Run(async () => await getCmd(Opcodes.GET_ADC_RAW, 2));
+                ushort orig = Unpack.toUshort(task.Result);
                 // ushort corrected = swapBytes(orig);
                 ushort retval = (ushort)(orig & 0xfff);
                 logger.debug("adcRaw: raw 0x{0:x4} ({0,4})  retval 0x{1:x4} ({1,4})",
@@ -636,7 +640,8 @@ namespace WasatchNET
 
                 // Unpack.toUint assumes little-endian order, but this is a custom 
                 // register, so let's re-order the received bytes to match the ICD
-                uint tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, 3).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd2(Opcodes.GET_BATTERY_STATE, 3));
+                uint tmp = Unpack.toUint(task.Result);
                 uint lsb = (byte)(tmp & 0xff);
                 uint msb = (byte)((tmp >>  8) & 0xff);
                 uint chg = (byte)((tmp >> 16) & 0xff);
@@ -682,15 +687,16 @@ namespace WasatchNET
                 if (haveCache(op))
                     return continuousAcquisitionEnable_;
                 readOnce.Add(op);
-                return continuousAcquisitionEnable_ = Unpack.toBool(getCmd(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                return continuousAcquisitionEnable_ = Unpack.toBool(task.Result);
             }
             set
             {
                 const Opcodes op = Opcodes.GET_CONTINUOUS_ACQUISITION;
                 if (haveCache(op) && value == continuousAcquisitionEnable_)
                     return;
-
-                sendCmd(Opcodes.SET_CONTINUOUS_ACQUISITION, (ushort)((continuousAcquisitionEnable_ = value) ? 1 : 0));
+                
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_CONTINUOUS_ACQUISITION, (ushort)((continuousAcquisitionEnable_ = value) ? 1 : 0)));
                 readOnce.Add(op);
             }
         }
@@ -704,7 +710,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return continuousFrames_;
                 readOnce.Add(op);
-                return continuousFrames_ = Unpack.toByte(getCmd(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                return continuousFrames_ = Unpack.toByte(task.Result);
             }
             set
             {
@@ -712,7 +719,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == continuousFrames_)
                     return;
 
-                sendCmd(Opcodes.SET_CONTINUOUS_FRAMES, continuousFrames_ = value);
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_CONTINUOUS_FRAMES, continuousFrames_ = value));
                 readOnce.Add(Opcodes.GET_CONTINUOUS_FRAMES);
             }
         }
@@ -726,7 +733,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorGain_;
                 readOnce.Add(op);
-                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2).Result));
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 2));
+                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(task.Result));
             }
             set
             {
@@ -734,7 +742,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == detectorGain_)
                     return;
 
-                sendCmd(Opcodes.SET_DETECTOR_GAIN, FunkyFloat.fromFloat(detectorGain_ = value));
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_DETECTOR_GAIN, FunkyFloat.fromFloat(detectorGain_ = value)));
                 readOnce.Add(op);
             }
         }
@@ -753,7 +761,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorGainOdd_;
                 readOnce.Add(op);
-                return detectorGainOdd_ = FunkyFloat.toFloat(Unpack.toUshort(getCmd(op, 2).Result));
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 2));
+                return detectorGainOdd_ = FunkyFloat.toFloat(Unpack.toUshort(task.Result));
             }
             set
             {
@@ -766,7 +775,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == detectorGainOdd_)
                     return;
 
-                sendCmd(Opcodes.SET_DETECTOR_GAIN_ODD, FunkyFloat.fromFloat(detectorGainOdd_ = value));
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_DETECTOR_GAIN_ODD, FunkyFloat.fromFloat(detectorGainOdd_ = value)));
                 readOnce.Add(op);
             }
         }
@@ -780,7 +789,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorOffset_;
                 readOnce.Add(op);
-                return detectorOffset_ = Unpack.toShort(getCmd(op, 2).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 2));
+                return detectorOffset_ = Unpack.toShort(task.Result);
             }
             set
             {
@@ -788,7 +798,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == detectorOffset_)
                     return;
 
-                sendCmd(Opcodes.SET_DETECTOR_OFFSET, ParseData.shortAsUshort(detectorOffset_ = value));
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_DETECTOR_OFFSET, ParseData.shortAsUshort(detectorOffset_ = value)));
                 readOnce.Add(op);
             }
         }
@@ -807,7 +817,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorOffsetOdd_;
                 readOnce.Add(op);
-                return detectorOffsetOdd_ = Unpack.toShort(getCmd(op, 2).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 2));
+                return detectorOffsetOdd_ = Unpack.toShort(task.Result);
             }
             set
             {
@@ -820,7 +831,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == detectorOffsetOdd_)
                     return;
 
-                sendCmd(Opcodes.SET_DETECTOR_OFFSET_ODD, ParseData.shortAsUshort(detectorOffsetOdd_ = value));
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_DETECTOR_OFFSET_ODD, ParseData.shortAsUshort(detectorOffsetOdd_ = value)));
                 readOnce.Add(op);
             }
         }
@@ -834,15 +845,16 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorSensingThresholdEnabled_;
                 readOnce.Add(op);
-                return detectorSensingThresholdEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                return detectorSensingThresholdEnabled_ = Unpack.toBool(task.Result);
             }
             set
             {
                 const Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE;
                 if (haveCache(op) && value == detectorSensingThresholdEnabled_)
                     return;
-                
-                sendCmd(Opcodes.SET_DETECTOR_SENSING_THRESHOLD_ENABLE, (ushort)((detectorSensingThresholdEnabled_ = value) ? 1 : 0));
+
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_DETECTOR_SENSING_THRESHOLD_ENABLE, (ushort)((detectorSensingThresholdEnabled_ = value) ? 1 : 0)));
                 readOnce.Add(op);
             }
         }
@@ -856,7 +868,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorSensingThreshold_;
                 readOnce.Add(op);
-                return detectorSensingThreshold_ = Unpack.toUshort(getCmd(op, 2).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 2));
+                return detectorSensingThreshold_ = Unpack.toUshort(task.Result);
             }
             set
             {
@@ -864,7 +877,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == detectorSensingThreshold_)
                     return;
 
-                sendCmd(Opcodes.SET_DETECTOR_SENSING_THRESHOLD, detectorSensingThreshold_ = value);
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_DETECTOR_SENSING_THRESHOLD, detectorSensingThreshold_ = value));
                 readOnce.Add(op);
             }
         }
@@ -878,14 +891,15 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorStartLine_;
                 readOnce.Add(op);
-                return detectorStartLine_ = Unpack.toUshort(getCmd2(op, 2).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 2));
+                return detectorStartLine_ = Unpack.toUshort(task.Result);
             }
             set
             {
                 const Opcodes op = Opcodes.GET_DETECTOR_START_LINE;
                 if (haveCache(op) && value == detectorStartLine_)
                     return;
-                sendCmd2(Opcodes.SET_DETECTOR_START_LINE, (ushort)(detectorStartLine_ = value));
+                Task<bool> task = Task.Run(async () => await sendCmd2(Opcodes.SET_DETECTOR_START_LINE, (ushort)(detectorStartLine_ = value)));
                 readOnce.Add(op);
             }
 
@@ -900,14 +914,15 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorStopLine_;
                 readOnce.Add(op);
-                return detectorStopLine_ = Unpack.toUshort(getCmd2(op, 2).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 2));
+                return detectorStopLine_ = Unpack.toUshort(task.Result);
             }
             set
             {
                 const Opcodes op = Opcodes.GET_DETECTOR_STOP_LINE;
                 if (haveCache(op) && value == detectorStopLine_)
                     return;
-                sendCmd2(Opcodes.SET_DETECTOR_STOP_LINE, (ushort)(detectorStopLine_ = value));
+                Task<bool> task = Task.Run(async () => await sendCmd2(Opcodes.SET_DETECTOR_STOP_LINE, (ushort)(detectorStopLine_ = value)));
                 readOnce.Add(op);
             }
 
@@ -924,7 +939,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorTECEnabled_;
                 readOnce.Add(op);
-                return detectorTECEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                return detectorTECEnabled_ = Unpack.toBool(task.Result);
             }
             set
             {
@@ -934,7 +950,7 @@ namespace WasatchNET
                     if (haveCache(op) && value == detectorTECEnabled_)
                         return;
 
-                    sendCmd(Opcodes.SET_DETECTOR_TEC_ENABLE, (ushort)((detectorTECEnabled_ = value) ? 1 : 0));
+                    Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_DETECTOR_TEC_ENABLE, (ushort)((detectorTECEnabled_ = value) ? 1 : 0)));
                     readOnce.Add(op);
                 }
             }
@@ -973,7 +989,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return detectorTECSetpointRaw_;
                 readOnce.Add(op);
-                return detectorTECSetpointRaw_ = Unpack.toUshort(getCmd(op, 2, wIndex: 0).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 2, wIndex: 0));
+                return detectorTECSetpointRaw_ = Unpack.toUshort(task.Result);
             }
             set
             {
@@ -983,7 +1000,7 @@ namespace WasatchNET
                     if (haveCache(op) && value == detectorTECSetpointRaw_)
                         return;
 
-                    sendCmd(Opcodes.SET_DETECTOR_TEC_SETPOINT, detectorTECSetpointRaw_ = value);
+                    Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_DETECTOR_TEC_SETPOINT, detectorTECSetpointRaw_ = value));
                     readOnce.Add(op);
                 }
             }
@@ -1022,7 +1039,8 @@ namespace WasatchNET
                 DateTime now = DateTime.Now;
                 if (detectorTemperatureRaw_ == 0 || ((now - detectorTemperatureRawTimestamp).TotalMilliseconds >= detectorTemperatureCacheTimeMS))
                 {
-                    detectorTemperatureRaw_ = swapBytes(Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2).Result));
+                    Task<byte[]> task = Task.Run(async () => await getCmd(Opcodes.GET_DETECTOR_TEMPERATURE, 2));
+                    detectorTemperatureRaw_ = swapBytes(Unpack.toUshort(task.Result));
                     detectorTemperatureRawTimestamp = now;
                 }
                 return detectorTemperatureRaw_;
@@ -1039,7 +1057,8 @@ namespace WasatchNET
                 const Opcodes op = Opcodes.GET_FIRMWARE_REVISION;
                 if (haveCache(op))
                     return firmwareRevision_;
-                byte[] buf = getCmd(op, 4).Result;
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 4));
+                byte[] buf = task.Result;
                 if (buf is null)
                     return "ERROR";
                 string s = "";
@@ -1062,7 +1081,8 @@ namespace WasatchNET
                 const Opcodes op = Opcodes.GET_FPGA_REVISION;
                 if (haveCache(op))
                     return fpgaRevision_;
-                byte[] buf = getCmd(op, 7).Result;
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 7));
+                byte[] buf = task.Result;
                 if (buf is null)
                     return "UNKNOWN";
                 string s = "";
@@ -1084,7 +1104,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return highGainModeEnabled_;
                 readOnce.Add(op);
-                return highGainModeEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                return highGainModeEnabled_ = Unpack.toBool(task.Result);
             }
             set
             {
@@ -1094,7 +1115,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == highGainModeEnabled_)
                     return;
 
-                sendCmd(Opcodes.SET_CF_SELECT, (ushort)((highGainModeEnabled_ = value) ? 1 : 0));
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_CF_SELECT, (ushort)((highGainModeEnabled_ = value) ? 1 : 0)));
                 readOnce.Add(op);
             }
         }
@@ -1111,7 +1132,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return horizontalBinning_;
                 horizontalBinning_ = HORIZONTAL_BINNING.ERROR;
-                byte[] buf = getCmd(op, 1).Result;
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                byte[] buf = task.Result;
                 if (buf != null)
                     switch (buf[0])
                     {
@@ -1131,7 +1153,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == horizontalBinning_)
                     return;
 
-                sendCmd(Opcodes.SET_HORIZONTAL_BINNING, (ushort)(horizontalBinning_ = value));
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_HORIZONTAL_BINNING, (ushort)(horizontalBinning_ = value)));
                 readOnce.Add(op);
             }
         }
@@ -1144,7 +1166,8 @@ namespace WasatchNET
                 const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
                 if (haveCache(op))
                     return integrationTimeMS_;
-                byte[] buf = getCmd(op, 3, fullLen: 6).Result;
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 3, fullLen: 6));
+                byte[] buf = task.Result;
                 if (buf is null)
                     return 0;
                 readOnce.Add(op);
@@ -1177,14 +1200,13 @@ namespace WasatchNET
                 byte[] buf = null;
                 if (isARM || isStroker)
                     buf = new byte[8];
-                
 
-                sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf).Wait();
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf));
                 integrationTimeMS_ = ms;
                 readOnce.Add(op);
 
                 if (throwawayAfterIntegrationTime)
-                    performThrowawaySpectrum();
+                    Task.Run(async () => await performThrowawaySpectrum());
                 
             }
         }
@@ -1201,7 +1223,8 @@ namespace WasatchNET
                     if (haveCache(op))
                         return lampEnabled_;
                     readOnce.Add(op);
-                    return lampEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
+                    Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                    return lampEnabled_ = Unpack.toBool(task.Result);
                 }
                 else
                 {
@@ -1217,7 +1240,7 @@ namespace WasatchNET
                         return;
 
                     var buf = isARM ? new byte[8] : new byte[0];
-                    sendCmd(Opcodes.SET_LAMP_ENABLE, (ushort)((lampEnabled_ = value) ? 1 : 0), buf: buf);
+                    Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_LAMP_ENABLE, (ushort)((lampEnabled_ = value) ? 1 : 0), buf: buf));
                     readOnce.Add(op);
                 }
             }
@@ -1233,13 +1256,14 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserEnabled_;
                 readOnce.Add(op);
-                return laserEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                return laserEnabled_ = Unpack.toBool(task.Result);
             }
             set
             {
                 var buf = isARM ? new byte[8] : new byte[0];
                 readOnce.Add(Opcodes.GET_LASER_ENABLE);
-                sendCmd(Opcodes.SET_LASER_ENABLE, (ushort)((laserEnabled_ = value) ? 1 : 0), buf: buf);
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_LASER_ENABLE, (ushort)((laserEnabled_ = value) ? 1 : 0), buf: buf));
                 if (value)
                     laserHasFired_ = true;
             }
@@ -1255,7 +1279,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationEnabled_;
                 readOnce.Add(op);
-                return laserModulationEnabled_ = Unpack.toBool(getCmd(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                return laserModulationEnabled_ = Unpack.toBool(task.Result);
             }
             set
             {
@@ -1263,7 +1288,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == laserModulationEnabled_)
                     return;
 
-                sendCmd(Opcodes.SET_LASER_MOD_ENABLE, (ushort)((laserModulationEnabled_ = value) ? 1 : 0)); // TODO: missing fake 8-byte buf?
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_LASER_MOD_ENABLE, (ushort)((laserModulationEnabled_ = value) ? 1 : 0))); // TODO: missing fake 8-byte buf?
                 readOnce.Add(op);
             }
         }
@@ -1278,7 +1303,8 @@ namespace WasatchNET
                     logger.debug("GET_LASER_FIRING requires HAS_INTERLOCK_FEEDBACK");
                     return false;
                 }
-                return Unpack.toBool(getCmd2(Opcodes.GET_LASER_FIRING, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd2(Opcodes.GET_LASER_FIRING, 1));
+                return Unpack.toBool(task.Result);
             }
         }
 
@@ -1291,7 +1317,8 @@ namespace WasatchNET
                     logger.debug("GET_LASER_INTERLOCK requires HAS_INTERLOCK_FEEDBACK");
                     return false;
                 }
-                return Unpack.toBool(getCmd(Opcodes.GET_LASER_INTERLOCK, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(Opcodes.GET_LASER_INTERLOCK, 1));
+                return Unpack.toBool(task.Result);
             }
         }
 
@@ -1303,7 +1330,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationLinkedToIntegrationTime_;
                 readOnce.Add(op);
-                return laserModulationLinkedToIntegrationTime_ = Unpack.toBool(getCmd(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                return laserModulationLinkedToIntegrationTime_ = Unpack.toBool(task.Result);
             }
             set
             {
@@ -1311,7 +1339,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == laserModulationLinkedToIntegrationTime_)
                     return;
 
-                sendCmd(Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort)((laserModulationLinkedToIntegrationTime_ = value) ? 1 : 0));
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME, (ushort)((laserModulationLinkedToIntegrationTime_ = value) ? 1 : 0)));
                 readOnce.Add(op);
             }
         }
@@ -1325,7 +1353,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationPulseDelay_;
                 readOnce.Add(op);
-                return Unpack.toUint64(getCmd(op, 5).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 5));
+                return Unpack.toUint64(task.Result);
             }
             set
             {
@@ -1334,7 +1363,7 @@ namespace WasatchNET
                     return;
 
                 UInt40 val = new UInt40(laserModulationPulseDelay_ = value);
-                sendCmd(Opcodes.SET_LASER_MOD_PULSE_DELAY, val.LSW, val.MidW, val.buf);
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_LASER_MOD_PULSE_DELAY, val.LSW, val.MidW, val.buf));
                 readOnce.Add(op);
             }
         }
@@ -1348,7 +1377,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationDuration_;
                 readOnce.Add(op);
-                return laserModulationDuration_ = Unpack.toUint64(getCmd(op, 5).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 5));
+                return laserModulationDuration_ = Unpack.toUint64(task.Result);
             }
             set
             {
@@ -1357,7 +1387,7 @@ namespace WasatchNET
                     return;
 
                 UInt40 val = new UInt40(laserModulationDuration_ = value);
-                sendCmd(Opcodes.SET_LASER_MOD_DURATION, val.LSW, val.MidW, val.buf);
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_LASER_MOD_DURATION, val.LSW, val.MidW, val.buf));
                 readOnce.Add(op);
             }
         }
@@ -1371,7 +1401,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationPeriod_;
                 readOnce.Add(op);
-                return laserModulationPeriod_ = Unpack.toUint64(getCmd(op, 5).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 5));
+                return laserModulationPeriod_ = Unpack.toUint64(task.Result);
             }
             set
             {
@@ -1380,7 +1411,7 @@ namespace WasatchNET
                     return;
 
                 UInt40 val = new UInt40(laserModulationPeriod_ = value);
-                sendCmd(Opcodes.SET_LASER_MOD_PERIOD, val.LSW, val.MidW, val.buf);
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_LASER_MOD_PERIOD, val.LSW, val.MidW, val.buf));
                 readOnce.Add(op);
             }
         }
@@ -1394,7 +1425,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return laserModulationPulseWidth_;
                 readOnce.Add(op);
-                return laserModulationPulseWidth_ = Unpack.toUint64(getCmd(op, 5).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 5));
+                return laserModulationPulseWidth_ = Unpack.toUint64(task.Result);
             }
             set
             {
@@ -1403,7 +1435,7 @@ namespace WasatchNET
                     return;
 
                 UInt40 val = new UInt40(laserModulationPulseWidth_ = value);
-                sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, val.LSW, val.MidW, val.buf);
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_LASER_MOD_PULSE_WIDTH, val.LSW, val.MidW, val.buf));
                 readOnce.Add(op);
             }
         }
@@ -1456,7 +1488,8 @@ namespace WasatchNET
             }
             set
             {
-                _ = sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[]{0,0,0,0,0,0,0,0,0,0}); // MZ: 10?
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 })); // MZ: 10?
+                _ = task.Result; 
                 readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET);
             }
         }
@@ -1525,7 +1558,8 @@ namespace WasatchNET
                 if (isSiG) // || featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return 0;
                 readOnce.Add(op);
-                return laserTemperatureSetpointRaw_ = Unpack.toByte(getCmd(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                return laserTemperatureSetpointRaw_ = Unpack.toByte(task.Result);
             }
             set
             {
@@ -1536,7 +1570,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == laserTemperatureSetpointRaw_)
                     return;
 
-                sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ = Math.Min((byte)127, value));
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ = Math.Min((byte)127, value)));
                 readOnce.Add(op);
             }
         }
@@ -1550,7 +1584,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return lineLength_;
                 readOnce.Add(op);
-                return lineLength_ = Unpack.toUshort(getCmd2(op, 2).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 2));
+                return lineLength_ = Unpack.toUshort(task.Result);
             }
         }
         uint lineLength_;
@@ -1563,7 +1598,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optAreaScan_;
                 readOnce.Add(op);
-                return optAreaScan_ = Unpack.toBool(getCmd2(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 1));
+                return optAreaScan_ = Unpack.toBool(task.Result);
             }
         }
         bool optAreaScan_;
@@ -1576,7 +1612,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optActualIntegrationTime_;
                 readOnce.Add(op);
-                return optActualIntegrationTime_ = Unpack.toBool(getCmd2(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 1));
+                return optActualIntegrationTime_ = Unpack.toBool(task.Result);
             }
         }
         bool optActualIntegrationTime_;
@@ -1589,7 +1626,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optCFSelect_;
                 readOnce.Add(op);
-                return optCFSelect_ = Unpack.toBool(getCmd2(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 1));
+                return optCFSelect_ = Unpack.toBool(task.Result);
             }
         }
         bool optCFSelect_;
@@ -1602,7 +1640,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optDataHeaderTag_;
                 readOnce.Add(op);
-                return optDataHeaderTag_ = fpgaOptions.parseDataHeader(Unpack.toInt(getCmd2(op, 1).Result));
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 1));
+                return optDataHeaderTag_ = fpgaOptions.parseDataHeader(Unpack.toInt(task.Result));
             }
         }
         FPGA_DATA_HEADER optDataHeaderTag_ = FPGA_DATA_HEADER.ERROR;
@@ -1615,7 +1654,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optHorizontalBinning_;
                 readOnce.Add(op);
-                return optHorizontalBinning_ = Unpack.toBool(getCmd2(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 1));
+                return optHorizontalBinning_ = Unpack.toBool(task.Result);
             }
         }
         bool optHorizontalBinning_;
@@ -1628,7 +1668,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optIntegrationTimeResolution_;
                 readOnce.Add(op);
-                return optIntegrationTimeResolution_ = fpgaOptions.parseResolution(Unpack.toInt(getCmd2(op, 1).Result));
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 1));
+                return optIntegrationTimeResolution_ = fpgaOptions.parseResolution(Unpack.toInt(task.Result));
             }
         }
         FPGA_INTEG_TIME_RES optIntegrationTimeResolution_ = FPGA_INTEG_TIME_RES.ERROR;
@@ -1641,7 +1682,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optLaserControl_;
                 readOnce.Add(op);
-                return optLaserControl_ = fpgaOptions.parseLaserControl(Unpack.toInt(getCmd2(op, 1).Result));
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 1));
+                return optLaserControl_ = fpgaOptions.parseLaserControl(Unpack.toInt(task.Result));
             }
         }
         FPGA_LASER_CONTROL optLaserControl_ = FPGA_LASER_CONTROL.ERROR;
@@ -1654,7 +1696,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return optLaserType_;
                 readOnce.Add(op);
-                return optLaserType_ = fpgaOptions.parseLaserType(Unpack.toInt(getCmd2(op, 1).Result));
+                Task<byte[]> task = Task.Run(async () => await getCmd2(op, 1));
+                return optLaserType_ = fpgaOptions.parseLaserType(Unpack.toInt(task.Result));
             }
         }
         FPGA_LASER_TYPE optLaserType_ = FPGA_LASER_TYPE.ERROR;
@@ -1699,12 +1742,13 @@ namespace WasatchNET
                 if (haveCache(op))
                     return selectedADC_;
                 readOnce.Add(op);
-                return selectedADC_ = Unpack.toByte(getCmd(op, 1).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 1));
+                return selectedADC_ = Unpack.toByte(task.Result);
             }
             set
             {
                 readOnce.Add(Opcodes.SET_SELECTED_ADC);
-                sendCmd(Opcodes.SET_SELECTED_ADC, selectedADC_ = value);
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_SELECTED_ADC, selectedADC_ = value));
                 if (throwawayADCRead)
                     throwawaySum += adcRaw;
                 adcHasBeenSelected_ = true;
@@ -1729,7 +1773,8 @@ namespace WasatchNET
                     return triggerSource_;
                 }
 
-                byte[] buf = getCmd(Opcodes.GET_TRIGGER_SOURCE, 1).Result;
+                Task<byte[]> task = Task.Run(async () => await getCmd(Opcodes.GET_TRIGGER_SOURCE, 1));
+                byte[] buf = task.Result;
                 if (buf is null || buf[0] > 2)
                     return TRIGGER_SOURCE.ERROR;
                 readOnce.Add(op);
@@ -1744,9 +1789,10 @@ namespace WasatchNET
                     return;
 
                 UInt40 val = new UInt40((ushort)(triggerSource_ = value));
-                readOnce.Add(op);
+                readOnce.Add(op); 
+                Task<bool> task;
                 if (featureIdentification.boardType != BOARD_TYPES.ARM)
-                    sendCmd(Opcodes.SET_TRIGGER_SOURCE, val.LSW, val.MidW, val.buf);
+                    task = Task.Run(async () => await sendCmd(Opcodes.SET_TRIGGER_SOURCE, val.LSW, val.MidW, val.buf));
                 else
                     logger.debug("not sending SET_TRIGGER_SOURCE (0x{0:x2}) -> {1} because ARM", cmd[Opcodes.SET_TRIGGER_SOURCE], triggerSource_);
             }
@@ -1770,7 +1816,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return triggerOutput_;
                 triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.ERROR;
-                byte[] buf = getCmd(Opcodes.GET_TRIGGER_OUTPUT, 1).Result;
+                Task<byte[]> task = Task.Run(async () => await getCmd(Opcodes.GET_TRIGGER_OUTPUT, 1));
+                byte[] buf = task.Result;
                 if (buf != null)
                 {
                     switch (buf[0])
@@ -1788,7 +1835,7 @@ namespace WasatchNET
                 if (value == EXTERNAL_TRIGGER_OUTPUT.ERROR)
                     return;
                 readOnce.Add(Opcodes.GET_TRIGGER_OUTPUT);
-                sendCmd(Opcodes.SET_TRIGGER_OUTPUT, (ushort)(triggerOutput_ = value));
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_TRIGGER_OUTPUT, (ushort)(triggerOutput_ = value)));
             }
         }
         EXTERNAL_TRIGGER_OUTPUT triggerOutput_ = EXTERNAL_TRIGGER_OUTPUT.ERROR;
@@ -1806,7 +1853,8 @@ namespace WasatchNET
                 if (haveCache(op))
                     return triggerDelay_;
                 readOnce.Add(op);
-                return triggerDelay_ = Unpack.toUint(getCmd(op, 3).Result);
+                Task<byte[]> task = Task.Run(async () => await getCmd(op, 3));
+                return triggerDelay_ = Unpack.toUint(task.Result);
             }
             set
             {
@@ -1818,7 +1866,7 @@ namespace WasatchNET
 
                 ushort lsw = (ushort)((triggerDelay_ = value) & 0xffff);
                 byte msb = (byte)(value >> 16);
-                sendCmd(Opcodes.SET_TRIGGER_DELAY, lsw, msb);
+                Task<bool> task = Task.Run(async () => await sendCmd(Opcodes.SET_TRIGGER_DELAY, lsw, msb));
                 readOnce.Add(op);
             }
         }
@@ -2946,13 +2994,13 @@ namespace WasatchNET
         /// if autoTrigger is disabled or using HW triggering.  In such cases, if
         /// the user wants a throwaway, they can generate it themselves.
         /// </todo>
-        void performThrowawaySpectrum()
+        async Task performThrowawaySpectrum()
         {
             logger.debug("generating throwaway spectrum");
             // send a trigger if getSpectrumRaw won't
             if (!autoTrigger || triggerSource_ != TRIGGER_SOURCE.INTERNAL)
-                sendSWTrigger();
-            getSpectrumRaw();
+                await sendSWTrigger();
+            await getSpectrumRaw();
         }
 
         public void flushReaders()
@@ -2978,7 +3026,7 @@ namespace WasatchNET
 
             // request a spectrum
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
-                sendSWTrigger();
+                await sendSWTrigger();
 
             if ((!skipTrigger || isStroker) && !areaScanEnabled)
             {
@@ -2988,7 +3036,7 @@ namespace WasatchNET
             }
 
             if (untetheredAcquisitionEnabled)
-                if (!waitForUntetheredData().Result)
+                if (!(await waitForUntetheredData()))
                     return null;
 
             ////////////////////////////////////////////////////////////////////
@@ -3149,9 +3197,9 @@ namespace WasatchNET
         protected virtual double[] getAreaScanLightweight()
         {
             double[] temp = new double[pixels]; // default to all zeros
-            double[] sum = new double[temp.Length * eeprom.activePixelsVert]; 
-            
-            sendSWTrigger();
+            double[] sum = new double[temp.Length * eeprom.activePixelsVert];
+
+            Task<bool> task = Task.Run(async () => await sendSWTrigger());
 
             lock (commsLock)
             {
