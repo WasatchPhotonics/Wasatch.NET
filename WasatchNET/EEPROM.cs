@@ -2330,6 +2330,13 @@ namespace WasatchNET
                     foreach(string libName in libNames)
                     {
                         pageIdx = namePageIndices(namesWritten);
+                        // fill-in any pages that weren't loaded/created at start
+                        // (e.g. if a different subformat had been in effect)
+                        while (pageIdx["namePage"] >= pages.Count)
+                        {
+                            logger.debug("appending new page {0}", pages.Count);
+                            pages.Add(new byte[64]);
+                        }
                         if (!ParseData.writeString(libName, pages[pageIdx["namePage"]], pageIdx["startIndex"], libName.Length - 1)) return false;
                         namesWritten++;
                     }
