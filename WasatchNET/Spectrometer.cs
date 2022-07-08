@@ -364,12 +364,9 @@ namespace WasatchNET
             get { return scanAveraging_; }
             set 
             {
-                lock (acquisitionLock)
-                {
-                    logger.debug($"scanAveraging -> {value}");
-                    scanAveraging_ = value;
-                    configureContinuousAcquisition();
-                }
+                logger.debug($"scanAveraging -> {value}");
+                scanAveraging_ = value;
+                configureContinuousAcquisition();
             }
         }
         protected uint scanAveraging_ = 1;
@@ -415,10 +412,7 @@ namespace WasatchNET
             get { return boxcarHalfWidth_; }
             set
             {
-                lock (acquisitionLock)
-                {
-                    boxcarHalfWidth_ = value;
-                }
+                boxcarHalfWidth_ = value;
             }
         }
         protected uint boxcarHalfWidth_;
@@ -432,10 +426,7 @@ namespace WasatchNET
             get { return dark_; }
             set
             {
-                lock (acquisitionLock)
-                {
-                    dark_ = value;
-                }
+                dark_ = value;
             }
         }
         protected double[] dark_;
@@ -1186,11 +1177,12 @@ namespace WasatchNET
                 //
                 // uint ms = Math.Max(eeprom.minIntegrationTimeMS, Math.Min(eeprom.maxIntegrationTimeMS, value));
 
-
+                /*
                 lock (acquisitionLock)
                 {
                     logger.debug("acquired acquisition lock for integration time");
                 }
+                */
 
                 uint ms = value;
                 ushort lsw = (ushort)(ms & 0xffff);
@@ -1706,12 +1698,9 @@ namespace WasatchNET
         {
             get
             {
-                lock (adcLock)
-                {
-                    if (selectedADC != 0)
-                        selectedADC = 0;
-                    return adcRaw;
-                }
+                if (selectedADC != 0)
+                    selectedADC = 0;
+                return adcRaw;
             }
         }
 
@@ -1723,12 +1712,10 @@ namespace WasatchNET
             {
                 if (!hasSecondaryADC)
                     return 0;
-                lock (adcLock)
-                {
-                    if (selectedADC != 1)
-                        selectedADC = 1;
-                    return adcRaw;
-                }
+
+                if (selectedADC != 1)
+                    selectedADC = 1;
+                return adcRaw;
             }
         }
 
@@ -2108,11 +2095,9 @@ namespace WasatchNET
                 laserEnabled = false;
 
             // ensure we're no longer acquiring
-            lock (acquisitionLock)
-            {
+            
                 // stop all USB comms
-                shuttingDown = true;
-            }
+            shuttingDown = true;
 
             logger.debug("Spectrometer.close: throwawaySum = {0}", throwawaySum); // just make sure it gets used
 
@@ -2387,10 +2372,7 @@ namespace WasatchNET
             // Question: if the device returns 6 bytes on Endpoint 0, but I only
             // need the first so pass byte[1], are the other 5 bytes discarded or
             // queued?
-            lock (commsLock)
-            {
-                waitForUsbAvailable();
-            }
+            waitForUsbAvailable();
 
             logger.debug("getCmd: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
             int bytesRead = 0;
@@ -2441,10 +2423,8 @@ namespace WasatchNET
                 expectedSuccessResult = !expectedSuccessResult;
 
             bool result = false;
-            lock (commsLock)
-            {
-                waitForUsbAvailable();
-            }
+
+            waitForUsbAvailable();
 
             logger.debug("getCmd2: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
             int bytesRead = 0;
@@ -2504,14 +2484,11 @@ namespace WasatchNET
                     expectedSuccessResult = null; // no easy way to know, as we don't pass wValue as enum (MZ: whut?)
             }
 
-            lock (commsLock)
-            {
-                // don't enforce USB delay on laser commands...that could be dangerous
-                // or on acquire commands, which would disrupt integration throwaways 
-                // and soft synchronization
-                if (opcode != Opcodes.SET_LASER_ENABLE && opcode != Opcodes.ACQUIRE_SPECTRUM)
-                    waitForUsbAvailable();
-            }
+            // don't enforce USB delay on laser commands...that could be dangerous
+            // or on acquire commands, which would disrupt integration throwaways 
+            // and soft synchronization
+            if (opcode != Opcodes.SET_LASER_ENABLE && opcode != Opcodes.ACQUIRE_SPECTRUM)
+                waitForUsbAvailable();
 
             logger.debug("sendCmd: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
 
@@ -2553,10 +2530,7 @@ namespace WasatchNET
                 wIndex,                             // wIndex
                 wLength);                           // wLength
 
-            lock (commsLock)
-            {
-                waitForUsbAvailable();
-            }
+            waitForUsbAvailable();
 
             await Task.Run(() =>logger.debug("sendCmd2: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id));
             int bytesWritten;
@@ -2802,10 +2776,12 @@ namespace WasatchNET
             uptime.setError(uniqueKey); // assume acquisition may fail
             currentAcquisitionCancelled = false;
 
+            /*
             lock (acquisitionLock)
             {
                 logger.debug("acquired acquisition lock for get spectrum");
             }
+            */
 
             int retries = 0;
             double[] sum = null;
@@ -3201,9 +3177,7 @@ namespace WasatchNET
 
             Task<bool> task = Task.Run(async () => await sendSWTrigger());
 
-            lock (commsLock)
-            {
-                for (int i = 0; i < eeprom.activePixelsVert; ++i)
+            for (int i = 0; i < eeprom.activePixelsVert; ++i)
                 {
                     //temp = getSpectrumRaw(true)
                     int pixelsRead = 0;
@@ -3222,7 +3196,7 @@ namespace WasatchNET
                     temp.CopyTo(sum, temp.Length * i);
                     //Thread.Sleep(detectorOffset + 1);
                 }
-            }
+            
 
             return sum;
         }

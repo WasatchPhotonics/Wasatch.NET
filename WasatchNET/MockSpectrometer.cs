@@ -476,10 +476,8 @@ namespace WasatchNET
 
             // logger.debug("getSpectrumRaw({0}): {1}", id, string.Join<double>(", ", spec));
 
-            if (isOCT)
-                Thread.Sleep(70);
-            else
-                Thread.Sleep((int)integrationTimeMS_);
+            // having an artifical delay here was fun, but it's ultimately a waste of time (haha)
+            Thread.Sleep(20);
 
             lastSpectrum = spec;
             return spec;
@@ -516,7 +514,8 @@ namespace WasatchNET
 
             // logger.debug("getSpectrumRaw({0}): {1}", id, string.Join<double>(", ", spec));
 
-            Thread.Sleep((int)integrationTimeMS_);
+            // having an artifical delay here was fun, but it's ultimately a waste of time (haha)
+            Thread.Sleep(20);
 
             return spec;
         }
