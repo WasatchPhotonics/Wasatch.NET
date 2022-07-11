@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace WasatchNET
 {
@@ -1254,22 +1255,28 @@ namespace WasatchNET
                 if (spectrometer.isARM)
                 {
                     logger.hexdump(pages[page], String.Format("writing page {0} [ARM]: ", page));
-                    ok = spectrometer.sendCmd(
-                        opcode: Opcodes.SECOND_TIER_COMMAND,
-                        wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM],
+
+                    Task<bool> task = Task.Run(async() => await spectrometer.sendCmd(
+                        opcode: Opcodes.SECOND_TIER_COMMAND, 
+                        wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM], 
                         wIndex: (ushort)page,
-                        buf: pages[page]).Result;
+                        buf: pages[page]));
+
+                    ok = task.Result;
                 }
                 else
                 {
                     const uint DATA_START = 0x3c00; // from Wasatch Stroker Console's EnhancedStroker.SetModelInformation()
                     ushort pageOffset = (ushort)(DATA_START + page * 64);
                     logger.hexdump(pages[page], String.Format("writing page {0} to offset {1} [FX2]: ", page, pageOffset));
-                    ok = spectrometer.sendCmd(
+
+                    Task<bool> task = Task.Run(async () => await spectrometer.sendCmd(
                         opcode: Opcodes.SET_MODEL_CONFIG_FX2,
                         wValue: pageOffset,
                         wIndex: 0,
-                        buf: pages[page]).Result;
+                        buf: pages[page]));
+
+                    ok = task.Result;
                 }
                 if (!ok)
                 {
@@ -1321,7 +1328,10 @@ namespace WasatchNET
             pages = new List<byte[]>();
             for (ushort page = 0; page < MAX_PAGES; page++)
             {
-                byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8).Result;
+
+                Task<byte[]> task = Task.Run(async () => await spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8));
+
+                byte[] buf = task.Result;
                 if (buf is null)
                 {
                     try
@@ -1363,7 +1373,9 @@ namespace WasatchNET
                 // read pages 8-73 (no need to do all MAX_PAGES_REAL)
                 for (ushort page = MAX_PAGES; page <= LIBRARY_STOP_PAGE; page++)
                 {
-                    byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8).Result;
+                    Task<byte[]> task = Task.Run(async () => await spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8));
+
+                    byte[] buf = task.Result;
                     pages.Add(buf);
                     logger.hexdump(buf, String.Format("read extra page {0}: ", page));
                 }
