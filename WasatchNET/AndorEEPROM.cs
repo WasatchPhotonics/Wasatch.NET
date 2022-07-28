@@ -24,6 +24,9 @@ namespace WasatchNET
     {
         private AndorSDK andorDriver;
 
+        const short effectiveMinTemp = -60;
+        const short effectiveMaxTemp = 10;
+
         internal AndorEEPROM(AndorSpectrometer spec) : base(spec)
         {
             spectrometer = spec;
@@ -83,8 +86,12 @@ namespace WasatchNET
             degCToDACCoeffs[0] = 0;
             degCToDACCoeffs[1] = 0;
             degCToDACCoeffs[2] = 0;
-            detectorTempMax = (short)maxTemp;
-            detectorTempMin = (short)minTemp;
+
+            //the min and max temps from the driver are known to be inaccurate, so we use const values
+            detectorTempMax = effectiveMaxTemp;
+            detectorTempMin = effectiveMinTemp;
+            //detectorTempMax = (short)maxTemp;
+            //detectorTempMin = (short)minTemp;
             adcToDegCCoeffs[0] = 0;
             adcToDegCCoeffs[1] = 0;
             adcToDegCCoeffs[2] = 0;

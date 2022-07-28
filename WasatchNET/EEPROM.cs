@@ -750,9 +750,10 @@ namespace WasatchNET
             set
             {
                 EventHandler handler = EEPROMChanged;
-                userData = new byte[value.Length];
+                userData = new byte[value.Length + 1];
                 for (int i = 0; i < value.Length; i++)
                     userData[i] = (byte)value[i];
+                userData[userData.Length - 1] = 0x0;
                 handler?.Invoke(this, new EventArgs());
             }
         }
