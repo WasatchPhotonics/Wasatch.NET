@@ -287,13 +287,13 @@ namespace WasatchNET
         //////////////////////////////////////////////////////
         //              NEEDS IMPLEMENT
         //////////////////////////////////////////////////////
-        override internal bool open()
+        override internal async Task<bool> open()
         {
             darkBaseline = 800;
 
             eeprom = new MockEEPROM(this);
 
-            if (!eeprom.read())
+            if (!(await eeprom.read()))
             {
                 logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                 //wrapper.shutdown();
@@ -306,10 +306,10 @@ namespace WasatchNET
             return true;
         }
 
-        public bool open(uint pixels)
+        public async Task<bool> open(uint pixels)
         {
             this.pixels = pixels;
-            return open();
+            return await open();
         }
 
         //////////////////////////////////////////////////////

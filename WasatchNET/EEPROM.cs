@@ -1232,7 +1232,7 @@ namespace WasatchNET
         /// </todo>
         ///
         /// <returns>true on success, false on failure</returns>
-        public virtual bool write(bool allPages=false)
+        public virtual async Task<bool> write(bool allPages=false)
         {
             ////////////////////////////////////////////////////////////////
             //                                                            //
@@ -1257,13 +1257,11 @@ namespace WasatchNET
                 {
                     logger.hexdump(pages[page], String.Format("writing page {0} [ARM]: ", page));
 
-                    Task<bool> task = Task.Run(async() => await spectrometer.sendCmd(
-                        opcode: Opcodes.SECOND_TIER_COMMAND, 
-                        wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM], 
+                    ok = await spectrometer.sendCmd(
+                        opcode: Opcodes.SECOND_TIER_COMMAND,
+                        wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM],
                         wIndex: (ushort)page,
-                        buf: pages[page]));
-
-                    ok = task.Result;
+                        buf: pages[page]);
                 }
                 else
                 {
@@ -1271,14 +1269,12 @@ namespace WasatchNET
                     ushort pageOffset = (ushort)(DATA_START + page * 64);
                     logger.hexdump(pages[page], String.Format("writing page {0} to offset {1} [FX2]: ", page, pageOffset));
 
-                    Task<bool> task = Task.Run(async () => await spectrometer.sendCmd(
+                    ok = await spectrometer.sendCmd(
                         opcode: Opcodes.SET_MODEL_CONFIG_FX2,
                         wValue: pageOffset,
                         wIndex: 0,
-                        buf: pages[page]));
-
-                    ok = task.Result;
-                }
+                        buf: pages[page]);
+        }
                 if (!ok)
                 {
                     logger.error("EEPROM.write: failed to save page {0}", page);
@@ -1314,7 +1310,7 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
-        public virtual bool read()
+        public virtual async Task<bool> read()
         {
             ////////////////////////////////////////////////////////////////
             //                                                            //
@@ -1329,10 +1325,7 @@ namespace WasatchNET
             pages = new List<byte[]>();
             for (ushort page = 0; page < MAX_PAGES; page++)
             {
-
-                Task<byte[]> task = Task.Run(async () => await spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8));
-
-                byte[] buf = task.Result;
+                byte[] buf = await spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                 if (buf is null)
                 {
                     try
@@ -1374,9 +1367,7 @@ namespace WasatchNET
                 // read pages 8-73 (no need to do all MAX_PAGES_REAL)
                 for (ushort page = MAX_PAGES; page <= LIBRARY_STOP_PAGE; page++)
                 {
-                    Task<byte[]> task = Task.Run(async () => await spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8));
-
-                    byte[] buf = task.Result;
+                    byte[] buf = await spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                     pages.Add(buf);
                     logger.hexdump(buf, String.Format("read extra page {0}: ", page));
                 }

@@ -985,7 +985,7 @@ namespace WasatchNET
 
         int sampleLine_ = 100;
 
-        internal override bool open()
+        internal override async Task<bool> open()
         {
             if (!commsOpen)
             {
@@ -1016,7 +1016,7 @@ namespace WasatchNET
                     pixels = (uint)1024;
 
                     eeprom = new HOCTEEPROM(this);
-                    if (!eeprom.read())
+                    if (!(await eeprom.read()))
                     {
                         logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                         return false;

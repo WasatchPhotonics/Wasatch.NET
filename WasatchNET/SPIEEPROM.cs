@@ -28,7 +28,7 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
-        public override bool write(bool allPages=false)
+        public override async Task<bool> write(bool allPages=false)
         {
             if (pages is null || pages.Count != MAX_PAGES)
             {
@@ -48,7 +48,7 @@ namespace WasatchNET
             return writeOk;
         }
 
-        public override bool read()
+        public override async Task<bool> read()
         {
             SPISpectrometer a = spectrometer as SPISpectrometer;
 

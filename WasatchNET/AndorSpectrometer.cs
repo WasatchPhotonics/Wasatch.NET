@@ -119,30 +119,28 @@ namespace WasatchNET
             eeprom = new AndorEEPROM(this);
         }
 
-        override internal bool open()
+        override internal async Task<bool> open()
         {
             eeprom = new AndorEEPROM(this);
 
-            lock (acquisitionLock)
+            logger.info("found spectrometer with {0} pixels", pixels);
+
+            if (!(await eeprom.read()))
             {
-                logger.info("found spectrometer with {0} pixels", pixels);
-
-                if (!eeprom.read())
-                {
-                    logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                    //wrapper.shutdown();
-                    close();
-                    return false;
-                }
-                logger.debug("back from reading EEPROM");
-
-                regenerateWavelengths();
-                //detectorTECSetpointDegC = 15.0f;
-
-                logger.info("Opened Andor Spectrometer with index {0}", specIndex);
-
-                return true;
+                logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                //wrapper.shutdown();
+                close();
+                return false;
             }
+            logger.debug("back from reading EEPROM");
+
+            regenerateWavelengths();
+            //detectorTECSetpointDegC = 15.0f;
+
+            logger.info("Opened Andor Spectrometer with index {0}", specIndex);
+
+            return true;
+            
         }
 
 

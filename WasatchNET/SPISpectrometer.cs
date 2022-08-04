@@ -220,7 +220,7 @@ namespace WasatchNET
             return padding;
         }
 
-        override internal bool open()
+        override internal async Task<bool> open()
         {
             eeprom = new SPIEEPROM(this);
 
@@ -278,7 +278,7 @@ namespace WasatchNET
                 return false;
             }
 
-            if (!eeprom.read())
+            if (!(await eeprom.read()))
             {
                 logger.info("Spectrometer: failed to GET_MODEL_CONFIG");
                 close();

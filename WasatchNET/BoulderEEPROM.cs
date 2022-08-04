@@ -28,7 +28,7 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
-        public override bool read()
+        public override async Task<bool> read()
         {
             BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
             model = "";
@@ -119,7 +119,7 @@ namespace WasatchNET
             return true;
         }
 
-        public override bool write(bool allPages=false)
+        public override async Task<bool> write(bool allPages=false)
         {
             defaultValues = false;
             return true;

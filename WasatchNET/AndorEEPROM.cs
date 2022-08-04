@@ -48,7 +48,7 @@ namespace WasatchNET
 
         }
 
-        public override bool read()
+        public override async Task<bool> read()
         {
             AndorSpectrometer a = spectrometer as AndorSpectrometer;
             model = "";
@@ -147,7 +147,7 @@ namespace WasatchNET
             return true;
         }
 
-        public override bool write(bool allPages = false)
+        public override async Task<bool> write(bool allPages = false)
         {
             defaultValues = false;
             return true;

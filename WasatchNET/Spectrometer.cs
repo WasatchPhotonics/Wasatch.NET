@@ -1908,7 +1908,7 @@ namespace WasatchNET
             uniqueKey = generateUniqueKey(usbReg);
         }
 
-        virtual internal bool open()
+        virtual internal async Task<bool> open()
         {
             logger.header($"Spectrometer.open: VID = 0x{usbRegistry.Vid:x4}, PID = 0x{usbRegistry.Pid:x4}");
 
@@ -1937,7 +1937,7 @@ namespace WasatchNET
             logger.debug("reading EEPROM");
             eeprom = new EEPROM(this);
             fram = new FRAM(this);
-            if (!eeprom.read())
+            if (!(await eeprom.read()))
             {
                 logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                 usbDevice.Close();

@@ -28,7 +28,7 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
-        public override bool write(bool allPages=false)
+        public override async Task<bool> write(bool allPages=false)
         {
             byte[] buffer = new byte[32];
 
@@ -42,7 +42,7 @@ namespace WasatchNET
             return writeOK;
         }
 
-        public override bool read()
+        public override async Task<bool> read()
         {
             HOCTSpectrometer a = spectrometer as HOCTSpectrometer;
             model = "";

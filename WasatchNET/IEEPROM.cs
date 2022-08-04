@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace WasatchNET
 {
@@ -212,11 +213,11 @@ namespace WasatchNET
         /// for a copy.
         /// </remarks>
         /// <returns>true on success, false on failure</returns>
-        bool write(bool allPages=false);
+        Task<bool> write(bool allPages=false);
 
         /// <summary>Called automatically when Spectrometer opened</summary>
         /// <remarks>Can be re-called to overwrite local changes to field contents with spectrometer data</remarks>
         /// <returns>true on success, false on failure</returns>
-        bool read();
+        Task<bool> read();
     }
 }

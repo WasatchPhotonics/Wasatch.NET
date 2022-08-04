@@ -28,12 +28,12 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
-        public override bool write(bool allPages=false)
+        public override async Task<bool> write(bool allPages=false)
         {
             return true;
         }
 
-        public override bool read()
+        public override async Task<bool> read()
         {
             MockSpectrometer a = spectrometer as MockSpectrometer;
             model = "";

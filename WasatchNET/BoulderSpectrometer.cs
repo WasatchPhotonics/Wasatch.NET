@@ -87,49 +87,40 @@ namespace WasatchNET
         }
 
 
-        override internal bool open()
+        override internal async Task<bool> open()
         {
             eeprom = new BoulderEEPROM(this);
 
-            lock (acquisitionLock)
+            if (!commError)
             {
-                if (!commError)
-                {
-                    bool openSucceeded = false;
-                    var task = Task.Run(async () => openSucceeded = await openSpectrometerAsync());
-                    task.Wait();
+                bool openSucceeded = false;
+                var task = Task.Run(async () => openSucceeded = await openSpectrometerAsync());
+                task.Wait();
                     
-                    if (openSucceeded)
+                if (openSucceeded)
+                {
+                    if (!commError)
                     {
-                        if (!commError)
-                        {
-                            var pixelTask = Task.Run(async () => pixels = (uint) await getPixelAsync());
-                            pixelTask.Wait();
-                        }
-                        logger.info("found spectrometer with {0} pixels", pixels);
-
-                        if (!eeprom.read())
-                        {
-                            logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                            //wrapper.shutdown();
-                            close();
-                            return false;
-                        }
-                        logger.debug("back from reading EEPROM");
-
-                        regenerateWavelengths();
-                        //detectorTECSetpointDegC = 15.0f;
-
-                        logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
-
-                        return true;
+                        var pixelTask = Task.Run(async () => pixels = (uint) await getPixelAsync());
+                        pixelTask.Wait();
                     }
+                    logger.info("found spectrometer with {0} pixels", pixels);
 
-                    else
+                    if (!(await eeprom.read()))
                     {
-                        logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
+                        logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                        //wrapper.shutdown();
+                        close();
                         return false;
                     }
+                    logger.debug("back from reading EEPROM");
+
+                    regenerateWavelengths();
+                    //detectorTECSetpointDegC = 15.0f;
+
+                    logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
+
+                    return true;
                 }
 
                 else
@@ -138,6 +129,13 @@ namespace WasatchNET
                     return false;
                 }
             }
+
+            else
+            {
+                logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
+                return false;
+            }
+            
 
         }
 
