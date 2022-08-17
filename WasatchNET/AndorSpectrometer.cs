@@ -157,9 +157,16 @@ namespace WasatchNET
         // at that point will need to add calls to change acquisition mode/read mode here
         public override double[] getSpectrum(bool forceNew = false)
         {
-            
             lock (acquisitionLock)
             {
+                // Take a temprature first. If you try to take temprature while acquiring bad things happen,
+                // but the acquisition also can take a long time, which can block things for a long time downstream.
+                // This way we just cache before measuring, and the cached value is returned if the user wants a temp
+                // during acquisition. It isn't perfect but neither is the Andor driver...to say the least -TS
+                int temp = 0;
+                andorDriver.GetTemperature(ref temp);
+                lastDetectorTemperatureDegC = temp;
+
                 double[] sum = getSpectrumRaw();
                 if (sum == null)
                 {
@@ -411,12 +418,18 @@ namespace WasatchNET
         {
             get
             {
-                lock (acquisitionLock)
+                // get a new value if possible, but if a spectrum is being collected just
+                // return the cached value
+                if (Monitor.TryEnter(acquisitionLock))
                 {
                     int temp = 0;
                     andorDriver.GetTemperature(ref temp);
+                    lastDetectorTemperatureDegC = temp;
+                    Monitor.Exit(acquisitionLock);
                     return temp;
                 }
+                else
+                    return lastDetectorTemperatureDegC;
             }
         }
 
