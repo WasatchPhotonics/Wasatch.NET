@@ -1,6 +1,8 @@
 # Wasatch.NET Changelog
 
-- 2022-07-XX 2.4.9
+- 2022-08-17 2.4.10
+	- add temperature caching for Andor spectrometers to prevent long reads
+- 2022-07-28 2.4.9
 	- fixed how temp min/max set for certain spectrometers
 	- fixed null terminator issue with user text when EEPROM not defaulted to all 0s
 - 2022-06-21 2.4.8

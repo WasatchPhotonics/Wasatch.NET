@@ -155,6 +155,10 @@ namespace WasatchNET
         // at that point will need to add calls to change acquisition mode/read mode here
         public override async Task<double[]> getSpectrum(bool forceNew = false)
         {
+            int temp = 0;
+            andorDriver.GetTemperature(ref temp);
+            lastDetectorTemperatureDegC = temp;
+
             double[] sum = await getSpectrumRaw();
             if (sum == null)
             {
@@ -403,12 +407,17 @@ namespace WasatchNET
         {
             get
             {
-                lock (acquisitionLock)
+                // get a new value if possible, but if a spectrum is being collected just
+                // return the cached value
+                if (Monitor.TryEnter(acquisitionLock))
                 {
                     int temp = 0;
                     andorDriver.GetTemperature(ref temp);
-                    return temp;
+                    lastDetectorTemperatureDegC = temp;
+                    Monitor.Exit(acquisitionLock);
                 }
+
+                return lastDetectorTemperatureDegC;
             }
         }
 
