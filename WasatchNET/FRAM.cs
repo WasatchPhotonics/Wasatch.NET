@@ -60,13 +60,13 @@ namespace WasatchNET
                 lib_num = page / LIB_PAGE_SIZE;
                 page_num = page % LIB_PAGE_SIZE;
                 combinedVal = Convert.ToUInt16(lib_num << 8 | page_num);
-                ok = spectrometer.sendCmd(
+                ok = spectrometer.sendCmdAsync(
                         opcode: Opcodes.SECOND_TIER_COMMAND,
                         wValue: spectrometer.cmd[Opcodes.WRITE_LIBRARY],
                         wIndex: combinedVal,
                         buf: pages[page]).Result;
             }
-            ok = spectrometer.sendCmd(
+            ok = spectrometer.sendCmdAsync(
                 opcode: Opcodes.SECOND_TIER_COMMAND,
                 wValue: spectrometer.cmd[Opcodes.PROCESS_LIBRARY],
                 wIndex: baselineFlags,
@@ -108,7 +108,7 @@ namespace WasatchNET
             librarySpectrum = new List<ushort>();
             for (ushort page = FRAM_LIB_START; page < FRAM_LIB_END; page++)
             {
-                byte[] buf = spectrometer.getStorage(page).Result;
+                byte[] buf = spectrometer.getStorage(page);
                 if (buf is null)
                 {
                     return true;

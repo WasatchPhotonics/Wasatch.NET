@@ -348,7 +348,7 @@ namespace WinFormDemo
             spectrometerStates.Clear();
             chart1.Series.Clear();
 
-            if (driver.openAllSpectrometers() > 0)
+            if (driver.openAllSpectrometersAsync() > 0)
             {
                 for (int i = 0; i < driver.getNumberOfSpectrometers(); i++)
                 {
@@ -659,7 +659,7 @@ namespace WinFormDemo
             if (result != DialogResult.Yes)
                 return;
 
-            currentSpectrometer.setDFUMode();
+            currentSpectrometer.setDFUModeAsync();
         }
 
         private void numericUpDownLaserPowerPerc_ValueChanged(object sender, EventArgs e)
@@ -854,7 +854,7 @@ namespace WinFormDemo
             DateTime startTime = DateTime.Now;
 
             logger.debug("doAcquireIteration: getting spectrum");
-            double[] raw = await state.spectrometer.getSpectrum();
+            double[] raw = await state.spectrometer.getSpectrumAsync();
             if (raw is null)
             {
                 if (useTasks)

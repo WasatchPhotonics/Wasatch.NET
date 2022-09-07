@@ -110,7 +110,7 @@ namespace WasatchNET
             {
                 logger.debug($"{sn}: iteration = {iterations}, ms = {spec.integrationTimeMS})");
 
-                var spectrum = spec.getSpectrum();
+                var spectrum = spec.getSpectrumAsync();
 
                 if (spec.shuttingDown || spectrum is null)
                 {

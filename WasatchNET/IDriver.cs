@@ -47,7 +47,7 @@ namespace WasatchNET
         /// </remarks>
         ///
         /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
-        Task<int> openAllSpectrometers();
+        Task<int> openAllSpectrometersAsync();
 
         /// <summary>
         /// How many Wasatch USB spectrometers were found.

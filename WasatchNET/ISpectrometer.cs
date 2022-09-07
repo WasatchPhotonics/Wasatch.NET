@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
 namespace WasatchNET
@@ -375,7 +374,7 @@ namespace WasatchNET
         /// the spectrometer to reset out of DFU mode).  Not recommended for the
         /// faint of heart.
         /// </remarks>
-        Task<bool> setDFUMode();
+        bool setDFUMode();
 
         /// <summary>
         /// Set laser power to the specified percentage.
@@ -397,6 +396,6 @@ namespace WasatchNET
         /// averaging, boxcar and dark subtraction.
         /// </summary>
         /// <returns>The acquired spectrum as an array of doubles</returns>
-        Task<double[]> getSpectrum(bool forceNew);
+        double[] getSpectrum(bool forceNew);
     }
 }

@@ -194,7 +194,7 @@ namespace WasatchNET
         {
             reset();
 
-            var count = await driver.openAllSpectrometers();
+            var count = await driver.openAllSpectrometersAsync();
             logger.header($"openAsync: initializing {count} spectrometers");
             for (var i = 0; i < count; i++)
             {
@@ -534,7 +534,7 @@ namespace WasatchNET
                         continue;
 
                     logger.debug($"sending SW trigger to pos {pos}");
-                    await spec.sendSWTrigger();
+                    await spec.sendSWTriggerAsync();
                 }
             }
             lastTriggerSent = DateTime.Now;
@@ -711,7 +711,7 @@ namespace WasatchNET
             }
 
             logger.debug($"getSpectrumAsync({pos}): calling getSpectrum");
-            var intensities = await Task.Run(() => spec.getSpectrum());
+            var intensities = await Task.Run(() => spec.getSpectrumAsync());
             logger.debug($"getSpectrumAsync({pos}): back from getSpectrum");
             if (intensities is null)
                 return null;

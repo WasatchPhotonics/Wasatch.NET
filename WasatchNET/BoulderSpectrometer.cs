@@ -86,8 +86,61 @@ namespace WasatchNET
 
         }
 
+        override internal bool open()
+        {
+            eeprom = new BoulderEEPROM(this);
 
-        override internal async Task<bool> open()
+            lock (acquisitionLock)
+            {
+                if (!commError)
+                {
+                    bool openSucceeded = false;
+                    var task = Task.Run(async () => openSucceeded = await openSpectrometerAsync());
+                    task.Wait();
+
+                    if (openSucceeded)
+                    {
+                        if (!commError)
+                        {
+                            var pixelTask = Task.Run(async () => pixels = (uint)await getPixelAsync());
+                            pixelTask.Wait();
+                        }
+                        logger.info("found spectrometer with {0} pixels", pixels);
+
+                        if (!eeprom.read())
+                        {
+                            logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                            //wrapper.shutdown();
+                            close();
+                            return false;
+                        }
+                        logger.debug("back from reading EEPROM");
+
+                        regenerateWavelengths();
+                        //detectorTECSetpointDegC = 15.0f;
+
+                        logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
+
+                        return true;
+                    }
+
+                    else
+                    {
+                        logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
+                        return false;
+                    }
+                }
+
+                else
+                {
+                    logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
+                    return false;
+                }
+            }
+
+        }
+
+        override internal async Task<bool> openAsync()
         {
             eeprom = new BoulderEEPROM(this);
 
@@ -106,7 +159,7 @@ namespace WasatchNET
                     }
                     logger.info("found spectrometer with {0} pixels", pixels);
 
-                    if (!(await eeprom.read()))
+                    if (!(await eeprom.readAsync()))
                     {
                         logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                         //wrapper.shutdown();
@@ -485,11 +538,66 @@ namespace WasatchNET
             return true;
         }
 
-        public override async Task<double[]> getSpectrum(bool forceNew = false)
+        public override double[] getSpectrum(bool forceNew = false)
         {
             if (!commError)
             {
-                double[] sum = await getSpectrumRaw();
+                lock (acquisitionLock)
+                {
+                    double[] sum = getSpectrumRaw();
+                    if (sum == null)
+                    {
+                        logger.error("getSpectrum: getSpectrumRaw returned null");
+                        return null;
+                    }
+                    logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+                    if (scanAveraging_ > 1)
+                    {
+                        // logger.debug("getSpectrum: getting additional spectra for averaging");
+                        for (uint i = 1; i < scanAveraging_; i++)
+                        {
+                            double[] tmp = getSpectrumRaw();
+                            if (tmp == null)
+                                return null;
+
+                            for (int px = 0; px < pixels; px++)
+                                sum[px] += tmp[px];
+                        }
+
+                        for (int px = 0; px < pixels; px++)
+                            sum[px] /= scanAveraging_;
+                    }
+
+                    if (dark != null && dark.Length == sum.Length)
+                        for (int px = 0; px < pixels; px++)
+                            sum[px] -= dark_[px];
+
+                    if (correctPixels)
+                        correctBadPixels(ref sum);
+
+                    if (boxcarHalfWidth > 0)
+                    {
+                        // logger.debug("getSpectrum: returning boxcar");
+                        return Util.applyBoxcar(boxcarHalfWidth, sum);
+                    }
+                    else
+                    {
+                        // logger.debug("getSpectrum: returning sum");
+                        return sum;
+                    }
+                }
+            }
+            else
+                return new double[pixels];
+
+        }
+
+        public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
+        {
+            if (!commError)
+            {
+                double[] sum = await getSpectrumRawAsync();
                 if (sum == null)
                 {
                     logger.error("getSpectrum: getSpectrumRaw returned null");
@@ -502,7 +610,7 @@ namespace WasatchNET
                     // logger.debug("getSpectrum: getting additional spectra for averaging");
                     for (uint i = 1; i < scanAveraging_; i++)
                     {
-                        double[] tmp = await getSpectrumRaw();
+                        double[] tmp = await getSpectrumRawAsync();
                         if (tmp == null)
                             return null;
 
@@ -538,7 +646,23 @@ namespace WasatchNET
 
         }
 
-        protected override async Task<double[]> getSpectrumRaw(bool skipTrigger=false)
+        protected override double[] getSpectrumRaw(bool skipTrigger = false)
+        {
+            logger.debug("requesting spectrum");
+            ////////////////////////////////////////////////////////////////////
+            // read spectrum
+            ////////////////////////////////////////////////////////////////////
+
+            double[] spec = new double[pixels]; // default to all zeros
+
+            var task = Task.Run(async () => spec = await getSpectrumAsync());
+            task.Wait();
+
+            logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+            return spec;
+        }
+
+        protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger=false)
         {
             logger.debug("requesting spectrum");
             ////////////////////////////////////////////////////////////////////
