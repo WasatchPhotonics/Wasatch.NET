@@ -348,7 +348,7 @@ namespace WinFormDemo
             spectrometerStates.Clear();
             chart1.Series.Clear();
 
-            if (driver.openAllSpectrometersAsync() > 0)
+            if (driver.openAllSpectrometers() > 0)
             {
                 for (int i = 0; i < driver.getNumberOfSpectrometers(); i++)
                 {
@@ -659,7 +659,7 @@ namespace WinFormDemo
             if (result != DialogResult.Yes)
                 return;
 
-            currentSpectrometer.setDFUModeAsync();
+            currentSpectrometer.setDFUMode();
         }
 
         private void numericUpDownLaserPowerPerc_ValueChanged(object sender, EventArgs e)

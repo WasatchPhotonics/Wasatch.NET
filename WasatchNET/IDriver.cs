@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 
 namespace WasatchNET
 {
@@ -47,7 +46,7 @@ namespace WasatchNET
         /// </remarks>
         ///
         /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
-        Task<int> openAllSpectrometersAsync();
+        int openAllSpectrometers();
 
         /// <summary>
         /// How many Wasatch USB spectrometers were found.

@@ -60,17 +60,17 @@ namespace WasatchNET
                 lib_num = page / LIB_PAGE_SIZE;
                 page_num = page % LIB_PAGE_SIZE;
                 combinedVal = Convert.ToUInt16(lib_num << 8 | page_num);
-                ok = spectrometer.sendCmdAsync(
+                ok = spectrometer.sendCmd(
                         opcode: Opcodes.SECOND_TIER_COMMAND,
                         wValue: spectrometer.cmd[Opcodes.WRITE_LIBRARY],
                         wIndex: combinedVal,
-                        buf: pages[page]).Result;
+                        buf: pages[page]);
             }
-            ok = spectrometer.sendCmdAsync(
+            ok = spectrometer.sendCmd(
                 opcode: Opcodes.SECOND_TIER_COMMAND,
                 wValue: spectrometer.cmd[Opcodes.PROCESS_LIBRARY],
                 wIndex: baselineFlags,
-                buf: send_buf).Result;
+                buf: send_buf);
             return true;
         }
 

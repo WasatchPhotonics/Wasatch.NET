@@ -21,7 +21,7 @@ namespace DomainTest
         {
             Driver driver = Driver.getInstance();
             Logger logger = driver.logger;
-            driver.openAllSpectrometersAsync();
+            driver.openAllSpectrometers();
             int count = driver.getNumberOfSpectrometers();
             Console.WriteLine($"found {count} spectrometers");
             logger.close();

@@ -110,7 +110,7 @@ namespace WasatchNET
             {
                 logger.debug($"{sn}: iteration = {iterations}, ms = {spec.integrationTimeMS})");
 
-                var spectrum = spec.getSpectrumAsync();
+                var spectrum = spec.getSpectrum();
 
                 if (spec.shuttingDown || spectrum is null)
                 {
@@ -118,7 +118,7 @@ namespace WasatchNET
                     return;
                 }
 
-                peakCounts = spectrum.Result.Max();
+                peakCounts = spectrum.Max();
                 logger.debug($"{sn}:   max = {peakCounts}");
 
                 ////////////////////////////////////////////////////////////////

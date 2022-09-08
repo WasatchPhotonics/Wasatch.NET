@@ -534,7 +534,7 @@ namespace WasatchNET
                         continue;
 
                     logger.debug($"sending SW trigger to pos {pos}");
-                    await spec.sendSWTriggerAsync();
+                    spec.sendSWTrigger();
                 }
             }
             lastTriggerSent = DateTime.Now;
@@ -711,7 +711,7 @@ namespace WasatchNET
             }
 
             logger.debug($"getSpectrumAsync({pos}): calling getSpectrum");
-            var intensities = await Task.Run(() => spec.getSpectrumAsync());
+            var intensities = await Task.Run(() => spec.getSpectrum());
             logger.debug($"getSpectrumAsync({pos}): back from getSpectrum");
             if (intensities is null)
                 return null;
