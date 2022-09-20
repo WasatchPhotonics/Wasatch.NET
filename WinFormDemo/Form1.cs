@@ -200,14 +200,14 @@ namespace WinFormDemo
             if (currentSpectrometer.hasLaser)
             {
                 logger.debug("has laser, so enabling controls");
-                numericUpDownLaserPowerPerc.Enabled =
                 checkBoxLaserEnable.Enabled = true;
                 checkBoxLaserEnable.Checked = currentSpectrometer.laserEnabled;
 
                 if (currentSpectrometer.eeprom.hasLaserPowerCalibration())
                 {
                     logger.debug("configuring laser power limits");
-                    numericUpDownLaserPowerMW.Enabled = true;
+                    checkBoxLaserPowerInMW.Checked = true;
+                    checkBoxLaserPowerInMW.Enabled = true;
                     numericUpDownLaserPowerMW.Maximum = (decimal)currentSpectrometer.eeprom.maxLaserPowerMW;
                     numericUpDownLaserPowerMW.Minimum = (decimal)currentSpectrometer.eeprom.minLaserPowerMW;
                     logger.debug("done configuring laser power limits");
@@ -215,7 +215,8 @@ namespace WinFormDemo
                 else
                 {
                     logger.debug("has no laser power calibration");
-                    numericUpDownLaserPowerMW.Enabled = false;
+                    checkBoxLaserPowerInMW.Checked = false;
+                    checkBoxLaserPowerInMW.Enabled = false;
                 }
             }
             else
@@ -224,6 +225,7 @@ namespace WinFormDemo
                 numericUpDownLaserPowerPerc.Enabled =
                 numericUpDownLaserPowerMW.Enabled =
                 checkBoxLaserEnable.Enabled =
+                checkBoxLaserPowerInMW.Enabled = 
                 checkBoxLaserEnable.Checked = false;
             }
 
@@ -694,14 +696,20 @@ namespace WinFormDemo
 
         private void numericUpDownLaserPowerPerc_ValueChanged(object sender, EventArgs e)
         {
-            if (currentSpectrometer != null)
-                currentSpectrometer.setLaserPowerPercentage(((float)numericUpDownLaserPowerPerc.Value) / 100.0f);
+            if (currentSpectrometer == null)
+                return;
+            var perc = (float)(sender as NumericUpDown).Value / 100.0f;
+            logger.debug($"setting laser power to {perc}");
+            currentSpectrometer.setLaserPowerPercentage(perc);
         }
 
         private void numericUpDownLaserPowerMW_ValueChanged(object sender, EventArgs e)
         {
-            if (currentSpectrometer != null)
-                currentSpectrometer.laserPowerSetpointMW = (float)numericUpDownLaserPowerMW.Value;
+            if (currentSpectrometer == null)
+                return;
+            var mW = (float)(sender as NumericUpDown).Value;
+            logger.debug($"setting laser power to {mW}mW");
+            currentSpectrometer.laserPowerSetpointMW = mW;
         }
 
         private void numericUpDownDetectorSetpointDegC_ValueChanged(object sender, EventArgs e)
@@ -975,6 +983,13 @@ namespace WinFormDemo
                 else
                     logger.debug("shutdown still pending %s", string.Join(", ", waitList));
             }
+        }
+
+        private void checkBoxLaserPowerInMW_CheckedChanged(object sender, EventArgs e)
+        {
+            var cb = sender as CheckBox;
+            numericUpDownLaserPowerMW.Enabled = cb.Checked;
+            numericUpDownLaserPowerPerc.Enabled = !cb.Checked;
         }
     }
 }
