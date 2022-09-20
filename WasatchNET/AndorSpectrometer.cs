@@ -293,10 +293,7 @@ namespace WasatchNET
 
             if (!areaScanEnabled)
             {
-                int[] spec = new int[pixels];
-
-                // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
-                spec = new int[pixels];     //defaults to all zeros
+                int[] spec = new int[pixels]; //defaults to all zeros
                 andorDriver.StartAcquisition();
                 andorDriver.WaitForAcquisition();
                 uint success = andorDriver.GetAcquiredData(spec, (uint)(pixels));
@@ -315,10 +312,7 @@ namespace WasatchNET
             }
             else
             {
-                int[] spec = new int[yPixels * pixels / BINNING];
-
-                // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
-                spec = new int[yPixels * pixels / BINNING];     //defaults to all zeros
+                int[] spec = new int[yPixels * pixels / BINNING]; //defaults to all zeros
                 andorDriver.StartAcquisition();
                 andorDriver.WaitForAcquisition();
                 uint success = andorDriver.GetAcquiredData(spec, (uint)(yPixels * pixels / BINNING));
@@ -345,10 +339,7 @@ namespace WasatchNET
 
             if (!areaScanEnabled)
             {
-                int[] spec = new int[pixels];
-
-                // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
-                spec = new int[pixels];     //defaults to all zeros
+                int[] spec = new int[pixels]; //defaults to all zeros
                 andorDriver.StartAcquisition();
                 andorDriver.WaitForAcquisition();
                 uint success = await Task.Run(() => andorDriver.GetAcquiredData(spec, (uint)(pixels)));
@@ -367,10 +358,7 @@ namespace WasatchNET
             }
             else
             {
-                int[] spec = new int[yPixels * pixels / BINNING];
-
-                // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
-                spec = new int[yPixels * pixels / BINNING];     //defaults to all zeros
+                int[] spec = new int[yPixels * pixels / BINNING]; //defaults to all zeros
                 andorDriver.StartAcquisition();
                 andorDriver.WaitForAcquisition();
                 uint success = andorDriver.GetAcquiredData(spec, (uint)(yPixels * pixels / BINNING));

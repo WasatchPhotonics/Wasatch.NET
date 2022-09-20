@@ -45,19 +45,8 @@ namespace WasatchNET
         public override bool read()
         {
             HOCTSpectrometer a = spectrometer as HOCTSpectrometer;
-            model = "";
-
+            setDefault(spectrometer);
             serialNumber = "";
-
-            baudRate = 0;
-
-            hasCooling = false;
-            hasBattery = false;
-            hasLaser = false;
-
-            excitationNM = 0;
-
-            slitSizeUM = 0;
 
             bool readOk = false;
             byte[] buffer = HOCTSpectrometer.OctUsb.ReadCalibration(ref readOk);
@@ -82,23 +71,7 @@ namespace WasatchNET
             startupTriggeringMode = 0;
             detectorGain = 0;
             detectorOffset = 0;
-            detectorGainOdd = 0;
-            detectorOffsetOdd = 0;
 
-            degCToDACCoeffs[0] = 0;
-            degCToDACCoeffs[1] = 0;
-            degCToDACCoeffs[2] = 0;
-            detectorTempMax = 0;
-            detectorTempMin = 0;
-            adcToDegCCoeffs[0] = 0;
-            adcToDegCCoeffs[1] = 0;
-            adcToDegCCoeffs[2] = 0;
-            thermistorResistanceAt298K = 0;
-            thermistorBeta = 0;
-            calibrationDate = "";
-            calibrationBy = "";
-
-            detectorName = "";
             activePixelsHoriz = (ushort)a.pixels;
             activePixelsVert = (ushort)HOCTSpectrometer.OctUsb.NUM_OF_LINES_PER_FRAME;
             minIntegrationTimeMS = 98;
@@ -106,34 +79,8 @@ namespace WasatchNET
             actualPixelsHoriz = (ushort)a.pixels;
             ROIHorizStart = 0;
             ROIHorizEnd = (ushort)(a.pixels - 1);
-            ROIVertRegionStart[0] = 0;
-            ROIVertRegionEnd[0] = 0;
-            ROIVertRegionStart[1] = 0;
-            ROIVertRegionEnd[1] = 0;
-            ROIVertRegionStart[2] = 0;
-            ROIVertRegionEnd[2] = 0;
-            linearityCoeffs[0] = 0;
-            linearityCoeffs[1] = 0;
-            linearityCoeffs[2] = 0;
-            linearityCoeffs[3] = 0;
-            linearityCoeffs[4] = 0;
 
-            laserPowerCoeffs[0] = 0;
-            laserPowerCoeffs[1] = 0;
-            laserPowerCoeffs[2] = 0;
-            laserPowerCoeffs[3] = 0;
-            maxLaserPowerMW = 0;
-            minLaserPowerMW = 0;
             laserExcitationWavelengthNMFloat = 0.0f;
-
-            avgResolution = 0.0f;
-
-            userData = new byte[63];
-
-            badPixelSet = new SortedSet<short>();
-            productConfiguration = "";
-
-            intensityCorrectionOrder = 0;
             featureMask.gen15 = false;
 
             return true;
@@ -156,19 +103,8 @@ namespace WasatchNET
         public override async Task<bool> readAsync()
         {
             HOCTSpectrometer a = spectrometer as HOCTSpectrometer;
-            model = "";
-
+            setDefault(spectrometer);
             serialNumber = "";
-
-            baudRate = 0;
-
-            hasCooling = false;
-            hasBattery = false;
-            hasLaser = false;
-
-            excitationNM = 0;
-
-            slitSizeUM = 0;
 
             bool readOk = false;
             byte[] buffer = HOCTSpectrometer.OctUsb.ReadCalibration(ref readOk);
@@ -193,23 +129,7 @@ namespace WasatchNET
             startupTriggeringMode = 0;
             detectorGain = 0;
             detectorOffset = 0;
-            detectorGainOdd = 0;
-            detectorOffsetOdd = 0;
 
-            degCToDACCoeffs[0] = 0;
-            degCToDACCoeffs[1] = 0;
-            degCToDACCoeffs[2] = 0;
-            detectorTempMax = 0;
-            detectorTempMin = 0;
-            adcToDegCCoeffs[0] = 0;
-            adcToDegCCoeffs[1] = 0;
-            adcToDegCCoeffs[2] = 0;
-            thermistorResistanceAt298K = 0;
-            thermistorBeta = 0;
-            calibrationDate = "";
-            calibrationBy = "";
-
-            detectorName = "";
             activePixelsHoriz = (ushort)a.pixels;
             activePixelsVert = (ushort)HOCTSpectrometer.OctUsb.NUM_OF_LINES_PER_FRAME;
             minIntegrationTimeMS = 98;
@@ -217,34 +137,8 @@ namespace WasatchNET
             actualPixelsHoriz = (ushort)a.pixels;
             ROIHorizStart = 0;
             ROIHorizEnd = (ushort)(a.pixels - 1);
-            ROIVertRegionStart[0] = 0;
-            ROIVertRegionEnd[0] = 0;
-            ROIVertRegionStart[1] = 0;
-            ROIVertRegionEnd[1] = 0;
-            ROIVertRegionStart[2] = 0;
-            ROIVertRegionEnd[2] = 0;
-            linearityCoeffs[0] = 0;
-            linearityCoeffs[1] = 0;
-            linearityCoeffs[2] = 0;
-            linearityCoeffs[3] = 0;
-            linearityCoeffs[4] = 0;
 
-            laserPowerCoeffs[0] = 0;
-            laserPowerCoeffs[1] = 0;
-            laserPowerCoeffs[2] = 0;
-            laserPowerCoeffs[3] = 0;
-            maxLaserPowerMW = 0;
-            minLaserPowerMW = 0;
             laserExcitationWavelengthNMFloat = 0.0f;
-
-            avgResolution = 0.0f;
-
-            userData = new byte[63];
-
-            badPixelSet = new SortedSet<short>();
-            productConfiguration = "";
-
-            intensityCorrectionOrder = 0;
             featureMask.gen15 = false;
 
             return true;

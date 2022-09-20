@@ -22,7 +22,7 @@ namespace WasatchNET
 
         public bool commError = false;
         public int nonSpectrumTimeoutMS = 20000;
-        public bool correctPixels = false;
+        public bool correctPixelsMarkedBad = false;
 
         //internal Wrapper wrapper;
         //internal SeaBreezeWrapper wrapper;
@@ -119,21 +119,21 @@ namespace WasatchNET
                         regenerateWavelengths();
                         //detectorTECSetpointDegC = 15.0f;
 
-                        logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
+                        logger.info("Opened SeaBreeze Spectrometer with index {0}", specIndex);
 
                         return true;
                     }
 
                     else
                     {
-                        logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
+                        logger.debug("Unable to open SeaBreeze spectrometer with index {0}", specIndex);
                         return false;
                     }
                 }
 
                 else
                 {
-                    logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
+                    logger.debug("Unable to open SeaBreeze spectrometer with index {0}", specIndex);
                     return false;
                 }
             }
@@ -171,21 +171,21 @@ namespace WasatchNET
                     regenerateWavelengths();
                     //detectorTECSetpointDegC = 15.0f;
 
-                    logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
+                    logger.info("Opened SeaBreeze Spectrometer with index {0}", specIndex);
 
                     return true;
                 }
 
                 else
                 {
-                    logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
+                    logger.debug("Unable to open SeaBreeze spectrometer with index {0}", specIndex);
                     return false;
                 }
             }
 
             else
             {
-                logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
+                logger.debug("Unable to open SeaBreeze spectrometer with index {0}", specIndex);
                 return false;
             }
             
@@ -573,7 +573,7 @@ namespace WasatchNET
                         for (int px = 0; px < pixels; px++)
                             sum[px] -= dark_[px];
 
-                    if (correctPixels)
+                    if (correctPixelsMarkedBad)
                         correctBadPixels(ref sum);
 
                     if (boxcarHalfWidth > 0)
@@ -626,7 +626,7 @@ namespace WasatchNET
                     for (int px = 0; px < pixels; px++)
                         sum[px] -= dark_[px];
 
-                if (correctPixels)
+                if (correctPixelsMarkedBad)
                     correctBadPixels(ref sum);
 
                 if (boxcarHalfWidth > 0)
