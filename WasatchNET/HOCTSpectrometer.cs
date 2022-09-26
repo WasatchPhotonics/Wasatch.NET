@@ -987,52 +987,8 @@ namespace WasatchNET
 
         internal override bool open()
         {
-            if (!commsOpen)
-            {
-                bool openOk = OctUsb.OpenDevice(0x24AA, 0x5000);
-
-                if (openOk)
-                {
-                    linesPerFrame = 500;
-                    OctUsb.SetDelayAdc(3);
-                    OctUsb.SetLinesPerFrame(linesPerFrame);
-
-                    //
-                    // This discrepency probably seems strange but it exists for a reason.
-                    //
-                    // The HOCT unit has a 2048 pixel detector but only the first 1024 of them are actually exposed to light.
-                    // There is hardware level support for sending out frames and spectra that are only 1024 pixels wide,
-                    // however, doing this leads to untenable amounts of lag in feedback (on the order of seconds vs. fractions
-                    // of a second if we set to 2048). It also defaults to 1024 in the class above so we must manually set
-                    // it to 2048.
-                    //
-                    // It is worth discussing whether the pixels should be set to 2048 instead of 1024 and allow higher level
-                    // software to deal with the dead detector. As of this writing there is a bit of a discrepancy: getSectrum
-                    // returns an array that is 1024 pixels wide while getFrame returns frames that are 2048 pixels wide, i.e.
-                    // none are thrown away. Consistency between the two (either throwing away in both, or surfacing all pixels for both)
-                    // is probably preferable. 
-                    //
-                    OctUsb.SetPixelCount(2048);
-                    pixels = (uint)1024;
-
-                    eeprom = new HOCTEEPROM(this);
-                    if (!eeprom.read())
-                    {
-                        logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                        return false;
-                    }
-
-                    FrameProcess = Task.Run(() => collectFrames(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
-                }
-
-                commsOpen = openOk;
-                regenerateWavelengths();
-                return openOk;
-            }
-
-            else
-                return false;
-
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
         }
         internal override async Task<bool> openAsync()
         {
@@ -1122,55 +1078,31 @@ namespace WasatchNET
             OctUsb.ClearProcessingBuffer();
         }
 
+
+
         public override void close()
+        {
+            Task task = Task.Run(async () => await closeAsync());
+        }
+        public async override Task closeAsync()
         {
             if (commsOpen)
             {
                 _cancellationTokenSource.Cancel();
 
-                FrameProcess.Wait();
+                await FrameProcess;
 
-                bool closeOk = OctUsb.CloseDevice();
+                bool closeOk = await Task.Run(() => OctUsb.CloseDevice());
                 if (closeOk)
                     commsOpen = false;
-                
+
             }
         }
 
         public override double[] getSpectrum(bool forceNew = false)
         {
-            if (forceNew)
-            {
-                // 11.25 is based on the HOCT clock rate (11.25), and dividing by 5 is for *200 lines per frame and /1000
-                // to convert from us to ms
-                // The line rate is at least 100 us, in practice we've seen returns take up to ~60-70 ms, hard to say where exactly
-                // all the delay comes from. 20 ms is theoretical minimum. We give an extra buffer for long reads then an extra
-                // 10 for the frame loop's sleep
-                //
-                // May reduce the minimum or change the frame vs. usb split with more experimentation
-                int minWait = 20;
-
-                int wait = (int)((integrationTimeMS / 11.25) / 5);
-                if (wait < minWait)
-                    wait = minWait;
-
-                //give time for loop wait and usb read back
-                wait += 150;
-
-                Thread.Sleep(wait);
-            }
-            ushort[] RawPixelData = getFrame();
-            double[] data = new double[pixels];
-
-            lock (lineLock)
-            {
-                if (RawPixelData != null)
-                {
-                    for (int i = 0; i < pixels; ++i)
-                        data[i] = RawPixelData[i + (sampleLine_ * 1024)];
-                }
-            }
-            return data;
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
         }
         public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
         {
@@ -1194,7 +1126,10 @@ namespace WasatchNET
 
                 Thread.Sleep(wait);
             }
-            ushort[] RawPixelData = getFrame();
+
+            Task<ushort[]> frameTask = Task.Run(() => getFrame());
+
+            ushort[] RawPixelData = await frameTask;
             double[] data = new double[pixels];
 
             lock (lineLock)

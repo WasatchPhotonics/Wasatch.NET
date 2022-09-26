@@ -1899,35 +1899,26 @@ namespace WasatchNET
         
         public byte[] getStorage(UInt16 page)
         {
-            if (featureIdentification.boardType != BOARD_TYPES.ARM)
-                return null;
-            return getCmd2(Opcodes.GET_STORAGE, 64, page);
+            Task<byte[]> task = Task.Run(async () => await getStorageAsync(page));
+            return task.Result;
         }
 
         public bool eraseStorage()
         {
-            if (featureIdentification.boardType != BOARD_TYPES.ARM)
-                return false;
-            return sendCmd2(Opcodes.ERASE_STORAGE);
+            Task<bool> task = Task.Run(async () => await eraseStorageAsync());
+            return task.Result;
         }
 
         public bool sendFeedback(UInt16 sequence)
         {
-            if (featureIdentification.boardType != BOARD_TYPES.ARM)
-                return false;
-            return sendCmd2(Opcodes.SET_FEEDBACK, sequence);
+            Task<bool> task = Task.Run(async () => await sendFeedbackAsync(sequence));
+            return task.Result;
         }
 
         public UntetheredCaptureStatus getUntetheredCaptureStatus()
         {
-            UntetheredCaptureStatus status = UntetheredCaptureStatus.ERROR;
-            if (!isSiG)
-                return status;
-
-            byte result = Unpack.toByte(getCmd(Opcodes.POLL_DATA, 1));
-            if (result < (byte)UntetheredCaptureStatus.ERROR)
-                status = (UntetheredCaptureStatus)result;
-            return status;
+            Task<UntetheredCaptureStatus> task = Task.Run(async () => await getUntetheredCaptureStatusAsync());
+            return task.Result;
         }
         
 
@@ -1945,175 +1936,8 @@ namespace WasatchNET
 
         virtual internal bool open()
         {
-            logger.header($"Spectrometer.open: VID = 0x{usbRegistry.Vid:x4}, PID = 0x{usbRegistry.Pid:x4}");
-
-            // decide if we need to [re]initialize all settings to defaults
-            // (arguably Driver could pass this to open())
-            bool needsInitialization = uptime.needsInitialization(uniqueKey);
-            uptime.setUnknown(uniqueKey);
-            logger.debug($"needsInitialization = {needsInitialization}");
-
-            // clear cache
-            readOnce.Clear();
-
-            if (!reconnect())
-                return logger.error("Spectrometer.open: couldn't reconnect");
-
-            // derive some values from VID/PID
-            featureIdentification = new FeatureIdentification(usbRegistry.Vid, usbRegistry.Pid);
-            if (!featureIdentification.isSupported)
-                return false;
-            if (featureIdentification.boardType == BOARD_TYPES.STROKER)
-                isStroker = true;
-            else
-                isStroker = false;
-
-            // load EEPROM configuration
-            logger.debug("reading EEPROM");
-            eeprom = new EEPROM(this);
-            fram = new FRAM(this);
-            if (!eeprom.read())
-            {
-                logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                usbDevice.Close();
-                return false;
-            }
-            logger.debug("back from reading EEPROM");
-            if (!fram.read())
-            {
-                logger.error("Spectrometer: failed to read FRAM");
-                usbDevice.Close();
-                return false;
-            }
-            logger.debug("back from reading FRAM");
-            // see how the FPGA was compiled
-            logger.debug("reading FPGA Options");
-            fpgaOptions = new FPGAOptions(this);
-            logger.debug("back from FPGA Options");
-
-            logger.debug($"firmwareRevision = {firmwareRevision}");
-            logger.debug($"fpgaRevision = {fpgaRevision}");
-
-            // MustardTree uses 2048-pixel version of the S11510, and all InGaAs are 512
-            pixels = (uint)eeprom.activePixelsHoriz;
-            if (pixels > 2048)
-            {
-                logger.error("Unlikely pixels count found ({0}); defaulting to {1}",
-                    eeprom.activePixelsHoriz, featureIdentification.defaultPixels);
-                pixels = featureIdentification.defaultPixels;
-            }
-
-            // figure out what endpoints we'll use, and sizes for each
-            pixelsPerEndpoint = (int)pixels;
-            endpoints.Add(spectralReader82);
-            if (pixels == 2048 && !isARM)
-            {
-                logger.debug("splitting over two endpoints");
-                endpoints.Add(spectralReader86);
-                pixelsPerEndpoint = 1024;
-                usingDualEndpoints = true;
-            }
-
-            // flush anything left-over from prior exchanges
-            spectralReader82.ReadFlush();
-            if (usingDualEndpoints)
-                spectralReader86.ReadFlush();
-            else
-                spectralReader86 = null;
-
-            regenerateWavelengths();
-
-            // decide what value we should use for detector TEC setpoint
-            //
-            // Note that we are currently doing this every time, even on re-
-            // initializations, because there is no hardware cache of this value,
-            // and I am CHOOSING NOT to recompute the "default raw" from the
-            // logic-determined degC, read the current raw, and then make a decision
-            // based on the difference between those values.
-            float degC = UNINITIALIZED_TEMPERATURE_DEG_C;
-            if (eeprom.startupDetectorTemperatureDegC >= eeprom.detectorTempMin &&
-                eeprom.startupDetectorTemperatureDegC <= eeprom.detectorTempMax)
-                degC = eeprom.startupDetectorTemperatureDegC;
-            else if (featureIdentification.hasDefaultTECSetpointDegC)
-                degC = featureIdentification.defaultTECSetpointDegC;
-            else if (Regex.IsMatch(eeprom.detectorName, @"S10141|G9214", RegexOptions.IgnoreCase))
-                degC = -15;
-            else if (Regex.IsMatch(eeprom.detectorName, @"S11511|S11850|S13971|S7031", RegexOptions.IgnoreCase))
-                degC = 10;
-
-            if (eeprom.hasCooling && degC != UNINITIALIZED_TEMPERATURE_DEG_C)
-            {
-                // TEC doesn't do anything unless you give it a temperature first
-                logger.debug("setting TEC setpoint to {0} deg C", degC);
-                detectorTECSetpointDegC = degC;
-
-                logger.debug("enabling detector TEC");
-                detectorTECEnabled = true;
-            }
-
-            // if this was intended to be a relatively lightweight "change as
-            // little as possible" re-opening, we're done now
-            //
-            // TS: this has caused some weird issues in production when fired.
-            //     It's well intentioned but unnecessary. We can revisit in the
-            //     future.
-            /*
-            if (!needsInitialization)
-            {
-                ////////////////////////////////////////////////////////////////
-                // IMPORTANT: these debug lines HAVE SIDE-EFFECTS, in that they
-                // literally READ AND CACHE the current values from the 
-                // spectrometer hardware.  DO NOT try to disable them with 
-                // "if (logger.debugEnabled)" etc.  (Yes, I just wrote "don't 
-                // remove this debug printf() or the application will fail" :-)
-                ////////////////////////////////////////////////////////////////
-                logger.debug("retaining existing spectrometer hardware state:");
-                logger.debug("  laserEnabled        = {0}",    laserEnabled); // I'm nervous about this one
-                logger.debug("  integrationTimeMS   = {0}",    integrationTimeMS);
-                logger.debug("  detectorGain        = {0:f2}", detectorGain);
-                logger.debug("  detectorOffset      = {0}",    detectorOffset);
-                logger.debug("  detectorGainOdd     = {0:f2}", detectorGainOdd);
-                logger.debug("  detectorOffsetOdd   = {0}",    detectorOffsetOdd);
-                logger.debug("Spectrometer.open: complete (initialization not required)");
-                return true;
-            }
-            */
-
-            ////////////////////////////////////////////////////////////////////
-            // initialize default values for newly opened spectrometers
-            ////////////////////////////////////////////////////////////////////
-
-            // by default, integration time is zero in HW, so set to something
-            // (ignore startup value if it's unreasonable)
-            if (eeprom.startupIntegrationTimeMS >= eeprom.minIntegrationTimeMS &&
-                eeprom.startupIntegrationTimeMS < 5000)
-                integrationTimeMS = eeprom.startupIntegrationTimeMS;
-            else
-                integrationTimeMS = eeprom.minIntegrationTimeMS;
-
-            if (hasLaser)
-            {
-                // ENLIGHTEN doesn't do this, doesn't seem to matter
-                logger.debug("unlinking laser modulation from integration time");
-                laserModulationLinkedToIntegrationTime = false;
-
-                logger.debug("disabling laser modulation");
-                laserModulationEnabled = false;
-
-                logger.debug("disabling laser");
-                laserEnabled = false;
-            }
-
-            detectorGain = eeprom.detectorGain != 0f ? eeprom.detectorGain : 1.9f;
-            detectorOffset = eeprom.detectorOffset;
-            if (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2)
-            {
-                detectorGainOdd = eeprom.detectorGainOdd;
-                detectorOffsetOdd = eeprom.detectorOffsetOdd;
-            }
-
-            logger.debug("Spectrometer.open: complete (initialized)");
-            return true;
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
         }
         virtual internal async Task<bool> openAsync()
         {
@@ -2292,6 +2116,10 @@ namespace WasatchNET
 
         public virtual void close()
         {
+            Task task = Task.Run(async () => await closeAsync());
+        }
+        public async virtual Task closeAsync()
+        {
             logger.debug($"Spectrometer.close: closing {id}");
 
             // quit whatever we're doing
@@ -2314,8 +2142,8 @@ namespace WasatchNET
                 {
                     IUsbDevice wholeUsbDevice = usbDevice as IUsbDevice;
                     if (!ReferenceEquals(wholeUsbDevice, null))
-                        wholeUsbDevice.ReleaseInterface(0);
-                    usbDevice.Close();
+                        await Task.Run(() => wholeUsbDevice.ReleaseInterface(0));
+                    await Task.Run(() => usbDevice.Close());
                 }
                 usbDevice = null;
             }
@@ -3025,23 +2853,24 @@ namespace WasatchNET
         protected float laserPowerSetpointMW_ = 0;
 
 
-        public ushort getDAC_UNUSED() { return Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEC_SETPOINT, 2, 1)); }
+        public ushort getDAC_UNUSED()
+        {
+            Task<ushort> task = Task.Run(async () => await getDAC_UNUSEDAsync());
+            return task.Result;
+        }
         public async Task<ushort> getDAC_UNUSEDAsync() { return Unpack.toUshort(await getCmdAsync(Opcodes.GET_DETECTOR_TEC_SETPOINT, 2, 1)); }
 
         public bool setDFUMode()
         {
-            if (!isARM)
-                return logger.error("setDFUMode only applicable to ARM-based spectrometers (not {0})", featureIdentification.boardType);
-
-            logger.info("Setting DFU mode");
-            return sendCmd(Opcodes.SET_DFU_MODE);
+            Task<bool> task = Task.Run(async () => await setDFUModeAsync());
+            return task.Result;
         }
 
         // this is not a Property because it has no value and cannot be undone
         public bool resetFPGA()
         {
-            logger.info("Resetting FPGA");
-            return sendCmd(Opcodes.FPGA_RESET);
+            Task<bool> task = Task.Run(async () => await resetFPGAAsync());
+            return task.Result;
         }
 
         // this is not a Property because it has no value and cannot be undone
@@ -3159,128 +2988,8 @@ namespace WasatchNET
         /// <returns>The acquired spectrum as an array of doubles</returns>
         public virtual double[] getSpectrum(bool forceNew = false)
         {
-            var driver = Driver.getInstance();
-            lock (acquisitionLock)
-            {
-                uptime.setError(uniqueKey); // assume acquisition may fail
-                currentAcquisitionCancelled = false;
-
-                int retries = 0;
-                double[] sum = null;
-                while (true)
-                {
-                    if (currentAcquisitionCancelled || shuttingDown)
-                        return null;
-
-                    if (areaScanEnabled && fastAreaScan)
-                    {
-                        try
-                        {
-                            sum = getAreaScanLightweight();
-                        }
-                        catch (Exception e)
-                        {
-                            logger.error("Area scan failed out with error {0}", e.Message);
-                        }
-                    }
-                    else
-                    {
-                        sum = getSpectrumRaw();
-                    }
-                    if (currentAcquisitionCancelled || shuttingDown)
-                        return null;
-
-                    if (sum != null)
-                        break;
-
-                    if (retries++ < acquisitionMaxRetries && !untetheredAcquisitionEnabled)
-                    {
-                        // retry the whole thing (including ACQUIRE)
-                        logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
-                        continue;
-                    }
-                    else if (errorOnTimeout)
-                    {
-                        // display error if configured
-                        logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
-                    }
-                    return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
-
-                if (scanAveraging_ > 1)
-                {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
-                    {
-                        // don't send a new SW trigger if using continuous acquisition
-                        double[] tmp;
-                        while (true)
-                        {
-                            if (currentAcquisitionCancelled || shuttingDown)
-                                return null;
-
-                            if (areaScanEnabled && fastAreaScan)
-                            {
-                                tmp = getAreaScanLightweight();
-                            }
-                            else
-                            {
-                                tmp = getSpectrumRaw();
-                            }
-
-                            if (currentAcquisitionCancelled || shuttingDown)
-                                return null;
-
-                            if (tmp != null)
-                                break;
-
-                            if (retries++ < acquisitionMaxRetries)
-                            {
-                                // retry the whole thing (including ACQUIRE)
-                                logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
-                                continue;
-                            }
-                            else if (errorOnTimeout)
-                            {
-                                // display error if configured
-                                logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
-                            }
-                            return null;
-                        }
-                        if (tmp is null)
-                            return null;
-
-                        for (int px = 0; px < sum.Length; px++)
-                            sum[px] += tmp[px];
-                    }
-
-                    for (int px = 0; px < sum.Length; px++)
-                        sum[px] /= scanAveraging_;
-                }
-
-                correctBadPixels(ref sum);
-
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
-
-                // important note on order of operations below - TS
-                if (ramanIntensityCorrectionEnabled)
-                    sum = correctRamanIntensity(sum);
-
-                // this should be enough to update the cached value
-                if (readTemperatureAfterSpectrum && eeprom.hasCooling)
-                    _ = detectorTemperatureDegC;
-
-                spectrumCount++;
-                uptime.setSuccess(uniqueKey);
-
-                if (boxcarHalfWidth_ > 0)
-                    return Util.applyBoxcar(boxcarHalfWidth_, sum);
-                else
-                    return sum;
-            }
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
         }
         public virtual async Task<double[]> getSpectrumAsync(bool forceNew=false)
         {
@@ -3458,14 +3167,8 @@ namespace WasatchNET
 
         public bool sendSWTrigger()
         {
-            byte[] buf = null;
-            if (isARM)
-                buf = new byte[8];
-
-            logger.debug("sending SW trigger");
-            acquireCount++;
-            var wValue = (ushort)(untetheredAcquisitionEnabled ? 1 : 0);
-            return sendCmd(Opcodes.ACQUIRE_SPECTRUM, wValue, buf: buf);
+            Task<bool> task = Task.Run(async () => await sendSWTriggerAsync());
+            return task.Result;
         }
         public async Task<bool> sendSWTriggerAsync()
         {
@@ -3497,11 +3200,7 @@ namespace WasatchNET
         /// 
         void performThrowawaySpectrum()
         {
-            logger.debug("generating throwaway spectrum");
-            // send a trigger if getSpectrumRaw won't
-            if (!autoTrigger || triggerSource_ != TRIGGER_SOURCE.INTERNAL)
-                sendSWTrigger();
-            getSpectrumRaw();
+            Task task = Task.Run(async () => await performThrowawaySpectrumAsync());
         }
         async Task performThrowawaySpectrumAsync()
         {
@@ -3529,164 +3228,8 @@ namespace WasatchNET
         /// 
         protected virtual double[] getSpectrumRaw(bool skipTrigger = false)
         {
-            logger.debug($"getSpectrumRaw: requesting spectrum {id}");
-            byte[] buf = null;
-            if (isARM)
-                buf = new byte[8];
-
-            // request a spectrum
-            if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
-                sendSWTrigger();
-
-            if ((!skipTrigger || isStroker) && !areaScanEnabled)
-            {
-                var strokerDelayMS = integrationTimeMS_ + 5;
-                logger.debug($"getSpectrumRaw: extra Stroker delay {strokerDelayMS}ms");
-                Thread.Sleep((int)strokerDelayMS);
-            }
-
-            if (untetheredAcquisitionEnabled)
-                if (!waitForUntetheredData())
-                    return null;
-
-            ////////////////////////////////////////////////////////////////////
-            // read spectrum
-            ////////////////////////////////////////////////////////////////////
-
-            if (useReadoutMutex)
-                readoutMutex.WaitOne();
-
-            double[] spec = new double[pixels]; // default to all zeros
-
-            int pixelsRead = 0;
-            foreach (UsbEndpointReader spectralReader in endpoints)
-            {
-                // read all expected pixels from the endpoint
-                uint[] subspectrum = null;
-
-                // with retry logic
-                const int maxRetries = 3;
-                int retries = 0;
-                while (true)
-                {
-                    try
-                    {
-                        // read all expected pixels from the endpoint
-                        if (isStroker && retries == 0)
-                        {
-                            subspectrum = readSubspectrumStroker(spectralReader, pixelsPerEndpoint);
-                            if (areaScanEnabled)
-                                pixelsPerEndpoint *= LEGACY_VERTICAL_PIXELS;
-                            spec = new double[pixelsPerEndpoint];
-                        }
-                        else
-                        {
-                            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
-                        }
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.error($"{id} Caught exception in WasatchNET.Spectrometer.getSpectrumRaw: {ex}");
-                        retries++;
-                        if (retries >= maxRetries)
-                        {
-                            logger.error($"giving up after {retries} retries");
-                            if (useReadoutMutex)
-                                readoutMutex.ReleaseMutex();
-                            return null;
-                        }
-
-                        logger.error("reconnecting");
-                        var ok = reconnect();
-                        if (ok)
-                        {
-                            logger.error("reconnection succeeded, retrying read");
-                            continue;
-                        }
-                        else
-                        {
-                            logger.error("reconnection failed, giving up");
-                            if (useReadoutMutex)
-                                readoutMutex.ReleaseMutex();
-                            return null;
-                        }
-                    }
-                }
-
-                // verify that exactly the number expected were received
-                if (subspectrum is null || subspectrum.Length != pixelsPerEndpoint)
-                {
-                    if (!currentAcquisitionCancelled && errorOnTimeout)
-                        logger.error($"failed when reading subspectrum from 0x{spectralReader.EpNum:x2} ({id})");
-                    Thread.Sleep(delayAfterBulkEndpointErrorMS);
-                    if (isStroker && areaScanEnabled)
-                        pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
-                    if (useReadoutMutex)
-                        readoutMutex.ReleaseMutex();
-                    return null;
-                }
-
-                if (isInGaAs && !eeprom.featureMask.evenOddHardwareCorrected)
-                    subspectrum = correctIngaasEvenOdd(subspectrum);
-
-                // append while converting to double
-                for (int i = 0; i < pixelsPerEndpoint; i++)
-                    spec[i + pixelsRead] = subspectrum[i];
-
-                pixelsRead += pixelsPerEndpoint;
-            }
-
-            // release the mutex...other spectrometers can proceed with their reads
-            if (useReadoutMutex)
-                readoutMutex.ReleaseMutex();
-
-            if (isStroker && areaScanEnabled)
-                pixelsPerEndpoint /= LEGACY_VERTICAL_PIXELS;
-
-            if (hasMarker)
-            {
-                shiftedMarkerCount = 0;
-                if (spec[0] != SPECTRUM_START_MARKER)
-                    logger.error($"MARKER: first pixel does not match marker ({id})");
-
-                for (int i = 1; i < spec.Length; i++)
-                {
-                    if (spec[i] == SPECTRUM_START_MARKER)
-                    {
-                        logger.error($"MARKER found at pixel {i} ({id})");
-                        shiftedMarkerCount++;
-                    }
-                }
-
-                // regardless, overwrite the marker now that we've processed it
-                spec[0] = spec[1];
-            }
-
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spec);
-
-            if (isSiG)
-            {
-                // overwrite last pixel
-                spec[pixels - 1] = spec[pixels - 2];
-            }
-
-            if (eeprom.featureMask.bin2x2 && !areaScanEnabled)
-            {
-                var smoothed = new double[spec.Length];
-                for (int i = 0; i < spec.Length - 1; i++)
-                    smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
-                smoothed[spec.Length - 1] = spec[spec.Length - 1];
-                spec = smoothed;
-            }
-
-            logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
-
-            // logger.debug("getSpectrumRaw({0}): {1}", id, string.Join<double>(", ", spec));
-
-            lastSpectrum = spec;
-            return spec;
+            Task<double[]> task = Task.Run(async () => await getSpectrumRawAsync(skipTrigger));
+            return task.Result;
         }
 
         protected virtual async Task<double[]> getSpectrumRawAsync(bool skipTrigger=false)
@@ -3854,16 +3397,8 @@ namespace WasatchNET
         /// <returns>true if poll was successful (data ready), false on error</returns>
         bool waitForUntetheredData()
         {
-            while (true)
-            {
-                Thread.Sleep(1000);
-                var status = getUntetheredCaptureStatus();
-                logger.debug($"waitForUntetheredData: UntetheredCaptureStatus {status}");
-                if (status == UntetheredCaptureStatus.IDLE)
-                    return true;
-                else if (status == UntetheredCaptureStatus.ERROR)
-                    return false;
-            }
+            Task<bool> task = Task.Run(async () => await waitForUntetheredDataAsync());
+            return task.Result;
         }
         async Task<bool> waitForUntetheredDataAsync()
         {
@@ -4136,109 +3671,8 @@ namespace WasatchNET
         //     name.  Recommend picking a different parameter name.
         uint[] readSubspectrum(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
         {
-            ////////////////////////////////////////////////////////////////////
-            // Read all the expected bytes.  Don't mess with demarshalling into
-            // pixels yet, because we might get them in odd-sized batches.
-            ////////////////////////////////////////////////////////////////////
-
-            int bytesPerEndpoint = pixelsPerEndpoint * 2;
-            bool triggerWasExternal = triggerSource == TRIGGER_SOURCE.EXTERNAL;
-
-            byte[] subspectrumBytes = new byte[bytesPerEndpoint];  // initialize to zeros
-
-            int bytesReadThisEndpoint = 0;
-            int bytesRemainingToRead = bytesPerEndpoint;
-
-            while (bytesReadThisEndpoint < bytesPerEndpoint)
-            {
-                // compute this inside the loop, just in case (if doing external
-                // triggering), someone changes integration time during trigger wait
-                int timeoutMS = generateTimeoutMS();
-
-                // read the next block of data
-                ErrorCode err = new ErrorCode();
-                int bytesRead = 0;
-                try
-                {
-                    int bytesToRead = bytesPerEndpoint - bytesReadThisEndpoint;
-                    logger.debug($"readSubspectrum: attempting to read {bytesToRead} bytes of spectrum from endpoint 0x{spectralReader.EpNum:x2} with timeout {timeoutMS}ms ({id})");
-                    err = spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, bytesPerEndpoint - bytesReadThisEndpoint, timeoutMS, out bytesRead);
-                    logger.debug($"readSubspectrum: read {bytesRead} bytes of spectrum from endpoint 0x{spectralReader.EpNum:x2} ({err}) ({id})");
-                }
-                catch (Exception ex)
-                {
-                    logger.error("readSubspectrum: caught exception reading endpoint ({id}): {0}", ex.Message);
-                    return null;
-                }
-
-                bytesReadThisEndpoint += bytesRead;
-                logger.debug($"readSubspectrum: bytesReadThisEndpoint now {bytesReadThisEndpoint} ({id})");
-                if (bytesReadThisEndpoint == bytesPerEndpoint)
-                    break;
-
-                if (bytesRead == 0 && !triggerWasExternal)
-                {
-                    logger.error($"readSubspectrum: read nothing (timeout?) ({id})");
-                    return null;
-                }
-
-                if (bytesReadThisEndpoint > bytesPerEndpoint)
-                {
-                    logger.error($"readSubspectrum: read too many bytes on endpoint 0x{spectralReader.EpNum:x2} (read {bytesReadThisEndpoint} of expected {bytesPerEndpoint}) ({id})");
-                    break;
-                }
-
-                if (triggerWasExternal && triggerSource != TRIGGER_SOURCE.EXTERNAL)
-                {
-                    // need to do this so software can send an ACQUIRE command, else we'll
-                    // loop forever
-                    logger.debug($"triggering switched from external to internal...resetting ({id})");
-                    return null;
-                }
-
-                if (currentAcquisitionCancelled)
-                {
-                    logger.debug("readSubspectrum: current acquisition cancelled");
-                    return null;
-                }
-
-                if (triggerSource == TRIGGER_SOURCE.EXTERNAL && !shuttingDown)
-                {
-                    // Note that we may fall down this path following a SW-triggered
-                    // throwaway initiated by integration time change, even if the overall
-                    // triggering strategy is external.  In that case the following error
-                    // is misleading (it wasn't externally-triggered) but valid (it did
-                    // timeout).
-
-                    // if we were given an explicit timeout, give up
-                    if (acquisitionTimeoutMS != null || acquisitionTimeoutTimestamp != null)
-                    {
-                        if (errorOnTimeout)
-                            logger.error("failed to receive externally-triggered spectrum within explicit timeout");
-                        acquisitionTimeoutTimestamp = null;
-                        return null;
-                    }
-                    else
-                    {
-                        logger.debug($"readSubspectrum: still waiting for external trigger ({id})");
-                    }
-                }
-
-                logger.error("throwing away partial spectrum, try again");
-                return null;
-            }
-
-            ////////////////////////////////////////////////////////////////////
-            // To get here, we should have exactly the expected number of bytes
-            ////////////////////////////////////////////////////////////////////
-
-            // demarshall into pixels
-            uint[] subspectrum = new uint[pixelsPerEndpoint];
-            for (int i = 0; i < pixelsPerEndpoint; i++)
-                subspectrum[i] = (uint)(subspectrumBytes[i * 2] | (subspectrumBytes[i * 2 + 1] << 8));  // LSB-MSB
-
-            logger.debug("readSubspectrum: returning subspectrum");
-            return subspectrum;
+            Task<uint[]> task = Task.Run(async () => await readSubspectrumAsync(spectralReader, pixelsPerEndpoint));
+            return task.Result;
         }
         async Task<uint[]> readSubspectrumAsync(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
         {

@@ -30,35 +30,14 @@ namespace WasatchNET
 
         public override bool write(bool allPages = false)
         {
-            return true;
+            Task<bool> task = Task.Run(async () => await writeAsync(allPages));
+            return task.Result;
         }
 
         public override bool read()
         {
-            MockSpectrometer a = spectrometer as MockSpectrometer;
-            setDefault(spectrometer);
-            serialNumber = "";
-            hasCooling = true;
-            startupIntegrationTimeMS = 8;
-            //double temp = a.detectorTemperatureDegC;
-            startupDetectorTemperatureDegC = 15;
-            detectorGain = 0;
-            detectorOffset = 0;
-             
-            detectorTempMax = 25;
-            detectorTempMin = 10;
-
-            detectorName = "";
-            activePixelsHoriz = (ushort)a.pixels;
-            activePixelsVert = 0;
-            minIntegrationTimeMS = 8;
-            maxIntegrationTimeMS = 1000000;
-            actualPixelsHoriz = (ushort)a.pixels;
-            laserExcitationWavelengthNMFloat = 830.0f;
-
-            featureMask.gen15 = false;
-
-            return true;
+            Task<bool> task = Task.Run(async () => await readAsync());
+            return task.Result;
         }
 
         public override async Task<bool> writeAsync(bool allPages=false)

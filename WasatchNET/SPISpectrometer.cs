@@ -222,139 +222,8 @@ namespace WasatchNET
 
         override internal bool open()
         {
-            eeprom = new SPIEEPROM(this);
-
-            string ftdi = null;
-            try
-            {
-                ftdi = FtdiInventory.DeviceListInfo();
-            }
-            catch
-            {
-                logger.debug("Unable to generate FTDI list");
-                return false;
-            }
-
-            if (ftdi.Length == 0)
-            {
-                logger.debug("Unable to find any SPI spectrometer");
-                return false;
-            }
-
-            string snPattern = "Serial Number: ";
-
-            int start = ftdi.IndexOf(snPattern, 0);
-
-            start = start + 15; // TS - I'm not positive on how static this will be, may be worth changing down the line
-
-            string devSerialNumber = ftdi.Substring(start, 8);
-
-            MpsseDevice.MpsseParams mpsseParams = new MpsseDevice.MpsseParams();
-            mpsseParams.clockDevisor = 1;
-
-            try
-            {
-                mpsse = new FT232H(devSerialNumber, mpsseParams);
-            }
-            catch
-            {
-                logger.debug("Unable to create MPSSE connection with board. May be missing drivers");
-                return false;
-            }
-
-            try
-            {
-                spi = new SpiDevice(mpsse,
-                         new SpiDevice.SpiParams
-                         {
-                             Mode = SpiDevice.SpiMode.Mode0,
-                             ChipSelect = FtdiPin.CS,
-                             ChipSelectPolicy = SpiDevice.CsPolicy.CsActiveLow
-                         });
-            }
-            catch
-            {
-                logger.debug("Unable to create SPI connection with board. May be missing drivers");
-                return false;
-            }
-
-            if (!eeprom.read())
-            {
-                logger.info("Spectrometer: failed to GET_MODEL_CONFIG");
-                close();
-                return false;
-            }
-
-            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-
-            logger.debug("Trying to get pixel count");
-
-            byte[] payload = new byte[0];
-            byte[] command = wrapCommand(GET_PIXEL_COUNT, payload, STANDARD_PADDING);
-
-            byte[] result = spi.readWrite(command);
-
-            logger.debug("pixel response: ");
-
-            foreach (byte b in result)
-                logger.debug("{0}", b);
-
-            byte[] pixelBytes = new byte[2];
-
-            int index = 0;
-
-            while (index < result.Length)
-            {
-                if (result[index] == START_CMD)
-                    break;
-                ++index;
-            }
-
-            while (result[index] == START_CMD)
-                ++index;
-            --index;
-
-            pixelBytes[1] = result[index + 5];
-            pixelBytes[0] = result[index + 4];
-
-            pixels = (ushort)Unpack.toShort(pixelBytes);
-
-            if (pixels > 10000)
-                return false;
-
-            //sets firmware throwaway
-            byte[] transmitData = new byte[1] { 0x01 };
-
-
-            command = wrapCommand(0xB2, transmitData, STANDARD_PADDING);
-
-            result = spi.readWrite(command);
-
-            //sets edge trigger
-            transmitData = new byte[2] { 0x86, 0x40 };
-
-            command = wrapCommand(SET_SETTINGS, transmitData, STANDARD_PADDING);
-
-            result = spi.readWrite(command);
-
-            index = 0;
-            while (index < result.Length)
-            {
-                if (result[index] == START_CMD)
-                    break;
-                ++index;
-            }
-
-            if (index == result.Length || result[index + 3] != 0)
-                return false;
-
-            logger.debug("All SPI comm successful, trying to gen wavelengths now");
-
-            regenerateWavelengths();
-
-            logger.debug("Successfully connected to SPI Spectrometer through adafruit board with serial number {0}", devSerialNumber);
-
-            return true;
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
         }
         override internal async Task<bool> openAsync()
         {
@@ -493,55 +362,20 @@ namespace WasatchNET
             return true;
         }
 
+
         public override void close()
         {
-            mpsse.Dispose();
+            Task task = Task.Run(async () => await closeAsync());
+        }
+        public async override Task closeAsync()
+        {
+            await Task.Run(() => mpsse.Dispose());
         }
 
         public override double[] getSpectrum(bool forceNew = false)
         {
-            lock (acquisitionLock)
-            {
-                double[] sum = getSpectrumRaw();
-                if (sum == null)
-                {
-                    logger.error("getSpectrum: getSpectrumRaw returned null");
-                    return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
-
-                if (scanAveraging_ > 1)
-                {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
-                    {
-                        double[] tmp = getSpectrumRaw();
-                        if (tmp == null)
-                            return null;
-
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] += tmp[px];
-                    }
-
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] /= scanAveraging_;
-                }
-
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
-
-                if (boxcarHalfWidth > 0)
-                {
-                    // logger.debug("getSpectrum: returning boxcar");
-                    return Util.applyBoxcar(boxcarHalfWidth, sum);
-                }
-                else
-                {
-                    // logger.debug("getSpectrum: returning sum");
-                    return sum;
-                }
-            }
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
         }
         public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
         {
@@ -707,48 +541,8 @@ namespace WasatchNET
 
         protected override double[] getSpectrumRaw(bool skipTrigger = false)
         {
-            logger.debug("requesting spectrum");
-            ////////////////////////////////////////////////////////////////////
-            // read spectrum
-            ////////////////////////////////////////////////////////////////////
-
-            double[] spec = new double[pixels];
-
-            mpsse.SetDataBitsHighByte(FtdiPin.GPIOH0, FtdiPin.GPIOH0);
-            if (edgeTrigger)
-                Thread.Sleep(1);
-            else
-                Thread.Sleep((int)integrationTimeMS);
-            mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
-
-            byte read = mpsse.ReadDataBitsHighByte();
-            while ((read & 0b0010) != 0b0010)
-            {
-                read = mpsse.ReadDataBitsHighByte();
-            }
-
-            byte[] command = padding((int)pixels * 2 + STANDARD_PADDING * 2);
-
-            //actual result
-            byte[] result = spi.readWrite(command);
-
-            //unpack pixels
-            for (int i = 0; i < pixels; ++i)
-            {
-                int msb = result[i * 2 + 1];
-                int lsb = result[i * 2 + 2];
-
-                UInt16 pixel = (ushort)((msb << 8) | lsb);
-
-                spec[i] = pixel;
-
-            }
-
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spec);
-
-            return spec;
-
+            Task<double[]> task = Task.Run(async () => await getSpectrumRawAsync(skipTrigger));
+            return task.Result;
         }
         protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger=false)
         {

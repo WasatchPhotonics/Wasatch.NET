@@ -30,42 +30,14 @@ namespace WasatchNET
 
         public override bool read()
         {
-            BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
-
-            setDefault(spectrometer);
-
-            serialNumber = "";
-
-            hasCooling = true;
-            int errorReader = 0;
-            startupIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
-            double temp = a.detectorTemperatureDegC;
-            startupDetectorTemperatureDegC = (short)temp;
-            if (startupDetectorTemperatureDegC >= 99)
-                startupDetectorTemperatureDegC = 15;
-            else if (startupDetectorTemperatureDegC <= -50)
-                startupDetectorTemperatureDegC = 15;
-            detectorGain = 0;
-            detectorOffset = 0;
-
-            detectorTempMax = 25;
-            detectorTempMin = 10;
-            activePixelsHoriz = (ushort)a.pixels;
-            activePixelsVert = 0;
-            minIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
-            maxIntegrationTimeMS = 1000000;
-            actualPixelsHoriz = (ushort)a.pixels;
-            laserExcitationWavelengthNMFloat = 830.0f;
-
-            featureMask.gen15 = false;
-
-            return true;
+            Task<bool> task = Task.Run(async () => await readAsync());
+            return task.Result;
         }
 
         public override bool write(bool allPages = false)
         {
-            defaultValues = false;
-            return true;
+            Task<bool> task = Task.Run(async () => await writeAsync(allPages));
+            return task.Result;
         }
 
         public override async Task<bool> readAsync()

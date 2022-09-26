@@ -49,58 +49,14 @@ namespace WasatchNET
         }
         public override bool read()
         {
-            AndorSpectrometer a = spectrometer as AndorSpectrometer;
-
-            setDefault(spectrometer);
-            serialNumber = "";
-            hasCooling = true;
-
-            int minTemp = 0;
-            int maxTemp = 0;
-            int xPixels = 0;
-            int yPixels = 0;
-            andorDriver.GetTemperatureRange(ref minTemp, ref maxTemp);
-            andorDriver.GetDetector(ref xPixels, ref yPixels);
-
-            startupIntegrationTimeMS = (ushort)a.integrationTimeMS;
-            double temp = a.detectorTECSetpointDegC;
-            startupDetectorTemperatureDegC = (short)temp;
-            startupTriggeringMode = 0;
-
-            //the min and max temps from the driver are known to be inaccurate, so we use const values
-            detectorTempMax = effectiveMaxTemp;
-            detectorTempMin = effectiveMinTemp;
-            //detectorTempMax = (short)maxTemp;
-            //detectorTempMin = (short)minTemp;
-
-            int cameraSerial = 0;
-            uint error = andorDriver.GetCameraSerialNumber(ref cameraSerial);
-            if (error != AndorSpectrometer.DRV_SUCCESS)
-                detectorSerialNumber = "";
-            else
-                detectorSerialNumber = "CCD-" + cameraSerial.ToString();
-            detectorName = "iDus";
-            activePixelsHoriz = (ushort)xPixels;
-            activePixelsVert = (ushort)(yPixels / AndorSpectrometer.BINNING);
-            minIntegrationTimeMS = a.integrationTimeMS;
-            maxIntegrationTimeMS = uint.MaxValue;
-            actualPixelsHoriz = (ushort)xPixels;
-
-            userData = new byte[63];
-            subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
-
-            badPixelSet = new SortedSet<short>();
-            productConfiguration = "";
-            intensityCorrectionOrder = 0;
-            featureMask.gen15 = false;
-
-            return true;
+            Task<bool> task = Task.Run(async () => await readAsync());
+            return task.Result;
         }
 
         public override bool write(bool allPages = false)
         {
-            defaultValues = false;
-            return true;
+            Task<bool> task = Task.Run(async () => await writeAsync(allPages));
+            return task.Result;
         }
 
         public override async Task<bool> readAsync()
