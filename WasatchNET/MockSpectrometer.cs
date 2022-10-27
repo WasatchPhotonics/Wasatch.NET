@@ -43,6 +43,11 @@ namespace WasatchNET
 
         }
 
+        public MockSpectrometer() : base(null)
+        {
+
+        }
+
         public override bool areaScanEnabled
         {
             get
@@ -626,6 +631,17 @@ namespace WasatchNET
             else
                 return false;
 
+        }
+
+        public bool initSpectrometer(EEPROMJSON json)
+        {
+            eeprom.setFromJSON(json);
+            if (pixels != eeprom.activePixelsHoriz)
+                pixels = eeprom.activePixelsHoriz;
+
+            regenerateWavelengths();
+
+            return true;
         }
 
         public void addData(string src, int integrationTime, double[] spectrum)
