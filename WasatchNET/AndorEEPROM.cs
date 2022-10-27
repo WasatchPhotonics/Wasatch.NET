@@ -85,12 +85,36 @@ namespace WasatchNET
             //detectorTempMax = (short)maxTemp;
             //detectorTempMin = (short)minTemp;
 
+            AndorSDK.AndorCapabilities caps = new AndorSDK.AndorCapabilities();
+            
+            //andorDriver.getca
+
+            string detModel = "";
+            andorDriver.GetHeadModel(ref detModel);
+
+            uint error = andorDriver.GetCapabilities(ref caps);
+
+            string detType = "";
+            if (error != AndorSpectrometer.DRV_SUCCESS)
+                detType = "iDus ";
+            else
+            {
+                if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_IDUS)
+                    detType = "iDus ";
+                else if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_NEWTON)
+                    detType = "Newton ";
+                else
+                    detType = "iDus ";
+            }
+            //caps.t
+
             int cameraSerial = 0;
-            uint error = andorDriver.GetCameraSerialNumber(ref cameraSerial);
+            error = andorDriver.GetCameraSerialNumber(ref cameraSerial);
             if (error != AndorSpectrometer.DRV_SUCCESS)
                 detectorSerialNumber = "";
             else
                 detectorSerialNumber = "CCD-" + cameraSerial.ToString();
+            //detectorName = detType + detModel;
             detectorName = "iDus";
             activePixelsHoriz = (ushort)xPixels;
             activePixelsVert = (ushort)(yPixels / AndorSpectrometer.BINNING);
