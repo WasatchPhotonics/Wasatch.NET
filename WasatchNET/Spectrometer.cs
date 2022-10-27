@@ -2127,8 +2127,10 @@ namespace WasatchNET
 
             // turn off the laser
             if (usbDevice != null && usbDevice.IsOpen && hasLaser)
+            {
                 laserEnabled = false;
-
+                Thread.Sleep(100);
+            }
             // ensure we're no longer acquiring
             
                 // stop all USB comms
@@ -2140,6 +2142,7 @@ namespace WasatchNET
             {
                 if (usbDevice.IsOpen)
                 {
+                    waitForUsbAvailable();
                     IUsbDevice wholeUsbDevice = usbDevice as IUsbDevice;
                     if (!ReferenceEquals(wholeUsbDevice, null))
                         await Task.Run(() => wholeUsbDevice.ReleaseInterface(0));
