@@ -163,8 +163,11 @@ namespace WasatchNET
         // at that point will need to add calls to change acquisition mode/read mode here
         public override double[] getSpectrum(bool forceNew = false)
         {
-            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
-            return task.Result;
+            lock (acquisitionLock)
+            {
+                Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+                return task.Result;
+            }
         }
         public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
         {
