@@ -2128,8 +2128,10 @@ namespace WasatchNET
             // turn off the laser
             if (usbDevice != null && usbDevice.IsOpen && hasLaser)
             {
-                laserEnabled = false;
-                Thread.Sleep(100);
+                //without this await wrapping the thread can continue before the disabled has finished
+                //and kill the USB device before it's actually been used
+                await Task.Run(() => laserEnabled = false);
+                //Thread.Sleep(100);
             }
             // ensure we're no longer acquiring
             
