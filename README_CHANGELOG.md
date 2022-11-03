@@ -1,6 +1,12 @@
 # Wasatch.NET Changelog
 
+- 2022-11-03 2.5.1
+	- beta
+	- some Anbdor noodling
+	- made sync wrappers a little safer
+	- moved standard spec properties back to sync for now (async set caused a huge out of order bug, see README)
 - 2022-09-XX 2.5.0
+	- beta
 	- added async versions of a number of key functions
 	- moved most "USB-based" properties to using "synchronous async" usb functions for standard spectometer
 - 2022-08-17 2.4.10

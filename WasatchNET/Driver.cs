@@ -348,6 +348,7 @@ namespace WasatchNET
         public void closeAllSpectrometers()
         {
             Task task = Task.Run(async () => await closeAllSpectrometersAsync());
+            task.Wait();
         }
         public async Task closeAllSpectrometersAsync()
         {

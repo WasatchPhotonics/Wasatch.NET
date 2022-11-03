@@ -206,6 +206,7 @@ namespace WasatchNET
         public override void close()
         {
             Task task = Task.Run(async () => await closeAsync());
+            task.Wait();
         }
 
         public async override Task closeAsync()
