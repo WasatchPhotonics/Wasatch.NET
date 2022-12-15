@@ -2037,6 +2037,9 @@ namespace WasatchNET
                 detectorOffsetOdd = eeprom.detectorOffsetOdd;
             }
 
+            // default high for Raman, leave low for reference-based techniques
+            highGainModeEnabled = excitationWavelengthNM > 0;
+
             logger.debug("Spectrometer.open: complete (initialized)");
             return true;
         }
