@@ -372,7 +372,10 @@ namespace WasatchNET
         public override short detectorOffsetOdd { get => 0; }
 
         public override bool isARM => false;
-        public override bool isInGaAs => false;
+
+        // This won't actually do anything until we add code to load the virtual EEPROM from AWS
+        public virtual bool isInGaAs => eeprom.detectorName.Contains("DU490", StringComparison.CurrentCultureIgnoreCase);
+
         public override TRIGGER_SOURCE triggerSource
         {
             get => TRIGGER_SOURCE.EXTERNAL;
