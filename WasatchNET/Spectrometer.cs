@@ -2037,6 +2037,9 @@ namespace WasatchNET
                 detectorOffsetOdd = eeprom.detectorOffsetOdd;
             }
 
+            // default high for InGaAs (1064, NIR1, NIR2); note Andor logic is in AndorSpectrometer
+            highGainModeEnabled = isInGaAs;
+
             logger.debug("Spectrometer.open: complete (initialized)");
             return true;
         }
@@ -2122,7 +2125,7 @@ namespace WasatchNET
 
         public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
         public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx");
-        public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase));
+        public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase)); 
 
         public virtual bool hasLaser
         {
