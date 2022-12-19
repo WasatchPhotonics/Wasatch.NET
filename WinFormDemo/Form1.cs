@@ -191,6 +191,17 @@ namespace WinFormDemo
             numericUpDownBoxcarHalfWidth.Value = currentSpectrometer.boxcarHalfWidth;
             numericUpDownScanAveraging.Value = currentSpectrometer.scanAveraging;
 
+            logger.debug("update high-gain mode");
+            if (currentSpectrometer.isInGaAs)
+            {
+                checkBoxHighGainMode.Enabled = true;
+                checkBoxHighGainMode.Checked = currentSpectrometer.highGainModeEnabled;
+            }
+            else
+            {
+                checkBoxHighGainMode.Enabled = false;
+            }
+
             logger.debug("update TEC controls");
             numericUpDownDetectorSetpointDegC.Minimum = (int)currentSpectrometer.eeprom.detectorTempMin;
             numericUpDownDetectorSetpointDegC.Maximum = (int)currentSpectrometer.eeprom.detectorTempMax;
@@ -489,6 +500,13 @@ namespace WinFormDemo
             currentSpectrometer.ramanIntensityCorrectionEnabled = checkBoxRamanCorrection.Checked;
             checkBoxTakeDark.Enabled = !checkBoxRamanCorrection.Checked;
 
+        }
+
+        private void checkBoxHighGainMode_CheckedChanged(object sender, EventArgs e)
+        {
+            var cb = sender as CheckBox;
+            logger.debug($"changing currentSpectrometer {currentSpectrometer.serialNumber} High-Gain Mode to {cb.Checked}");
+            currentSpectrometer.highGainModeEnabled = cb.Checked;
         }
 
         private void checkBoxAccessoriesEnabled_CheckedChanged(object sender, EventArgs e)
