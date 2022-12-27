@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>WasatchNET</RootNamespace>
     <AssemblyName>WasatchNET</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -101,8 +101,8 @@
     <Reference Include="MPSSELight">
       <HintPath>..\lib\MPSSELight.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.2\lib\net40\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -117,21 +117,16 @@
     <Compile Include="AcquisitionStatus.cs" />
     <Compile Include="AndorEEPROM.cs" />
     <Compile Include="AndorSpectrometer.cs" />
-    <Compile Include="BoulderEEPROM.cs" />
-    <Compile Include="BoulderSpectrometer.cs" />
     <Compile Include="FRAM.cs" />
     <Compile Include="EEPROMJSON.cs" />
     <Compile Include="FeatureIdentification.cs" />
     <Compile Include="FeatureMask.cs" />
     <Compile Include="FPGAOptions.cs" />
-    <Compile Include="HOCTEEPROM.cs" />
-    <Compile Include="HOCTSpectrometer.cs" />
     <Compile Include="IDriver.cs" />
     <Compile Include="IDriverVBAWrapper.cs" />
     <Compile Include="IFPGAOptions.cs" />
     <Compile Include="ILogger.cs" />
     <Compile Include="IEEPROM.cs" />
-    <Compile Include="IntegrationOptimizer.cs" />
     <Compile Include="IOpcodes.cs" />
     <Compile Include="ISpectrometer.cs" />
     <Compile Include="IUInt40.cs" />
@@ -139,13 +134,11 @@
     <Compile Include="MockSpectrometerJSON.cs" />
     <Compile Include="MockEEPROM.cs" />
     <Compile Include="MockSpectrometer.cs" />
-    <Compile Include="MultiChannelWrapper.cs" />
     <Compile Include="ParseData.cs" />
     <Compile Include="SeaBreezeWrapper.cs" />
     <Compile Include="SpectrometerUptime.cs" />
     <Compile Include="SPIEEPROM.cs" />
     <Compile Include="SPISpectrometer.cs" />
-    <Compile Include="BoulderStatusRegister.cs" />
     <Compile Include="Unpack.cs" />
     <Compile Include="FunkyFloat.cs" />
     <Compile Include="Opcodes.cs" />

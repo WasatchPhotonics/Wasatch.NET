@@ -128,18 +128,7 @@ namespace WasatchNET
                 logger.debug("USB Registry for: {0}", desc);
                 logDevice(usbRegistry);
 
-                if (usbRegistry.Vid == 0x24aa && usbRegistry.Pid == 0x5000)
-                {
-                    HOCTSpectrometer spectrometer = new HOCTSpectrometer(usbRegistry);
-                    if (spectrometer.open())
-                    {
-                        string key = String.Format("{0}-{1}", "HOCT", "0000");
-                        if (!sorted.ContainsKey(key))
-                            sorted.Add(key, new List<Spectrometer>());
-                        sorted[key].Add(spectrometer);
-                    }
-                }
-                else if (usbRegistry.Vid == 0x24aa)
+                if (usbRegistry.Vid == 0x24aa)
                 {
                     Spectrometer spectrometer = new Spectrometer(usbRegistry) { uptime = uptime };
                     if (spectrometer.open())
@@ -224,47 +213,6 @@ namespace WasatchNET
             // Add 3rd-party USB spectrometers (e.g. Ocean Optics, etc)
             ////////////////////////////////////////////////////////////////////
 
-            if (Environment.GetEnvironmentVariable("WASATCHNET_USE_SEABREEZE") != null)
-            {
-                logger.debug("Checking for SeaBreeze and Ocean Optics spectrometers");
-
-                // Add 3rd-party USB spectrometers (e.g. Ocean Optics, etc)
-                bool sbPresent = CheckLibrary("SeaBreeze");
-                logger.debug("SeaBreeze {0} installed", sbPresent ? "appears" : "not");
-
-                if (deviceRegistries.Count > 0 && Environment.Is64BitProcess && sbPresent)
-                {
-                    UsbRegistry usbRegistry2 = deviceRegistries[0];
-                    String desc2 = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
-                        usbRegistry2.Vid,
-                        usbRegistry2.Pid,
-                        (ushort)usbRegistry2.Rev,
-                        usbRegistry2[SPDRP.DeviceDesc]);
-
-                    int boulderIndex = 0;
-                    try
-                    {
-                        BoulderSpectrometer boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
-
-                        while (boulderSpectrometer.open())
-                        {
-                            boulderSpectrometer.detectorTECSetpointDegC = 15.0f;
-                            spectrometers.Add(boulderSpectrometer);
-                            ++boulderIndex;
-                            boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
-                        }
-
-                        if (boulderIndex == 0)
-                        {
-                            logger.debug("openAllSpectrometers: failed to open {0}", desc2);
-                        }
-                    }
-                    catch (DllNotFoundException)
-                    {
-                        logger.debug("SeaBreeze does not appear to be installed, not trying to open relevant Spectrometers");
-                    }
-                }
-            }
 
 #if WIN32
             AndorSDK andorDriver = new ATMCD32CS.AndorSDK();
@@ -574,9 +522,11 @@ namespace WasatchNET
     //      senderText = senderText += string.Format(" {0} ", t.Name);
     //  }
 
+        /*
         public MultiChannelWrapper getMultiChannelWrapper()
         {
             return MultiChannelWrapper.getInstance();
         }
+        */
     }
 }

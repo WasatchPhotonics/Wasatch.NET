@@ -73,6 +73,6 @@ namespace WasatchNET
         /// Gets a custom Wrapper object provided to automate multi-channel operations.
         /// </summary>
         /// <returns>a MultiChannelWrapper</returns>
-        MultiChannelWrapper getMultiChannelWrapper();
+        //MultiChannelWrapper getMultiChannelWrapper();
     }
 }
