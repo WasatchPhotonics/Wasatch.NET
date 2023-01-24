@@ -187,8 +187,8 @@ See [README-SPI.md](README-SPI.md).
 
 ## Build Configuration
 
-Our standard DLL is built against .NET 4.0 Client Profile with debugging enabled,
-and the WinFormDemo is built against .NET 4.6.1. 
+Our standard DLL is built against .NET 4.8 Client Profile with debugging enabled,
+and the WinFormDemo is built against .NET 4.8.
 
 Although the DLL and demo will build and run "For Any CPU", we went ahead and made
 build configurations for x64 and x86 because some client platforms prefer binding
@@ -196,6 +196,11 @@ to specific architectures.
 
 Users are welcome to build the library in other configurations; please let us 
 know if you encounter any issues which we may help resolve.
+
+### .NET Framework 4.0
+
+If you still need to build against .NET Framework 4.0, checkout the "framework40"
+branch and build using Visual Studio 2019 Community Edition.
 
 # Testing
 
