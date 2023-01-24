@@ -17,7 +17,7 @@ doc docs:
 deploy:
 	@for CLIENT in RamanSpecCal CrashTestNET ; \
      do \
-        for ARCH in x86 x64 ; \
+        for ARCH in x86 x64 SetupAnyCPU ; \
         do \
             if [ -d ../$$CLIENT/dist/$$ARCH ] ; \
             then \
@@ -29,7 +29,7 @@ deploy:
 clean:
 	@rm -rf {WasatchNET,WinFormDemo,UnitTests,MultiChannelDemo,APITest,LibUsbDotNetTest}/{bin,obj} \
                                 \
-            Setup{32,64}/{Debug,Release} \
+            Setup{32,64,AnyCPU}/{Debug,Release} \
                                 \
             lib/WasatchNET.dll  \
                                 \
