@@ -2054,6 +2054,8 @@ namespace WasatchNET
                 json.RegionCount = regionCount;
             }
 
+            json.FeatureMask = featureMask.ToString();
+
             return json;
         }
 

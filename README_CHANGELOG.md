@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2022-03-03 2.5.2
+	- beta
+	- some additions to EEPROM/JSON formatting
 - 2022-11-03 2.5.1
 	- beta
 	- some Anbdor noodling
