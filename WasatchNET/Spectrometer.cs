@@ -1005,7 +1005,7 @@ namespace WasatchNET
         /// <remarks>
         /// Caches results so it won't query the spectrometer faster than 1Hz
         /// </remarks>
-        public ushort detectorTemperatureRaw
+        public virtual ushort detectorTemperatureRaw
         {
             get
             {

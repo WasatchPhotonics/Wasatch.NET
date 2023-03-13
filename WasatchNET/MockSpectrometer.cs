@@ -158,6 +158,13 @@ namespace WasatchNET
                 return noisy ? (float)addNoise(detectorTECSetpointDegC, .1, .03) : detectorTECSetpointDegC;
             }
         }
+        public override ushort detectorTemperatureRaw
+        {
+            get
+            {
+                return 0;
+            }
+        }
 
         public override string firmwareRevision
         {
