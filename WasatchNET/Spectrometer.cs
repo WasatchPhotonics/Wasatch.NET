@@ -176,6 +176,15 @@ namespace WasatchNET
         public bool isOCT { get; protected set; } = false;
 
         /// <summary>
+        /// This is a quick way to know if we should expect our spectrometer to
+        /// generate wavenumbers or not, all values above 0 are considered viable 
+        /// </summary>
+        public bool looksRaman
+        {
+            get { return excitationWavelengthNM > 0; } 
+        }
+
+        /// <summary>
         /// Some spectrometers send a start-of-frame marker in the first pixel of
         /// the spectrum.
         /// </summary>
@@ -2200,7 +2209,7 @@ namespace WasatchNET
         public virtual void regenerateWavelengths()
         {
             wavelengths = Util.generateWavelengths(pixels, eeprom.wavecalCoeffs);
-            if (excitationWavelengthNM > 0)
+            if (looksRaman)
                 wavenumbers = Util.wavelengthsToWavenumbers(excitationWavelengthNM, wavelengths);
         }
 
