@@ -374,7 +374,7 @@ namespace WasatchNET
         public override bool isARM => false;
 
         // This won't actually do anything until we add code to load the virtual EEPROM from AWS
-        public virtual bool isInGaAs => eeprom.detectorName.Contains("DU490");
+        public override bool isInGaAs => eeprom.detectorName.Contains("DU490");
 
         public override TRIGGER_SOURCE triggerSource
         {
