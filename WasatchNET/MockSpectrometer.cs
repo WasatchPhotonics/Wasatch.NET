@@ -19,6 +19,10 @@ namespace WasatchNET
         string currentSource = "";
         Random noiseMaker = new Random();
         public bool noisy = true;
+
+        public double? spectralNoiseMean = null;
+        public double? spectralNoiseSD = null;
+
         public enum SAMPLE_METHOD { EXACT, LINEAR_INTERPOLATION, NOISY_LINEAR_INTERPOLATION };
 
         /// <summary>
@@ -503,9 +507,6 @@ namespace WasatchNET
                 }
             }
 
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spec);
-
             if (eeprom.featureMask.bin2x2)
             {
                 var smoothed = new double[spec.Length];
@@ -548,10 +549,6 @@ namespace WasatchNET
                     logger.debug("Unable to generate spectrum for {0} in getSpectrum, returning noise", currentSource);
                 }
             }
-
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spec);
-
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
 
@@ -818,7 +815,12 @@ namespace WasatchNET
 
             //TS: apply noise if desired. Probably should have higher SD and be more data driven
             if (sampleMethod == SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION)
-                final = addNoise(final, 20, 1);
+            {
+                if (spectralNoiseMean.HasValue && spectralNoiseSD.HasValue)
+                    final = addNoise(final, spectralNoiseMean.Value, spectralNoiseSD.Value);
+                else
+                    final = addNoise(final, 20, 1);
+            }
 
             return final;
         }
