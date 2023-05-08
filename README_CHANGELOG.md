@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2023-04-20 2.4.13
+    - add warning when encountering unsupported / higher EEPROM format
 - 2022-12-19 2.4.12
     - explicitly default High-Gain Mode true for Hamamatsu InGaAs detectors
 - 2022-09-20 2.4.11
