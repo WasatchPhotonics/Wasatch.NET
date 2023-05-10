@@ -66,10 +66,13 @@ namespace WasatchNET
             errorValue = andorDriver.SetReadMode(0);
 
             // Set Vertical speed to recommended (step 12)
-            int VSnumber = 0;
             float speed = 0;
-            andorDriver.GetFastestRecommendedVSSpeed(ref VSnumber, ref speed);  
-            errorValue = andorDriver.SetVSSpeed(VSnumber);
+            if (yPixels > 1)
+            {
+                int VSnumber = 0;
+                andorDriver.GetFastestRecommendedVSSpeed(ref VSnumber, ref speed);  
+                errorValue = andorDriver.SetVSSpeed(VSnumber);
+            }
 
             // Set Horizontal Speed to max (step 13)
             float STemp = 0;
