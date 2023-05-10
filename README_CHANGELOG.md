@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2023-??-?? 2.4.14
+    - updates for 1064XL
 - 2023-04-20 2.4.13
     - add warning when encountering unsupported / higher EEPROM format
 - 2022-12-19 2.4.12

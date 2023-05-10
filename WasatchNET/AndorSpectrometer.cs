@@ -501,6 +501,9 @@ namespace WasatchNET
             }
         }
 
+        public override bool continuousAcquisitionEnable { get => false; set { } }
+        public override byte continuousFrames { get => 0; set { } }
+        public override ushort detectorTemperatureRaw { get => 0; }
     }
 }
 #endif

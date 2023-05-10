@@ -673,7 +673,7 @@ namespace WasatchNET
             }
         }
 
-        public bool continuousAcquisitionEnable
+        public virtual bool continuousAcquisitionEnable
         {
             get
             {
@@ -695,7 +695,7 @@ namespace WasatchNET
         }
         bool continuousAcquisitionEnable_;
 
-        public byte continuousFrames
+        public virtual byte continuousFrames
         {
             get
             {
@@ -1011,7 +1011,7 @@ namespace WasatchNET
         /// <remarks>
         /// Caches results so it won't query the spectrometer faster than 1Hz
         /// </remarks>
-        public ushort detectorTemperatureRaw
+        public virtual ushort detectorTemperatureRaw
         {
             get
             {
