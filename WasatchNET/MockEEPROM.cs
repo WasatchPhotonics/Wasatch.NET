@@ -69,7 +69,7 @@ namespace WasatchNET
             laserExcitationWavelengthNMFloat = 830.0f;
 
             featureMask.gen15 = false;
-            format = FORMAT;
+            //format = FORMAT;
 
             return true;
         }

@@ -417,7 +417,7 @@ namespace WasatchNET
             addField(sb, indent, "EvenOddHardwareCorrected", EvenOddHardwareCorrected);
             addField(sb, indent, "SigLaserTEC", SigLaserTEC);
             addField(sb, indent, "HasInterlockFeedback", HasInterlockFeedback);
-            addField(sb, indent, "FeatureMask", FeatureMask);
+            //addField(sb, indent, "FeatureMask", FeatureMask);
             sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.DETECTOR_REGIONS)
