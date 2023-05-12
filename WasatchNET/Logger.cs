@@ -599,13 +599,21 @@ namespace WasatchNET
                 lvl,
                 string.Format(fmt, obj));
 
-            LogEntries.Add(new LogEntry() { DateTime = DateTime.Now, Index = LogEntries.Count, Message = msg });
+            LogEntry logEntry = new LogEntry() { DateTime = DateTime.Now, Index = LogEntries.Count, Message = msg };
+            LogEntries.Add(logEntry);
 
             lock (instance)
             {
                 if (outfile != null && outfile.BaseStream != null)
                 {
-                    outfile.WriteLine(msg);
+
+                    string writeMsg = string.Format("{0}: {1}{2}: {3}",
+                        logEntry.DateTime.ToString("yyyy-MM-dd HH:mm:ss.ffffff", CultureInfo.InvariantCulture),
+                        threadName,
+                        lvl,
+                        string.Format(fmt, obj));
+
+                    outfile.WriteLine(writeMsg);
                     outfile.Flush();
                 }
             }
