@@ -928,7 +928,7 @@ namespace WasatchNET
             set
             {
                 const Opcodes op = Opcodes.GET_DETECTOR_TEC_ENABLE;
-                if (eeprom.hasCooling && Util.validTECCal(this))
+                if (eeprom.hasCooling)
                 {
                     if (haveCache(op) && value == detectorTECEnabled_)
                         return;
@@ -1970,8 +1970,16 @@ namespace WasatchNET
                 logger.debug("setting TEC setpoint to {0} deg C", degC);
                 detectorTECSetpointDegC = degC;
 
-                logger.debug("enabling detector TEC");
-                detectorTECEnabled = true;
+                if (Util.validTECCal(this))
+                {
+                    logger.debug("enabling detector TEC");
+                    detectorTECEnabled = true;
+                }
+                else
+                {
+                    // user can manually enable it if they wish and feel this is a safe thing to do
+                    logger.info("declining to auto-enable detector TEC because no valid TEC calibration found");
+                }
             }
 
             // if this was intended to be a relatively lightweight "change as
