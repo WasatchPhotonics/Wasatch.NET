@@ -928,7 +928,7 @@ namespace WasatchNET
             set
             {
                 const Opcodes op = Opcodes.GET_DETECTOR_TEC_ENABLE;
-                if (eeprom.hasCooling)
+                if (eeprom.hasCooling && Util.validTECCal(this))
                 {
                     if (haveCache(op) && value == detectorTECEnabled_)
                         return;

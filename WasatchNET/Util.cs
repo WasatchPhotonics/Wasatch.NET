@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -278,5 +278,24 @@ namespace WasatchNET
             return temp;
         }
 
+        public static bool validTECCal(Spectrometer spec)
+        {
+            if (!spec.eeprom.hasCooling)
+                return true;
+
+            if (spec is HOCTSpectrometer || spec is BoulderSpectrometer || spec is SPISpectrometer || spec is AndorSpectrometer)
+                return true;
+
+            if (spec.eeprom.degCToDACCoeffs.Length != 3)
+                return false;
+            if (spec.eeprom.degCToDACCoeffs[0] == 2700)
+                return false;
+            if (spec.eeprom.degCToDACCoeffs[1] == 0)
+                return false;
+            if (spec.eeprom.degCToDACCoeffs[2] == 0)
+                return false;
+
+            return true;
+        }
     }
 }
