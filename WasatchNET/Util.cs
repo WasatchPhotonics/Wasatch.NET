@@ -278,6 +278,7 @@ namespace WasatchNET
             return temp;
         }
 
+        // copy-pasted directly from WPSC for consistency
         public static bool validTECCal(Spectrometer spec)
         {
             if (!spec.eeprom.hasCooling)
