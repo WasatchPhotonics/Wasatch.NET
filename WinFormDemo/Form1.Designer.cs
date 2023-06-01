@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend4 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerGraphVsControls = new System.Windows.Forms.SplitContainer();
@@ -68,6 +68,7 @@
             this.numericUpDownLaserPowerMW = new System.Windows.Forms.NumericUpDown();
             this.label8 = new System.Windows.Forms.Label();
             this.checkBoxLaserEnable = new System.Windows.Forms.CheckBox();
+            this.checkBoxLaserPowerInMW = new System.Windows.Forms.CheckBox();
             this.tabPageTEC = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.numericUpDownDetectorSetpointDegC = new System.Windows.Forms.NumericUpDown();
@@ -81,6 +82,10 @@
             this.checkBoxContinuousAcquisition = new System.Windows.Forms.CheckBox();
             this.labelSpectrumCount = new System.Windows.Forms.Label();
             this.label10 = new System.Windows.Forms.Label();
+            this.tabPageAccessories = new System.Windows.Forms.TabPage();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.checkBoxAccessoriesEnabled = new System.Windows.Forms.CheckBox();
+            this.checkBoxLampEnabled = new System.Windows.Forms.CheckBox();
             this.groupBoxMode = new System.Windows.Forms.GroupBox();
             this.radioButtonModeTransmission = new System.Windows.Forms.RadioButton();
             this.radioButtonModeAbsorbance = new System.Windows.Forms.RadioButton();
@@ -100,10 +105,7 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
-            this.tabPageAccessories = new System.Windows.Forms.TabPage();
-            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
-            this.checkBoxAccessoriesEnabled = new System.Windows.Forms.CheckBox();
-            this.checkBoxLampEnabled = new System.Windows.Forms.CheckBox();
+            this.checkBoxHighGainMode = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -135,12 +137,12 @@
             this.tabPageMisc.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAcquisitionPeriodMS)).BeginInit();
+            this.tabPageAccessories.SuspendLayout();
+            this.tableLayoutPanel5.SuspendLayout();
             this.groupBoxMode.SuspendLayout();
             this.flowLayoutPanel2.SuspendLayout();
             this.groupBoxSettings.SuspendLayout();
             this.groupBoxEventLog.SuspendLayout();
-            this.tabPageAccessories.SuspendLayout();
-            this.tableLayoutPanel5.SuspendLayout();
             this.SuspendLayout();
             // 
             // splitContainerTopVsLog
@@ -159,7 +161,7 @@
             // 
             this.splitContainerTopVsLog.Panel2.Controls.Add(this.groupBoxEventLog);
             this.splitContainerTopVsLog.Size = new System.Drawing.Size(794, 656);
-            this.splitContainerTopVsLog.SplitterDistance = 582;
+            this.splitContainerTopVsLog.SplitterDistance = 581;
             this.splitContainerTopVsLog.SplitterWidth = 3;
             this.splitContainerTopVsLog.TabIndex = 0;
             // 
@@ -179,29 +181,29 @@
             // splitContainerGraphVsControls.Panel2
             // 
             this.splitContainerGraphVsControls.Panel2.Controls.Add(this.flowLayoutPanel3);
-            this.splitContainerGraphVsControls.Size = new System.Drawing.Size(794, 582);
-            this.splitContainerGraphVsControls.SplitterDistance = 565;
+            this.splitContainerGraphVsControls.Size = new System.Drawing.Size(794, 581);
+            this.splitContainerGraphVsControls.SplitterDistance = 566;
             this.splitContainerGraphVsControls.SplitterWidth = 3;
             this.splitContainerGraphVsControls.TabIndex = 6;
             // 
             // chart1
             // 
-            chartArea4.AxisX.LabelStyle.Format = "F2";
-            chartArea4.CursorX.IsUserEnabled = true;
-            chartArea4.CursorX.IsUserSelectionEnabled = true;
-            chartArea4.CursorY.IsUserEnabled = true;
-            chartArea4.CursorY.IsUserSelectionEnabled = true;
-            chartArea4.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea4);
+            chartArea1.AxisX.LabelStyle.Format = "F2";
+            chartArea1.CursorX.IsUserEnabled = true;
+            chartArea1.CursorX.IsUserSelectionEnabled = true;
+            chartArea1.CursorY.IsUserEnabled = true;
+            chartArea1.CursorY.IsUserSelectionEnabled = true;
+            chartArea1.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea1);
             this.chart1.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend4.Alignment = System.Drawing.StringAlignment.Center;
-            legend4.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
-            legend4.Name = "Legend1";
-            this.chart1.Legends.Add(legend4);
+            legend1.Alignment = System.Drawing.StringAlignment.Center;
+            legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
+            legend1.Name = "Legend1";
+            this.chart1.Legends.Add(legend1);
             this.chart1.Location = new System.Drawing.Point(0, 24);
             this.chart1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.chart1.Name = "chart1";
-            this.chart1.Size = new System.Drawing.Size(565, 558);
+            this.chart1.Size = new System.Drawing.Size(566, 557);
             this.chart1.TabIndex = 0;
             this.chart1.Text = "chart1";
             // 
@@ -213,7 +215,7 @@
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Padding = new System.Windows.Forms.Padding(3, 1, 0, 1);
-            this.menuStrip1.Size = new System.Drawing.Size(565, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(566, 24);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -412,15 +414,17 @@
             this.tableLayoutPanel1.Controls.Add(this.label3, 1, 2);
             this.tableLayoutPanel1.Controls.Add(this.checkBoxExternalTriggerSource, 1, 3);
             this.tableLayoutPanel1.Controls.Add(this.checkBoxRamanCorrection, 1, 4);
+            this.tableLayoutPanel1.Controls.Add(this.checkBoxHighGainMode, 1, 5);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(2, 2);
             this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 5;
+            this.tableLayoutPanel1.RowCount = 6;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(184, 139);
             this.tableLayoutPanel1.TabIndex = 0;
@@ -526,7 +530,7 @@
             this.checkBoxRamanCorrection.Dock = System.Windows.Forms.DockStyle.Fill;
             this.checkBoxRamanCorrection.Location = new System.Drawing.Point(66, 98);
             this.checkBoxRamanCorrection.Name = "checkBoxRamanCorrection";
-            this.checkBoxRamanCorrection.Size = new System.Drawing.Size(116, 38);
+            this.checkBoxRamanCorrection.Size = new System.Drawing.Size(116, 14);
             this.checkBoxRamanCorrection.TabIndex = 19;
             this.checkBoxRamanCorrection.Text = "raman y-axis correction";
             this.checkBoxRamanCorrection.UseVisualStyleBackColor = true;
@@ -554,15 +558,15 @@
             this.tableLayoutPanel2.Controls.Add(this.numericUpDownLaserPowerMW, 0, 1);
             this.tableLayoutPanel2.Controls.Add(this.label8, 1, 1);
             this.tableLayoutPanel2.Controls.Add(this.checkBoxLaserEnable, 1, 2);
+            this.tableLayoutPanel2.Controls.Add(this.checkBoxLaserPowerInMW, 1, 3);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(2, 2);
             this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 3;
+            this.tableLayoutPanel2.RowCount = 4;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 16F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 16F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(184, 139);
             this.tableLayoutPanel2.TabIndex = 0;
@@ -599,6 +603,7 @@
             // 
             // numericUpDownLaserPowerMW
             // 
+            this.numericUpDownLaserPowerMW.Enabled = false;
             this.numericUpDownLaserPowerMW.Location = new System.Drawing.Point(2, 28);
             this.numericUpDownLaserPowerMW.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.numericUpDownLaserPowerMW.Name = "numericUpDownLaserPowerMW";
@@ -628,6 +633,18 @@
             this.checkBoxLaserEnable.Text = "laser enable";
             this.checkBoxLaserEnable.UseVisualStyleBackColor = true;
             this.checkBoxLaserEnable.CheckedChanged += new System.EventHandler(this.checkBoxLaserEnable_CheckedChanged);
+            // 
+            // checkBoxLaserPowerInMW
+            // 
+            this.checkBoxLaserPowerInMW.AutoSize = true;
+            this.checkBoxLaserPowerInMW.Location = new System.Drawing.Point(56, 73);
+            this.checkBoxLaserPowerInMW.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.checkBoxLaserPowerInMW.Name = "checkBoxLaserPowerInMW";
+            this.checkBoxLaserPowerInMW.Size = new System.Drawing.Size(65, 17);
+            this.checkBoxLaserPowerInMW.TabIndex = 18;
+            this.checkBoxLaserPowerInMW.Text = "use mW";
+            this.checkBoxLaserPowerInMW.UseVisualStyleBackColor = true;
+            this.checkBoxLaserPowerInMW.CheckedChanged += new System.EventHandler(this.checkBoxLaserPowerInMW_CheckedChanged);
             // 
             // tabPageTEC
             // 
@@ -778,6 +795,57 @@
             this.label10.Size = new System.Drawing.Size(42, 13);
             this.label10.TabIndex = 22;
             this.label10.Text = "spectra";
+            // 
+            // tabPageAccessories
+            // 
+            this.tabPageAccessories.Controls.Add(this.tableLayoutPanel5);
+            this.tabPageAccessories.Location = new System.Drawing.Point(4, 22);
+            this.tabPageAccessories.Name = "tabPageAccessories";
+            this.tabPageAccessories.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tabPageAccessories.Size = new System.Drawing.Size(188, 143);
+            this.tabPageAccessories.TabIndex = 4;
+            this.tabPageAccessories.Text = "Accessories";
+            this.tabPageAccessories.UseVisualStyleBackColor = true;
+            // 
+            // tableLayoutPanel5
+            // 
+            this.tableLayoutPanel5.ColumnCount = 1;
+            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this.checkBoxAccessoriesEnabled, 0, 0);
+            this.tableLayoutPanel5.Controls.Add(this.checkBoxLampEnabled, 0, 1);
+            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
+            this.tableLayoutPanel5.RowCount = 2;
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(182, 137);
+            this.tableLayoutPanel5.TabIndex = 1;
+            // 
+            // checkBoxAccessoriesEnabled
+            // 
+            this.checkBoxAccessoriesEnabled.AutoSize = true;
+            this.checkBoxAccessoriesEnabled.Location = new System.Drawing.Point(3, 3);
+            this.checkBoxAccessoriesEnabled.Name = "checkBoxAccessoriesEnabled";
+            this.checkBoxAccessoriesEnabled.Size = new System.Drawing.Size(119, 17);
+            this.checkBoxAccessoriesEnabled.TabIndex = 23;
+            this.checkBoxAccessoriesEnabled.Text = "Enable Accessories";
+            this.checkBoxAccessoriesEnabled.UseVisualStyleBackColor = true;
+            this.checkBoxAccessoriesEnabled.CheckedChanged += new System.EventHandler(this.checkBoxAccessoriesEnabled_CheckedChanged);
+            // 
+            // checkBoxLampEnabled
+            // 
+            this.checkBoxLampEnabled.AutoSize = true;
+            this.checkBoxLampEnabled.Enabled = false;
+            this.checkBoxLampEnabled.Location = new System.Drawing.Point(3, 26);
+            this.checkBoxLampEnabled.Name = "checkBoxLampEnabled";
+            this.checkBoxLampEnabled.Size = new System.Drawing.Size(94, 17);
+            this.checkBoxLampEnabled.TabIndex = 24;
+            this.checkBoxLampEnabled.Text = "Lamp Enabled";
+            this.checkBoxLampEnabled.UseVisualStyleBackColor = true;
+            this.checkBoxLampEnabled.CheckedChanged += new System.EventHandler(this.checkBoxLampEnabled_CheckedChanged);
             // 
             // groupBoxMode
             // 
@@ -971,7 +1039,7 @@
             this.groupBoxEventLog.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.groupBoxEventLog.Name = "groupBoxEventLog";
             this.groupBoxEventLog.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.groupBoxEventLog.Size = new System.Drawing.Size(794, 71);
+            this.groupBoxEventLog.Size = new System.Drawing.Size(794, 72);
             this.groupBoxEventLog.TabIndex = 0;
             this.groupBoxEventLog.TabStop = false;
             this.groupBoxEventLog.Text = "Event Log";
@@ -985,7 +1053,7 @@
             this.textBoxEventLog.Multiline = true;
             this.textBoxEventLog.Name = "textBoxEventLog";
             this.textBoxEventLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBoxEventLog.Size = new System.Drawing.Size(790, 54);
+            this.textBoxEventLog.Size = new System.Drawing.Size(790, 55);
             this.textBoxEventLog.TabIndex = 0;
             // 
             // backgroundWorkerGUIUpdate
@@ -997,56 +1065,16 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
-            // tabPageAccessories
+            // checkBoxHighGainMode
             // 
-            this.tabPageAccessories.Controls.Add(this.tableLayoutPanel5);
-            this.tabPageAccessories.Location = new System.Drawing.Point(4, 22);
-            this.tabPageAccessories.Name = "tabPageAccessories";
-            this.tabPageAccessories.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageAccessories.Size = new System.Drawing.Size(188, 143);
-            this.tabPageAccessories.TabIndex = 4;
-            this.tabPageAccessories.Text = "Accessories";
-            this.tabPageAccessories.UseVisualStyleBackColor = true;
-            // 
-            // tableLayoutPanel5
-            // 
-            this.tableLayoutPanel5.ColumnCount = 1;
-            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Controls.Add(this.checkBoxAccessoriesEnabled, 0, 0);
-            this.tableLayoutPanel5.Controls.Add(this.checkBoxLampEnabled, 0, 1);
-            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 3);
-            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(2);
-            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
-            this.tableLayoutPanel5.RowCount = 2;
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(182, 137);
-            this.tableLayoutPanel5.TabIndex = 1;
-            // 
-            // checkBoxAccessoriesEnabled
-            // 
-            this.checkBoxAccessoriesEnabled.AutoSize = true;
-            this.checkBoxAccessoriesEnabled.Location = new System.Drawing.Point(3, 3);
-            this.checkBoxAccessoriesEnabled.Name = "checkBoxAccessoriesEnabled";
-            this.checkBoxAccessoriesEnabled.Size = new System.Drawing.Size(119, 17);
-            this.checkBoxAccessoriesEnabled.TabIndex = 23;
-            this.checkBoxAccessoriesEnabled.Text = "Enable Accessories";
-            this.checkBoxAccessoriesEnabled.UseVisualStyleBackColor = true;
-            this.checkBoxAccessoriesEnabled.CheckedChanged += new System.EventHandler(this.checkBoxAccessoriesEnabled_CheckedChanged);
-            // 
-            // checkBoxLampEnabled
-            // 
-            this.checkBoxLampEnabled.AutoSize = true;
-            this.checkBoxLampEnabled.Enabled = false;
-            this.checkBoxLampEnabled.Location = new System.Drawing.Point(3, 26);
-            this.checkBoxLampEnabled.Name = "checkBoxLampEnabled";
-            this.checkBoxLampEnabled.Size = new System.Drawing.Size(94, 17);
-            this.checkBoxLampEnabled.TabIndex = 24;
-            this.checkBoxLampEnabled.Text = "Lamp Enabled";
-            this.checkBoxLampEnabled.UseVisualStyleBackColor = true;
-            this.checkBoxLampEnabled.CheckedChanged += new System.EventHandler(this.checkBoxLampEnabled_CheckedChanged);
+            this.checkBoxHighGainMode.AutoSize = true;
+            this.checkBoxHighGainMode.Location = new System.Drawing.Point(66, 118);
+            this.checkBoxHighGainMode.Name = "checkBoxHighGainMode";
+            this.checkBoxHighGainMode.Size = new System.Drawing.Size(103, 17);
+            this.checkBoxHighGainMode.TabIndex = 20;
+            this.checkBoxHighGainMode.Text = "High-Gain Mode";
+            this.checkBoxHighGainMode.UseVisualStyleBackColor = true;
+            this.checkBoxHighGainMode.CheckedChanged += new System.EventHandler(this.checkBoxHighGainMode_CheckedChanged);
             // 
             // Form1
             // 
@@ -1101,15 +1129,15 @@
             this.tableLayoutPanel4.ResumeLayout(false);
             this.tableLayoutPanel4.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownAcquisitionPeriodMS)).EndInit();
+            this.tabPageAccessories.ResumeLayout(false);
+            this.tableLayoutPanel5.ResumeLayout(false);
+            this.tableLayoutPanel5.PerformLayout();
             this.groupBoxMode.ResumeLayout(false);
             this.groupBoxMode.PerformLayout();
             this.flowLayoutPanel2.ResumeLayout(false);
             this.groupBoxSettings.ResumeLayout(false);
             this.groupBoxEventLog.ResumeLayout(false);
             this.groupBoxEventLog.PerformLayout();
-            this.tabPageAccessories.ResumeLayout(false);
-            this.tableLayoutPanel5.ResumeLayout(false);
-            this.tableLayoutPanel5.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -1188,6 +1216,8 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
         private System.Windows.Forms.CheckBox checkBoxAccessoriesEnabled;
         private System.Windows.Forms.CheckBox checkBoxLampEnabled;
+        private System.Windows.Forms.CheckBox checkBoxLaserPowerInMW;
+        private System.Windows.Forms.CheckBox checkBoxHighGainMode;
     }
 }
 

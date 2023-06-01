@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -1358,6 +1359,15 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////
 
             format = pages[0][63];
+
+            if (format > FORMAT)
+            {
+                // log but optimistically proceed
+                logger.error("WasatchNET {0} was built and tested against EEPROM formats {1} and below.",
+                    Assembly.GetExecutingAssembly().GetName().Version.ToString(), FORMAT);
+                logger.error("EEPROM format {0} may require a newer version of WasatchNET for proper operation.", format);
+            }
+
             if (format >= 8)
                 subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
             else if (format >= 6)

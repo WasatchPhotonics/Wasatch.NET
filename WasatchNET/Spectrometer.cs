@@ -676,7 +676,7 @@ namespace WasatchNET
             }
         }
 
-        public bool continuousAcquisitionEnable
+        public virtual bool continuousAcquisitionEnable
         {
             get
             {
@@ -698,7 +698,7 @@ namespace WasatchNET
         }
         bool continuousAcquisitionEnable_;
 
-        public byte continuousFrames
+        public virtual byte continuousFrames
         {
             get
             {
@@ -2007,8 +2007,16 @@ namespace WasatchNET
                 logger.debug("setting TEC setpoint to {0} deg C", degC);
                 detectorTECSetpointDegC = degC;
 
-                logger.debug("enabling detector TEC");
-                detectorTECEnabled = true;
+                if (Util.validTECCal(this))
+                {
+                    logger.debug("enabling detector TEC");
+                    detectorTECEnabled = true;
+                }
+                else
+                {
+                    // user can manually enable it if they wish and feel this is a safe thing to do
+                    logger.info("declining to auto-enable detector TEC because no valid TEC calibration found");
+                }
             }
 
             // if this was intended to be a relatively lightweight "change as
@@ -2073,6 +2081,9 @@ namespace WasatchNET
                 detectorGainOdd = eeprom.detectorGainOdd;
                 detectorOffsetOdd = eeprom.detectorOffsetOdd;
             }
+
+            // default high for InGaAs (1064, NIR1, NIR2); note Andor logic is in AndorSpectrometer
+            highGainModeEnabled = isInGaAs;
 
             logger.debug("Spectrometer.open: complete (initialized)");
             return true;
@@ -2165,7 +2176,7 @@ namespace WasatchNET
 
         public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
         public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx");
-        public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase));
+        public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase)); 
 
         public virtual bool hasLaser
         {
