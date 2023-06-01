@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2023-06-01 2.5.3
+	- beta
+	- some downstream mock and function changes, mostly for new internal project
 - 2023-03-03 2.5.2
 	- beta
 	- some additions to EEPROM/JSON formatting
