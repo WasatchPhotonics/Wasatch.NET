@@ -1798,10 +1798,18 @@ namespace WasatchNET
             laserWarmupSec = json.LaserWarmupS;
             laserExcitationWavelengthNMFloat = (float)json.ExcitationWavelengthNM;
             avgResolution = (float)json.AvgResolution;
-            laserPowerCoeffs[0] = (float)json.LaserPowerCoeffs[0];
-            laserPowerCoeffs[1] = (float)json.LaserPowerCoeffs[1];
-            laserPowerCoeffs[2] = (float)json.LaserPowerCoeffs[2];
-            laserPowerCoeffs[3] = (float)json.LaserPowerCoeffs[3];
+
+            if (json.LaserPowerCoeffs != null)
+            {
+                laserPowerCoeffs[0] = (float)json.LaserPowerCoeffs[0];
+                laserPowerCoeffs[1] = (float)json.LaserPowerCoeffs[1];
+                laserPowerCoeffs[2] = (float)json.LaserPowerCoeffs[2];
+                laserPowerCoeffs[3] = (float)json.LaserPowerCoeffs[3];
+            }
+            else
+            {
+                laserPowerCoeffs = new float[4];
+            }
 
             if (json.UserText != null)
                 userText = json.UserText;
