@@ -785,6 +785,26 @@ namespace WasatchNET
         public List<short> badPixelList { get; protected set; }
         public SortedSet<short> badPixelSet { get; protected set; }
 
+        public void addBadPixel(short pixel)
+        {
+            if (!badPixelSet.Contains(pixel))
+            {
+                int addIndex = -1;
+                for (int i = 0; i < badPixels.Length; ++i)
+                {
+                    if (badPixels[i] == -1)
+                        addIndex = i;
+                }
+
+                if (addIndex != -1)
+                {
+                    badPixels[addIndex] = pixel;
+                    badPixelSet.Add(pixel);
+                    badPixelList.Add(pixel);
+                }
+            }
+        }
+
         public string productConfiguration
         {
             get { return _productConfiguration; }
