@@ -156,6 +156,8 @@
     <Compile Include="UInt40.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="DriverVBAWrapper.cs" />
+    <Compile Include="WPOCTEEPROM.cs" />
+    <Compile Include="WPOCTSpectrometer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

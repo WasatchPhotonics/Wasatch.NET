@@ -944,7 +944,6 @@ namespace WasatchNET
             }
         }
 
-
         internal HOCTSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             isOCT = true;
