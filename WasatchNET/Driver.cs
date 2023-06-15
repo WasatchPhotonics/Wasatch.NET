@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Info;
 using LibUsbDotNet.Main;
+using static IWPOCTCamera;
 #if WIN32
 #warning Building 32-bit Andor
 using ATMCD32CS;
@@ -297,6 +298,37 @@ namespace WasatchNET
                 }
             }
 #endif
+
+            if (Environment.GetEnvironmentVariable("WASATCHNET_USE_WPOCT") != null)
+            {
+#if x64
+                try
+                {
+                    IWPOCTCamera.CameraType cameraType = IWPOCTCamera.CameraType.USB3;
+                    IWPOCTCamera camera = IWPOCTCamera.GetOCTCamera(cameraType);
+                    int numCameras = camera.GetNumCameras();
+                    if (numCameras > 0)
+                    {
+                        for (int i = 0; i < numCameras; i++)
+                        {
+                            string camID = camera.GetCameraID(0);
+                            bool ok = camera.Open(camID);
+                            if (ok)
+                            {
+                                WPOCTSpectrometer spec = new WPOCTSpectrometer(camera, camID, null, 0);
+                                if (await spec.openAsync())
+                                    spectrometers.Add(spec);
+                            }
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    logger.info("WPOCT Drivers are missing so OCT systems will not be found");
+                }
+#endif
+            }
+
 
             logger.debug($"openAllSpectrometers: returning {spectrometers.Count}");
 

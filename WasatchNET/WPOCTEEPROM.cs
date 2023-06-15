@@ -8,9 +8,12 @@ namespace WasatchNET
 {
     public class WPOCTEEPROM : EEPROM
     {
-        internal WPOCTEEPROM(WPOCTSpectrometer spec) : base(spec)
+        IWPOCTCamera camera = null;
+
+        internal WPOCTEEPROM(WPOCTSpectrometer spec, IWPOCTCamera camera) : base(spec)
         {
             spectrometer = spec;
+            this.camera = camera;
 
             defaultValues = false;
 
@@ -87,7 +90,7 @@ namespace WasatchNET
             detectorOffset = 0;
 
             activePixelsHoriz = (ushort)a.pixels;
-            //activePixelsVert = (ushort)HOCTSpectrometer.OctUsb.NUM_OF_LINES_PER_FRAME;
+            activePixelsVert = (ushort)camera.GetScanHeight();
             minIntegrationTimeMS = 98;
             maxIntegrationTimeMS = 33600;
             actualPixelsHoriz = (ushort)a.pixels;

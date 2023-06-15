@@ -1,8 +1,12 @@
 ﻿using LibUsbDotNet.Main;
+using MPSSELight;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using static WasatchNET.HOCTSpectrometer;
 
@@ -10,12 +14,333 @@ namespace WasatchNET
 {
     public class WPOCTSpectrometer : Spectrometer
     {
-        internal WPOCTSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
+        IWPOCTCamera camera { get; set; } = null;
+        string camID = null;
+        int numBitsPerPixel = 12;
+
+        public int sampleLine
+        {
+            get
+            {
+                return sampleLine_;
+            }
+            set
+            {
+                if (value > linesPerFrame)
+                    sampleLine_ = linesPerFrame;
+                else if (value < 0)
+                    sampleLine_ = 0;
+                else
+                    sampleLine_ = value;
+            }
+
+        }
+
+        //public int linesPerFrame = 500;
+
+        int sampleLine_ = 100;
+
+
+        internal WPOCTSpectrometer(IWPOCTCamera camera, string camID, UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             isOCT = true;
-            //OctUsb.SetLinesPerFrame(500);
-            integrationTimeMS_ = (uint)OctUsb.DefaultIntegrationTime();
+            this.camera = camera;
+            this.camID = camID;
         }
+
+        internal override bool open()
+        {
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
+        }
+
+        internal override async Task<bool> openAsync()
+        {
+            bool openOk = camera.Open(camID);
+
+            if (openOk)
+            {
+                pixels = (uint)camera.GetScanWidth();
+                eeprom = new WPOCTEEPROM(this, camera);
+                linesPerFrame = eeprom.activePixelsVert;
+                if (!(await eeprom.readAsync()))
+                {
+                    logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                    return false;
+                }
+
+                camera.StartAcquiring();
+
+                return true;
+            }
+
+            else
+                return false;
+
+        }
+
+        public override void close()
+        {
+            Task task = Task.Run(async () => await closeAsync());
+            task.Wait();
+        }
+        public async override Task closeAsync()
+        {
+            bool stopped = camera.StopAcquiring(true);
+            camera.Close();
+        }
+
+        public override double[] getSpectrum(bool forceNew = false)
+        {
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
+        }
+        public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
+        {
+            if (forceNew)
+            {
+                int minWait = 20;
+
+                int wait = (int)((integrationTimeMS / 11.25) / 5);
+                if (wait < minWait)
+                    wait = minWait;
+
+                //give time for loop wait and usb read back
+                wait += 150;
+
+                Thread.Sleep(wait);
+            }
+
+            Task<ushort[]> frameTask = Task.Run(() => getFrame());
+
+            ushort[] RawPixelData = await frameTask;
+            double[] data = new double[pixels];
+
+            if (RawPixelData != null)
+            {
+                for (int i = 0; i < pixels; ++i)
+                    data[i] = RawPixelData[i + (sampleLine_ * pixels)];
+            }
+
+            return data;
+        }
+
+        unsafe ushort[] getPixels(IntPtr buffer)
+        {
+            int width = eeprom.activePixelsHoriz;
+            int height = eeprom.activePixelsVert;
+            int bitWidth = 16;
+            //ubitsperpixel == bitwidth, numbitsused == numbitsperpixel 
+
+            //var boundsRect = new Rectangle(0, 0, width, height);
+            ushort[] pixels = new ushort[width * height];
+
+            unsafe
+            {
+                int intensity = 0;
+                ushort* sPixels = (ushort*)buffer;
+
+                // For each row...
+                for (int i = 0; i < height; i++)
+                {
+                    int rowStart = i * width;
+                    // For each col...
+                    for (int j = 0; j < width; j++)
+                    {
+                        intensity = sPixels[i * width + j];
+                        pixels[rowStart + j] = (ushort)intensity;
+                    }
+                }
+
+            }
+
+            return pixels;
+        }
+
+        public override ushort[] getFrame()
+        {
+            ushort[] bufferLocal = new ushort[8];
+            bool ok = camera.GetBufferCopy(bufferLocal);
+
+            if (ok)
+            {
+                GCHandle pinnedArray = GCHandle.Alloc(bufferLocal, GCHandleType.Pinned);
+                IntPtr cameraBuffer = pinnedArray.AddrOfPinnedObject();
+                ushort[] pixels = getPixels(cameraBuffer);
+                pinnedArray.Free();
+                camera.RequeueBuffer();
+                return pixels;
+            }
+
+            return null;
+        }
+
+        public override string serialNumber
+        {
+            get { return eeprom.serialNumber; }
+        }
+
+        public override float detectorGain
+        {
+            get
+            {
+                return 0.0f;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override float detectorGainOdd
+        {
+            get
+            {
+                return 0.0f;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override short detectorOffset
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override short detectorOffsetOdd
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override bool highGainModeEnabled
+        {
+            get { return false; }
+            set { return; }
+        }
+
+        public override bool detectorTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort detectorTECSetpointRaw
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+        public override float detectorTemperatureDegC
+        {
+            get
+            {
+                return 0.0f;
+            }
+        }
+
+        public override string firmwareRevision
+        {
+            get
+            {
+                return "";
+            }
+        }
+
+        public override string fpgaRevision
+        {
+            get
+            {
+                return "";
+            }
+
+        }
+
+        public override uint integrationTimeMS
+        {
+            get
+            {
+                return integrationTimeMS_;
+            }
+            set
+            {
+                lock (acquisitionLock)
+                {
+                    bool ok = camera.SetExposureTime(value); //OctUsb.SetIntegrationTime((int)value);
+                    if (ok)
+                        integrationTimeMS_ = (uint)value;
+                }
+            }
+        }
+
+        public override bool isARM => false;
+        public override bool isInGaAs => false;
+        public override float excitationWavelengthNM
+        {
+            get => 840f;
+            set { }
+        }
+
+        public override bool laserEnabled // dangerous one to cache...
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTemperatureRaw
+        {
+            get
+            {
+                return 0;
+            }
+
+        }
+
+        public override TRIGGER_SOURCE triggerSource
+        {
+            get
+            {
+                return TRIGGER_SOURCE.INTERNAL;
+            }
+            set
+            {
+
+            }
+        }
+
+
 
     }
 }
