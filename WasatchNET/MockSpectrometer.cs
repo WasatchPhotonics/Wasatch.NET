@@ -527,7 +527,7 @@ namespace WasatchNET
             return spec;
         }
 
-        public override ushort[] getFrame()
+        public override ushort[] getFrame(bool direct = true)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
 

@@ -15,8 +15,38 @@ namespace WasatchNET
     public class WPOCTSpectrometer : Spectrometer
     {
         IWPOCTCamera camera { get; set; } = null;
-        string camID = null;
+        public string camID = null;
         int numBitsPerPixel = 12;
+
+        public List<ushort[]> firstFrames = new List<ushort[]>();
+        ushort[] lastFrame = null;
+
+        public List<ushort[,]> firstFrames2D
+        {
+            get
+            {
+                List<ushort[,]> frames = new List<ushort[,]>();
+
+                foreach (ushort[] frame in firstFrames) 
+                {
+                    ushort[,] frame2d = new ushort[linesPerFrame, pixels];
+
+                    for (int i = 0; i < frame.Length; i++) 
+                    {
+                        int line = i / (int)pixels;
+                        int pixel = i % (int)pixels;
+
+                        frame2d[line, pixel] = frame[i];
+
+                    }
+                    
+                    frames.Add(frame2d);
+                }
+
+                return frames;
+            }
+        }
+
 
         public int sampleLine
         {
@@ -62,12 +92,12 @@ namespace WasatchNET
             {
                 pixels = (uint)camera.GetScanWidth();
                 eeprom = new WPOCTEEPROM(this, camera);
-                linesPerFrame = eeprom.activePixelsVert;
                 if (!(await eeprom.readAsync()))
                 {
                     logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                     return false;
                 }
+                linesPerFrame = eeprom.activePixelsVert;
 
                 camera.StartAcquiring();
 
@@ -92,8 +122,34 @@ namespace WasatchNET
 
         public override double[] getSpectrum(bool forceNew = false)
         {
-            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
-            return task.Result;
+            if (forceNew)
+            {
+                int minWait = 20;
+
+                int wait = (int)((integrationTimeMS / 11.25) / 5);
+                if (wait < minWait)
+                    wait = minWait;
+
+                //give time for loop wait and usb read back
+                wait += 150;
+
+                Thread.Sleep(wait);
+            }
+
+            ushort[] RawPixelData = getFrame(false);
+
+            if (firstFrames.Count < 100)
+                firstFrames.Add(RawPixelData);
+
+            double[] data = new double[pixels];
+
+            if (RawPixelData != null)
+            {
+                for (int i = 0; i < pixels; ++i)
+                    data[i] = RawPixelData[i + (sampleLine_ * pixels)];
+            }
+
+            return data;
         }
         public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
         {
@@ -157,19 +213,24 @@ namespace WasatchNET
             return pixels;
         }
 
-        public override ushort[] getFrame()
+        public override ushort[] getFrame(bool direct = true)
         {
-            ushort[] bufferLocal = new ushort[8];
+            if (direct && lastFrame != null)
+                return lastFrame;
+
+            ushort[] bufferLocal = new ushort[pixels * linesPerFrame];
+            camera.FlushBuffers();
             bool ok = camera.GetBufferCopy(bufferLocal);
 
             if (ok)
             {
                 GCHandle pinnedArray = GCHandle.Alloc(bufferLocal, GCHandleType.Pinned);
                 IntPtr cameraBuffer = pinnedArray.AddrOfPinnedObject();
-                ushort[] pixels = getPixels(cameraBuffer);
+                ushort[] pixelData = getPixels(cameraBuffer);
+                lastFrame = pixelData;
                 pinnedArray.Free();
                 camera.RequeueBuffer();
-                return pixels;
+                return pixelData;
             }
 
             return null;
@@ -178,6 +239,18 @@ namespace WasatchNET
         public override string serialNumber
         {
             get { return eeprom.serialNumber; }
+        }
+
+        public override bool areaScanEnabled
+        {
+            get
+            {
+                return true;
+            }
+            set
+            {
+
+            }
         }
 
         public override float detectorGain
@@ -290,9 +363,10 @@ namespace WasatchNET
             }
             set
             {
-                lock (acquisitionLock)
+                if (value != integrationTimeMS_)
                 {
-                    bool ok = camera.SetExposureTime(value); //OctUsb.SetIntegrationTime((int)value);
+                    camera.SetLinePeriod(value); 
+                    bool ok = camera.SetExposureTime(value / 2); //OctUsb.SetIntegrationTime((int)value);
                     if (ok)
                         integrationTimeMS_ = (uint)value;
                 }

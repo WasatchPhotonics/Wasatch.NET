@@ -1143,7 +1143,7 @@ namespace WasatchNET
             return data;  
         }
 
-        public override ushort[] getFrame()
+        public override ushort[] getFrame(bool direct = true)
         {
             lock (frameLock)
             {

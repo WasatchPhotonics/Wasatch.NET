@@ -61,7 +61,7 @@ namespace WasatchNET
         {
             WPOCTSpectrometer a = spectrometer as WPOCTSpectrometer;
             setDefault(spectrometer);
-            serialNumber = "";
+            serialNumber = a.camID;
 
             /*
             bool readOk = false;
@@ -91,8 +91,8 @@ namespace WasatchNET
 
             activePixelsHoriz = (ushort)a.pixels;
             activePixelsVert = (ushort)camera.GetScanHeight();
-            minIntegrationTimeMS = 98;
-            maxIntegrationTimeMS = 33600;
+            minIntegrationTimeMS = 13;
+            maxIntegrationTimeMS = 655;
             actualPixelsHoriz = (ushort)a.pixels;
             ROIHorizStart = 0;
             ROIHorizEnd = (ushort)(a.pixels - 1);

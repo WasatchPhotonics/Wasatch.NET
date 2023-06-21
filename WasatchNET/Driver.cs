@@ -306,18 +306,22 @@ namespace WasatchNET
                 {
                     IWPOCTCamera.CameraType cameraType = IWPOCTCamera.CameraType.USB3;
                     IWPOCTCamera camera = IWPOCTCamera.GetOCTCamera(cameraType);
-                    int numCameras = camera.GetNumCameras();
-                    if (numCameras > 0)
+                    camera.InitializeLibrary();
+                    if (camera.IsInitialized())
                     {
-                        for (int i = 0; i < numCameras; i++)
+                        int numCameras = camera.GetNumCameras();
+                        if (numCameras > 0)
                         {
-                            string camID = camera.GetCameraID(0);
-                            bool ok = camera.Open(camID);
-                            if (ok)
+                            for (int i = 0; i < numCameras; i++)
                             {
-                                WPOCTSpectrometer spec = new WPOCTSpectrometer(camera, camID, null, 0);
-                                if (await spec.openAsync())
-                                    spectrometers.Add(spec);
+                                string camID = camera.GetCameraID(0);
+                                bool ok = camera.Open(camID);
+                                if (ok)
+                                {
+                                    WPOCTSpectrometer spec = new WPOCTSpectrometer(camera, camID, null, 0);
+                                    if (await spec.openAsync())
+                                        spectrometers.Add(spec);
+                                }
                             }
                         }
                     }

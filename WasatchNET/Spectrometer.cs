@@ -3427,7 +3427,7 @@ namespace WasatchNET
             return sum;
         }
 
-        public virtual ushort[] getFrame()
+        public virtual ushort[] getFrame(bool direct = true)
         {
             return null;
         }
