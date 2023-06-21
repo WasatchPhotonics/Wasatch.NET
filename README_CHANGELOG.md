@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2023-06-21 2.5.4
+	- beta for testing
+	- main change is adding API for adding bad pixels to all data structures with one function call
 - 2023-06-01 2.5.3
 	- beta
 	- some downstream mock and function changes, mostly for new internal project
