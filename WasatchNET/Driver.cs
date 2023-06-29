@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.Ports;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -314,7 +315,7 @@ namespace WasatchNET
                         {
                             for (int i = 0; i < numCameras; i++)
                             {
-                                string camID = camera.GetCameraID(0);
+                                string camID = camera.GetCameraID(i);
                                 bool ok = camera.Open(camID);
                                 if (ok)
                                 {
@@ -325,6 +326,41 @@ namespace WasatchNET
                             }
                         }
                     }
+                }
+                catch (Exception)
+                {
+                    logger.info("WPOCT Drivers are missing so OCT systems will not be found");
+                }
+
+                try
+                {
+                    string[] ports = SerialPort.GetPortNames();
+                    foreach (string portName in ports)
+                    {
+                        IWPOCTCamera.CameraType cameraType = IWPOCTCamera.CameraType.CameraLink;
+                        IWPOCTCamera camera = IWPOCTCamera.GetOCTCamera(cameraType);
+                        camera.InitializeLibrary();
+                        if (camera.IsInitialized())
+                        {
+                            camera.SetCameraFileName("./W_Cobra-S_2Tap_IntTrigger_MX4_1.ccf");
+                            int numCameras = camera.GetNumCameras();
+                            if (numCameras > 0)
+                            {
+                                for (int i = 0; i < numCameras; i++)
+                                {
+                                    string camID = camera.GetCameraID(i);
+                                    bool ok = camera.Open(camID);
+                                    if (ok)
+                                    {
+                                        COMOCTSpectrometer spec = new COMOCTSpectrometer(portName, null, camera, camID, null);
+                                        if (await spec.openAsync())
+                                            spectrometers.Add(spec);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                 }
                 catch (Exception)
                 {

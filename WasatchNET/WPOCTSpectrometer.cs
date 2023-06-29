@@ -8,18 +8,17 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using static WasatchNET.HOCTSpectrometer;
 
 namespace WasatchNET
 {
     public class WPOCTSpectrometer : Spectrometer
     {
-        IWPOCTCamera camera { get; set; } = null;
+        protected IWPOCTCamera camera { get; set; } = null;
         public string camID = null;
         int numBitsPerPixel = 12;
 
         public List<ushort[]> firstFrames = new List<ushort[]>();
-        ushort[] lastFrame = null;
+        protected ushort[] lastFrame = null;
 
         public List<ushort[,]> firstFrames2D
         {
@@ -354,6 +353,74 @@ namespace WasatchNET
             }
 
         }
+
+        public virtual int testPattern
+        {
+            get
+            {
+                return testPattern_;
+            }
+            set
+            {
+                testPattern_ = value;
+            }
+        }
+        protected int testPattern_ = 0;
+
+        public virtual float linePeriod
+        {
+            get
+            {
+                return linePeriod_;
+            }
+            set
+            {
+                if (value != linePeriod_)
+                {
+                    float prevValue = linePeriod_;
+                    if (value < integrationTimeUS)
+                    {
+                        linePeriod_ = value;
+                        integrationTimeUS = value - 0.7f;
+                    }
+
+                    bool ok = camera.SetLinePeriod(value);
+                    if (ok)
+                        linePeriod_ = value;
+                    else
+                        linePeriod_ = prevValue;
+                }
+            }
+        }
+        protected float linePeriod_;
+
+        public virtual float integrationTimeUS
+        {
+            get
+            {
+                return integrationTimeUS_;
+            }
+            set
+            {
+                if (value != integrationTimeUS_)
+                {
+                    float prevValue = integrationTimeUS_;
+                    if (value > linePeriod)
+                    {
+                        integrationTimeUS_ = value;
+                        linePeriod = value + 0.7f;
+                    }
+
+                    bool ok = camera.SetExposureTime(value);
+                    if (ok)
+                        integrationTimeUS_ = value;
+                    else
+                        integrationTimeUS_ = prevValue;
+                }
+
+            }
+        }
+        protected float integrationTimeUS_;
 
         public override uint integrationTimeMS
         {

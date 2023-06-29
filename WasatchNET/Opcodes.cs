@@ -174,4 +174,38 @@ namespace WasatchNET
             armInvertedRetvals.Add(Opcodes.PROCESS_LIBRARY);
         }
     }
+    public class OCTOpcodeHelper 
+    {
+        static readonly OCTOpcodeHelper instance = new OCTOpcodeHelper();
+
+        public static OCTOpcodeHelper getInstance()
+        {
+            return instance;
+        }
+
+        Dictionary<Opcodes, string> cmd = new Dictionary<Opcodes, string>();
+
+        public Dictionary<Opcodes, string> getDict()
+        {
+            return cmd;
+        }
+
+        OCTOpcodeHelper()
+        {
+            cmd[Opcodes.GET_DETECTOR_GAIN                      ] = "tbd";
+            cmd[Opcodes.GET_DETECTOR_OFFSET                    ] = "tbd";
+            cmd[Opcodes.GET_FIRMWARE_REVISION                  ] = "tbd";
+            cmd[Opcodes.GET_FPGA_REVISION                      ] = "tbd";
+            cmd[Opcodes.GET_INTEGRATION_TIME                   ] = "r tint";
+            cmd[Opcodes.GET_LINE_PERIOD                        ] = "r tper";
+            cmd[Opcodes.GET_TEST_PATTERN                       ] = "r srce";
+
+            
+            cmd[Opcodes.SET_DETECTOR_GAIN                      ] = "tbd";
+            cmd[Opcodes.SET_DETECTOR_OFFSET                    ] = "tbd";
+            cmd[Opcodes.SET_INTEGRATION_TIME                   ] = "w tint";
+            cmd[Opcodes.SET_LINE_PERIOD                        ] = "w tper";
+            cmd[Opcodes.SET_TEST_PATTERN                       ] = "w srce";
+        }
+    }
 }
