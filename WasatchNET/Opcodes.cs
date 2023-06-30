@@ -199,7 +199,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_INTEGRATION_TIME                   ] = "r tint";
             cmd[Opcodes.GET_LINE_PERIOD                        ] = "r tper";
             cmd[Opcodes.GET_TEST_PATTERN                       ] = "r srce";
-
+            cmd[Opcodes.GET_MODEL_CONFIG                       ] = "r deid";
             
             cmd[Opcodes.SET_DETECTOR_GAIN                      ] = "tbd";
             cmd[Opcodes.SET_DETECTOR_OFFSET                    ] = "tbd";

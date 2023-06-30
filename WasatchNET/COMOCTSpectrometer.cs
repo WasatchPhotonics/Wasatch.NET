@@ -40,6 +40,8 @@ namespace WasatchNET
 
         internal override async Task<bool> openAsync()
         {
+            string resp = "";
+
             try
             {
                 port = new SerialPort(portName, 9600);
@@ -57,7 +59,6 @@ namespace WasatchNET
                     port.DiscardOutBuffer();
                     port.DiscardOutBuffer();
 
-                    string resp = "";
 
                     if (!sendCOMCommand(Opcodes.GET_LINE_PERIOD, ref resp, null))
                     {
@@ -79,9 +80,14 @@ namespace WasatchNET
             linePeriod = 50;
             integrationTimeUS = 45;
             eeprom.startupIntegrationTimeMS = 45;
+            bool ok = sendCOMCommand(Opcodes.GET_MODEL_CONFIG, ref resp, null);
+            if (ok)
+            {
+                eeprom.serialNumber = resp.Split('\r')[0];
+            }
             testPattern = 0;
 
-            return openBase;
+            return ok && openBase;
         }
 
         public async override Task closeAsync()
