@@ -61,24 +61,8 @@ namespace WasatchNET
         {
             WPOCTSpectrometer a = spectrometer as WPOCTSpectrometer;
             setDefault(spectrometer);
-            serialNumber = a.camID;
+            serialNumber = detectorSerialNumber = a.camID;
 
-            /*
-            bool readOk = false;
-            byte[] buffer = HOCTSpectrometer.OctUsb.ReadCalibration(ref readOk);
-
-            if (!readOk)
-            {
-                serialNumber = ParseData.toString(buffer, 0, 16);
-
-                wavecalCoeffs[0] = ParseData.toFloat(buffer, 16);
-                wavecalCoeffs[1] = ParseData.toFloat(buffer, 20);
-                wavecalCoeffs[2] = ParseData.toFloat(buffer, 24);
-                wavecalCoeffs[3] = ParseData.toFloat(buffer, 28);
-            }
-            */
-
-            //startupIntegrationTimeMS = (ushort)HOCTSpectrometer.OctUsb.DefaultIntegrationTime();
             double temp = a.detectorTemperatureDegC;
             startupDetectorTemperatureDegC = (short)temp;
             if (startupDetectorTemperatureDegC >= 99)
@@ -102,17 +86,5 @@ namespace WasatchNET
 
             return true;
         }
-        public string detectorSerialNumber
-        {
-            get { return _detectorSerialNumber; }
-            set
-            {
-                _detectorSerialNumber = value;
-                base.OnEEPROMChanged(new EventArgs());
-            }
-        }
-
-        string _detectorSerialNumber;
-
     }
 }

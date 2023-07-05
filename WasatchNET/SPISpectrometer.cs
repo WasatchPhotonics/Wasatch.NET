@@ -96,6 +96,7 @@ namespace WasatchNET
             isSPI = true;
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
             specIndex = index;
+            prioritizeVirtualEEPROM = true;
 
             edgeTrigger = true;
             firmwareThrowaway = true;

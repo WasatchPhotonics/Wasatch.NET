@@ -75,6 +75,7 @@ namespace WasatchNET
         public bool SigLaserTEC;
         public bool HasInterlockFeedback;
         public string FeatureMask;
+        public string DetectorSN;
 
         public override bool Equals(object obj)
         {
@@ -230,6 +231,8 @@ namespace WasatchNET
                 return false;
             if (item.FeatureMask != this.FeatureMask)
                 return false;
+            if (item.DetectorSN != this.DetectorSN)
+                return false;
 
             return true;
         }
@@ -324,6 +327,7 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + SigLaserTEC.GetHashCode();
             hashCode = hashCode * -1521134295 + HasInterlockFeedback.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMask.GetHashCode();
+            hashCode = hashCode * -1521134295 + DetectorSN.GetHashCode();
 
             return hashCode;
         }
@@ -403,6 +407,7 @@ namespace WasatchNET
 
             addField(sb, indent, "UserText", UserText);
             addField(sb, indent, "ProductConfig", ProductConfig);
+            addField(sb, indent, "DetectorSN", DetectorSN);
             addField(sb, indent, "Subformat", Subformat);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE)

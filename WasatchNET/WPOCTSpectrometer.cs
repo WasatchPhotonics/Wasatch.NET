@@ -72,6 +72,7 @@ namespace WasatchNET
 
         internal WPOCTSpectrometer(IWPOCTCamera camera, string camID, UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
+            prioritizeVirtualEEPROM = true;
             isOCT = true;
             this.camera = camera;
             this.camID = camID;

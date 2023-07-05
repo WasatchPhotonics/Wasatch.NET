@@ -113,6 +113,8 @@ namespace WasatchNET
         // Convenience lookups
         ////////////////////////////////////////////////////////////////////////
 
+        public bool prioritizeVirtualEEPROM { get; protected set; } = false;
+
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
         public uint pixels { get; protected set; }
 

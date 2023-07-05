@@ -31,6 +31,7 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         bool isARM { get; }
+        bool isOCT { get; }
         bool isSiG { get; }
         bool isSPI { get; }
         bool isGen15 { get; }
@@ -319,6 +320,8 @@ namespace WasatchNET
         FPGA_LASER_CONTROL optLaserControl { get; }
 
         ushort primaryADC { get; }
+
+        bool prioritizeVirtualEEPROM { get; }
 
         /// <summary>
         /// This is provided for spectrometers with a secondary ADC connected to an external 

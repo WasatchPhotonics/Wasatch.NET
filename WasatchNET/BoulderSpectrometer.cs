@@ -38,6 +38,7 @@ namespace WasatchNET
         {
             excitationWavelengthNM = 0;
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
+            prioritizeVirtualEEPROM = true;
             specIndex = index;
 
             if (!commError)
