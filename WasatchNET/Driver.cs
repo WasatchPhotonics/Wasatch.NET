@@ -28,6 +28,7 @@ namespace WasatchNET
     public class Driver : IDriver
     {
         const int MAX_RESETS = 3;
+        const string DEFAULT_CCF_FILE = "./W_Cobra-S_2Tap_IntTrigger_MX4_1.ccf";
 
         [DllImport("kernel32", SetLastError = true)]
         static extern IntPtr LoadLibrary(string lpFileName);
@@ -40,6 +41,7 @@ namespace WasatchNET
         static Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
 
+        public string ccfFile = DEFAULT_CCF_FILE;
         bool opened = false;
         bool suppressErrors = false;
         int resetCount = 0;
@@ -342,7 +344,7 @@ namespace WasatchNET
                         camera.InitializeLibrary();
                         if (camera.IsInitialized())
                         {
-                            camera.SetCameraFileName("./W_Cobra-S_2Tap_IntTrigger_MX4_1.ccf");
+                            camera.SetCameraFileName(ccfFile);
                             int numCameras = camera.GetNumCameras();
                             if (numCameras > 0)
                             {
