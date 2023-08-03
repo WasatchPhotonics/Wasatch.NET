@@ -336,27 +336,48 @@ namespace WasatchNET
 
                 try
                 {
+                    logger.info("Looking for COM Ports for OCT");
                     string[] ports = SerialPort.GetPortNames();
                     foreach (string portName in ports)
                     {
+                        logger.info("Trying port {0} for OCT", portName);
                         IWPOCTCamera.CameraType cameraType = IWPOCTCamera.CameraType.CameraLink;
                         IWPOCTCamera camera = IWPOCTCamera.GetOCTCamera(cameraType);
                         camera.InitializeLibrary();
+                        logger.info("Try initialize camera");
                         if (camera.IsInitialized())
                         {
+                            logger.info("camera is initialized");
+                            logger.info("last camera error {0}", camera.GetLastError().ToString());
                             camera.SetCameraFileName(ccfFile);
+                            logger.info("ccf file set to {0}", ccfFile);
+                            logger.info("last camera error {0}", camera.GetLastError().ToString());
+                            await Task.Delay(100);
                             int numCameras = camera.GetNumCameras();
+                            logger.info("found {0} cameras", numCameras);
                             if (numCameras > 0)
                             {
                                 for (int i = 0; i < numCameras; i++)
                                 {
                                     string camID = camera.GetCameraID(i);
+                                    
+                                    if (string.IsNullOrEmpty(camID))
+                                        camID = "Xtium-CL_MX4_1";
+                                    
+                                    logger.info("trying camera {0}", camID);
                                     bool ok = camera.Open(camID);
+                                    logger.info("last camera error {0}", camera.GetLastError().ToString());
                                     if (ok)
                                     {
+                                        logger.info("camera {0} is open for oct driver", camID);
                                         COMOCTSpectrometer spec = new COMOCTSpectrometer(portName, null, camera, camID, null);
                                         if (await spec.openAsync())
+                                        {
+                                            logger.info("opened {0} successfully", camID);
                                             spectrometers.Add(spec);
+                                        }
+                                        else
+                                            logger.info("failed to open {0}", camID);
                                     }
                                 }
                             }
