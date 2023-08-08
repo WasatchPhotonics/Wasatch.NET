@@ -245,11 +245,11 @@ namespace WasatchNET
         {
             get
             {
-                return true;
+                return areaScanEnabled_;
             }
             set
             {
-
+                areaScanEnabled_ = value;
             }
         }
 

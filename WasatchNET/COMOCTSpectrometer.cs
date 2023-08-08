@@ -15,7 +15,7 @@ namespace WasatchNET
 {
     public class COMOCTSpectrometer : WPOCTSpectrometer
     {
-        string portName;
+        public string portName;
         SerialPort port;
         internal Dictionary<Opcodes, string> commands = OCTOpcodeHelper.getInstance().getDict();
 
