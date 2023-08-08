@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 
 namespace WasatchNET
 {
+    public enum OCT_PROCESS_METHOD { INVALID, LINE_SAMPLE, SIMPLE_MEAN };
+
     public class WPOCTSpectrometer : Spectrometer
     {
         protected IWPOCTCamera camera { get; set; } = null;
@@ -18,6 +20,7 @@ namespace WasatchNET
         int numBitsPerPixel = 12;
 
         public List<ushort[]> firstFrames = new List<ushort[]>();
+        public OCT_PROCESS_METHOD processMethod = OCT_PROCESS_METHOD.LINE_SAMPLE;
         protected ushort[] lastFrame = null;
 
         public List<ushort[,]> firstFrames2D
@@ -174,8 +177,24 @@ namespace WasatchNET
 
             if (RawPixelData != null)
             {
-                for (int i = 0; i < pixels; ++i)
-                    data[i] = RawPixelData[i + (sampleLine_ * pixels)];
+                if (processMethod == OCT_PROCESS_METHOD.LINE_SAMPLE)
+                {
+                    for (int i = 0; i < pixels; ++i)
+                        data[i] = RawPixelData[i + (sampleLine_ * pixels)];
+                }
+                else if (processMethod == OCT_PROCESS_METHOD.SIMPLE_MEAN)
+                {
+                    for (int i = 0; i < pixels; ++i)
+                    {
+                        double sum = 0;
+                        for (int j = 0; j < linesPerFrame; ++j) 
+                        {
+                            sum += RawPixelData[i + j * pixels];   
+                        }
+
+                        data[i] = sum / (double)linesPerFrame;
+                    }
+                }
             }
 
             return data;
