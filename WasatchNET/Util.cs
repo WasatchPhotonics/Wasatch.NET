@@ -302,8 +302,12 @@ namespace WasatchNET
         /// Non-ROI pixels are not corrected. 
         /// </summary>
         ///
+        /// <remarks>
+        /// This is kind of ridiculously inefficient...we should generate and 
+        /// cache the scaling factors when we first load the EEPROM.
+        /// </remarks>
+        ///
         /// <returns>The given spectrum, with ROI srm-corrected, as an array of doubles</returns>
-        /// 
         public static double[] applyRamanCorrection(double[] spectrum, float[] correctionCoeffs, int roiStart, int roiEnd)
         {
             if (roiStart >= roiEnd)
