@@ -139,21 +139,85 @@ namespace WasatchNET
                 Thread.Sleep(wait);
             }
 
-            ushort[] RawPixelData = getFrame(false);
+            double[] sum = getSpectrumRaw();
+            if (scanAveraging_ > 1)
+            {
+                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                for (uint i = 1; i < scanAveraging_; i++)
+                {
+                    // don't send a new SW trigger if using continuous acquisition
+                    double[] tmp;
+                    while (true)
+                    {
+                        if (currentAcquisitionCancelled || shuttingDown)
+                            return null;
+
+                        if (areaScanEnabled && fastAreaScan)
+                        {
+                            tmp = getAreaScanLightweight();
+                        }
+                        else
+                        {
+                            tmp = getSpectrumRaw();
+                        }
+
+                        if (currentAcquisitionCancelled || shuttingDown)
+                            return null;
+
+                        if (tmp != null)
+                            break;
+
+                        return null;
+                    }
+                    if (tmp is null)
+                        return null;
+
+                    for (int px = 0; px < sum.Length; px++)
+                        sum[px] += tmp[px];
+                }
+
+                for (int px = 0; px < sum.Length; px++)
+                    sum[px] /= scanAveraging_;
+            }
+
+            return sum;
+        }
+
+        protected override double[] getSpectrumRaw(bool skipTrigger = false)
+        {
+            ushort[] sum = getFrame(false);
 
             if (firstFrames.Count < 100)
-                firstFrames.Add(RawPixelData);
+                firstFrames.Add(sum);
 
             double[] data = new double[pixels];
 
-            if (RawPixelData != null)
+            if (sum != null)
             {
-                for (int i = 0; i < pixels; ++i)
-                    data[i] = RawPixelData[i + (sampleLine_ * pixels)];
+                if (processMethod == OCT_PROCESS_METHOD.LINE_SAMPLE)
+                {
+                    for (int i = 0; i < pixels; ++i)
+                        data[i] = sum[i + (sampleLine_ * pixels)];
+                }
+                else if (processMethod == OCT_PROCESS_METHOD.SIMPLE_MEAN)
+                {
+                    for (int i = 0; i < pixels; ++i)
+                    {
+                        double pixelSum = 0;
+                        for (int j = 0; j < linesPerFrame; ++j)
+                        {
+                            pixelSum += sum[i + j * pixels];
+                        }
+
+                        data[i] = pixelSum / (double)linesPerFrame;
+                    }
+                }
             }
 
             return data;
         }
+
+
         public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
         {
             if (forceNew)
