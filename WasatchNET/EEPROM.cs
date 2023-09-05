@@ -1781,16 +1781,20 @@ namespace WasatchNET
         public string hexdump()
         {
             string line = "";
-            foreach (byte[] buf in pages)
+
+            if (pages != null)
             {
-                for (int i = 0; i < buf.Length; i++)
+                foreach (byte[] buf in pages)
                 {
-                    line += String.Format("{0:x2} ", buf[i]);
+                    for (int i = 0; i < buf.Length; i++)
+                    {
+                        line += String.Format("{0:x2} ", buf[i]);
+                    }
                 }
+
+                line = line.Substring(0, line.Length - 1);
             }
 
-            line = line.Substring(0, line.Length - 1);
-            
             return line;
         }
 
