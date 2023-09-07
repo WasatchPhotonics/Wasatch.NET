@@ -59,6 +59,7 @@ namespace WasatchNET
         public bool EvenOddHardwareCorrected;
         public byte LaserWarmupS;
         public byte Subformat;
+        public string HexDump;
         EEPROM.PAGE_SUBFORMAT subformat => (EEPROM.PAGE_SUBFORMAT)Subformat;
         public double[] Region1WavecalCoeffs;
         public double[] Region2WavecalCoeffs;
@@ -423,6 +424,7 @@ namespace WasatchNET
             addField(sb, indent, "SigLaserTEC", SigLaserTEC);
             addField(sb, indent, "HasInterlockFeedback", HasInterlockFeedback);
             addField(sb, indent, "FeatureMask", FeatureMask);
+            addField(sb, indent, "HexDump", HexDump);
             sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.DETECTOR_REGIONS)

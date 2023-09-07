@@ -1362,6 +1362,31 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
+        public EEPROM(EEPROMJSON json)
+        {
+            wavecalCoeffs = new float[5];
+            degCToDACCoeffs = new float[3];
+            adcToDegCCoeffs = new float[3];
+            ROIVertRegionStart = new ushort[3];
+            ROIVertRegionEnd = new ushort[3];
+            badPixels = new short[15];
+            linearityCoeffs = new float[5];
+            laserPowerCoeffs = new float[4];
+            intensityCorrectionCoeffs = new float[12];
+
+            badPixelList = new List<short>();
+            badPixelSet = new SortedSet<short>();
+
+            pages = new List<byte[]>();
+            for (ushort page = 0; page < MAX_PAGES; page++)
+            {
+                pages.Add(new byte[64]);
+            }
+
+            setFromJSON(json);
+            writeParse();
+        }
+
         public virtual bool read()
         {
             Task<bool> task = Task.Run(async () => await readAsync());
@@ -1777,6 +1802,27 @@ namespace WasatchNET
 
             featureMask = new FeatureMask();
         }
+
+        public string hexdump()
+        {
+            string line = "";
+
+            if (pages != null)
+            {
+                foreach (byte[] buf in pages)
+                {
+                    for (int i = 0; i < buf.Length; i++)
+                    {
+                        line += String.Format("{0:x2} ", buf[i]);
+                    }
+                }
+
+                line = line.Substring(0, line.Length - 1);
+            }
+
+            return line;
+        }
+
         public void setFromJSON(EEPROMJSON json)
         {
             if (json.Serial != null)
@@ -2121,6 +2167,7 @@ namespace WasatchNET
             }
 
             json.FeatureMask = featureMask.ToString();
+            json.HexDump = hexdump();
 
             return json;
         }
