@@ -1,5 +1,8 @@
 # Wasatch.NET Changelog
 
+- 2023-09-15 2.5.5
+	- beta release for downstream software
+	- most major addition is hexdump for EEPROM
 - 2023-06-21 2.5.4
 	- beta for testing
 	- main change is adding API for adding bad pixels to all data structures with one function call
