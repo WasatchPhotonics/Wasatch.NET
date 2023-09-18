@@ -84,6 +84,7 @@ namespace WasatchNET
             if (ok)
             {
                 eeprom.serialNumber = resp.Split('\r')[0];
+                camSN = eeprom.serialNumber;
             }
             testPattern = 0;
 
@@ -111,6 +112,18 @@ namespace WasatchNET
             }
         }
 
+        public string camSN
+        {
+            get
+            {
+                return _camSN;
+            }
+            set 
+            { 
+                _camSN = value;
+            }
+        }
+        string _camSN;
 
         public override int testPattern
         {
