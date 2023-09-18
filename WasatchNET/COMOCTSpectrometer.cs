@@ -98,6 +98,20 @@ namespace WasatchNET
             port = null;
         }
 
+        public override string firmwareRevision
+        {
+            get
+            {
+                string resp = "";
+                bool ok = sendCOMCommand(Opcodes.GET_FIRMWARE_REVISION, ref resp, null);
+                if (ok)
+                    return resp.Split('\r')[0].Trim();
+                else
+                    return "";
+            }
+        }
+
+
         public override int testPattern
         {
             get

@@ -200,12 +200,19 @@ namespace WasatchNET
             cmd[Opcodes.GET_LINE_PERIOD                        ] = "r tper";
             cmd[Opcodes.GET_TEST_PATTERN                       ] = "r srce";
             cmd[Opcodes.GET_MODEL_CONFIG                       ] = "r deid";
-            
+            cmd[Opcodes.GET_FIRMWARE_REVISION                  ] = "r dfwv";
+            cmd[Opcodes.GET_OCT_ANALOG_GAIN                    ] = "r pamp";
+            cmd[Opcodes.GET_DETECTOR_GAIN                      ] = "r gain";
+            cmd[Opcodes.GET_DETECTOR_OFFSET                    ] = "r offs";
+
             cmd[Opcodes.SET_DETECTOR_GAIN                      ] = "tbd";
             cmd[Opcodes.SET_DETECTOR_OFFSET                    ] = "tbd";
             cmd[Opcodes.SET_INTEGRATION_TIME                   ] = "w tint";
             cmd[Opcodes.SET_LINE_PERIOD                        ] = "w tper";
             cmd[Opcodes.SET_TEST_PATTERN                       ] = "w srce";
+            cmd[Opcodes.SET_OCT_ANALOG_GAIN                    ] = "w pamp";
+            cmd[Opcodes.SET_DETECTOR_GAIN                      ] = "w gain";
+            cmd[Opcodes.SET_DETECTOR_OFFSET                    ] = "w offs";
         }
     }
 }
