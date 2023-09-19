@@ -86,6 +86,7 @@ namespace WasatchNET
                 eeprom.serialNumber = resp.Split('\r')[0];
                 camSN = eeprom.serialNumber;
             }
+
             testPattern = 0;
 
             return ok && openBase;
@@ -109,6 +110,31 @@ namespace WasatchNET
                     return resp.Split('\r')[0].Trim();
                 else
                     return "";
+            }
+        }
+
+        public string camType
+        {
+            get
+            {
+                string resp = "";
+                bool ok = sendCOMCommand("r mdnm", ref resp, null);
+                if (ok)
+                {
+                    string fullCamID = resp.Split('_')[0];
+                    if (fullCamID == "OCTOPUS1")
+                        fullCamID = "Octoplus";
+
+                    ok = sendCOMCommand("r idnb", ref resp, null);
+                    if (ok)
+                    {
+                        fullCamID += " ";
+                        fullCamID += resp.Split('\r')[0].Split('-').Last();
+                        return fullCamID;
+                    }
+                }
+
+                return "";
             }
         }
 
@@ -251,7 +277,7 @@ namespace WasatchNET
                 command += "\r";
 
                 port.Write(command);
-                Thread.Sleep(20);
+                Thread.Sleep(33);
                 string resp = "";
                 Thread t = new Thread(() => resp = tryPort(port));
                 t.Start(); 
@@ -273,6 +299,43 @@ namespace WasatchNET
             else
             {
                 return false;
+            }
+        }
+        internal bool sendCOMCommand(string command, ref string response, float[] args, int[] precs = null)
+        {
+            string commandLocal = command;
+            if (args != null)
+            {
+                if (precs == null || precs.Length != args.Length)
+                {
+                    foreach (float arg in args)
+                        commandLocal += " " + arg.ToString("g");
+                }
+                else
+                {
+                    for (int i = 0; i < args.Length; ++i)
+                        commandLocal += " " + args[i].ToString("f" + precs[i].ToString());
+                }
+            }
+            commandLocal += "\r";
+
+            port.Write(commandLocal);
+            Thread.Sleep(33);
+            string resp = "";
+            Thread t = new Thread(() => resp = tryPort(port));
+            t.Start(); 
+            if (!t.Join(TimeSpan.FromMilliseconds(50)))
+            {
+                return false;
+            }
+            else if (resp == null)
+            {
+                return false;
+            }
+            else
+            {
+                response = resp;
+                return resp.Contains("Ok");
             }
         }
     }
