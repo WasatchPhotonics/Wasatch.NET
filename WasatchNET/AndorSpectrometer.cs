@@ -155,12 +155,20 @@ namespace WasatchNET
             }
         }
 
-
         public override void close()
         {
             //wrapper.shutdown();
             andorDriver.SetCurrentCamera(cameraHandle);
             andorDriver.ShutDown();
+        }
+
+        public override bool loadFromJSON(string pathname)
+        {
+            AndorEEPROM ee = eeprom as AndorEEPROM;
+            if (!ee.loadFromJSON(pathname))
+                return false;
+            regenerateWavelengths();
+            return true;
         }
 
         // will eventually need to override getAreaScanLightweight() and/or getFrame()

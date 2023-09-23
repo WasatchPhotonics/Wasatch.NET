@@ -2174,6 +2174,12 @@ namespace WasatchNET
         // Utilities
         ////////////////////////////////////////////////////////////////////////
 
+        public virtual bool loadFromJSON(string pathname)
+        {
+            logger.error("only implemented for Andor/XL spectrometers");
+            return false;
+        }
+
         public virtual void regenerateWavelengths()
         {
             wavelengths = Util.generateWavelengths(pixels, eeprom.wavecalCoeffs);
