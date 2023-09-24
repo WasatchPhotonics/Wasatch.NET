@@ -30,6 +30,11 @@
             hasInterlockFeedback     = 0 != (value & (ushort)Flags.HAS_INTERLOCK_FEEDBACK);
         }
 
+        public override string ToString()
+        {
+            return $"0x{toUInt16():X4}";
+        }
+
         public ushort toUInt16()
         {
             ushort value = 0;

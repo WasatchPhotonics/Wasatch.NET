@@ -2,6 +2,8 @@
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace WasatchNET
 {
@@ -783,6 +785,26 @@ namespace WasatchNET
         public List<short> badPixelList { get; protected set; }
         public SortedSet<short> badPixelSet { get; protected set; }
 
+        public void addBadPixel(short pixel)
+        {
+            if (!badPixelSet.Contains(pixel))
+            {
+                int addIndex = -1;
+                for (int i = 0; i < badPixels.Length; ++i)
+                {
+                    if (badPixels[i] == -1)
+                        addIndex = i;
+                }
+
+                if (addIndex != -1)
+                {
+                    badPixels[addIndex] = pixel;
+                    badPixelSet.Add(pixel);
+                    badPixelList.Add(pixel);
+                }
+            }
+        }
+
         public string productConfiguration
         {
             get { return _productConfiguration; }
@@ -1231,7 +1253,13 @@ namespace WasatchNET
         /// </todo>
         ///
         /// <returns>true on success, false on failure</returns>
-        public virtual bool write(bool allPages=false)
+        /// 
+        public virtual bool write(bool allPages = false)
+        {
+            Task<bool> task = Task.Run(async () => await writeAsync(allPages));
+            return task.Result;
+        }
+        public virtual async Task<bool> writeAsync(bool allPages=false)
         {
             ////////////////////////////////////////////////////////////////
             //                                                            //
@@ -1255,7 +1283,8 @@ namespace WasatchNET
                 if (spectrometer.isARM)
                 {
                     logger.hexdump(pages[page], String.Format("writing page {0} [ARM]: ", page));
-                    ok = spectrometer.sendCmd(
+
+                    ok = await spectrometer.sendCmdAsync(
                         opcode: Opcodes.SECOND_TIER_COMMAND,
                         wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM],
                         wIndex: (ushort)page,
@@ -1266,12 +1295,13 @@ namespace WasatchNET
                     const uint DATA_START = 0x3c00; // from Wasatch Stroker Console's EnhancedStroker.SetModelInformation()
                     ushort pageOffset = (ushort)(DATA_START + page * 64);
                     logger.hexdump(pages[page], String.Format("writing page {0} to offset {1} [FX2]: ", page, pageOffset));
-                    ok = spectrometer.sendCmd(
+
+                    ok = await spectrometer.sendCmdAsync(
                         opcode: Opcodes.SET_MODEL_CONFIG_FX2,
                         wValue: pageOffset,
                         wIndex: 0,
                         buf: pages[page]);
-                }
+        }
                 if (!ok)
                 {
                     logger.error("EEPROM.write: failed to save page {0}", page);
@@ -1307,7 +1337,37 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
+        public EEPROM(EEPROMJSON json)
+        {
+            wavecalCoeffs = new float[5];
+            degCToDACCoeffs = new float[3];
+            adcToDegCCoeffs = new float[3];
+            ROIVertRegionStart = new ushort[3];
+            ROIVertRegionEnd = new ushort[3];
+            badPixels = new short[15];
+            linearityCoeffs = new float[5];
+            laserPowerCoeffs = new float[4];
+            intensityCorrectionCoeffs = new float[12];
+
+            badPixelList = new List<short>();
+            badPixelSet = new SortedSet<short>();
+
+            pages = new List<byte[]>();
+            for (ushort page = 0; page < MAX_PAGES; page++)
+            {
+                pages.Add(new byte[64]);
+            }
+
+            setFromJSON(json);
+            writeParse();
+        }
+
         public virtual bool read()
+        {
+            Task<bool> task = Task.Run(async () => await readAsync());
+            return task.Result;
+        }
+        public virtual async Task<bool> readAsync()
         {
             ////////////////////////////////////////////////////////////////
             //                                                            //
@@ -1322,7 +1382,7 @@ namespace WasatchNET
             pages = new List<byte[]>();
             for (ushort page = 0; page < MAX_PAGES; page++)
             {
-                byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                 if (buf is null)
                 {
                     try
@@ -1373,7 +1433,7 @@ namespace WasatchNET
                 // read pages 8-73 (no need to do all MAX_PAGES_REAL)
                 for (ushort page = MAX_PAGES; page <= LIBRARY_STOP_PAGE; page++)
                 {
-                    byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                    byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                     pages.Add(buf);
                     logger.hexdump(buf, String.Format("read extra page {0}: ", page));
                 }
@@ -1717,6 +1777,27 @@ namespace WasatchNET
 
             featureMask = new FeatureMask();
         }
+
+        public string hexdump()
+        {
+            string line = "";
+
+            if (pages != null)
+            {
+                foreach (byte[] buf in pages)
+                {
+                    for (int i = 0; i < buf.Length; i++)
+                    {
+                        line += String.Format("{0:x2} ", buf[i]);
+                    }
+                }
+
+                line = line.Substring(0, line.Length - 1);
+            }
+
+            return line;
+        }
+
         public void setFromJSON(EEPROMJSON json)
         {
             if (json.Serial != null)
@@ -1793,10 +1874,18 @@ namespace WasatchNET
             laserWarmupSec = json.LaserWarmupS;
             laserExcitationWavelengthNMFloat = (float)json.ExcitationWavelengthNM;
             avgResolution = (float)json.AvgResolution;
-            laserPowerCoeffs[0] = (float)json.LaserPowerCoeffs[0];
-            laserPowerCoeffs[1] = (float)json.LaserPowerCoeffs[1];
-            laserPowerCoeffs[2] = (float)json.LaserPowerCoeffs[2];
-            laserPowerCoeffs[3] = (float)json.LaserPowerCoeffs[3];
+
+            if (json.LaserPowerCoeffs != null)
+            {
+                laserPowerCoeffs[0] = (float)json.LaserPowerCoeffs[0];
+                laserPowerCoeffs[1] = (float)json.LaserPowerCoeffs[1];
+                laserPowerCoeffs[2] = (float)json.LaserPowerCoeffs[2];
+                laserPowerCoeffs[3] = (float)json.LaserPowerCoeffs[3];
+            }
+            else
+            {
+                laserPowerCoeffs = new float[4];
+            }
 
             if (json.UserText != null)
                 userText = json.UserText;
@@ -2048,6 +2137,9 @@ namespace WasatchNET
                 json.Region3HorizEnd = region3HorizEnd;
                 json.RegionCount = regionCount;
             }
+
+            json.FeatureMask = featureMask.ToString();
+            json.HexDump = hexdump();
 
             return json;
         }
