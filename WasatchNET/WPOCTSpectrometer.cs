@@ -103,6 +103,7 @@ namespace WasatchNET
                 linesPerFrame = eeprom.activePixelsVert;
 
                 camera.StartAcquiring();
+                regenerateWavelengths();
 
                 return true;
             }
