@@ -8,5 +8,7 @@
         public double excitation_nm_float;
         public string wp_serial_number;
         public string wp_model;
+        public bool invert_x_axis;
+        public double[] raman_intensity_coeffs;
     }
 }

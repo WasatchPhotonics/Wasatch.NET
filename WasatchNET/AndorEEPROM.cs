@@ -201,9 +201,38 @@ namespace WasatchNET
             model = json.wp_model;
             serialNumber = json.wp_serial_number;
             detectorName = json.detector_type;
-            wavecalCoeffs = json.wavelength_coeffs.Cast<float>().ToArray();
             detectorSerialNumber = json.detector_serial_number;
             laserExcitationWavelengthNMFloat = (float)json.excitation_nm_float;
+
+            wavecalCoeffs = json.wavelength_coeffs.Select(d => (float)d).ToArray();
+
+            if (json.raman_intensity_coeffs.Length > 0)
+            {
+                intensityCorrectionCoeffs = json.raman_intensity_coeffs.Select(d => (float)d).ToArray();
+                intensityCorrectionOrder = (byte)(intensityCorrectionCoeffs.Length - 1);
+            }
+            else
+            {
+                intensityCorrectionOrder = 0;
+                intensityCorrectionCoeffs = null;
+            }
+            /*
+            wavecalCoeffs = new float[5];
+            for (var i = 0; i < wavecalCoeffs.Length; i++)
+                wavecalCoeffs[i] = i < json.wavelength_coeffs.Length ? (float)json.wavelength_coeffs[i] : 0;
+            if (json.raman_intensity_coeffs.Length > 0)
+            {
+                intensityCorrectionOrder = (byte)(json.raman_intensity_coeffs.Length - 1);
+                intensityCorrectionCoeffs = new float[json.raman_intensity_coeffs.Length];
+                for (var i = 0; i < intensityCorrectionCoeffs.Length; i++)
+                    intensityCorrectionCoeffs[i] = (float)json.raman_intensity_coeffs[i];
+            }
+            else
+            {
+                intensityCorrectionOrder = 0;
+                intensityCorrectionCoeffs = null;
+            }
+            */
 
             return true;
         }
