@@ -4,6 +4,7 @@
     - updates for 1064XL
     - don't enable detector TEC unless degCToDACCoeffs has a non-default calibration
     - added Spectrometer.loadFromJSON for XL
+    - fixed AnyCPU build
 - 2023-04-20 2.4.13
     - add warning when encountering unsupported / higher EEPROM format
 - 2022-12-19 2.4.12
