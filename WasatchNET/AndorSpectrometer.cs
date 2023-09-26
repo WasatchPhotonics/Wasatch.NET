@@ -162,6 +162,8 @@ namespace WasatchNET
             andorDriver.ShutDown();
         }
 
+        public override bool isAndor { get; protected set; } = true;
+
         public override bool loadFromJSON(string pathname)
         {
             AndorEEPROM ee = eeprom as AndorEEPROM;
