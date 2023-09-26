@@ -107,12 +107,12 @@ fi
 # verify installers
 verifyExists "Setup32"
 verifyExists "Setup64"
-# verifyExists "SetupAnyCPU"
+verifyExists "SetupAnyCPU"
 
 # upload installers
 postAndRename "Setup32"
 postAndRename "Setup64"
-# postAndRename "SetupAnyCPU"
+postAndRename "SetupAnyCPU"
 
 # upload documentation
 rsync --archive doc/doxygen/html/ ${USERNAME}@wasatchphotonics.com:www/api/Wasatch.NET/
