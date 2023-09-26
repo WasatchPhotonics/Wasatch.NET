@@ -38,6 +38,8 @@ namespace WasatchNET
 
         internal AndorSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
+            isAndor = true;
+
             // internal "step x" numbers are intended to synchronize with matching
             // steps in Wasatch.PY's wasatch.AndorDevice
             
@@ -161,8 +163,6 @@ namespace WasatchNET
             andorDriver.SetCurrentCamera(cameraHandle);
             andorDriver.ShutDown();
         }
-
-        public override bool isAndor { get; protected set; } = true;
 
         public override bool loadFromJSON(string pathname)
         {

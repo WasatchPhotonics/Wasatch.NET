@@ -178,7 +178,7 @@ namespace WasatchNET
         /// XL-series spectrometers use an Andor camera requiring special drivers and
         /// EEPROM handling.
         /// </summary>
-        public virtual bool isAndor { get; protected set; } = false;
+        public bool isAndor { get; protected set; } = false;
 
         /// <summary>
         /// Some spectrometers send a start-of-frame marker in the first pixel of
