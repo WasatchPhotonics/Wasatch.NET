@@ -181,6 +181,14 @@ USB device vendors.  The pre-compiled DLL provided in our lib/ directory was
 built from v2.2.8 using Visual Studio 2017 Community against the .NET 4.0 Client
 Profile.
 
+## Andor Driver Pack
+
+To use XL-Series spectrometers with the Andor camera system, Wasatch.NET requires
+the Andor Driver Pack 2 be installed.  This is currently available from Andor at
+the following link:
+
+- https://andor.oxinst.com/downloads/view/andor-driver-pack-2.104.30065.0-(ccd,iccd-emccd)
+
 ## FTDI
 
 See [README-SPI.md](README-SPI.md).
