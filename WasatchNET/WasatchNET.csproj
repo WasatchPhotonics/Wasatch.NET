@@ -116,6 +116,7 @@
   <ItemGroup>
     <Compile Include="AcquisitionStatus.cs" />
     <Compile Include="AndorEEPROM.cs" />
+    <Compile Include="AndorEEPROMJSON.cs" />
     <Compile Include="AndorSpectrometer.cs" />
     <Compile Include="BoulderEEPROM.cs" />
     <Compile Include="BoulderSpectrometer.cs" />
