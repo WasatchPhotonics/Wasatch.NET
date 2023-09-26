@@ -187,15 +187,20 @@ See [README-SPI.md](README-SPI.md).
 
 ## Build Configuration
 
-Our standard DLL is built against .NET 4.8 Client Profile with debugging enabled,
-and the WinFormDemo is built against .NET 4.8.
+Our standard DLL is built against .NET 4.8 Client Profile against the Debug 
+target, so the DLL will have the maximum amount of debugging symbols and metadata
+for user troubleshooting. The WinFormDemo is built against .NET 4.8.
 
-Although the DLL and demo will build and run "For Any CPU", we went ahead and made
-build configurations for x64 and x86 because some client platforms prefer binding
-to specific architectures.
+The standard and recommended build configuration is x64, but we also distribute
+installers for x86 (Win32), as for instance many users are have 32-bit versions 
+of LabVIEW even on 64-bit operating systems.
 
-Users are welcome to build the library in other configurations; please let us 
-know if you encounter any issues which we may help resolve.
+By user request we include an "AnyCPU" installer as well, but this configuration
+is missing some functionality (e.g. drivers for Andor / XL spectrometers).
+
+Users are welcome to build the library themselves against any target 
+configuration or architecture; please let us know if you encounter any issues 
+which we can help resolve.
 
 ### .NET Framework 4.0
 
