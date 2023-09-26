@@ -33,7 +33,7 @@ function verifyExists()
 {
     local ARCH="$1"
     LOCAL_NAME="WasatchNET-${ARCH}-${VERSION}.msi"
-    LOCAL_PATH="${ARCH}/Debug/$LOCAL_NAME"
+    LOCAL_PATH="${ARCH}/$TARGET/$LOCAL_NAME"
 
     if ! [ -f $LOCAL_PATH ]
     then
@@ -47,7 +47,7 @@ function postAndRename()
     local ARCH="$1"
     
     LOCAL_NAME="WasatchNET-${ARCH}-${VERSION}.msi"
-    LOCAL_PATH="${ARCH}/Debug/$LOCAL_NAME"
+    LOCAL_PATH="${ARCH}/$TARGET/$LOCAL_NAME"
 
     REMOTE_NAME="WasatchNET-${VERSION}-${ARCH}.msi"
     if $IS_BETA
@@ -60,9 +60,10 @@ function postAndRename()
     scp $LOCAL_PATH $USERNAME@wasatchphotonics.com:$REMOTE_PATH
 }
 
-for arch in x86 x64 AnyCPU
+TARGET=Debug 
+for arch in x86 x64 # AnyCPU
 do
-    cp -v WasatchNET/bin/$arch/Debug/WasatchNET.{dll,pdb} lib/$arch
+    cp -v WasatchNET/bin/$arch/$TARGET/WasatchNET.{dll,pdb} lib/$arch
 done
 
 read -p "Username:   " USERNAME
@@ -91,7 +92,7 @@ make doc
 # verify version number is consistent (postAndRename handles for MSI)
 # (arguably, all that really matters is the WasatchNET assembly version)
 validateAssemblyVersion "WasatchNET"
-#validateAssemblyVersion "WinFormDemo"
+validateAssemblyVersion "WinFormDemo"
 #validateAssemblyVersion "MultiChannelDemo"
 
 # verify version number is tagged
@@ -106,12 +107,12 @@ fi
 # verify installers
 verifyExists "Setup32"
 verifyExists "Setup64"
-verifyExists "SetupAnyCPU"
+# verifyExists "SetupAnyCPU"
 
 # upload installers
 postAndRename "Setup32"
 postAndRename "Setup64"
-postAndRename "SetupAnyCPU"
+# postAndRename "SetupAnyCPU"
 
 # upload documentation
 rsync --archive doc/doxygen/html/ ${USERNAME}@wasatchphotonics.com:www/api/Wasatch.NET/
