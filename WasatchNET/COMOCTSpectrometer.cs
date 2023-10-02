@@ -80,6 +80,7 @@ namespace WasatchNET
             linePeriod = 50;
             integrationTimeUS = 45;
             eeprom.startupIntegrationTimeMS = 45;
+            collectionMode = 16672;
             bool ok = sendCOMCommand(Opcodes.GET_MODEL_CONFIG, ref resp, null);
             if (ok)
             {
@@ -150,6 +151,32 @@ namespace WasatchNET
             }
         }
         string _camSN;
+
+        public int collectionMode
+        {
+            get { return _collectionMode; }
+            set
+            {
+                string resp = "";
+                bool ok = sendCOMCommand(Opcodes.GET_COLLECTION_MODE, ref resp, null);
+                if (ok)
+                {
+                    int mode = System.Convert.ToInt32(resp.Split('\r')[0]);
+                    if (mode != value)
+                    {
+                        ok = sendCOMCommand(Opcodes.SET_COLLECTION_MODE, ref resp, new float[] { value }, new int[] { 0 });
+                        if (ok)
+                            _collectionMode = value;
+                        else
+                            _collectionMode = mode;
+                    }
+
+                }
+
+                _collectionMode = value;
+            }
+        }
+        int _collectionMode;
 
         public override int testPattern
         {
