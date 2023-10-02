@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2023-??-?? 2.4.15
+    - added Spectrometer.isAndor
 - 2023-09-26 2.4.14
     - updates for 1064XL
     - don't enable detector TEC unless degCToDACCoeffs has a non-default calibration
