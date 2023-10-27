@@ -84,7 +84,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0f;
+                return eeprom.detectorGain;
             }
             set
             {
@@ -96,7 +96,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0f;
+                return eeprom.detectorGainOdd;
             }
             set
             {
@@ -108,7 +108,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0;
+                return eeprom.detectorOffset;
             }
             set
             {
@@ -120,7 +120,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0;
+                return eeprom.detectorOffsetOdd;
             }
             set
             {
