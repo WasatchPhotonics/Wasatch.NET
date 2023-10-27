@@ -1937,6 +1937,7 @@ namespace WasatchNET
                 productConfiguration = json.ProductConfig;
 
             PAGE_SUBFORMAT jsonSubformat = (PAGE_SUBFORMAT)json.Subformat;
+            subformat = jsonSubformat;
 
             if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
             {
