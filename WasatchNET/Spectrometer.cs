@@ -2905,6 +2905,8 @@ namespace WasatchNET
                     if (nextGood < spectrum.Length)
                         for (int j = 0; j < nextGood; j++)
                             spectrum[j] = spectrum[nextGood];
+
+                    i++;
                 }
                 else
                 {
