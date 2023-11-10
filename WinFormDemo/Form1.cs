@@ -306,7 +306,7 @@ namespace WinFormDemo
             {
 
                 // start getting spectra
-                timer.Interval = 5000; // 1000 / 10;
+                timer.Interval = 2500; // 1000 / 10;
                 int tickCount = 0;
                 timer.Tick += delegate (object senderT, EventArgs args)
                 {
@@ -315,7 +315,7 @@ namespace WinFormDemo
 
                     tickCount++;
 
-                    if (tickCount >= 2)
+                    if (tickCount >= 4)
                     {
                         timer.Interval = 1000 / 10;
                     }
