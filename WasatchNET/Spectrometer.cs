@@ -1,4 +1,5 @@
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -2816,7 +2817,10 @@ namespace WasatchNET
                 }
 
                 // generate and cache the MW
-                laserPowerSetpointMW_ = Math.Min(eeprom.maxLaserPowerMW, Math.Max(eeprom.minLaserPowerMW, value));
+                if (ignorePowerLimits)
+                    laserPowerSetpointMW_ = value;
+                else
+                    laserPowerSetpointMW_ = Math.Min(eeprom.maxLaserPowerMW, Math.Max(eeprom.minLaserPowerMW, value));
 
                 // convert to percent and apply
                 float perc = eeprom.laserPowerCoeffs[0]
@@ -2833,6 +2837,7 @@ namespace WasatchNET
         }
         protected float laserPowerSetpointMW_ = 0;
 
+        public bool ignorePowerLimits { get; set; } = false;
 
         public ushort getDAC_UNUSED()
         {
