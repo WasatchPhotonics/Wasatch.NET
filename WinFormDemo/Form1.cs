@@ -259,7 +259,7 @@ namespace WinFormDemo
             logger.level = checkBoxVerbose.Checked ? LogLevel.DEBUG : LogLevel.INFO;
         }
 
-        private void buttonInitialize_Click(object sender, EventArgs e)
+        private async void buttonInitialize_Click(object sender, EventArgs e)
         {
             logger.debug("buttonInitialize clicked");
 
@@ -306,11 +306,19 @@ namespace WinFormDemo
             {
 
                 // start getting spectra
-                timer.Interval = 1000 / 10;
+                timer.Interval = 5000; // 1000 / 10;
+                int tickCount = 0;
                 timer.Tick += delegate (object senderT, EventArgs args)
                 {
                     acquireAllSpectrometers();
                     updateGraph();
+
+                    tickCount++;
+
+                    if (tickCount >= 2)
+                    {
+                        timer.Interval = 1000 / 10;
+                    }
                 };
                 timer.Start();
                 
