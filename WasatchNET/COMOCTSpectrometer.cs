@@ -1,12 +1,8 @@
 ﻿using LibUsbDotNet.Main;
-using MPSSELight;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO.Ports;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -90,7 +86,16 @@ namespace WasatchNET
 
             testPattern = 0;
 
+            eeprom.featureMask.PropertyChanged += FeatureMask_PropertyChanged;
+            eeprom.featureMask.invertXAxis = false;
+            reverseSpectrum = false;
+
             return ok && openBase;
+        }
+
+        private void FeatureMask_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            reverseSpectrum = eeprom.featureMask.invertXAxis;
         }
 
         public async override Task closeAsync()
@@ -113,6 +118,40 @@ namespace WasatchNET
                     return "";
             }
         }
+
+        public bool reverseSpectrum
+        {
+            get
+            {
+                return _reverseSpectrum;
+            }
+            set
+            {
+                bool prevValue = _reverseSpectrum;
+                int setValue = 0;
+                if (value)
+                    setValue = 1;
+
+                string resp = "";
+                bool ok = sendCOMCommand(Opcodes.SET_INVERT_X_AXIS, ref resp, new float[] { setValue }, new int[] { 0 });
+                if (ok)
+                {
+                    ok = sendCOMCommand(Opcodes.GET_INVERT_X_AXIS, ref resp, null);
+
+                    if (ok)
+                    {
+                        int rev = System.Convert.ToInt32(resp.Split('\r')[0]);
+                        if (rev == 0)
+                            _reverseSpectrum = false;
+                        else
+                            _reverseSpectrum = true;
+                    }
+                    else
+                        _reverseSpectrum = prevValue;
+                }
+            }
+        }
+        bool _reverseSpectrum = false;
 
         public string camType
         {
@@ -145,8 +184,8 @@ namespace WasatchNET
             {
                 return _camSN;
             }
-            set 
-            { 
+            set
+            {
                 _camSN = value;
             }
         }
@@ -307,7 +346,7 @@ namespace WasatchNET
                 Thread.Sleep(33);
                 string resp = "";
                 Thread t = new Thread(() => resp = tryPort(port));
-                t.Start(); 
+                t.Start();
                 if (!t.Join(TimeSpan.FromMilliseconds(50)))
                 {
                     return false;
@@ -350,7 +389,7 @@ namespace WasatchNET
             Thread.Sleep(33);
             string resp = "";
             Thread t = new Thread(() => resp = tryPort(port));
-            t.Start(); 
+            t.Start();
             if (!t.Join(TimeSpan.FromMilliseconds(50)))
             {
                 return false;

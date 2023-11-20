@@ -42,6 +42,7 @@ namespace WasatchNET
         GET_STORAGE,
         GET_HORIZONTAL_BINNING,
         GET_INTEGRATION_TIME,
+        GET_INVERT_X_AXIS,
         GET_LAMP_ENABLE,
         GET_LASER_ENABLE,
         GET_LASER_FIRING,       // i.e. IS_LASER_FIRING
@@ -93,6 +94,7 @@ namespace WasatchNET
         SET_FEEDBACK,
         SET_HORIZONTAL_BINNING,
         SET_INTEGRATION_TIME,
+        SET_INVERT_X_AXIS,
         SET_LAMP_ENABLE,
         SET_LASER_ENABLE,
         SET_LASER_MOD_DURATION,
