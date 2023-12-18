@@ -194,7 +194,7 @@ namespace WasatchNET
         {
             reset();
 
-            var count = driver.openAllSpectrometers();
+            var count = await driver.openAllSpectrometersAsync();
             logger.header($"openAsync: initializing {count} spectrometers");
             for (var i = 0; i < count; i++)
             {

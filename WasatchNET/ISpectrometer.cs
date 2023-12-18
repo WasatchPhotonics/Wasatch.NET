@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace WasatchNET
 {
@@ -397,5 +398,6 @@ namespace WasatchNET
         /// </summary>
         /// <returns>The acquired spectrum as an array of doubles</returns>
         double[] getSpectrum(bool forceNew);
+        ushort[] getFrame();
     }
 }

@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Info;
 using LibUsbDotNet.Main;
@@ -85,7 +86,13 @@ namespace WasatchNET
         /// Driver.closeAllSpectrometers().
         /// </remarks>
         /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
+        /// 
         public int openAllSpectrometers()
+        {
+            Task<int> task = Task.Run(async () => await openAllSpectrometersAsync());
+            return task.Result;
+        }
+        public async Task<int> openAllSpectrometersAsync()
         {
             logger.header("openAllSpectrometers: start");
 
@@ -135,7 +142,7 @@ namespace WasatchNET
                 if (usbRegistry.Vid == 0x24aa && usbRegistry.Pid == 0x5000)
                 {
                     HOCTSpectrometer spectrometer = new HOCTSpectrometer(usbRegistry);
-                    if (spectrometer.open())
+                    if (await spectrometer.openAsync())
                     {
                         string key = String.Format("{0}-{1}", "HOCT", "0000");
                         if (!sorted.ContainsKey(key))
@@ -146,7 +153,7 @@ namespace WasatchNET
                 else if (usbRegistry.Vid == 0x24aa)
                 {
                     Spectrometer spectrometer = new Spectrometer(usbRegistry) { uptime = uptime };
-                    if (spectrometer.open())
+                    if (await spectrometer.openAsync())
                     {
                         // sort them by model, serial (allow duplicates for unconfigured)
                         string key = String.Format("{0}-{1}", spectrometer.eeprom.model, spectrometer.eeprom.serialNumber);
@@ -201,7 +208,7 @@ namespace WasatchNET
 
                     SPISpectrometer spiSpec = new SPISpectrometer(null);
                     logger.debug("attempting to open spi spectrometer");
-                    bool opened = spiSpec.open();
+                    bool opened = await spiSpec.openAsync();
                     if (opened)
                     {
                         logger.debug("found SPISpectrometer");
@@ -250,7 +257,7 @@ namespace WasatchNET
                     {
                         BoulderSpectrometer boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
 
-                        while (boulderSpectrometer.open())
+                        while (await boulderSpectrometer.openAsync())
                         {
                             boulderSpectrometer.detectorTECSetpointDegC = 15.0f;
                             spectrometers.Add(boulderSpectrometer);
@@ -285,7 +292,7 @@ namespace WasatchNET
                 {
                     logger.info("Attempting to open Andor camera {0}", i);
                     AndorSpectrometer spec = new AndorSpectrometer(null, i);
-                    if (spec.open())
+                    if (await spec.openAsync())
                         spectrometers.Add(spec);
                 }
             }
@@ -300,7 +307,16 @@ namespace WasatchNET
         public int openMockSpectrometer(uint pixels)
         {
             MockSpectrometer mockSpectrometer = new MockSpectrometer(null);
-            if(mockSpectrometer.open(pixels))
+            if (mockSpectrometer.open(pixels))
+                spectrometers.Add(mockSpectrometer);
+
+            return spectrometers.Count;
+        }
+
+        public async Task<int> openMockSpectrometerAsync(uint pixels)
+        {
+            MockSpectrometer mockSpectrometer = new MockSpectrometer(null);
+            if(await mockSpectrometer.openAsync(pixels))
                 spectrometers.Add(mockSpectrometer);
 
             return spectrometers.Count;
@@ -335,6 +351,11 @@ namespace WasatchNET
         /// </summary>
         public void closeAllSpectrometers()
         {
+            Task task = Task.Run(async () => await closeAllSpectrometersAsync());
+            task.Wait();
+        }
+        public async Task closeAllSpectrometersAsync()
+        {
             if (!opened)
             {
                 logger.debug("closeAllSpectrometers: not opened");
@@ -343,27 +364,25 @@ namespace WasatchNET
 
             logger.debug("closeAllSpectrometers: start");
 
-            lock (this)
+            if (spectrometers.Count > 0)
             {
-                if (spectrometers.Count > 0)
+                foreach (Spectrometer spectrometer in spectrometers)
                 {
-                    foreach (Spectrometer spectrometer in spectrometers)
-                    {
-                        logger.debug("closeAllSpectrometers: closing spectrometer");
-                        spectrometer.close();
-                    }
-                    spectrometers.Clear();
-
+                    logger.debug("closeAllSpectrometers: closing spectrometer");
+                    await spectrometer.closeAsync();
                 }
-                else
-                    logger.debug("closeAllSpectrometers: no spectrometers to close");
+                spectrometers.Clear();
 
-                logger.debug("closeAllSpectrometers: unregistering error handler");
-                UsbDevice.UsbErrorEvent -= OnUsbError;
-
-                logger.debug("closeAllSpectrometers: exiting UsbDevice");
-                UsbDevice.Exit();
             }
+            else
+                logger.debug("closeAllSpectrometers: no spectrometers to close");
+
+            logger.debug("closeAllSpectrometers: unregistering error handler");
+            UsbDevice.UsbErrorEvent -= OnUsbError;
+
+            logger.debug("closeAllSpectrometers: exiting UsbDevice");
+            UsbDevice.Exit();
+            
 
             opened = false;
             logger.debug("closeAllSpectrometers: done");

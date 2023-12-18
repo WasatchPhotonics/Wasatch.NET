@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Linq;
 using LibUsbDotNet.Main;
 using MPSSELight;
@@ -221,6 +222,11 @@ namespace WasatchNET
 
         override internal bool open()
         {
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
+        }
+        override internal async Task<bool> openAsync()
+        {
             eeprom = new SPIEEPROM(this);
 
             string ftdi = null;
@@ -277,7 +283,7 @@ namespace WasatchNET
                 return false;
             }
 
-            if (!eeprom.read())
+            if (!(await eeprom.readAsync()))
             {
                 logger.info("Spectrometer: failed to GET_MODEL_CONFIG");
                 close();
@@ -356,54 +362,62 @@ namespace WasatchNET
             return true;
         }
 
+
         public override void close()
         {
-            mpsse.Dispose();
+            Task task = Task.Run(async () => await closeAsync());
+            task.Wait();
+        }
+        public async override Task closeAsync()
+        {
+            await Task.Run(() => mpsse.Dispose());
         }
 
         public override double[] getSpectrum(bool forceNew = false)
         {
-            lock (acquisitionLock)
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
+        }
+        public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
+        {
+            double[] sum = await getSpectrumRawAsync();
+            if (sum == null)
             {
-                double[] sum = getSpectrumRaw();
-                if (sum == null)
-                {
-                    logger.error("getSpectrum: getSpectrumRaw returned null");
-                    return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
+                logger.error("getSpectrum: getSpectrumRaw returned null");
+                return null;
+            }
+            logger.debug("getSpectrum: received {0} pixels", sum.Length);
 
-                if (scanAveraging_ > 1)
+            if (scanAveraging_ > 1)
+            {
+                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                for (uint i = 1; i < scanAveraging_; i++)
                 {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
-                    {
-                        double[] tmp = getSpectrumRaw();
-                        if (tmp == null)
-                            return null;
-
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] += tmp[px];
-                    }
+                    double[] tmp = await getSpectrumRawAsync();
+                    if (tmp == null)
+                        return null;
 
                     for (int px = 0; px < pixels; px++)
-                        sum[px] /= scanAveraging_;
+                        sum[px] += tmp[px];
                 }
 
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
+                for (int px = 0; px < pixels; px++)
+                    sum[px] /= scanAveraging_;
+            }
 
-                if (boxcarHalfWidth > 0)
-                {
-                    // logger.debug("getSpectrum: returning boxcar");
-                    return Util.applyBoxcar(boxcarHalfWidth, sum);
-                }
-                else
-                {
-                    // logger.debug("getSpectrum: returning sum");
-                    return sum;
-                }
+            if (dark != null && dark.Length == sum.Length)
+                for (int px = 0; px < pixels; px++)
+                    sum[px] -= dark_[px];
+
+            if (boxcarHalfWidth > 0)
+            {
+                // logger.debug("getSpectrum: returning boxcar");
+                return Util.applyBoxcar(boxcarHalfWidth, sum);
+            }
+            else
+            {
+                // logger.debug("getSpectrum: returning sum");
+                return sum;
             }
         }
 
@@ -526,8 +540,12 @@ namespace WasatchNET
             return true;
         }
 
-
-        protected override double[] getSpectrumRaw(bool skipTrigger=false)
+        protected override double[] getSpectrumRaw(bool skipTrigger = false)
+        {
+            Task<double[]> task = Task.Run(async () => await getSpectrumRawAsync(skipTrigger));
+            return task.Result;
+        }
+        protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger=false)
         {
             logger.debug("requesting spectrum");
             ////////////////////////////////////////////////////////////////////
@@ -552,7 +570,7 @@ namespace WasatchNET
             byte[] command = padding((int)pixels * 2 + STANDARD_PADDING * 2);
 
             //actual result
-            byte[] result = spi.readWrite(command);
+            byte[] result = await Task.Run(() => spi.readWrite(command));
 
             //unpack pixels
             for (int i = 0; i < pixels; ++i)

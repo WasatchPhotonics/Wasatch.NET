@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 using Newtonsoft.Json;
@@ -18,6 +19,10 @@ namespace WasatchNET
         string currentSource = "";
         Random noiseMaker = new Random();
         public bool noisy = true;
+
+        public double? spectralNoiseMean = null;
+        public double? spectralNoiseSD = null;
+
         public enum SAMPLE_METHOD { EXACT, LINEAR_INTERPOLATION, NOISY_LINEAR_INTERPOLATION };
 
         /// <summary>
@@ -38,6 +43,11 @@ namespace WasatchNET
         /// Temperatures will be randomly produced based on the given setpoint
         /// </summary>
         internal MockSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
+        {
+
+        }
+
+        public MockSpectrometer() : base(null)
         {
 
         }
@@ -150,6 +160,13 @@ namespace WasatchNET
             get
             {
                 return noisy ? (float)addNoise(detectorTECSetpointDegC, .1, .03) : detectorTECSetpointDegC;
+            }
+        }
+        public override ushort detectorTemperatureRaw
+        {
+            get
+            {
+                return 0;
             }
         }
 
@@ -288,11 +305,17 @@ namespace WasatchNET
         //////////////////////////////////////////////////////
         override internal bool open()
         {
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
+        }
+
+        override internal async Task<bool> openAsync()
+        {
             darkBaseline = 800;
 
             eeprom = new MockEEPROM(this);
 
-            if (!eeprom.read())
+            if (!(await eeprom.readAsync()))
             {
                 logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                 //wrapper.shutdown();
@@ -307,17 +330,31 @@ namespace WasatchNET
 
         public bool open(uint pixels)
         {
+            Task<bool> task = Task.Run(async () => await openAsync(pixels));
+            return task.Result;
+        }
+
+        public async Task<bool> openAsync(uint pixels)
+        {
             this.pixels = pixels;
-            return open();
+            return await openAsync();
         }
 
         //////////////////////////////////////////////////////
         //              NEEDS IMPLEMENT
         //////////////////////////////////////////////////////
+
+
         public override void close()
+        {
+            Task task = Task.Run(async () => await closeAsync());
+            task.Wait();
+        }
+        public async override Task closeAsync()
         {
 
         }
+
 
         public override bool isARM => false;
         public override bool isInGaAs => InGaAs;
@@ -336,108 +373,117 @@ namespace WasatchNET
         /// <returns></returns>
         public override double[] getSpectrum(bool forceNew = false)
         {
-            var driver = Driver.getInstance();
-            lock (acquisitionLock)
-            {
-                currentAcquisitionCancelled = false;
-
-                int retries = 0;
-                double[] sum = null;
-                while (true)
-                {
-                    if (currentAcquisitionCancelled || shuttingDown)
-                        return null;
-
-                    sum = getSpectrumRaw();
-
-                    if (currentAcquisitionCancelled || shuttingDown)
-                        return null;
-
-                    if (sum != null)
-                        break;
-
-                    if (retries++ < acquisitionMaxRetries)
-                    {
-                        // retry the whole thing (including ACQUIRE)
-                        logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
-                        continue;
-                    }
-                    else if (errorOnTimeout)
-                    {
-                        // display error if configured
-                        logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
-                    }
-                    return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
-
-                if (scanAveraging_ > 1)
-                {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
-                    {
-                        // don't send a new SW trigger if using continuous acquisition
-                        double[] tmp;
-                        while (true)
-                        {
-                            if (currentAcquisitionCancelled || shuttingDown)
-                                return null;
-
-                            tmp = getSpectrumRaw(skipTrigger: scanAveragingIsContinuous);
-
-                            if (currentAcquisitionCancelled || shuttingDown)
-                                return null;
-
-                            if (tmp != null)
-                                break;
-
-                            if (retries++ < acquisitionMaxRetries)
-                            {
-                                // retry the whole thing (including ACQUIRE)
-                                logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
-                                continue;
-                            }
-                            else if (errorOnTimeout)
-                            {
-                                // display error if configured
-                                logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
-                            }
-                            return null;
-                        }
-                        if (tmp is null)
-                            return null;
-
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] += tmp[px];
-                    }
-
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] /= scanAveraging_;
-                }
-
-                correctBadPixels(ref sum);
-                if (ramanIntensityCorrectionEnabled)
-                    sum = correctRamanIntensity(sum);
-
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
-
-                // this should be enough to update the cached value
-                if (readTemperatureAfterSpectrum && eeprom.hasCooling)
-                    _ = detectorTemperatureDegC;
-
-                spectrumCount++;
-
-                if (boxcarHalfWidth_ > 0)
-                    return Util.applyBoxcar(boxcarHalfWidth_, sum);
-                else
-                    return sum;
-            }
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
         }
 
+        public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
+        {
+            var driver = Driver.getInstance();
+            
+            currentAcquisitionCancelled = false;
+
+            int retries = 0;
+            double[] sum = null;
+            while (true)
+            {
+                if (currentAcquisitionCancelled || shuttingDown)
+                    return null;
+
+                sum = await getSpectrumRawAsync();
+
+                if (currentAcquisitionCancelled || shuttingDown)
+                    return null;
+
+                if (sum != null)
+                    break;
+
+                if (retries++ < acquisitionMaxRetries)
+                {
+                    // retry the whole thing (including ACQUIRE)
+                    logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                    continue;
+                }
+                else if (errorOnTimeout)
+                {
+                    // display error if configured
+                    logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                }
+                return null;
+            }
+            logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+            if (scanAveraging_ > 1)
+            {
+                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                for (uint i = 1; i < scanAveraging_; i++)
+                {
+                    // don't send a new SW trigger if using continuous acquisition
+                    double[] tmp;
+                    while (true)
+                    {
+                        if (currentAcquisitionCancelled || shuttingDown)
+                            return null;
+
+                        tmp = await getSpectrumRawAsync(skipTrigger: scanAveragingIsContinuous);
+
+                        if (currentAcquisitionCancelled || shuttingDown)
+                            return null;
+
+                        if (tmp != null)
+                            break;
+
+                        if (retries++ < acquisitionMaxRetries)
+                        {
+                            // retry the whole thing (including ACQUIRE)
+                            logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                            continue;
+                        }
+                        else if (errorOnTimeout)
+                        {
+                            // display error if configured
+                            logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                        }
+                        return null;
+                    }
+                    if (tmp is null)
+                        return null;
+
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] += tmp[px];
+                }
+
+                for (int px = 0; px < pixels; px++)
+                    sum[px] /= scanAveraging_;
+            }
+
+            correctBadPixels(ref sum);
+            if (ramanIntensityCorrectionEnabled)
+                sum = correctRamanIntensity(sum);
+
+            if (dark != null && dark.Length == sum.Length)
+                for (int px = 0; px < pixels; px++)
+                    sum[px] -= dark_[px];
+
+            // this should be enough to update the cached value
+            if (readTemperatureAfterSpectrum && eeprom.hasCooling)
+                _ = detectorTemperatureDegC;
+
+            spectrumCount++;
+
+            if (boxcarHalfWidth_ > 0)
+                return Util.applyBoxcar(boxcarHalfWidth_, sum);
+            else
+                return sum;
+        }
 
         protected override double[] getSpectrumRaw(bool skipTrigger = false)
+        {
+            Task<double[]> task = Task.Run(async () => await getSpectrumRawAsync(skipTrigger));
+            return task.Result;
+        }
+
+        protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger = false)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
 
@@ -452,7 +498,7 @@ namespace WasatchNET
             {
                 if (interpolationSamples.TryGetValue(currentSource, out spectra))
                 {
-                    spec = interpolateSamples();
+                    spec = await Task.Run(() => interpolateSamples());
                 }
                 else
                 {
@@ -460,9 +506,6 @@ namespace WasatchNET
                     spec = addNoise(spec, darkBaseline, darkBaseline / 20);
                 }
             }
-
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spec);
 
             if (eeprom.featureMask.bin2x2)
             {
@@ -477,10 +520,8 @@ namespace WasatchNET
 
             // logger.debug("getSpectrumRaw({0}): {1}", id, string.Join<double>(", ", spec));
 
-            if (isOCT)
-                Thread.Sleep(70);
-            else
-                Thread.Sleep((int)integrationTimeMS_);
+            // having an artifical delay here was fun, but it's ultimately a waste of time (haha)
+            Thread.Sleep(20);
 
             lastSpectrum = spec;
             return spec;
@@ -509,15 +550,12 @@ namespace WasatchNET
                 }
             }
 
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spec);
-
-
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
 
             // logger.debug("getSpectrumRaw({0}): {1}", id, string.Join<double>(", ", spec));
 
-            Thread.Sleep((int)integrationTimeMS_);
+            // having an artifical delay here was fun, but it's ultimately a waste of time (haha)
+            Thread.Sleep(20);
 
             return spec;
         }
@@ -598,6 +636,17 @@ namespace WasatchNET
             else
                 return false;
 
+        }
+
+        public bool initSpectrometer(EEPROMJSON json)
+        {
+            eeprom.setFromJSON(json);
+            if (pixels != eeprom.activePixelsHoriz)
+                pixels = eeprom.activePixelsHoriz;
+
+            regenerateWavelengths();
+
+            return true;
         }
 
         public void addData(string src, int integrationTime, double[] spectrum)
@@ -766,7 +815,12 @@ namespace WasatchNET
 
             //TS: apply noise if desired. Probably should have higher SD and be more data driven
             if (sampleMethod == SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION)
-                final = addNoise(final, 20, 1);
+            {
+                if (spectralNoiseMean.HasValue && spectralNoiseSD.HasValue)
+                    final = addNoise(final, spectralNoiseMean.Value, spectralNoiseSD.Value);
+                else
+                    final = addNoise(final, 20, 1);
+            }
 
             return final;
         }

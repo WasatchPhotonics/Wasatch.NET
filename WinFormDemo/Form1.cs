@@ -910,7 +910,7 @@ namespace WinFormDemo
             DateTime startTime = DateTime.Now;
 
             logger.debug("doAcquireIteration: getting spectrum");
-            double[] raw = state.spectrometer.getSpectrum();
+            double[] raw = await state.spectrometer.getSpectrumAsync();
             if (raw is null)
             {
                 if (useTasks)

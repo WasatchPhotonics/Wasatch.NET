@@ -1,5 +1,26 @@
 # Wasatch.NET Changelog
 
+- 2023-09-15 2.5.5
+	- beta release for downstream software
+	- most major addition is hexdump for EEPROM
+- 2023-06-21 2.5.4
+	- beta for testing
+	- main change is adding API for adding bad pixels to all data structures with one function call
+- 2023-06-01 2.5.3
+	- beta
+	- some downstream mock and function changes, mostly for new internal project
+- 2023-03-03 2.5.2
+	- beta
+	- some additions to EEPROM/JSON formatting
+- 2022-11-03 2.5.1
+	- beta
+	- some Andor noodling
+	- made sync wrappers a little safer
+	- moved standard spec properties back to sync for now (async set caused a huge out of order bug, see README)
+- 2022-09-XX 2.5.0
+	- beta
+	- added async versions of a number of key functions
+	- moved most "USB-based" properties to using "synchronous async" usb functions for standard spectometer
 - 2023-??-?? 2.4.14
     - updates for 1064XL
     - don't enable detector TEC unless degCToDACCoeffs has a non-default calibration

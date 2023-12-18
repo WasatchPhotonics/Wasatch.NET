@@ -987,6 +987,11 @@ namespace WasatchNET
 
         internal override bool open()
         {
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
+        }
+        internal override async Task<bool> openAsync()
+        {
             if (!commsOpen)
             {
                 bool openOk = OctUsb.OpenDevice(0x24AA, 0x5000);
@@ -1016,7 +1021,7 @@ namespace WasatchNET
                     pixels = (uint)1024;
 
                     eeprom = new HOCTEEPROM(this);
-                    if (!eeprom.read())
+                    if (!(await eeprom.readAsync()))
                     {
                         logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                         return false;
@@ -1073,22 +1078,34 @@ namespace WasatchNET
             OctUsb.ClearProcessingBuffer();
         }
 
+
+
         public override void close()
+        {
+            Task task = Task.Run(async () => await closeAsync());
+            task.Wait();
+        }
+        public async override Task closeAsync()
         {
             if (commsOpen)
             {
                 _cancellationTokenSource.Cancel();
 
-                FrameProcess.Wait();
+                await FrameProcess;
 
-                bool closeOk = OctUsb.CloseDevice();
+                bool closeOk = await Task.Run(() => OctUsb.CloseDevice());
                 if (closeOk)
                     commsOpen = false;
-                
+
             }
         }
 
         public override double[] getSpectrum(bool forceNew = false)
+        {
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
+        }
+        public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
         {
             if (forceNew)
             {
@@ -1110,7 +1127,10 @@ namespace WasatchNET
 
                 Thread.Sleep(wait);
             }
-            ushort[] RawPixelData = getFrame();
+
+            Task<ushort[]> frameTask = Task.Run(() => getFrame());
+
+            ushort[] RawPixelData = await frameTask;
             double[] data = new double[pixels];
 
             lock (lineLock)

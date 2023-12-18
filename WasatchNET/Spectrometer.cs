@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 
@@ -175,6 +176,15 @@ namespace WasatchNET
         public bool isOCT { get; protected set; } = false;
 
         /// <summary>
+        /// This is a quick way to know if we should expect our spectrometer to
+        /// generate wavenumbers or not, all values above 0 are considered viable 
+        /// </summary>
+        public bool looksRaman
+        {
+            get { return excitationWavelengthNM > 0; } 
+        }
+
+        /// <summary>
         /// Some spectrometers send a start-of-frame marker in the first pixel of
         /// the spectrum.
         /// </summary>
@@ -289,6 +299,7 @@ namespace WasatchNET
                     if (value == accessoryEnabled_)
                         return;
 
+
                     sendCmd(Opcodes.SET_ACCESSORY_ENABLE, (ushort)((accessoryEnabled_ = value) ? 1 : 0));
                 }
             }
@@ -306,7 +317,7 @@ namespace WasatchNET
         /// explicitly, for instance to send software triggers to a series of
         /// devices at once, before beginning reads on any of them.
         /// </remarks>
-        public bool autoTrigger 
+        public bool autoTrigger
         {
             get => autoTrigger_;
             set
@@ -361,14 +372,11 @@ namespace WasatchNET
         public virtual uint scanAveraging
         {
             get { return scanAveraging_; }
-            set 
+            set
             {
-                lock (acquisitionLock)
-                {
-                    logger.debug($"scanAveraging -> {value}");
-                    scanAveraging_ = value;
-                    configureContinuousAcquisition();
-                }
+                logger.debug($"scanAveraging -> {value}");
+                scanAveraging_ = value;
+                configureContinuousAcquisition();
             }
         }
         protected uint scanAveraging_ = 1;
@@ -414,10 +422,7 @@ namespace WasatchNET
             get { return boxcarHalfWidth_; }
             set
             {
-                lock (acquisitionLock)
-                {
-                    boxcarHalfWidth_ = value;
-                }
+                boxcarHalfWidth_ = value;
             }
         }
         protected uint boxcarHalfWidth_;
@@ -431,10 +436,7 @@ namespace WasatchNET
             get { return dark_; }
             set
             {
-                lock (acquisitionLock)
-                {
-                    dark_ = value;
-                }
+                dark_ = value;
             }
         }
         protected double[] dark_;
@@ -611,6 +613,7 @@ namespace WasatchNET
                 //    return 0;
                 if (isSiG)
                     return 0;
+
                 ushort orig = Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2));
                 // ushort corrected = swapBytes(orig);
                 ushort retval = (ushort)(orig & 0xfff);
@@ -637,7 +640,7 @@ namespace WasatchNET
                 // register, so let's re-order the received bytes to match the ICD
                 uint tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, 3));
                 uint lsb = (byte)(tmp & 0xff);
-                uint msb = (byte)((tmp >>  8) & 0xff);
+                uint msb = (byte)((tmp >> 8) & 0xff);
                 uint chg = (byte)((tmp >> 16) & 0xff);
                 batteryStateRaw_ = (lsb << 16) | (msb << 8) | chg;
 
@@ -657,7 +660,7 @@ namespace WasatchNET
 
                 uint raw = batteryStateRaw;
                 byte lsb = (byte)((raw >> 16) & 0xff);
-                byte msb = (byte)((raw >>  8) & 0xff);
+                byte msb = (byte)((raw >> 8) & 0xff);
                 return ((float)(1.0 * msb)) + ((float)(1.0 * lsb / 256.0));
             }
         }
@@ -840,7 +843,7 @@ namespace WasatchNET
                 const Opcodes op = Opcodes.GET_DETECTOR_SENSING_THRESHOLD_ENABLE;
                 if (haveCache(op) && value == detectorSensingThresholdEnabled_)
                     return;
-                
+
                 sendCmd(Opcodes.SET_DETECTOR_SENSING_THRESHOLD_ENABLE, (ushort)((detectorSensingThresholdEnabled_ = value) ? 1 : 0));
                 readOnce.Add(op);
             }
@@ -1155,29 +1158,37 @@ namespace WasatchNET
                 if (haveCache(op) && value == integrationTimeMS_)
                     return;
 
+                // temporarily disabled EEPROM range-checking by customer 
+                // request; range limits in EEPROM are defined as 16-bit 
+                // values, while integration time is actually a 24-bit value,
+                // such that the EEPROM is artificially limiting our range.
+                //
+                // uint ms = Math.Max(eeprom.minIntegrationTimeMS, Math.Min(eeprom.maxIntegrationTimeMS, value));
+
+                /*
                 lock (acquisitionLock)
                 {
-                    // temporarily disabled EEPROM range-checking by customer 
-                    // request; range limits in EEPROM are defined as 16-bit 
-                    // values, while integration time is actually a 24-bit value,
-                    // such that the EEPROM is artificially limiting our range.
-                    //
-                    // uint ms = Math.Max(eeprom.minIntegrationTimeMS, Math.Min(eeprom.maxIntegrationTimeMS, value));
+                    logger.debug("acquired acquisition lock for integration time");
+                }
+                */
 
-                    uint ms = value;
-                    ushort lsw = (ushort)(ms & 0xffff);
-                    ushort msw = (ushort)((ms >> 16) & 0x00ff);
+                uint ms = value;
+                ushort lsw = (ushort)(ms & 0xffff);
+                ushort msw = (ushort)((ms >> 16) & 0x00ff);
 
-                    // logger.debug("setIntegrationTimeMS: {0} ms = lsw {1:x4} msw {2:x4}", ms, lsw, msw);
-                    byte[] buf = null;
-                    if (isARM || isStroker)
-                        buf = new byte[8];
-                    sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf);
-                    integrationTimeMS_ = ms;
-                    readOnce.Add(op);
+                // logger.debug("setIntegrationTimeMS: {0} ms = lsw {1:x4} msw {2:x4}", ms, lsw, msw);
+                byte[] buf = null;
+                if (isARM || isStroker)
+                    buf = new byte[8];
 
-                    if (throwawayAfterIntegrationTime)
-                        performThrowawaySpectrum();
+                sendCmd(Opcodes.SET_INTEGRATION_TIME, lsw, msw, buf: buf);
+                integrationTimeMS_ = ms;
+                readOnce.Add(op);
+
+                if (throwawayAfterIntegrationTime)
+                {
+                    Task task = Task.Run(async () => await performThrowawaySpectrumAsync());
+                    task.Wait();
                 }
             }
         }
@@ -1449,7 +1460,7 @@ namespace WasatchNET
             }
             set
             {
-                _ = sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[]{0,0,0,0,0,0,0,0,0,0}); // MZ: 10?
+                _ = sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }); // MZ: 10?
                 readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET);
             }
         }
@@ -1475,7 +1486,7 @@ namespace WasatchNET
                 double resistance = 21450.0 * voltage / (2.5 - voltage);
                 if (resistance <= 0)
                 {
-                    logger.error("laserTemperatureDegC.get: invalid resistance (raw {0:x4}, voltage {1}, resistance {2:f2} ohms)", 
+                    logger.error("laserTemperatureDegC.get: invalid resistance (raw {0:x4}, voltage {1}, resistance {2:f2} ohms)",
                         raw, voltage, resistance);
                     return 0;
                 }
@@ -1490,7 +1501,7 @@ namespace WasatchNET
                 double C2 = 0.000234;
                 double C3 = 8.78e-8;
                 double lnOhms = Math.Log(resistance);
-                double degC = 1.0 / (  C1
+                double degC = 1.0 / (C1
                                      + C2 * lnOhms
                                      + C3 * Math.Pow(lnOhms, 3)
                                     ) - 273.15;
@@ -1656,12 +1667,9 @@ namespace WasatchNET
         {
             get
             {
-                lock (adcLock)
-                {
-                    if (selectedADC != 0)
-                        selectedADC = 0;
-                    return adcRaw;
-                }
+                if (selectedADC != 0)
+                    selectedADC = 0;
+                return adcRaw;
             }
         }
 
@@ -1673,12 +1681,10 @@ namespace WasatchNET
             {
                 if (!hasSecondaryADC)
                     return 0;
-                lock (adcLock)
-                {
-                    if (selectedADC != 1)
-                        selectedADC = 1;
-                    return adcRaw;
-                }
+
+                if (selectedADC != 1)
+                    selectedADC = 1;
+                return adcRaw;
             }
         }
 
@@ -1821,38 +1827,64 @@ namespace WasatchNET
         // Untethered
         ////////////////////////////////////////////////////////////////////////
 
-        public byte[] getStorage(UInt16 page)
+        public async Task<byte[]> getStorageAsync(UInt16 page)
         {
             if (featureIdentification.boardType != BOARD_TYPES.ARM)
                 return null;
-            return getCmd2(Opcodes.GET_STORAGE, 64, page);
+            return await getCmd2Async(Opcodes.GET_STORAGE, 64, page);
         }
 
-        public bool eraseStorage()
+        public async Task<bool> eraseStorageAsync()
         {
             if (featureIdentification.boardType != BOARD_TYPES.ARM)
                 return false;
-            return sendCmd2(Opcodes.ERASE_STORAGE);
+            return await sendCmd2Async(Opcodes.ERASE_STORAGE);
         }
 
-        public bool sendFeedback(UInt16 sequence)
+        public async Task<bool> sendFeedbackAsync(UInt16 sequence)
         {
             if (featureIdentification.boardType != BOARD_TYPES.ARM)
                 return false;
-            return sendCmd2(Opcodes.SET_FEEDBACK, sequence);
+            return await sendCmd2Async(Opcodes.SET_FEEDBACK, sequence);
         }
 
-        public UntetheredCaptureStatus getUntetheredCaptureStatus()
+        public async Task<UntetheredCaptureStatus> getUntetheredCaptureStatusAsync()
         {
             UntetheredCaptureStatus status = UntetheredCaptureStatus.ERROR;
             if (!isSiG)
                 return status;
 
-            byte result = Unpack.toByte(getCmd(Opcodes.POLL_DATA, 1));
+            byte result = Unpack.toByte(await getCmdAsync(Opcodes.POLL_DATA, 1));
             if (result < (byte)UntetheredCaptureStatus.ERROR)
                 status = (UntetheredCaptureStatus)result;
             return status;
         }
+
+        
+        public byte[] getStorage(UInt16 page)
+        {
+            Task<byte[]> task = Task.Run(async () => await getStorageAsync(page));
+            return task.Result;
+        }
+
+        public bool eraseStorage()
+        {
+            Task<bool> task = Task.Run(async () => await eraseStorageAsync());
+            return task.Result;
+        }
+
+        public bool sendFeedback(UInt16 sequence)
+        {
+            Task<bool> task = Task.Run(async () => await sendFeedbackAsync(sequence));
+            return task.Result;
+        }
+
+        public UntetheredCaptureStatus getUntetheredCaptureStatus()
+        {
+            Task<UntetheredCaptureStatus> task = Task.Run(async () => await getUntetheredCaptureStatusAsync());
+            return task.Result;
+        }
+        
 
         ////////////////////////////////////////////////////////////////////////
         // Lifecycle
@@ -1867,6 +1899,11 @@ namespace WasatchNET
         }
 
         virtual internal bool open()
+        {
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
+        }
+        virtual internal async Task<bool> openAsync()
         {
             logger.header($"Spectrometer.open: VID = 0x{usbRegistry.Vid:x4}, PID = 0x{usbRegistry.Pid:x4}");
 
@@ -1895,7 +1932,7 @@ namespace WasatchNET
             logger.debug("reading EEPROM");
             eeprom = new EEPROM(this);
             fram = new FRAM(this);
-            if (!eeprom.read())
+            if (!(await eeprom.readAsync()))
             {
                 logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                 usbDevice.Close();
@@ -2054,6 +2091,11 @@ namespace WasatchNET
 
         public virtual void close()
         {
+            Task task = Task.Run(async () => await closeAsync());
+            task.Wait();
+        }
+        public async virtual Task closeAsync()
+        {
             logger.debug($"Spectrometer.close: closing {id}");
 
             // quit whatever we're doing
@@ -2061,14 +2103,14 @@ namespace WasatchNET
 
             // turn off the laser
             if (usbDevice != null && usbDevice.IsOpen && hasLaser)
-                laserEnabled = false;
-
-            // ensure we're no longer acquiring
-            lock (acquisitionLock)
             {
-                // stop all USB comms
-                shuttingDown = true;
+                laserEnabled = false;
+                //Thread.Sleep(100);
             }
+            // ensure we're no longer acquiring
+            
+                // stop all USB comms
+            shuttingDown = true;
 
             logger.debug("Spectrometer.close: throwawaySum = {0}", throwawaySum); // just make sure it gets used
 
@@ -2076,10 +2118,11 @@ namespace WasatchNET
             {
                 if (usbDevice.IsOpen)
                 {
+                    waitForUsbAvailable();
                     IUsbDevice wholeUsbDevice = usbDevice as IUsbDevice;
                     if (!ReferenceEquals(wholeUsbDevice, null))
-                        wholeUsbDevice.ReleaseInterface(0);
-                    usbDevice.Close();
+                        await Task.Run(() => wholeUsbDevice.ReleaseInterface(0));
+                    await Task.Run(() => usbDevice.Close());
                 }
                 usbDevice = null;
             }
@@ -2177,7 +2220,7 @@ namespace WasatchNET
         public virtual void regenerateWavelengths()
         {
             wavelengths = Util.generateWavelengths(pixels, eeprom.wavecalCoeffs);
-            if (excitationWavelengthNM > 0)
+            if (looksRaman)
                 wavenumbers = Util.wavelengthsToWavenumbers(excitationWavelengthNM, wavelengths);
         }
 
@@ -2319,6 +2362,7 @@ namespace WasatchNET
         /// <param name="fullLen">the actual number of expected return bytes (not all needed)</param>
         /// <remarks>not sure fullLen is actually required...testing</remarks>
         /// <returns>the array of returned bytes (null on error)</returns>
+
         internal byte[] getCmd(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
         {
             if (shuttingDown)
@@ -2363,6 +2407,51 @@ namespace WasatchNET
             // extract just the bytes we really needed
             return Util.truncateArray(buf, len);
         }
+        internal async Task<byte[]> getCmdAsync(Opcodes opcode, int len, ushort wIndex = 0, int fullLen = 0)
+        {
+            if (shuttingDown)
+                return null;
+
+            int bytesToRead = Math.Max(len, fullLen);
+            if (isARM || isStroker) // ARM should always read at least 8 bytes
+                bytesToRead = Math.Min(8, bytesToRead);
+            byte[] buf = new byte[bytesToRead];
+
+            UsbSetupPacket setupPacket = new UsbSetupPacket(
+                DEVICE_TO_HOST, // bRequestType
+                cmd[opcode],    // bRequest
+                0,              // wValue
+                wIndex,         // wIndex
+                bytesToRead);   // wLength
+
+            bool expectedSuccessResult = true;
+            if (isARM && armInvertedRetvals.Contains(opcode))
+                expectedSuccessResult = !expectedSuccessResult;
+
+            // Question: if the device returns 6 bytes on Endpoint 0, but I only
+            // need the first so pass byte[1], are the other 5 bytes discarded or
+            // queued?
+            waitForUsbAvailable();
+
+            logger.debug("getCmd: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
+            int bytesRead = 0;
+            Task<bool> task = Task.Run(() => usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out bytesRead));
+            task.Wait();
+            bool result = await task;
+            if (result != expectedSuccessResult || bytesRead < len)
+            {
+                logger.error("getCmd: failed to get {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
+                    opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
+                return null;
+            }
+            
+
+            if (logger.debugEnabled())
+                logger.hexdump(buf, String.Format("getCmd: {0} (0x{1:x2}) index 0x{2:x4} ->", opcode.ToString(), cmd[opcode], wIndex));
+
+            // extract just the bytes we really needed
+            return await Task.Run(() => Util.truncateArray(buf, len));
+        }
 
         /// <summary>
         /// Execute a request-response transfer with a "second-tier" request.
@@ -2370,6 +2459,7 @@ namespace WasatchNET
         /// <param name="opcode">the wValue to send along with the "second-tier" command</param>
         /// <param name="len">how many bytes of response are expected</param>
         /// <returns>array of returned bytes (null on error)</returns>
+        /// 
         internal byte[] getCmd2(Opcodes opcode, int len, ushort wIndex = 0, int fakeBufferLengthARM = 0)
         {
             if (shuttingDown)
@@ -2415,6 +2505,54 @@ namespace WasatchNET
             // extract just the bytes we really needed
             return Util.truncateArray(buf, len);
         }
+        internal async Task<byte[]> getCmd2Async(Opcodes opcode, int len, ushort wIndex = 0, int fakeBufferLengthARM = 0)
+        {
+            if (shuttingDown)
+                return null;
+
+            int bytesToRead = len;
+            if (isARM || isStroker)
+                bytesToRead = Math.Max(bytesToRead, fakeBufferLengthARM);
+
+            UsbSetupPacket setupPacket = new UsbSetupPacket(
+                DEVICE_TO_HOST,                     // bRequestType
+                cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest
+                cmd[opcode],                        // wValue
+                wIndex,                             // wIndex
+                bytesToRead);                       // wLength
+
+            byte[] buf = new byte[bytesToRead];
+
+            bool expectedSuccessResult = true;
+            if (isARM && armInvertedRetvals.Contains(opcode))
+                expectedSuccessResult = !expectedSuccessResult;
+
+            bool result = false;
+
+            waitForUsbAvailable();
+
+            logger.debug("getCmd2: about to send {0} ({1}) with buffer length {2}", opcode.ToString(), stringifyPacket(setupPacket), buf.Length);
+            int bytesRead = 0;
+            Task<bool> task = Task.Run(() => usbDevice.ControlTransfer(ref setupPacket, buf, buf.Length, out bytesRead));
+            task.Wait();
+            result = await task; 
+
+            if (result != expectedSuccessResult || bytesRead < len)
+            {
+                logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
+                    opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
+                logger.hexdump(buf, $"{opcode} result");
+                return null;
+            }
+            
+
+            if (logger.debugEnabled())
+                logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->",
+                    opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult));
+
+            // extract just the bytes we really needed
+            return Util.truncateArray(buf, len);
+        }
 
         /// <summary>
         /// send a single control transfer command (response not checked)
@@ -2425,6 +2563,7 @@ namespace WasatchNET
         /// <param name="buf">a data buffer used by some commands</param>
         /// <returns>true on success, false on error</returns>
         /// <todo>should support return code checking...most cmd opcodes return a success/failure byte</todo>
+        /// 
         internal bool sendCmd(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
         {
             if (shuttingDown)
@@ -2472,6 +2611,51 @@ namespace WasatchNET
             }
             return true;
         }
+        internal async Task<bool> sendCmdAsync(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
+        {
+            if (shuttingDown)
+                return false;
+
+            if ((isARM || isStroker) && (buf is null || buf.Length < 8))
+                buf = new byte[8];
+
+            ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
+
+            UsbSetupPacket packet = new UsbSetupPacket(
+                HOST_TO_DEVICE, // bRequestType
+                cmd[opcode],    // bRequest
+                wValue,         // wValue
+                wIndex,         // wIndex
+                wLength);       // wLength
+
+            bool? expectedSuccessResult = true;
+            if (isARM)
+            {
+                if (opcode != Opcodes.SECOND_TIER_COMMAND)
+                    expectedSuccessResult = armInvertedRetvals.Contains(opcode);
+                else
+                    expectedSuccessResult = null; // no easy way to know, as we don't pass wValue as enum (MZ: whut?)
+            }
+
+            // don't enforce USB delay on laser commands...that could be dangerous
+            // or on acquire commands, which would disrupt integration throwaways 
+            // and soft synchronization
+            if (opcode != Opcodes.SET_LASER_ENABLE && opcode != Opcodes.ACQUIRE_SPECTRUM)
+                waitForUsbAvailable();
+
+            logger.debug("sendCmd: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
+
+            bool result = await Task.Run(() => usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten));
+
+            if (expectedSuccessResult != null && expectedSuccessResult.Value != result)
+            {
+                logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
+                    opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, result, expectedSuccessResult);
+                return false;
+            }
+            
+            return true;
+        }
 
         /// <summary>
         /// send a single 2nd-tier control transfer command (response not checked)
@@ -2505,6 +2689,32 @@ namespace WasatchNET
                 return usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
             }
         }
+        internal async Task<bool> sendCmd2Async(Opcodes opcode, ushort wIndex = 0, byte[] buf = null)
+        {
+            if (shuttingDown)
+                return false;
+
+            if ((isARM || isStroker) && (buf is null || buf.Length < 8))
+                buf = new byte[8];
+
+            ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
+
+
+            UsbSetupPacket packet = new UsbSetupPacket(
+                HOST_TO_DEVICE,                     // bRequestType
+                cmd[Opcodes.SECOND_TIER_COMMAND],   // bRequest
+                cmd[opcode],                        // wValue
+                wIndex,                             // wIndex
+                wLength);                           // wLength
+
+            waitForUsbAvailable();
+
+            await Task.Run(() =>logger.debug("sendCmd2: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id));
+            int bytesWritten;
+            return await Task.Run(() => usbDevice.ControlTransfer(ref packet, buf, wLength, out bytesWritten));
+            
+        }
+
 
         ////////////////////////////////////////////////////////////////////////
         // laser
@@ -2622,23 +2832,41 @@ namespace WasatchNET
         protected float laserPowerSetpointMW_ = 0;
 
 
-        public ushort getDAC_UNUSED() { return Unpack.toUshort(getCmd(Opcodes.GET_DETECTOR_TEC_SETPOINT, 2, 1)); }
+        public ushort getDAC_UNUSED()
+        {
+            Task<ushort> task = Task.Run(async () => await getDAC_UNUSEDAsync());
+            return task.Result;
+        }
+        public async Task<ushort> getDAC_UNUSEDAsync() { return Unpack.toUshort(await getCmdAsync(Opcodes.GET_DETECTOR_TEC_SETPOINT, 2, 1)); }
 
-        // this is not a Property because it has no value and cannot be undone
         public bool setDFUMode()
         {
-            if (!isARM)
-                return logger.error("setDFUMode only applicable to ARM-based spectrometers (not {0})", featureIdentification.boardType);
-
-            logger.info("Setting DFU mode");
-            return sendCmd(Opcodes.SET_DFU_MODE);
+            Task<bool> task = Task.Run(async () => await setDFUModeAsync());
+            return task.Result;
         }
 
         // this is not a Property because it has no value and cannot be undone
         public bool resetFPGA()
         {
+            Task<bool> task = Task.Run(async () => await resetFPGAAsync());
+            return task.Result;
+        }
+
+        // this is not a Property because it has no value and cannot be undone
+        public async Task<bool> setDFUModeAsync()
+        {
+            if (!isARM)
+                return logger.error("setDFUMode only applicable to ARM-based spectrometers (not {0})", featureIdentification.boardType);
+
+            logger.info("Setting DFU mode");
+            return await sendCmdAsync(Opcodes.SET_DFU_MODE);
+        }
+
+        // this is not a Property because it has no value and cannot be undone
+        public async Task<bool> resetFPGAAsync()
+        {
             logger.info("Resetting FPGA");
-            return sendCmd(Opcodes.FPGA_RESET);
+            return await sendCmdAsync(Opcodes.FPGA_RESET);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -2737,130 +2965,141 @@ namespace WasatchNET
         /// <param name="forceNew">not used in base class (provided for specialized subclasses)</param>
         ///
         /// <returns>The acquired spectrum as an array of doubles</returns>
-        public virtual double[] getSpectrum(bool forceNew=false)
+        public virtual double[] getSpectrum(bool forceNew = false)
+        {
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
+        }
+        public virtual async Task<double[]> getSpectrumAsync(bool forceNew=false)
         {
             var driver = Driver.getInstance();
+            
+            uptime.setError(uniqueKey); // assume acquisition may fail
+            currentAcquisitionCancelled = false;
+
+            /*
             lock (acquisitionLock)
             {
-                uptime.setError(uniqueKey); // assume acquisition may fail
-                currentAcquisitionCancelled = false;
+                logger.debug("acquired acquisition lock for get spectrum");
+            }
+            */
 
-                int retries = 0;
-                double[] sum = null;
-                while (true)
-                {
-                    if (currentAcquisitionCancelled || shuttingDown)
-                        return null;
-
-                    if (areaScanEnabled && fastAreaScan)
-                    {
-                        try
-                        {
-                            sum = getAreaScanLightweight();
-                        }
-                        catch (Exception e)
-                        {
-                            logger.error("Area scan failed out with error {0}", e.Message);
-                        }
-                    }
-                    else
-                    {
-                        sum = getSpectrumRaw();
-                    }
-                    if (currentAcquisitionCancelled || shuttingDown)
-                        return null;
-
-                    if (sum != null)
-                        break;
-
-                    if (retries++ < acquisitionMaxRetries && !untetheredAcquisitionEnabled)
-                    {
-                        // retry the whole thing (including ACQUIRE)
-                        logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
-                        continue;
-                    }
-                    else if (errorOnTimeout)
-                    {
-                        // display error if configured
-                        logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
-                    }
+            int retries = 0;
+            double[] sum = null;
+            while (true)
+            {
+                if (currentAcquisitionCancelled || shuttingDown)
                     return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
 
-                if (scanAveraging_ > 1)
+                if (areaScanEnabled && fastAreaScan)
                 {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
+                    try
                     {
-                        // don't send a new SW trigger if using continuous acquisition
-                        double[] tmp;
-                        while (true)
-                        {
-                            if (currentAcquisitionCancelled || shuttingDown)
-                                return null;
-
-                            if (areaScanEnabled && fastAreaScan)
-                            {
-                                tmp = getAreaScanLightweight();
-                            }
-                            else
-                            {
-                                tmp = getSpectrumRaw();
-                            }
-
-                            if (currentAcquisitionCancelled || shuttingDown)
-                                return null;
-
-                            if (tmp != null)
-                                break;
-
-                            if (retries++ < acquisitionMaxRetries)
-                            {
-                                // retry the whole thing (including ACQUIRE)
-                                logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
-                                continue;
-                            }
-                            else if (errorOnTimeout)
-                            {
-                                // display error if configured
-                                logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
-                            }
-                            return null;
-                        }
-                        if (tmp is null)
-                            return null;
-
-                        for (int px = 0; px < sum.Length; px++)
-                            sum[px] += tmp[px];
+                        sum = getAreaScanLightweight();
                     }
+                    catch (Exception e)
+                    {
+                        logger.error("Area scan failed out with error {0}", e.Message);
+                    }
+                }
+                else
+                {
+                    sum = await getSpectrumRawAsync();
+                }
+                if (currentAcquisitionCancelled || shuttingDown)
+                    return null;
+
+                if (sum != null)
+                    break;
+
+                if (retries++ < acquisitionMaxRetries && !untetheredAcquisitionEnabled)
+                {
+                    // retry the whole thing (including ACQUIRE)
+                    logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                    continue;
+                }
+                else if (errorOnTimeout)
+                {
+                    // display error if configured
+                    logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                }
+                return null;
+            }
+            logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+            if (scanAveraging_ > 1)
+            {
+                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                for (uint i = 1; i < scanAveraging_; i++)
+                {
+                    // don't send a new SW trigger if using continuous acquisition
+                    double[] tmp;
+                    while (true)
+                    {
+                        if (currentAcquisitionCancelled || shuttingDown)
+                            return null;
+
+                        if (areaScanEnabled && fastAreaScan)
+                        {
+                            tmp = getAreaScanLightweight();
+                        }
+                        else
+                        {
+                            tmp = await getSpectrumRawAsync();
+                        }
+
+                        if (currentAcquisitionCancelled || shuttingDown)
+                            return null;
+
+                        if (tmp != null)
+                            break;
+
+                        if (retries++ < acquisitionMaxRetries)
+                        {
+                            // retry the whole thing (including ACQUIRE)
+                            logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                            continue;
+                        }
+                        else if (errorOnTimeout)
+                        {
+                            // display error if configured
+                            logger.error($"getSpectrum: getSpectrumRaw returned null ({id})");
+                        }
+                        return null;
+                    }
+                    if (tmp is null)
+                        return null;
 
                     for (int px = 0; px < sum.Length; px++)
-                        sum[px] /= scanAveraging_;
+                        sum[px] += tmp[px];
                 }
 
-                correctBadPixels(ref sum);
-
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
-
-                // important note on order of operations below - TS
-                if (ramanIntensityCorrectionEnabled)
-                    sum = correctRamanIntensity(sum);
-
-                // this should be enough to update the cached value
-                if (readTemperatureAfterSpectrum && eeprom.hasCooling)
-                    _ = detectorTemperatureDegC;
-
-                spectrumCount++;
-                uptime.setSuccess(uniqueKey);
-
-                if (boxcarHalfWidth_ > 0)
-                    return Util.applyBoxcar(boxcarHalfWidth_, sum);
-                else
-                    return sum;
+                for (int px = 0; px < sum.Length; px++)
+                    sum[px] /= scanAveraging_;
             }
+
+            correctBadPixels(ref sum);
+
+            if (dark != null && dark.Length == sum.Length)
+                for (int px = 0; px < pixels; px++)
+                    sum[px] -= dark_[px];
+
+            // important note on order of operations below - TS
+            if (ramanIntensityCorrectionEnabled)
+                sum = correctRamanIntensity(sum);
+
+            // this should be enough to update the cached value
+            if (readTemperatureAfterSpectrum && eeprom.hasCooling)
+                _ = detectorTemperatureDegC;
+
+            spectrumCount++;
+            uptime.setSuccess(uniqueKey);
+
+            if (boxcarHalfWidth_ > 0)
+                return Util.applyBoxcar(boxcarHalfWidth_, sum);
+            else
+                return sum;
+            
         }
 
 
@@ -2907,6 +3146,11 @@ namespace WasatchNET
 
         public bool sendSWTrigger()
         {
+            Task<bool> task = Task.Run(async () => await sendSWTriggerAsync());
+            return task.Result;
+        }
+        public async Task<bool> sendSWTriggerAsync()
+        {
             byte[] buf = null;
             if (isARM)
                 buf = new byte[8];
@@ -2914,7 +3158,7 @@ namespace WasatchNET
             logger.debug("sending SW trigger");
             acquireCount++;
             var wValue = (ushort)(untetheredAcquisitionEnabled ? 1 : 0);
-            return sendCmd(Opcodes.ACQUIRE_SPECTRUM, wValue, buf: buf);
+            return await sendCmdAsync(Opcodes.ACQUIRE_SPECTRUM, wValue, buf: buf);
         }
 
         /// <summary>
@@ -2932,13 +3176,19 @@ namespace WasatchNET
         /// if autoTrigger is disabled or using HW triggering.  In such cases, if
         /// the user wants a throwaway, they can generate it themselves.
         /// </todo>
+        /// 
         void performThrowawaySpectrum()
+        {
+            Task task = Task.Run(async () => await performThrowawaySpectrumAsync());
+            task.Wait();
+        }
+        async Task performThrowawaySpectrumAsync()
         {
             logger.debug("generating throwaway spectrum");
             // send a trigger if getSpectrumRaw won't
             if (!autoTrigger || triggerSource_ != TRIGGER_SOURCE.INTERNAL)
-                sendSWTrigger();
-            getSpectrumRaw();
+                await sendSWTriggerAsync();
+            await getSpectrumRawAsync();
         }
 
         public void flushReaders()
@@ -2955,7 +3205,14 @@ namespace WasatchNET
         /// allows getSpectrum to suppress SW triggers when scanAveraging, on scans after
         /// the first, if scanAveragingIsContinuous
         /// </param>
-        protected virtual double[] getSpectrumRaw(bool skipTrigger=false)
+        /// 
+        protected virtual double[] getSpectrumRaw(bool skipTrigger = false)
+        {
+            Task<double[]> task = Task.Run(async () => await getSpectrumRawAsync(skipTrigger));
+            return task.Result;
+        }
+
+        protected virtual async Task<double[]> getSpectrumRawAsync(bool skipTrigger=false)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
             byte[] buf = null;
@@ -2964,7 +3221,7 @@ namespace WasatchNET
 
             // request a spectrum
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
-                sendSWTrigger();
+                await sendSWTriggerAsync();
 
             if ((!skipTrigger || isStroker) && !areaScanEnabled)
             {
@@ -2974,7 +3231,7 @@ namespace WasatchNET
             }
 
             if (untetheredAcquisitionEnabled)
-                if (!waitForUntetheredData())
+                if (!(await waitForUntetheredDataAsync()))
                     return null;
 
             ////////////////////////////////////////////////////////////////////
@@ -3009,7 +3266,7 @@ namespace WasatchNET
                         }
                         else
                         {
-                            subspectrum = readSubspectrum(spectralReader, pixelsPerEndpoint);
+                            subspectrum = await readSubspectrumAsync(spectralReader, pixelsPerEndpoint);
                         }
                         break;
                     }
@@ -3120,10 +3377,15 @@ namespace WasatchNET
         /// <returns>true if poll was successful (data ready), false on error</returns>
         bool waitForUntetheredData()
         {
+            Task<bool> task = Task.Run(async () => await waitForUntetheredDataAsync());
+            return task.Result;
+        }
+        async Task<bool> waitForUntetheredDataAsync()
+        {
             while (true)
             {
                 Thread.Sleep(1000);
-                var status = getUntetheredCaptureStatus();
+                var status = await getUntetheredCaptureStatusAsync();
                 logger.debug($"waitForUntetheredData: UntetheredCaptureStatus {status}");
                 if (status == UntetheredCaptureStatus.IDLE)
                     return true;
@@ -3132,16 +3394,16 @@ namespace WasatchNET
             }
         }
 
+        
+
         protected virtual double[] getAreaScanLightweight()
         {
             double[] temp = new double[pixels]; // default to all zeros
-            double[] sum = new double[temp.Length * eeprom.activePixelsVert]; 
-            
-            sendSWTrigger();
+            double[] sum = new double[temp.Length * eeprom.activePixelsVert];
 
-            lock (commsLock)
-            {
-                for (int i = 0; i < eeprom.activePixelsVert; ++i)
+            Task<bool> task = Task.Run(async () => await sendSWTriggerAsync());
+
+            for (int i = 0; i < eeprom.activePixelsVert; ++i)
                 {
                     //temp = getSpectrumRaw(true)
                     int pixelsRead = 0;
@@ -3160,7 +3422,7 @@ namespace WasatchNET
                     temp.CopyTo(sum, temp.Length * i);
                     //Thread.Sleep(detectorOffset + 1);
                 }
-            }
+            
 
             return sum;
         }
@@ -3389,6 +3651,11 @@ namespace WasatchNET
         //     name.  Recommend picking a different parameter name.
         uint[] readSubspectrum(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
         {
+            Task<uint[]> task = Task.Run(async () => await readSubspectrumAsync(spectralReader, pixelsPerEndpoint));
+            return task.Result;
+        }
+        async Task<uint[]> readSubspectrumAsync(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
+        {
             ////////////////////////////////////////////////////////////////////
             // Read all the expected bytes.  Don't mess with demarshalling into
             // pixels yet, because we might get them in odd-sized batches.
@@ -3415,7 +3682,7 @@ namespace WasatchNET
                 {
                     int bytesToRead = bytesPerEndpoint - bytesReadThisEndpoint;
                     logger.debug($"readSubspectrum: attempting to read {bytesToRead} bytes of spectrum from endpoint 0x{spectralReader.EpNum:x2} with timeout {timeoutMS}ms ({id})");
-                    err = spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, bytesPerEndpoint - bytesReadThisEndpoint, timeoutMS, out bytesRead);
+                    err = await Task.Run(() => spectralReader.Read(subspectrumBytes, bytesReadThisEndpoint, bytesPerEndpoint - bytesReadThisEndpoint, timeoutMS, out bytesRead));
                     logger.debug($"readSubspectrum: read {bytesRead} bytes of spectrum from endpoint 0x{spectralReader.EpNum:x2} ({err}) ({id})");
                 }
                 catch (Exception ex)
