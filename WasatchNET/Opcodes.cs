@@ -205,6 +205,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_DETECTOR_GAIN                      ] = "r gain";
             cmd[Opcodes.GET_DETECTOR_OFFSET                    ] = "r offs";
             cmd[Opcodes.GET_COLLECTION_MODE                    ] = "r mode";
+            cmd[Opcodes.GET_INVERT_X_AXIS                      ] = "r revr";
 
             cmd[Opcodes.SET_DETECTOR_GAIN                      ] = "tbd";
             cmd[Opcodes.SET_DETECTOR_OFFSET                    ] = "tbd";
@@ -215,6 +216,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_DETECTOR_GAIN                      ] = "w gain";
             cmd[Opcodes.SET_DETECTOR_OFFSET                    ] = "w offs";
             cmd[Opcodes.SET_COLLECTION_MODE                    ] = "w mode";
+            cmd[Opcodes.SET_INVERT_X_AXIS                      ] = "w revr";
         }
     }
 }
