@@ -1931,7 +1931,7 @@ namespace WasatchNET
             badPixels[13] = (Int16)json.BadPixels[13];
             badPixels[14] = (Int16)json.BadPixels[14];
 
-            detectorSerialNumber = json.DetectorSN;
+            //detectorSerialNumber = json.DetectorSN;
 
             if (json.ProductConfig != null)
                 productConfiguration = json.ProductConfig;
@@ -2096,7 +2096,7 @@ namespace WasatchNET
                 json.BadPixels[13] = badPixels[13];
                 json.BadPixels[14] = badPixels[14];
             }
-            json.DetectorSN = detectorSerialNumber;
+            //json.DetectorSN = detectorSerialNumber;
             json.UserText = userText;
             json.ProductConfig = productConfiguration;
             if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
