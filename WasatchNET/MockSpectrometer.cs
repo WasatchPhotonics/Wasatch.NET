@@ -44,12 +44,12 @@ namespace WasatchNET
         /// </summary>
         internal MockSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
-
+            prioritizeVirtualEEPROM = true;
         }
 
         public MockSpectrometer() : base(null)
         {
-
+            prioritizeVirtualEEPROM = true;
         }
 
         public override bool areaScanEnabled
@@ -84,7 +84,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0f;
+                return eeprom.detectorGain;
             }
             set
             {
@@ -96,7 +96,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0f;
+                return eeprom.detectorGainOdd;
             }
             set
             {
@@ -108,7 +108,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0;
+                return eeprom.detectorOffset;
             }
             set
             {
@@ -120,7 +120,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0;
+                return eeprom.detectorOffsetOdd;
             }
             set
             {
@@ -527,7 +527,7 @@ namespace WasatchNET
             return spec;
         }
 
-        public override ushort[] getFrame()
+        public override ushort[] getFrame(bool direct = true)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
 

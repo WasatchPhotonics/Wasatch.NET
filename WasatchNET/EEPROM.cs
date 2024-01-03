@@ -1183,6 +1183,31 @@ namespace WasatchNET
         List<UInt16> _librarySpectrum;
 
         /////////////////////////////////////////////////////////////////////////
+        // Virtual Pages
+        /////////////////////////////////////////////////////////////////////////
+        
+        /*
+         * These fields are not currently apportioned space on the physical EEPROM
+         * and thus are exclusively used with units that have purely virtual "EEPROM."
+         * 
+         * This is defined in the base class so we don't need downstream casts or some
+         * intermediate subclass to cast to...though that would make some sense too
+         * 
+         */
+
+        public string detectorSerialNumber
+        {
+            get { return _detectorSerialNumber; }
+            set
+            {
+                _detectorSerialNumber = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+
+        string _detectorSerialNumber;
+
+        /////////////////////////////////////////////////////////////////////////
         // Compound Fields
         /////////////////////////////////////////////////////////////////////////
 
@@ -1906,10 +1931,13 @@ namespace WasatchNET
             badPixels[13] = (Int16)json.BadPixels[13];
             badPixels[14] = (Int16)json.BadPixels[14];
 
+            detectorSerialNumber = json.DetectorSN;
+
             if (json.ProductConfig != null)
                 productConfiguration = json.ProductConfig;
 
             PAGE_SUBFORMAT jsonSubformat = (PAGE_SUBFORMAT)json.Subformat;
+            subformat = jsonSubformat;
 
             if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
             {
@@ -2068,6 +2096,7 @@ namespace WasatchNET
                 json.BadPixels[13] = badPixels[13];
                 json.BadPixels[14] = badPixels[14];
             }
+            json.DetectorSN = detectorSerialNumber;
             json.UserText = userText;
             json.ProductConfig = productConfiguration;
             if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)

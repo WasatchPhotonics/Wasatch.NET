@@ -1,5 +1,9 @@
 # Wasatch.NET Changelog
 
+- 2023-12-18 2.5.6
+	- beta release for downstream software
+	- adds support for both major classes of WPOCT spectrometers
+	- stability improvements for Boulder spectrometers
 - 2023-09-15 2.5.5
 	- beta release for downstream software
 	- most major addition is hexdump for EEPROM

@@ -1,4 +1,5 @@
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -112,6 +113,8 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
         // Convenience lookups
         ////////////////////////////////////////////////////////////////////////
+
+        public bool prioritizeVirtualEEPROM { get; protected set; } = false;
 
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
         public uint pixels { get; protected set; }
@@ -2814,7 +2817,10 @@ namespace WasatchNET
                 }
 
                 // generate and cache the MW
-                laserPowerSetpointMW_ = Math.Min(eeprom.maxLaserPowerMW, Math.Max(eeprom.minLaserPowerMW, value));
+                if (ignorePowerLimits)
+                    laserPowerSetpointMW_ = value;
+                else
+                    laserPowerSetpointMW_ = Math.Min(eeprom.maxLaserPowerMW, Math.Max(eeprom.minLaserPowerMW, value));
 
                 // convert to percent and apply
                 float perc = eeprom.laserPowerCoeffs[0]
@@ -2831,6 +2837,7 @@ namespace WasatchNET
         }
         protected float laserPowerSetpointMW_ = 0;
 
+        public bool ignorePowerLimits { get; set; } = false;
 
         public ushort getDAC_UNUSED()
         {
@@ -2903,6 +2910,8 @@ namespace WasatchNET
                     if (nextGood < spectrum.Length)
                         for (int j = 0; j < nextGood; j++)
                             spectrum[j] = spectrum[nextGood];
+
+                    i++;
                 }
                 else
                 {
@@ -3427,7 +3436,7 @@ namespace WasatchNET
             return sum;
         }
 
-        public virtual ushort[] getFrame()
+        public virtual ushort[] getFrame(bool direct = true)
         {
             return null;
         }
