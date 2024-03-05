@@ -1,7 +1,9 @@
 # Wasatch.NET Changelog
 
-- 2023-??-?? 2.4.15
+- 2024-03-05 2.4.15
     - added Spectrometer.isAndor
+	- fixes to multi channel wrapper timing
+	- attempted changes for hardware triggering
 - 2023-09-26 2.4.14
     - updates for 1064XL
     - don't enable detector TEC unless degCToDACCoeffs has a non-default calibration

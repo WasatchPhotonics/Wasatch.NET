@@ -1881,7 +1881,7 @@ namespace WasatchNET
             bool needsInitialization = uptime.needsInitialization(uniqueKey);
             uptime.setUnknown(uniqueKey);
             logger.debug($"needsInitialization = {needsInitialization}");
-
+            
             // clear cache
             readOnce.Clear();
 
@@ -2978,7 +2978,7 @@ namespace WasatchNET
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
                 sendSWTrigger();
 
-            if ((!skipTrigger || isStroker) && !areaScanEnabled)
+            if ((isStroker) && !areaScanEnabled)
             {
                 var strokerDelayMS = integrationTimeMS_ + 5;
                 logger.debug($"getSpectrumRaw: extra Stroker delay {strokerDelayMS}ms");

@@ -244,7 +244,7 @@ namespace MultiChannelDemo
             logger.header("User clicked Acquire");
 
             enableControls(false);
-            lastSpectra = await wrapper.getSpectraAsync();
+            lastSpectra = await wrapper.getSpectraAsync(!wrapper.hardwareTriggeringEnabled);
             processSpectra(lastSpectra);
             enableControls(true);
 
