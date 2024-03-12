@@ -102,6 +102,7 @@ namespace WasatchNET
                 }
                 linesPerFrame = eeprom.activePixelsVert;
 
+                camera.StartAcquiring();
                 regenerateWavelengths();
 
                 return true;
@@ -130,7 +131,7 @@ namespace WasatchNET
 
         public override double[] getSpectrum(bool forceNew = false)
         {
-            camera.StartAcquiring();
+            //camera.StartAcquiring();
             if (forceNew)
             {
                 int minWait = 20;
@@ -186,7 +187,7 @@ namespace WasatchNET
                     sum[px] /= scanAveraging_;
             }
 
-            camera.StopAcquiring(true);
+            //camera.StopAcquiring(true);
             return sum;
         }
 
