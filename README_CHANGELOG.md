@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2024-03-19 2.4.16
+	- fixed issue with multi channel wrapper demo program
 - 2024-03-05 2.4.15
     - added Spectrometer.isAndor
 	- fixes to multi channel wrapper timing
