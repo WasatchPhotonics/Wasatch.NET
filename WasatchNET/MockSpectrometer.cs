@@ -262,7 +262,7 @@ namespace WasatchNET
 
         public override ushort laserTemperatureRaw => 0;
 
-        public override byte laserTemperatureSetpointRaw
+        public override ushort laserTemperatureSetpointRaw
         {
             get
             {
@@ -270,7 +270,7 @@ namespace WasatchNET
             }
             set
             {
-                laserTemperatureSetpointRaw_ = Math.Min((byte)127, value);
+                laserTemperatureSetpointRaw_ = value;
             }
         }
 

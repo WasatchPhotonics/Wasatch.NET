@@ -1484,40 +1484,59 @@ namespace WasatchNET
 
                 double rawD = raw;
 
-                // should this be 2.468? (see Dash3/WasatchDevices/Stroker785L_LaserTempSetpoint.py)
-                double voltage = 2.5 * rawD / 4096;
-                double resistance = 21450.0 * voltage / (2.5 - voltage);
-                if (resistance <= 0)
+                if (isSiG)
                 {
-                    logger.error("laserTemperatureDegC.get: invalid resistance (raw {0:x4}, voltage {1}, resistance {2:f2} ohms)",
-                        raw, voltage, resistance);
-                    return 0;
+                    double[] coeffs = new double[] { 1.5712971947853123e+000,
+                           1.4453391889061071e-002,
+                          -1.8534086153440592e-006,
+                           4.2553356470494626e-010 };
+
+                    double degC = 0;
+
+                    for (int i = 0; i < coeffs.Length; ++i)
+                    {
+                        degC += coeffs[i] * Math.Pow(raw, i);
+                    }
+
+                    return (float)degC;
                 }
+                else
+                {
+                    // should this be 2.468? (see Dash3/WasatchDevices/Stroker785L_LaserTempSetpoint.py)
+                    double voltage = 2.5 * rawD / 4096;
+                    double resistance = 21450.0 * voltage / (2.5 - voltage);
+                    if (resistance <= 0)
+                    {
+                        logger.error("laserTemperatureDegC.get: invalid resistance (raw {0:x4}, voltage {1}, resistance {2:f2} ohms)",
+                            raw, voltage, resistance);
+                        return 0;
+                    }
 
-                // Original Dash / ENLIGHTEN math:
-                //
-                // double logVal = Math.Log(resistance / 10000);
-                // double insideMain = logVal + 3977.0 / (25 + 273.0);
-                // double degC = 3977.0 / insideMain - 273.0;
+                    // Original Dash / ENLIGHTEN math:
+                    //
+                    // double logVal = Math.Log(resistance / 10000);
+                    // double insideMain = logVal + 3977.0 / (25 + 273.0);
+                    // double degC = 3977.0 / insideMain - 273.0;
 
-                double C1 = 0.00113;
-                double C2 = 0.000234;
-                double C3 = 8.78e-8;
-                double lnOhms = Math.Log(resistance);
-                double degC = 1.0 / (C1
-                                     + C2 * lnOhms
-                                     + C3 * Math.Pow(lnOhms, 3)
-                                    ) - 273.15;
+                    double C1 = 0.00113;
+                    double C2 = 0.000234;
+                    double C3 = 8.78e-8;
+                    double lnOhms = Math.Log(resistance);
+                    double degC = 1.0 / (C1
+                                         + C2 * lnOhms
+                                         + C3 * Math.Pow(lnOhms, 3)
+                                        ) - 273.15;
 
-                logger.debug("laserTemperatureDegC.get: {0:f2} deg C (raw 0x{1:x4}, resistance {2:f2} ohms)", degC, raw, resistance);
+                    logger.debug("laserTemperatureDegC.get: {0:f2} deg C (raw 0x{1:x4}, resistance {2:f2} ohms)", degC, raw, resistance);
 
-                return (float)degC;
+                    return (float)degC;
+                }
             }
         }
 
         public virtual ushort laserTemperatureRaw => primaryADC;
 
-        public virtual byte laserTemperatureSetpointRaw
+        public virtual ushort laserTemperatureSetpointRaw
         {
             get
             {
@@ -1532,7 +1551,7 @@ namespace WasatchNET
                 if (isSiG) // || featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return 0;
                 readOnce.Add(op);
-                return laserTemperatureSetpointRaw_ = Unpack.toByte(getCmd(op, 1));
+                return laserTemperatureSetpointRaw_ = Unpack.toUshort(getCmd(op, 1));
             }
             set
             {
@@ -1543,11 +1562,11 @@ namespace WasatchNET
                 if (haveCache(op) && value == laserTemperatureSetpointRaw_)
                     return;
 
-                sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ = Math.Min((byte)127, value));
+                sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ =  value);
                 readOnce.Add(op);
             }
         }
-        protected byte laserTemperatureSetpointRaw_;
+        protected ushort laserTemperatureSetpointRaw_;
 
         public uint lineLength
         {
@@ -1994,9 +2013,9 @@ namespace WasatchNET
             // logic-determined degC, read the current raw, and then make a decision
             // based on the difference between those values.
             float degC = UNINITIALIZED_TEMPERATURE_DEG_C;
-            if (eeprom.startupDetectorTemperatureDegC >= eeprom.detectorTempMin && 
-                eeprom.startupDetectorTemperatureDegC <= eeprom.detectorTempMax)
-                degC = eeprom.startupDetectorTemperatureDegC;
+            if (eeprom.TECSetpoint >= eeprom.detectorTempMin && 
+                eeprom.TECSetpoint <= eeprom.detectorTempMax)
+                degC = eeprom.TECSetpoint;
             else if (featureIdentification.hasDefaultTECSetpointDegC)
                 degC = featureIdentification.defaultTECSetpointDegC;
             else if (Regex.IsMatch(eeprom.detectorName, @"S10141|G9214", RegexOptions.IgnoreCase))
@@ -2020,6 +2039,11 @@ namespace WasatchNET
                     // user can manually enable it if they wish and feel this is a safe thing to do
                     logger.info("declining to auto-enable detector TEC because no valid TEC calibration found");
                 }
+            }
+
+            if (!eeprom.hasCooling && isSiG && eeprom.TECSetpoint > 100)
+            {
+                laserTemperatureSetpointRaw = (ushort)eeprom.TECSetpoint;
             }
 
             // if this was intended to be a relatively lightweight "change as
