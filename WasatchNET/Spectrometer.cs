@@ -614,8 +614,8 @@ namespace WasatchNET
             {
                 //if (!adcHasBeenSelected_)
                 //    return 0;
-                if (isSiG)
-                    return 0;
+                //if (isSiG)
+                //    return 0;
 
                 ushort orig = Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2));
                 // ushort corrected = swapBytes(orig);
