@@ -62,6 +62,8 @@ namespace WasatchNET
         /// </remarks>
         public enum LaserPowerResolution { LASER_POWER_RESOLUTION_100, LASER_POWER_RESOLUTION_1000, LASER_POWER_RESOLUTION_MANUAL }
 
+        public enum LaserTECMode { OFF, ON, AUTO, AUTO_ON }
+
         public enum UntetheredCaptureStatus {  IDLE = 0, DARK = 1, WARMUP = 2, SAMPLE = 3, PROCESSING = 4, ERROR = 5 }
 
         ////////////////////////////////////////////////////////////////////////
@@ -1567,6 +1569,36 @@ namespace WasatchNET
             }
         }
         protected ushort laserTemperatureSetpointRaw_;
+
+        public virtual bool laserTECEnabled
+        {
+            get
+            {
+                if (!eeprom.hasLaser)
+                    return false;
+
+
+                const Opcodes op = Opcodes.GET_LASER_TEC_MODE;
+                if (haveCache(op))
+                    return laserTECEnabled_;
+                readOnce.Add(op);
+                return laserTECEnabled_ = Unpack.toBool(getCmd(op, 1));
+            }
+            set
+            {
+                if (!eeprom.hasLaser)
+                    return;
+
+                const Opcodes op = Opcodes.GET_LASER_TEC_MODE;
+                if (haveCache(op) && value == laserTECEnabled_)
+                    return;
+
+                sendCmd(Opcodes.SET_LASER_TEC_MODE, (ushort)((laserTECEnabled_ = value) ? 1 : 0));
+                readOnce.Add(op);
+            }
+
+        }
+        protected bool laserTECEnabled_ = false;
 
         public uint lineLength
         {
