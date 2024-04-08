@@ -3021,6 +3021,13 @@ namespace WasatchNET
             }
         }
 
+        protected void correctBin2x2(ref double[] spectrum)
+        { 
+            if (eeprom.featureMask.bin2x2 && !areaScanEnabled)
+                for (int i = 0; i < spectrum.Length - 1; i++)
+                    spectrum[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
+        }
+
         /// <summary>
         /// Take a single complete spectrum, including any configured scan 
         /// averaging, boxcar, dark subtraction, inversion, binning, and
@@ -3143,7 +3150,10 @@ namespace WasatchNET
                     sum[px] /= scanAveraging_;
             }
 
+            // This should come BEFORE bin2x2
             correctBadPixels(ref sum);
+
+            correctBin2x2(ref sum);
 
             if (dark != null && dark.Length == sum.Length)
                 for (int px = 0; px < pixels; px++)
@@ -3420,15 +3430,6 @@ namespace WasatchNET
             {
                 // overwrite last pixel
                 spec[pixels - 1] = spec[pixels - 2];
-            }
-
-            if (eeprom.featureMask.bin2x2 && !areaScanEnabled)
-            {
-                var smoothed = new double[spec.Length];
-                for (int i = 0; i < spec.Length - 1; i++)
-                    smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
-                smoothed[spec.Length - 1] = spec[spec.Length - 1];
-                spec = smoothed;
             }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
