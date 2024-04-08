@@ -404,7 +404,7 @@
         {
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_048F6B3185EC47C8991AE773B44537EF"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\libusb_drivers\\x86\\libusb0_x86.dll"
+            "SourcePath" = "8:..\\libusb_drivers\\x86\\libusb0_x86.dll"
             "TargetName" = "8:libusb0_x86.dll"
             "Tag" = "8:"
             "Folder" = "8:_7855C92E4C2C4665B2A65456A4E9724E"
@@ -497,7 +497,7 @@
                     "Attributes" = "3:512"
                     }
                 }
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\lib\\LibUsbDotNet.dll"
+            "SourcePath" = "8:..\\lib\\LibUsbDotNet.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
@@ -548,7 +548,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_30D6E8D16D7544E2BB5F4BA45B1A1EF2"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\libusb_drivers\\andor-libusb.cat"
+            "SourcePath" = "8:..\\libusb_drivers\\andor-libusb.cat"
             "TargetName" = "8:andor-libusb.cat"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
@@ -568,7 +568,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_354926E12C344C48B74F58B9A4A8F96B"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\lib\\x86\\atmcd32d.dll"
+            "SourcePath" = "8:..\\lib\\x86\\atmcd32d.dll"
             "TargetName" = "8:atmcd32d.dll"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
@@ -588,7 +588,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_367EAE3D372B428AB545AABEF84C33C6"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\scripts\\RegisterDLL32.bat"
+            "SourcePath" = "8:..\\scripts\\RegisterDLL32.bat"
             "TargetName" = "8:RegisterDLL32.bat"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
@@ -619,7 +619,7 @@
                     "Attributes" = "3:512"
                     }
                 }
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\lib\\FTD2XX_NET.dll"
+            "SourcePath" = "8:..\\lib\\FTD2XX_NET.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
@@ -639,7 +639,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4A0F6CBFC24D46B79170085C56034154"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\libusb_drivers\\WPLibUsb.inf"
+            "SourcePath" = "8:..\\libusb_drivers\\WPLibUsb.inf"
             "TargetName" = "8:WPLibUsb.inf"
             "Tag" = "8:"
             "Folder" = "8:_D0A8D977941A4B2EB758967BAC83B6D6"
@@ -721,7 +721,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_6217D17668024C1C974B98DB3190FCCB"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\libusb_drivers\\andor-libusb.inf"
+            "SourcePath" = "8:..\\libusb_drivers\\andor-libusb.inf"
             "TargetName" = "8:andor-libusb.inf"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
@@ -741,7 +741,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_6AAD204CA5D8416E995D9958481975ED"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\libusb_drivers\\wplibusb.cat"
+            "SourcePath" = "8:..\\libusb_drivers\\wplibusb.cat"
             "TargetName" = "8:wplibusb.cat"
             "Tag" = "8:"
             "Folder" = "8:_D0A8D977941A4B2EB758967BAC83B6D6"
@@ -772,7 +772,7 @@
                     "Attributes" = "3:512"
                     }
                 }
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\lib\\x86\\ATMCD32CS.dll"
+            "SourcePath" = "8:..\\lib\\x86\\ATMCD32CS.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
@@ -854,7 +854,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_819E35098E194D5EAC7750816F08B6ED"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\libusb_drivers\\amd64\\libusb0.dll"
+            "SourcePath" = "8:..\\libusb_drivers\\amd64\\libusb0.dll"
             "TargetName" = "8:libusb0.dll"
             "Tag" = "8:"
             "Folder" = "8:_95286F57CD914C9B8F01A487E35BD781"
@@ -874,7 +874,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_84E2489C2E94455F9D233E28E0CB26B7"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\libusb_drivers\\amd64\\libusb0.sys"
+            "SourcePath" = "8:..\\libusb_drivers\\amd64\\libusb0.sys"
             "TargetName" = "8:libusb0.sys"
             "Tag" = "8:"
             "Folder" = "8:_95286F57CD914C9B8F01A487E35BD781"
@@ -894,7 +894,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_A5DC311DBFB64418B523203E2E47A265"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\libusb_drivers\\license\\libusb0\\installer_license.txt"
+            "SourcePath" = "8:..\\libusb_drivers\\license\\libusb0\\installer_license.txt"
             "TargetName" = "8:installer_license.txt"
             "Tag" = "8:"
             "Folder" = "8:_C98F030FEF40449DB3A61CF1ED72504A"
@@ -945,7 +945,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_DCACEEAAFB7F429FA1AEB24AF0EBCFD5"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\libusb_drivers\\x86\\libusb0.sys"
+            "SourcePath" = "8:..\\libusb_drivers\\x86\\libusb0.sys"
             "TargetName" = "8:libusb0.sys"
             "Tag" = "8:"
             "Folder" = "8:_7855C92E4C2C4665B2A65456A4E9724E"
@@ -965,7 +965,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_F5BD3C310CD840C093BF791A1EE610B5"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\lib\\x86\\FTD2XX.dll"
+            "SourcePath" = "8:..\\lib\\x86\\FTD2XX.dll"
             "TargetName" = "8:FTD2XX.dll"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
@@ -1663,7 +1663,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_536AABD192384650B4C61ED6D3197391"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\WasatchNET\\obj\\x64\\Debug\\WasatchNET.dll"
+            "SourcePath" = "8:..\\WasatchNET\\obj\\x64\\Debug\\WasatchNET.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_1F33B1D1D0B947AF9650869C56F5211A"
@@ -1691,7 +1691,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_93AFF5A9C3BA4ADFA66B16C6EE036695"
             {
-            "SourcePath" = "8:\\\\Mac\\work\\code\\Wasatch.NET\\WinFormDemo\\obj\\x64\\Debug\\WinFormDemo.exe"
+            "SourcePath" = "8:..\\WinFormDemo\\obj\\x64\\Debug\\WinFormDemo.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_3A4466F67D8B463BB2322F66AF046141"
