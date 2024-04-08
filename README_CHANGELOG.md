@@ -1,5 +1,10 @@
 # Wasatch.NET Changelog
 
+- 2024-??-?? 2.5.7
+    - perform bin2x2 after bad-pixel correction
+    - WinFormDemo
+        - disable all the initial "getter" calls
+        - GUI tweaks
 - 2023-12-18 2.5.6
 	- beta release for downstream software
 	- adds support for both major classes of WPOCT spectrometers
