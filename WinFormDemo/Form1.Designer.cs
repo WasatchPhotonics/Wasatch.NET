@@ -29,8 +29,8 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend3 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.splitContainerTopVsLog = new System.Windows.Forms.SplitContainer();
             this.splitContainerGraphVsControls = new System.Windows.Forms.SplitContainer();
@@ -106,6 +106,8 @@
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.backgroundWorkerSettings = new System.ComponentModel.BackgroundWorker();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            this.toolStripMenuItemLoadFromJSON = new System.Windows.Forms.ToolStripMenuItem();
+            this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainerTopVsLog)).BeginInit();
             this.splitContainerTopVsLog.Panel1.SuspendLayout();
             this.splitContainerTopVsLog.Panel2.SuspendLayout();
@@ -188,18 +190,18 @@
             // 
             // chart1
             // 
-            chartArea1.AxisX.LabelStyle.Format = "F2";
-            chartArea1.CursorX.IsUserEnabled = true;
-            chartArea1.CursorX.IsUserSelectionEnabled = true;
-            chartArea1.CursorY.IsUserEnabled = true;
-            chartArea1.CursorY.IsUserSelectionEnabled = true;
-            chartArea1.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea1);
+            chartArea3.AxisX.LabelStyle.Format = "F2";
+            chartArea3.CursorX.IsUserEnabled = true;
+            chartArea3.CursorX.IsUserSelectionEnabled = true;
+            chartArea3.CursorY.IsUserEnabled = true;
+            chartArea3.CursorY.IsUserSelectionEnabled = true;
+            chartArea3.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea3);
             this.chart1.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend1.Alignment = System.Drawing.StringAlignment.Center;
-            legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
-            legend1.Name = "Legend1";
-            this.chart1.Legends.Add(legend1);
+            legend3.Alignment = System.Drawing.StringAlignment.Center;
+            legend3.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Bottom;
+            legend3.Name = "Legend1";
+            this.chart1.Legends.Add(legend3);
             this.chart1.Location = new System.Drawing.Point(0, 24);
             this.chart1.Margin = new System.Windows.Forms.Padding(2);
             this.chart1.Name = "chart1";
@@ -224,7 +226,8 @@
             this.toolStripMenuItemTest.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripMenuItemTestWriteEEPROM,
             this.setDFUModeToolStripMenuItem,
-            this.toolStripMenuItemEEPROMJson});
+            this.toolStripMenuItemEEPROMJson,
+            this.toolStripMenuItemLoadFromJSON});
             this.toolStripMenuItemTest.Enabled = false;
             this.toolStripMenuItemTest.Name = "toolStripMenuItemTest";
             this.toolStripMenuItemTest.Size = new System.Drawing.Size(39, 22);
@@ -233,7 +236,7 @@
             // toolStripMenuItemTestWriteEEPROM
             // 
             this.toolStripMenuItemTestWriteEEPROM.Name = "toolStripMenuItemTestWriteEEPROM";
-            this.toolStripMenuItemTestWriteEEPROM.Size = new System.Drawing.Size(188, 22);
+            this.toolStripMenuItemTestWriteEEPROM.Size = new System.Drawing.Size(209, 22);
             this.toolStripMenuItemTestWriteEEPROM.Text = "Write EEPROM...";
             this.toolStripMenuItemTestWriteEEPROM.ToolTipText = "Demonstrate how to write to the EEPROM";
             this.toolStripMenuItemTestWriteEEPROM.Click += new System.EventHandler(this.toolStripMenuItemTestWriteEEPROM_Click);
@@ -241,7 +244,7 @@
             // setDFUModeToolStripMenuItem
             // 
             this.setDFUModeToolStripMenuItem.Name = "setDFUModeToolStripMenuItem";
-            this.setDFUModeToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
+            this.setDFUModeToolStripMenuItem.Size = new System.Drawing.Size(209, 22);
             this.setDFUModeToolStripMenuItem.Text = "Set DFU mode";
             this.setDFUModeToolStripMenuItem.ToolTipText = "WARNING: used for reflashing ARM firmware!";
             this.setDFUModeToolStripMenuItem.Click += new System.EventHandler(this.setDFUModeToolStripMenuItem_Click);
@@ -249,7 +252,7 @@
             // toolStripMenuItemEEPROMJson
             // 
             this.toolStripMenuItemEEPROMJson.Name = "toolStripMenuItemEEPROMJson";
-            this.toolStripMenuItemEEPROMJson.Size = new System.Drawing.Size(188, 22);
+            this.toolStripMenuItemEEPROMJson.Size = new System.Drawing.Size(209, 22);
             this.toolStripMenuItemEEPROMJson.Text = "Log EEPROM as JSON";
             this.toolStripMenuItemEEPROMJson.ToolTipText = "Log the EEPROM contents as JSON";
             this.toolStripMenuItemEEPROMJson.Click += new System.EventHandler(this.toolStripMenuItemEEPROMJson_Click);
@@ -542,11 +545,11 @@
             // checkBoxHighGainMode
             // 
             this.checkBoxHighGainMode.AutoSize = true;
-            this.checkBoxHighGainMode.Location = new System.Drawing.Point(66, 121);
+            this.checkBoxHighGainMode.Location = new System.Drawing.Point(66, 118);
             this.checkBoxHighGainMode.Name = "checkBoxHighGainMode";
-            this.checkBoxHighGainMode.Size = new System.Drawing.Size(98, 17);
+            this.checkBoxHighGainMode.Size = new System.Drawing.Size(103, 17);
             this.checkBoxHighGainMode.TabIndex = 20;
-            this.checkBoxHighGainMode.Text = "high-gain mode";
+            this.checkBoxHighGainMode.Text = "High-Gain Mode";
             this.checkBoxHighGainMode.UseVisualStyleBackColor = true;
             this.checkBoxHighGainMode.CheckedChanged += new System.EventHandler(this.checkBoxHighGainMode_CheckedChanged);
             // 
@@ -1082,6 +1085,17 @@
             // 
             this.backgroundWorkerSettings.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorkerSettings_DoWork);
             // 
+            // toolStripMenuItemLoadFromJSON
+            // 
+            this.toolStripMenuItemLoadFromJSON.Name = "toolStripMenuItemLoadFromJSON";
+            this.toolStripMenuItemLoadFromJSON.Size = new System.Drawing.Size(209, 22);
+            this.toolStripMenuItemLoadFromJSON.Text = "Load EEPROM from JSON";
+            this.toolStripMenuItemLoadFromJSON.Click += new System.EventHandler(this.toolStripMenuItemLoadFromJSON_Click);
+            // 
+            // openFileDialog1
+            // 
+            this.openFileDialog1.FileName = "openFileDialog1";
+            // 
             // Form1
             // 
             this.AcceptButton = this.buttonInitialize;
@@ -1224,6 +1238,8 @@
         private System.Windows.Forms.CheckBox checkBoxLampEnabled;
         private System.Windows.Forms.CheckBox checkBoxLaserPowerInMW;
         private System.Windows.Forms.CheckBox checkBoxHighGainMode;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemLoadFromJSON;
+        private System.Windows.Forms.OpenFileDialog openFileDialog1;
     }
 }
 

@@ -181,6 +181,12 @@ namespace WasatchNET
         public bool isOCT { get; protected set; } = false;
 
         /// <summary>
+        /// XL-series spectrometers use an Andor camera requiring special drivers and
+        /// EEPROM handling.
+        /// </summary>
+        public bool isAndor { get; protected set; } = false;
+
+        /// <summary>
         /// This is a quick way to know if we should expect our spectrometer to
         /// generate wavenumbers or not, all values above 0 are considered viable 
         /// </summary>
@@ -1966,7 +1972,7 @@ namespace WasatchNET
             bool needsInitialization = uptime.needsInitialization(uniqueKey);
             uptime.setUnknown(uniqueKey);
             logger.debug($"needsInitialization = {needsInitialization}");
-
+            
             // clear cache
             readOnce.Clear();
 
@@ -2275,6 +2281,12 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
         // Utilities
         ////////////////////////////////////////////////////////////////////////
+
+        public virtual bool loadFromJSON(string pathname)
+        {
+            logger.error("only implemented for Andor/XL spectrometers");
+            return false;
+        }
 
         public virtual void regenerateWavelengths()
         {
@@ -3298,7 +3310,7 @@ namespace WasatchNET
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
                 await sendSWTriggerAsync();
 
-            if ((!skipTrigger || isStroker) && !areaScanEnabled)
+            if ((isStroker) && !areaScanEnabled)
             {
                 var strokerDelayMS = integrationTimeMS_ + 5;
                 logger.debug($"getSpectrumRaw: extra Stroker delay {strokerDelayMS}ms");

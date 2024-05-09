@@ -699,6 +699,27 @@ namespace WinFormDemo
             logger.info("EEPROM as JSON: {0}", eepromJSON);
         }
 
+        private void toolStripMenuItemLoadFromJSON_Click(object sender, EventArgs e)
+        {
+            if (currentSpectrometer is null)
+                return;
+
+            openFileDialog1.DefaultExt = "json";
+            var result = openFileDialog1.ShowDialog();
+            if (result != DialogResult.OK)
+                return;
+
+            string pathname = openFileDialog1.FileName;
+            if (!currentSpectrometer.loadFromJSON(pathname))
+            {
+                logger.error($"Failed to load EEPROM from {pathname}");
+                return;
+            }
+
+            logger.info($"Successfully loaded EEPROM from {pathname}");
+            settings.update(currentSpectrometer);
+        }
+
         private void setDFUModeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (currentSpectrometer is null)

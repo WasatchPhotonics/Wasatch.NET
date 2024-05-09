@@ -38,6 +38,8 @@ namespace WasatchNET
 
         internal AndorSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
+            isAndor = true;
+
             prioritizeVirtualEEPROM = true;
 
             // internal "step x" numbers are intended to synchronize with matching
@@ -170,6 +172,15 @@ namespace WasatchNET
             //wrapper.shutdown();
             await Task.Run(() => andorDriver.SetCurrentCamera(cameraHandle));
             await Task.Run(() => andorDriver.ShutDown());
+        }
+
+        public override bool loadFromJSON(string pathname)
+        {
+            AndorEEPROM ee = eeprom as AndorEEPROM;
+            if (!ee.loadFromJSON(pathname))
+                return false;
+            regenerateWavelengths();
+            return true;
         }
 
         // will eventually need to override getAreaScanLightweight() and/or getFrame()
