@@ -180,8 +180,8 @@ namespace WinFormDemo
             if (state is null)
                 return;
 
-            logger.debug("updating settings");
-            treeViewSettings_DoubleClick(null, null); 
+            // logger.debug("updating settings");
+            // treeViewSettings_DoubleClick(null, null); 
 
             logger.debug("update start button");
             updateStartButton(state.running);
@@ -677,8 +677,8 @@ namespace WinFormDemo
 
         private void treeViewSettings_DoubleClick(object sender, EventArgs e)
         {
-            if (!backgroundWorkerSettings.IsBusy)
-                backgroundWorkerSettings.RunWorkerAsync();
+            // if (!backgroundWorkerSettings.IsBusy)
+            //     backgroundWorkerSettings.RunWorkerAsync();
         }
 
         private void toolStripMenuItemTestWriteEEPROM_Click(object sender, EventArgs e)
@@ -823,9 +823,9 @@ namespace WinFormDemo
         /// </remarks>
         private void backgroundWorkerSettings_DoWork(object sender, DoWorkEventArgs e)
         {
-            logger.debug("Settings thread starting");
-            settings.updateAll(currentSpectrometer);
-            logger.debug("Settings thread exiting");
+            // logger.debug("Settings thread starting");
+            // settings.updateAll(currentSpectrometer);
+            // logger.debug("Settings thread exiting");
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -1008,6 +1008,11 @@ namespace WinFormDemo
             var cb = sender as CheckBox;
             numericUpDownLaserPowerMW.Enabled = cb.Checked;
             numericUpDownLaserPowerPerc.Enabled = !cb.Checked;
+        }
+
+        private void tableLayoutPanel4_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 }
