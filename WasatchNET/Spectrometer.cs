@@ -2084,6 +2084,19 @@ namespace WasatchNET
                 laserTemperatureSetpointRaw = (ushort)eeprom.TECSetpoint;
             }
 
+            if (isSiG)
+            {
+                ushort start = eeprom.ROIVertRegionStart[0];
+                ushort end = eeprom.ROIVertRegionEnd[0];
+
+                if (start < end && start < eeprom.activePixelsVert && end < eeprom.activePixelsVert)
+                {
+                    detectorStartLine = start;
+                    detectorStopLine = end;
+                }
+            }
+
+
             // if this was intended to be a relatively lightweight "change as
             // little as possible" re-opening, we're done now
             //
