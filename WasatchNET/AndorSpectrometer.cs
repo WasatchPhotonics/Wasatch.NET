@@ -461,6 +461,17 @@ namespace WasatchNET
                 return lastDetectorTemperatureDegC;
             }
         }
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
 
         public override ushort detectorTECSetpointRaw
         {

@@ -1235,6 +1235,18 @@ namespace WasatchNET
             }
         }
 
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
