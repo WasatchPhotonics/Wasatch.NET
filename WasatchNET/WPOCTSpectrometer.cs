@@ -93,6 +93,11 @@ namespace WasatchNET
 
             if (openOk)
             {
+                if (!camID.ToLower().Contains("mx4") &&  !camID.ToLower().Contains("dual"))
+                {
+                    camera.SetResourceIndex(0);
+                }
+
                 pixels = (uint)camera.GetScanWidth();
                 eeprom = new WPOCTEEPROM(this, camera);
                 if (!(await eeprom.readAsync()))
