@@ -606,6 +606,7 @@ namespace WasatchNET
             uint count = 0;
 
             SortedDictionary<int, ChannelSpectrum> spectraByPos = new SortedDictionary<int, ChannelSpectrum>();
+            Dictionary<int, List<Task<ChannelSpectrum>>> collectionTasks = new Dictionary<int, List<Task<ChannelSpectrum>>>();
             do
             {
                 if (sendTrigger)
@@ -626,27 +627,41 @@ namespace WasatchNET
                         continue;
 
                     logger.debug($"getSpectraAsync: calling getSpectrumAsync({pos})");
-                    var cs = await getSpectrumAsync(pos);
-                    logger.debug($"getSpectraAsync: back from getSpectrumAsync({pos})");
-                    if (cs is null)
-                        continue;
-
-                    if (spectraByPos.ContainsKey(pos))
-                    {
-                        // add existing intensities into the newest ChannelSpectrum
-                        var old = spectraByPos[pos].intensities;
-                        for (int i = 0; i < old.Length; i++)
-                            cs.intensities[i] += old[i];
-                        spectraByPos[pos] = cs; // keep newest (for temperature etc)
-                    }
-                    else
-                    {
-                        spectraByPos.Add(pos, cs);
-                    }
+                    var cs = getSpectrumAsync(pos);
+                    if (!collectionTasks.ContainsKey(pos))
+                        collectionTasks.Add(pos, new List<Task<ChannelSpectrum>>());
+                    collectionTasks[pos].Add(cs);
                 }
                 count++;
                 logger.debug($"getSpectraAsync: count = {count}");
             } while (count < scanAveraging);
+
+            foreach (int pos in collectionTasks.Keys)
+            {
+                var spec = specByPos[pos];
+                if (!spec.multiChannelSelected)
+                    continue;
+
+                foreach (Task<ChannelSpectrum> cs in collectionTasks[pos])
+                {
+                    var csData = await cs;
+                    if (csData is null)
+                        continue;
+
+                    if (spectraByPos.ContainsKey(pos))
+                    {
+                        var old = spectraByPos[pos].intensities;
+                        for (int i = 0; i < old.Length; i++)
+                            csData.intensities[i] += old[i];
+                        spectraByPos[pos] = csData; // keep newest (for temperature etc)
+                    }
+                    else
+                    {
+                        spectraByPos.Add(pos, csData);
+                    }
+                }
+            }
+
 
             // re-sort results by position, for caller convenience, and divide out
             List <ChannelSpectrum> result = new List<ChannelSpectrum>();

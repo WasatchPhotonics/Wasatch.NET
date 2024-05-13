@@ -303,7 +303,7 @@ namespace WasatchNET
         /// as the final temperature is generated in hardware as a combination of
         /// the DAC setpoint value and the physical potentiometer.
         /// </remarks>
-        byte laserTemperatureSetpointRaw { get; set; }
+        ushort laserTemperatureSetpointRaw { get; set; }
 
         uint lineLength { get; }
 

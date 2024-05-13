@@ -139,6 +139,18 @@ namespace WasatchNET
                 detectorTECEnabled_ = value;
             }
         }
+        
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return laserTECEnabled_;
+            }
+            set
+            {
+                laserTECEnabled_ = value;
+            }
+        }
 
         public override ushort detectorTECSetpointRaw
         {
@@ -262,7 +274,7 @@ namespace WasatchNET
 
         public override ushort laserTemperatureRaw => 0;
 
-        public override byte laserTemperatureSetpointRaw
+        public override ushort laserTemperatureSetpointRaw
         {
             get
             {
@@ -270,7 +282,7 @@ namespace WasatchNET
             }
             set
             {
-                laserTemperatureSetpointRaw_ = Math.Min((byte)127, value);
+                laserTemperatureSetpointRaw_ = value;
             }
         }
 

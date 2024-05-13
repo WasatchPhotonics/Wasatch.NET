@@ -53,6 +53,7 @@ namespace WasatchNET
         GET_LASER_MOD_PULSE_DELAY,
         GET_LASER_MOD_PULSE_WIDTH,
         GET_LASER_RAMPING_MODE, // not implemented
+        GET_LASER_TEC_MODE,
         GET_LASER_TEC_SETPOINT,
         GET_LINE_LENGTH,
         GET_LINE_PERIOD,
@@ -103,6 +104,7 @@ namespace WasatchNET
         SET_LASER_MOD_PULSE_DELAY,
         SET_LASER_MOD_PULSE_WIDTH,
         SET_LASER_RAMPING_MODE, // not implemented
+        SET_LASER_TEC_MODE,
         SET_LASER_TEC_SETPOINT,
         SET_LINE_PERIOD,
         SET_LINK_LASER_MOD_TO_INTEGRATION_TIME,
