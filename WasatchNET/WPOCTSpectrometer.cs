@@ -79,6 +79,7 @@ namespace WasatchNET
             isOCT = true;
             this.camera = camera;
             this.camID = camID;
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         internal override bool open()
@@ -574,6 +575,30 @@ namespace WasatchNET
             }
         }
 
+        public override ulong laserModulationPulseWidth 
+        {
+            get
+            {
+                return 1;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ulong laserModulationPeriod
+        {
+            get
+            {
+                return 1;
+            }
+            set
+            {
+
+            }
+        }
+
         public override ushort laserTemperatureRaw
         {
             get
@@ -596,6 +621,16 @@ namespace WasatchNET
             }
 
         }
+
+
+        public override float batteryPercentage
+        {
+            get
+            {
+                return 1;
+            }
+        }
+
 
         public override TRIGGER_SOURCE triggerSource
         {
