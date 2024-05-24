@@ -1247,6 +1247,18 @@ namespace WasatchNET
             }
         }
 
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
@@ -1326,7 +1338,20 @@ namespace WasatchNET
             {
                 return 0;
             }
-            
+
+        }
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
         }
 
         public override TRIGGER_SOURCE triggerSource

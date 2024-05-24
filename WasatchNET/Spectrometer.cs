@@ -1463,7 +1463,34 @@ namespace WasatchNET
         }
         // bool laserRampingEnabled_;
 
-        public virtual bool areaScanEnabled
+        public virtual UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                const Opcodes op = Opcodes.GET_LASER_WATCHDOG_SEC;
+                if (haveCache(op))
+                    return laserWatchdogSec_;
+                readOnce.Add(op);
+                return laserWatchdogSec_ = Unpack.toUshort(getCmd2(op, 2));
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_START_LINE;
+                if (haveCache(op) && value == laserWatchdogSec_)
+                    return;
+                ushort temp = swapBytes(value);
+                laserWatchdogSec_ = value;
+                sendCmd2(Opcodes.SET_LASER_WATCHDOG_SEC, (ushort)temp);
+                readOnce.Add(op);
+            }
+
+        }
+        UInt16 laserWatchdogSec_ = 0;
+
+    
+
+    public virtual bool areaScanEnabled
         {
             get
             {
@@ -1583,12 +1610,37 @@ namespace WasatchNET
                 if (!eeprom.hasLaser)
                     return false;
 
+                if (laserTECMode == 0)
+                    return false;
+                else
+                    return true;
+            }
+            set
+            {
+                if (!eeprom.hasLaser)
+                    return;
+
+                if (value)
+                    laserTECMode = 1;
+                else
+                    laserTECMode = 0;
+            }
+        }
+        protected bool laserTECEnabled_ = false;
+
+        public virtual ushort laserTECMode
+        {
+            get
+            {
+                if (!eeprom.hasLaser)
+                    return 0;
+
 
                 const Opcodes op = Opcodes.GET_LASER_TEC_MODE;
                 if (haveCache(op))
-                    return laserTECEnabled_;
+                    return laserTECMode_;
                 readOnce.Add(op);
-                return laserTECEnabled_ = Unpack.toBool(getCmd(op, 1));
+                return laserTECMode_ = Unpack.toUshort(getCmd(op, 1));
             }
             set
             {
@@ -1596,15 +1648,14 @@ namespace WasatchNET
                     return;
 
                 const Opcodes op = Opcodes.GET_LASER_TEC_MODE;
-                if (haveCache(op) && value == laserTECEnabled_)
+                if (haveCache(op) && value == laserTECMode_)
                     return;
 
-                sendCmd(Opcodes.SET_LASER_TEC_MODE, (ushort)((laserTECEnabled_ = value) ? 1 : 0));
+                sendCmd(Opcodes.SET_LASER_TEC_MODE, (ushort)((laserTECMode_ = value)));
                 readOnce.Add(op);
             }
-
         }
-        protected bool laserTECEnabled_ = false;
+        protected ushort laserTECMode_ = 0;
 
         public uint lineLength
         {

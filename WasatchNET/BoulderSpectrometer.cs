@@ -801,6 +801,19 @@ namespace WasatchNET
         public override ushort laserTemperatureRaw { get => 0; }
 
         public override ushort laserTemperatureSetpointRaw { get => 0; }
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
+        }
 
         public override float batteryPercentage
         {
@@ -845,6 +858,18 @@ namespace WasatchNET
             get
             {
                 return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
             }
             set
             {

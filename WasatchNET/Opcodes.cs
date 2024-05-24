@@ -126,6 +126,8 @@ namespace WasatchNET
             cmd[Opcodes.GET_OPT_HORIZONTAL_BINNING             ] = 0x0c;
             cmd[Opcodes.GET_LASER_FIRING                       ] = 0x0d; // AKA, IS_LASER_FIRING
             cmd[Opcodes.GET_BATTERY_STATE                      ] = 0x13;
+            cmd[Opcodes.GET_LASER_WATCHDOG_SEC                 ] = 0x17;
+            cmd[Opcodes.SET_LASER_WATCHDOG_SEC                 ] = 0x18;
             cmd[Opcodes.SET_DETECTOR_START_LINE                ] = 0x21;
             cmd[Opcodes.GET_DETECTOR_START_LINE                ] = 0x22;
             cmd[Opcodes.SET_DETECTOR_STOP_LINE                 ] = 0x23;

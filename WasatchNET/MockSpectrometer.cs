@@ -152,6 +152,18 @@ namespace WasatchNET
             }
         }
 
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
@@ -284,6 +296,19 @@ namespace WasatchNET
             {
                 laserTemperatureSetpointRaw_ = value;
             }
+        }
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
         }
 
         public override ushort secondaryADC

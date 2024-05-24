@@ -304,7 +304,9 @@ namespace WasatchNET
         /// the DAC setpoint value and the physical potentiometer.
         /// </remarks>
         ushort laserTemperatureSetpointRaw { get; set; }
+        UInt16 laserWatchdogSec { get; set; }
         bool laserTECEnabled { get; set; }
+        ushort laserTECMode { get; set; }
 
         uint lineLength { get; }
 

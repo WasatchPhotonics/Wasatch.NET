@@ -55,6 +55,7 @@ namespace WasatchNET
         GET_LASER_RAMPING_MODE, // not implemented
         GET_LASER_TEC_MODE,
         GET_LASER_TEC_SETPOINT,
+        GET_LASER_WATCHDOG_SEC,
         GET_LINE_LENGTH,
         GET_LINE_PERIOD,
         GET_LINK_LASER_MOD_TO_INTEGRATION_TIME,
@@ -106,6 +107,7 @@ namespace WasatchNET
         SET_LASER_RAMPING_MODE, // not implemented
         SET_LASER_TEC_MODE,
         SET_LASER_TEC_SETPOINT,
+        SET_LASER_WATCHDOG_SEC,
         SET_LINE_PERIOD,
         SET_LINK_LASER_MOD_TO_INTEGRATION_TIME,
         SET_MODEL_CONFIG_ARM,
