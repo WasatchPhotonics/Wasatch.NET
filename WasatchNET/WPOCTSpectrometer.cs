@@ -130,8 +130,14 @@ namespace WasatchNET
             camera.Close();
         }
 
+        public float explicitPeriod()
+        {
+            return camera.GetLinePeriod();
+        }
+
         public override double[] getSpectrum(bool forceNew = false)
         {
+            //camera.StartAcquiring();
             if (forceNew)
             {
                 int minWait = 20;
@@ -187,6 +193,7 @@ namespace WasatchNET
                     sum[px] /= scanAveraging_;
             }
 
+            //camera.StopAcquiring(true);
             return sum;
         }
 
