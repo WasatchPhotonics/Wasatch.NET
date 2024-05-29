@@ -129,6 +129,7 @@ namespace WasatchNET
             integrationTimeMS = (uint)exposure;
             pixels = (uint)xPixels;
             eeprom = new AndorEEPROM(this);
+            featureIdentification = new FeatureIdentification(0, 0);
 
             // step 17: ENLIGHTEN then uses GetNumberPreAmpGains and GetPreAmpGain to support high-gain mode
         }

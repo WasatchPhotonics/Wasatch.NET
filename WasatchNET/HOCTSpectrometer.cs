@@ -949,6 +949,7 @@ namespace WasatchNET
             isOCT = true;
             //OctUsb.SetLinesPerFrame(500);
             integrationTimeMS_ = (uint)OctUsb.DefaultIntegrationTime();
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         protected CancellationTokenSource _cancellationTokenSource { get; set; } = new CancellationTokenSource();

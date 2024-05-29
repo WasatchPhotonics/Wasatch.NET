@@ -102,6 +102,7 @@ namespace WasatchNET
             firmwareThrowaway = true;
 
             integrationTimeMS_ = 3;
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         public override void changeSPITrigger(bool edge, bool firmwareThrow)

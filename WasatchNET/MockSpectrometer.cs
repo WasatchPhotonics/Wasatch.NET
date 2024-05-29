@@ -45,11 +45,13 @@ namespace WasatchNET
         internal MockSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             prioritizeVirtualEEPROM = true;
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         public MockSpectrometer() : base(null)
         {
             prioritizeVirtualEEPROM = true;
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         public override bool areaScanEnabled

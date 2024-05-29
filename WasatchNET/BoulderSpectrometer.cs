@@ -50,6 +50,7 @@ namespace WasatchNET
                 }
             }
 
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         protected async Task<long> getIntegrationTimeAsync()
