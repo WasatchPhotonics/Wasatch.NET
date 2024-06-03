@@ -137,6 +137,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_FEEDBACK                           ] = 0x27;
             cmd[Opcodes.WRITE_LIBRARY                          ] = 0x28;
             cmd[Opcodes.PROCESS_LIBRARY                        ] = 0x29;
+            cmd[Opcodes.GET_AMBIENT_TEMPERATURE_ARM            ] = 0x2a;
 
             // TODO: implement, test and document these 2nd-tier commands (see vend_ax.h)
             //

@@ -1045,6 +1045,28 @@ namespace WasatchNET
         DateTime detectorTemperatureRawTimestamp = DateTime.Now;
         public double detectorTemperatureCacheTimeMS { get; set; } = 1000;
 
+        public virtual short ambientTemperatureDegC
+        {
+            get
+            {
+                if (!isSiG)
+                    return 0;
+
+                const Opcodes op = Opcodes.GET_AMBIENT_TEMPERATURE_ARM;
+                if (haveCache(op))
+                    return ambientTemperatureDegC_;
+                readOnce.Add(op);
+                byte temp = Unpack.toByte(getCmd2(op, 1));
+
+                short result = temp;
+                if (result >= 128)
+                    result = ambientTemperatureDegC_ = (short)(result - 256);
+
+                return temp;
+            }
+        }
+        short ambientTemperatureDegC_ = 0;
+
         public virtual string firmwareRevision
         {
             get
