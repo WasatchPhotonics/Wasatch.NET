@@ -1059,10 +1059,14 @@ namespace WasatchNET
                 byte temp = Unpack.toByte(getCmd2(op, 1));
 
                 short result = temp;
-                if (result >= 128)
-                    result = ambientTemperatureDegC_ = (short)(result - 256);
+                unchecked
+                {
+                    result = (sbyte)temp;
+                }
 
-                return temp;
+                ambientTemperatureDegC_ = result;
+
+                return result;
             }
         }
         short ambientTemperatureDegC_ = 0;
@@ -1108,6 +1112,29 @@ namespace WasatchNET
             }
         }
         string fpgaRevision_;
+
+        public virtual string bleRevision
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_BLE_FW_VER_INFO;
+                if (haveCache(op))
+                    return bleRevision_;
+                byte[] buf = getCmd2(op, 32);
+                if (buf is null)
+                    return "UNKNOWN";
+                string s = "";
+                for (uint i = 0; i < buf.Length; i++)
+                {
+                    if (buf[i] == 0)
+                        break;
+                    s += (char)buf[i];
+                }
+                readOnce.Add(op);
+                return bleRevision_ = s.TrimEnd();
+            }
+        }
+        string bleRevision_;
 
         public virtual bool highGainModeEnabled
         {

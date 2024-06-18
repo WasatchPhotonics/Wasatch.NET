@@ -144,6 +144,7 @@ namespace WasatchNET
 
         string firmwareRevision { get; }
         string fpgaRevision { get; }
+        string bleRevision { get; }
 
         bool highGainModeEnabled { get; set; }
 

@@ -855,6 +855,11 @@ namespace WasatchNET
             get => 0;
         }
 
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get => 0;
@@ -921,6 +926,16 @@ namespace WasatchNET
                 
                 return rev;
 
+            }
+        }
+
+        public override string bleRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
             }
         }
 

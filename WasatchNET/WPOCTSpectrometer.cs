@@ -459,6 +459,11 @@ namespace WasatchNET
             }
         }
 
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
         public override string firmwareRevision
         {
             get
@@ -474,6 +479,16 @@ namespace WasatchNET
                 return "";
             }
 
+        }
+
+        public override string bleRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
+            }
         }
 
         public virtual int testPattern

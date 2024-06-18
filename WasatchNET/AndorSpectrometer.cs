@@ -477,6 +477,11 @@ namespace WasatchNET
             }
         }
 
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
         public override bool laserTECEnabled
         {
             get
@@ -542,9 +547,17 @@ namespace WasatchNET
             }
         }
 
-
-
         public override string fpgaRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
+            }
+        }
+
+        public override string bleRevision 
         {
             get
             {

@@ -138,6 +138,7 @@ namespace WasatchNET
             cmd[Opcodes.WRITE_LIBRARY                          ] = 0x28;
             cmd[Opcodes.PROCESS_LIBRARY                        ] = 0x29;
             cmd[Opcodes.GET_AMBIENT_TEMPERATURE_ARM            ] = 0x2a;
+            cmd[Opcodes.GET_BLE_FW_VER_INFO                    ] = 0x2d;
 
             // TODO: implement, test and document these 2nd-tier commands (see vend_ax.h)
             //
