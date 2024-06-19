@@ -1120,7 +1120,7 @@ namespace WasatchNET
                 const Opcodes op = Opcodes.GET_BLE_FW_VER_INFO;
                 if (haveCache(op))
                     return bleRevision_;
-                byte[] buf = getCmd2(op, 32);
+                byte[] buf = getCmd2(op, 6);
                 if (buf is null)
                     return "UNKNOWN";
                 string s = "";
