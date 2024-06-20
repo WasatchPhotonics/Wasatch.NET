@@ -1,5 +1,9 @@
 # Wasatch.NET Changelog
 
+- 2024-06-20 2.5.8
+    - beta release
+    - fixes for multi channel demo
+    - support for a number of new opcodes used with XS units
 - 2024-??-?? 2.5.7
     - perform bin2x2 after bad-pixel correction
     - WinFormDemo
