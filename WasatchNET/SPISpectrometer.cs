@@ -102,6 +102,7 @@ namespace WasatchNET
             firmwareThrowaway = true;
 
             integrationTimeMS_ = 3;
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         public override void changeSPITrigger(bool edge, bool firmwareThrow)
@@ -787,7 +788,45 @@ namespace WasatchNET
 
         public override ushort laserTemperatureRaw { get => 0; }
 
-        public override byte laserTemperatureSetpointRaw { get => 0; }
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTemperatureSetpointRaw { get => 0; }
+
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
+        }
 
         public override float batteryPercentage
         {
@@ -814,6 +853,11 @@ namespace WasatchNET
         public override float detectorTemperatureDegC
         {
             get => 0;
+        }
+
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
         }
 
         public override ushort detectorTECSetpointRaw
@@ -882,6 +926,16 @@ namespace WasatchNET
                 
                 return rev;
 
+            }
+        }
+
+        public override string bleRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
             }
         }
 

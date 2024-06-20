@@ -62,6 +62,8 @@ namespace WasatchNET
         /// </remarks>
         public enum LaserPowerResolution { LASER_POWER_RESOLUTION_100, LASER_POWER_RESOLUTION_1000, LASER_POWER_RESOLUTION_MANUAL }
 
+        public enum LaserTECMode { OFF, ON, AUTO, AUTO_ON }
+
         public enum UntetheredCaptureStatus {  IDLE = 0, DARK = 1, WARMUP = 2, SAMPLE = 3, PROCESSING = 4, ERROR = 5 }
 
         ////////////////////////////////////////////////////////////////////////
@@ -177,6 +179,12 @@ namespace WasatchNET
         /// spectrometers in several respects, such as producing both 2D and 3D imagery.
         /// </summary>
         public bool isOCT { get; protected set; } = false;
+
+        /// <summary>
+        /// XL-series spectrometers use an Andor camera requiring special drivers and
+        /// EEPROM handling.
+        /// </summary>
+        public bool isAndor { get; protected set; } = false;
 
         /// <summary>
         /// This is a quick way to know if we should expect our spectrometer to
@@ -614,8 +622,8 @@ namespace WasatchNET
             {
                 //if (!adcHasBeenSelected_)
                 //    return 0;
-                if (isSiG)
-                    return 0;
+                //if (isSiG)
+                //    return 0;
 
                 ushort orig = Unpack.toUshort(getCmd(Opcodes.GET_ADC_RAW, 2));
                 // ushort corrected = swapBytes(orig);
@@ -1037,6 +1045,32 @@ namespace WasatchNET
         DateTime detectorTemperatureRawTimestamp = DateTime.Now;
         public double detectorTemperatureCacheTimeMS { get; set; } = 1000;
 
+        public virtual short ambientTemperatureDegC
+        {
+            get
+            {
+                if (!isSiG)
+                    return 0;
+
+                const Opcodes op = Opcodes.GET_AMBIENT_TEMPERATURE_ARM;
+                if (haveCache(op))
+                    return ambientTemperatureDegC_;
+                readOnce.Add(op);
+                byte temp = Unpack.toByte(getCmd2(op, 1));
+
+                short result = temp;
+                unchecked
+                {
+                    result = (sbyte)temp;
+                }
+
+                ambientTemperatureDegC_ = result;
+
+                return result;
+            }
+        }
+        short ambientTemperatureDegC_ = 0;
+
         public virtual string firmwareRevision
         {
             get
@@ -1078,6 +1112,29 @@ namespace WasatchNET
             }
         }
         string fpgaRevision_;
+
+        public virtual string bleRevision
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_BLE_FW_VER_INFO;
+                if (haveCache(op))
+                    return bleRevision_;
+                byte[] buf = getCmd2(op, 6);
+                if (buf is null)
+                    return "UNKNOWN";
+                string s = "";
+                for (uint i = 0; i < buf.Length; i++)
+                {
+                    if (buf[i] == 0)
+                        break;
+                    s += (char)buf[i];
+                }
+                readOnce.Add(op);
+                return bleRevision_ = s.TrimEnd();
+            }
+        }
+        string bleRevision_;
 
         public virtual bool highGainModeEnabled
         {
@@ -1455,7 +1512,34 @@ namespace WasatchNET
         }
         // bool laserRampingEnabled_;
 
-        public virtual bool areaScanEnabled
+        public virtual UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                const Opcodes op = Opcodes.GET_LASER_WATCHDOG_SEC;
+                if (haveCache(op))
+                    return laserWatchdogSec_;
+                readOnce.Add(op);
+                return laserWatchdogSec_ = Unpack.toUshort(getCmd2(op, 2));
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_START_LINE;
+                if (haveCache(op) && value == laserWatchdogSec_)
+                    return;
+                ushort temp = swapBytes(value);
+                laserWatchdogSec_ = value;
+                sendCmd2(Opcodes.SET_LASER_WATCHDOG_SEC, (ushort)temp);
+                readOnce.Add(op);
+            }
+
+        }
+        UInt16 laserWatchdogSec_ = 0;
+
+    
+
+    public virtual bool areaScanEnabled
         {
             get
             {
@@ -1484,40 +1568,59 @@ namespace WasatchNET
 
                 double rawD = raw;
 
-                // should this be 2.468? (see Dash3/WasatchDevices/Stroker785L_LaserTempSetpoint.py)
-                double voltage = 2.5 * rawD / 4096;
-                double resistance = 21450.0 * voltage / (2.5 - voltage);
-                if (resistance <= 0)
+                if (isSiG)
                 {
-                    logger.error("laserTemperatureDegC.get: invalid resistance (raw {0:x4}, voltage {1}, resistance {2:f2} ohms)",
-                        raw, voltage, resistance);
-                    return 0;
+                    double[] coeffs = new double[] { 1.5712971947853123e+000,
+                           1.4453391889061071e-002,
+                          -1.8534086153440592e-006,
+                           4.2553356470494626e-010 };
+
+                    double degC = 0;
+
+                    for (int i = 0; i < coeffs.Length; ++i)
+                    {
+                        degC += coeffs[i] * Math.Pow(raw, i);
+                    }
+
+                    return (float)degC;
                 }
+                else
+                {
+                    // should this be 2.468? (see Dash3/WasatchDevices/Stroker785L_LaserTempSetpoint.py)
+                    double voltage = 2.5 * rawD / 4096;
+                    double resistance = 21450.0 * voltage / (2.5 - voltage);
+                    if (resistance <= 0)
+                    {
+                        logger.error("laserTemperatureDegC.get: invalid resistance (raw {0:x4}, voltage {1}, resistance {2:f2} ohms)",
+                            raw, voltage, resistance);
+                        return 0;
+                    }
 
-                // Original Dash / ENLIGHTEN math:
-                //
-                // double logVal = Math.Log(resistance / 10000);
-                // double insideMain = logVal + 3977.0 / (25 + 273.0);
-                // double degC = 3977.0 / insideMain - 273.0;
+                    // Original Dash / ENLIGHTEN math:
+                    //
+                    // double logVal = Math.Log(resistance / 10000);
+                    // double insideMain = logVal + 3977.0 / (25 + 273.0);
+                    // double degC = 3977.0 / insideMain - 273.0;
 
-                double C1 = 0.00113;
-                double C2 = 0.000234;
-                double C3 = 8.78e-8;
-                double lnOhms = Math.Log(resistance);
-                double degC = 1.0 / (C1
-                                     + C2 * lnOhms
-                                     + C3 * Math.Pow(lnOhms, 3)
-                                    ) - 273.15;
+                    double C1 = 0.00113;
+                    double C2 = 0.000234;
+                    double C3 = 8.78e-8;
+                    double lnOhms = Math.Log(resistance);
+                    double degC = 1.0 / (C1
+                                         + C2 * lnOhms
+                                         + C3 * Math.Pow(lnOhms, 3)
+                                        ) - 273.15;
 
-                logger.debug("laserTemperatureDegC.get: {0:f2} deg C (raw 0x{1:x4}, resistance {2:f2} ohms)", degC, raw, resistance);
+                    logger.debug("laserTemperatureDegC.get: {0:f2} deg C (raw 0x{1:x4}, resistance {2:f2} ohms)", degC, raw, resistance);
 
-                return (float)degC;
+                    return (float)degC;
+                }
             }
         }
 
         public virtual ushort laserTemperatureRaw => primaryADC;
 
-        public virtual byte laserTemperatureSetpointRaw
+        public virtual ushort laserTemperatureSetpointRaw
         {
             get
             {
@@ -1532,7 +1635,7 @@ namespace WasatchNET
                 if (isSiG) // || featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
                     return 0;
                 readOnce.Add(op);
-                return laserTemperatureSetpointRaw_ = Unpack.toByte(getCmd(op, 1));
+                return laserTemperatureSetpointRaw_ = Unpack.toUshort(getCmd(op, 1));
             }
             set
             {
@@ -1543,11 +1646,65 @@ namespace WasatchNET
                 if (haveCache(op) && value == laserTemperatureSetpointRaw_)
                     return;
 
-                sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ = Math.Min((byte)127, value));
+                sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ =  value);
                 readOnce.Add(op);
             }
         }
-        protected byte laserTemperatureSetpointRaw_;
+        protected ushort laserTemperatureSetpointRaw_;
+
+        public virtual bool laserTECEnabled
+        {
+            get
+            {
+                if (!eeprom.hasLaser)
+                    return false;
+
+                if (laserTECMode == 0)
+                    return false;
+                else
+                    return true;
+            }
+            set
+            {
+                if (!eeprom.hasLaser)
+                    return;
+
+                if (value)
+                    laserTECMode = 1;
+                else
+                    laserTECMode = 0;
+            }
+        }
+        protected bool laserTECEnabled_ = false;
+
+        public virtual ushort laserTECMode
+        {
+            get
+            {
+                if (!eeprom.hasLaser)
+                    return 0;
+
+
+                const Opcodes op = Opcodes.GET_LASER_TEC_MODE;
+                if (haveCache(op))
+                    return laserTECMode_;
+                readOnce.Add(op);
+                return laserTECMode_ = Unpack.toUshort(getCmd(op, 1));
+            }
+            set
+            {
+                if (!eeprom.hasLaser)
+                    return;
+
+                const Opcodes op = Opcodes.GET_LASER_TEC_MODE;
+                if (haveCache(op) && value == laserTECMode_)
+                    return;
+
+                sendCmd(Opcodes.SET_LASER_TEC_MODE, (ushort)((laserTECMode_ = value)));
+                readOnce.Add(op);
+            }
+        }
+        protected ushort laserTECMode_ = 0;
 
         public uint lineLength
         {
@@ -1915,7 +2072,7 @@ namespace WasatchNET
             bool needsInitialization = uptime.needsInitialization(uniqueKey);
             uptime.setUnknown(uniqueKey);
             logger.debug($"needsInitialization = {needsInitialization}");
-
+            
             // clear cache
             readOnce.Clear();
 
@@ -1994,9 +2151,9 @@ namespace WasatchNET
             // logic-determined degC, read the current raw, and then make a decision
             // based on the difference between those values.
             float degC = UNINITIALIZED_TEMPERATURE_DEG_C;
-            if (eeprom.startupDetectorTemperatureDegC >= eeprom.detectorTempMin && 
-                eeprom.startupDetectorTemperatureDegC <= eeprom.detectorTempMax)
-                degC = eeprom.startupDetectorTemperatureDegC;
+            if (eeprom.TECSetpoint >= eeprom.detectorTempMin && 
+                eeprom.TECSetpoint <= eeprom.detectorTempMax)
+                degC = eeprom.TECSetpoint;
             else if (featureIdentification.hasDefaultTECSetpointDegC)
                 degC = featureIdentification.defaultTECSetpointDegC;
             else if (Regex.IsMatch(eeprom.detectorName, @"S10141|G9214", RegexOptions.IgnoreCase))
@@ -2021,6 +2178,24 @@ namespace WasatchNET
                     logger.info("declining to auto-enable detector TEC because no valid TEC calibration found");
                 }
             }
+
+            if (!eeprom.hasCooling && isSiG && eeprom.TECSetpoint > 100)
+            {
+                laserTemperatureSetpointRaw = (ushort)eeprom.TECSetpoint;
+            }
+
+            if (isSiG)
+            {
+                ushort start = eeprom.ROIVertRegionStart[0];
+                ushort end = eeprom.ROIVertRegionEnd[0];
+
+                if (start < end && start < eeprom.activePixelsVert && end < eeprom.activePixelsVert)
+                {
+                    detectorStartLine = start;
+                    detectorStopLine = end;
+                }
+            }
+
 
             // if this was intended to be a relatively lightweight "change as
             // little as possible" re-opening, we're done now
@@ -2219,6 +2394,12 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
         // Utilities
         ////////////////////////////////////////////////////////////////////////
+
+        public virtual bool loadFromJSON(string pathname)
+        {
+            logger.error("only implemented for Andor/XL spectrometers");
+            return false;
+        }
 
         public virtual void regenerateWavelengths()
         {
@@ -2965,6 +3146,13 @@ namespace WasatchNET
             }
         }
 
+        protected void correctBin2x2(ref double[] spectrum)
+        { 
+            if (eeprom.featureMask.bin2x2 && !areaScanEnabled)
+                for (int i = 0; i < spectrum.Length - 1; i++)
+                    spectrum[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
+        }
+
         /// <summary>
         /// Take a single complete spectrum, including any configured scan 
         /// averaging, boxcar, dark subtraction, inversion, binning, and
@@ -3087,7 +3275,10 @@ namespace WasatchNET
                     sum[px] /= scanAveraging_;
             }
 
+            // This should come BEFORE bin2x2
             correctBadPixels(ref sum);
+
+            correctBin2x2(ref sum);
 
             if (dark != null && dark.Length == sum.Length)
                 for (int px = 0; px < pixels; px++)
@@ -3232,7 +3423,7 @@ namespace WasatchNET
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
                 await sendSWTriggerAsync();
 
-            if ((!skipTrigger || isStroker) && !areaScanEnabled)
+            if ((isStroker) && !areaScanEnabled)
             {
                 var strokerDelayMS = integrationTimeMS_ + 5;
                 logger.debug($"getSpectrumRaw: extra Stroker delay {strokerDelayMS}ms");
@@ -3364,15 +3555,6 @@ namespace WasatchNET
             {
                 // overwrite last pixel
                 spec[pixels - 1] = spec[pixels - 2];
-            }
-
-            if (eeprom.featureMask.bin2x2 && !areaScanEnabled)
-            {
-                var smoothed = new double[spec.Length];
-                for (int i = 0; i < spec.Length - 1; i++)
-                    smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
-                smoothed[spec.Length - 1] = spec[spec.Length - 1];
-                spec = smoothed;
             }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);

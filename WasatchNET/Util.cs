@@ -339,8 +339,13 @@ namespace WasatchNET
             if (!spec.eeprom.hasCooling)
                 return true;
 
-            if (spec is HOCTSpectrometer || spec is BoulderSpectrometer || spec is SPISpectrometer || spec is AndorSpectrometer)
+            if (spec is HOCTSpectrometer || spec is BoulderSpectrometer || spec is SPISpectrometer)
                 return true;
+
+#if WIN32 || x64
+            if (spec is AndorSpectrometer)
+                return true;
+#endif
 
             if (spec.eeprom.degCToDACCoeffs.Length != 3)
                 return false;

@@ -949,6 +949,7 @@ namespace WasatchNET
             isOCT = true;
             //OctUsb.SetLinesPerFrame(500);
             integrationTimeMS_ = (uint)OctUsb.DefaultIntegrationTime();
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         protected CancellationTokenSource _cancellationTokenSource { get; set; } = new CancellationTokenSource();
@@ -1235,6 +1236,30 @@ namespace WasatchNET
             }
         }
 
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
@@ -1254,6 +1279,11 @@ namespace WasatchNET
             }
         }
 
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
         public override string firmwareRevision
         {
             get
@@ -1269,6 +1299,16 @@ namespace WasatchNET
                 return "";
             }
             
+        }
+
+        public override string bleRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
+            }
         }
 
         public override uint integrationTimeMS
@@ -1314,7 +1354,20 @@ namespace WasatchNET
             {
                 return 0;
             }
-            
+
+        }
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
         }
 
         public override TRIGGER_SOURCE triggerSource

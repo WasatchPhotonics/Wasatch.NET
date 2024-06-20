@@ -38,6 +38,8 @@ namespace WasatchNET
 
         internal AndorSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
+            isAndor = true;
+
             prioritizeVirtualEEPROM = true;
 
             // internal "step x" numbers are intended to synchronize with matching
@@ -127,6 +129,7 @@ namespace WasatchNET
             integrationTimeMS = (uint)exposure;
             pixels = (uint)xPixels;
             eeprom = new AndorEEPROM(this);
+            featureIdentification = new FeatureIdentification(0, 0);
 
             // step 17: ENLIGHTEN then uses GetNumberPreAmpGains and GetPreAmpGain to support high-gain mode
         }
@@ -170,6 +173,15 @@ namespace WasatchNET
             //wrapper.shutdown();
             await Task.Run(() => andorDriver.SetCurrentCamera(cameraHandle));
             await Task.Run(() => andorDriver.ShutDown());
+        }
+
+        public override bool loadFromJSON(string pathname)
+        {
+            AndorEEPROM ee = eeprom as AndorEEPROM;
+            if (!ee.loadFromJSON(pathname))
+                return false;
+            regenerateWavelengths();
+            return true;
         }
 
         // will eventually need to override getAreaScanLightweight() and/or getFrame()
@@ -405,7 +417,21 @@ namespace WasatchNET
 
         public override ushort laserTemperatureRaw { get => 0; }
 
-        public override byte laserTemperatureSetpointRaw { get => 0; }
+        public override ushort laserTemperatureSetpointRaw { get => 0; }
+
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
+        }
 
         public override float batteryPercentage
         {
@@ -451,6 +477,35 @@ namespace WasatchNET
             }
         }
 
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+                
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
@@ -492,9 +547,17 @@ namespace WasatchNET
             }
         }
 
-
-
         public override string fpgaRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
+            }
+        }
+
+        public override string bleRevision 
         {
             get
             {

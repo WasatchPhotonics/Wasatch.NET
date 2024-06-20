@@ -52,11 +52,11 @@ namespace WasatchNET
             int errorReader = 0;
             startupIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
             double temp = a.detectorTemperatureDegC;
-            startupDetectorTemperatureDegC = (short)temp;
-            if (startupDetectorTemperatureDegC >= 99)
-                startupDetectorTemperatureDegC = 15;
-            else if (startupDetectorTemperatureDegC <= -50)
-                startupDetectorTemperatureDegC = 15;
+            TECSetpoint = (short)temp;
+            if (TECSetpoint >= 99)
+                TECSetpoint = 15;
+            else if (TECSetpoint <= -50)
+                TECSetpoint = 15;
             detectorGain = 0;
             detectorOffset = 0;
 

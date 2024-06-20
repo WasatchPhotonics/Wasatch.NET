@@ -70,6 +70,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_LASER_MOD_PULSE_DELAY              ] = 0xca;
             cmd[Opcodes.GET_LASER_MOD_PULSE_WIDTH              ] = 0xdc;
             cmd[Opcodes.GET_LASER_TEC_SETPOINT                 ] = 0xe8;
+            cmd[Opcodes.GET_LASER_TEC_MODE                     ] = 0x85;
             cmd[Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME ] = 0xde;
             cmd[Opcodes.GET_SELECTED_ADC                       ] = 0xee;
             cmd[Opcodes.GET_TRIGGER_DELAY                      ] = 0xab;
@@ -102,6 +103,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_LASER_MOD_PULSE_DELAY              ] = 0xc6;
             cmd[Opcodes.SET_LASER_MOD_PULSE_WIDTH              ] = 0xdb;
             cmd[Opcodes.SET_LASER_TEC_SETPOINT                 ] = 0xe7;
+            cmd[Opcodes.SET_LASER_TEC_MODE                     ] = 0x84;
             cmd[Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME ] = 0xdd;
             cmd[Opcodes.SET_MODEL_CONFIG_FX2                   ] = 0xa2; // legacy, used for FX2
             cmd[Opcodes.SET_SELECTED_ADC                       ] = 0xed;
@@ -124,6 +126,8 @@ namespace WasatchNET
             cmd[Opcodes.GET_OPT_HORIZONTAL_BINNING             ] = 0x0c;
             cmd[Opcodes.GET_LASER_FIRING                       ] = 0x0d; // AKA, IS_LASER_FIRING
             cmd[Opcodes.GET_BATTERY_STATE                      ] = 0x13;
+            cmd[Opcodes.GET_LASER_WATCHDOG_SEC                 ] = 0x17;
+            cmd[Opcodes.SET_LASER_WATCHDOG_SEC                 ] = 0x18;
             cmd[Opcodes.SET_DETECTOR_START_LINE                ] = 0x21;
             cmd[Opcodes.GET_DETECTOR_START_LINE                ] = 0x22;
             cmd[Opcodes.SET_DETECTOR_STOP_LINE                 ] = 0x23;
@@ -133,6 +137,8 @@ namespace WasatchNET
             cmd[Opcodes.SET_FEEDBACK                           ] = 0x27;
             cmd[Opcodes.WRITE_LIBRARY                          ] = 0x28;
             cmd[Opcodes.PROCESS_LIBRARY                        ] = 0x29;
+            cmd[Opcodes.GET_AMBIENT_TEMPERATURE_ARM            ] = 0x2a;
+            cmd[Opcodes.GET_BLE_FW_VER_INFO                    ] = 0x2d;
 
             // TODO: implement, test and document these 2nd-tier commands (see vend_ax.h)
             //

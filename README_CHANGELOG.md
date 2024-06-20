@@ -1,5 +1,10 @@
 # Wasatch.NET Changelog
 
+- 2024-??-?? 2.5.7
+    - perform bin2x2 after bad-pixel correction
+    - WinFormDemo
+        - disable all the initial "getter" calls
+        - GUI tweaks
 - 2023-12-18 2.5.6
 	- beta release for downstream software
 	- adds support for both major classes of WPOCT spectrometers
@@ -26,8 +31,17 @@
 	- added async versions of a number of key functions
 	- moved most "USB-based" properties to using "synchronous async" usb functions for standard spectometer
 - 2023-??-?? 2.4.14
+- 2024-03-19 2.4.16
+	- fixed issue with multi channel wrapper demo program
+- 2024-03-05 2.4.15
+    - added Spectrometer.isAndor
+	- fixes to multi channel wrapper timing
+	- attempted changes for hardware triggering
+- 2023-09-26 2.4.14
     - updates for 1064XL
     - don't enable detector TEC unless degCToDACCoeffs has a non-default calibration
+    - added Spectrometer.loadFromJSON for XL
+    - fixed AnyCPU build
 - 2023-04-20 2.4.13
     - add warning when encountering unsupported / higher EEPROM format
 - 2022-12-19 2.4.12

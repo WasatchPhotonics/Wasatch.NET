@@ -45,11 +45,13 @@ namespace WasatchNET
         internal MockSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             prioritizeVirtualEEPROM = true;
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         public MockSpectrometer() : base(null)
         {
             prioritizeVirtualEEPROM = true;
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         public override bool areaScanEnabled
@@ -139,6 +141,30 @@ namespace WasatchNET
                 detectorTECEnabled_ = value;
             }
         }
+        
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return laserTECEnabled_;
+            }
+            set
+            {
+                laserTECEnabled_ = value;
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
 
         public override ushort detectorTECSetpointRaw
         {
@@ -162,6 +188,12 @@ namespace WasatchNET
                 return noisy ? (float)addNoise(detectorTECSetpointDegC, .1, .03) : detectorTECSetpointDegC;
             }
         }
+
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
         public override ushort detectorTemperatureRaw
         {
             get
@@ -183,6 +215,14 @@ namespace WasatchNET
             get
             {
                 return "MOCK";
+            }
+        }
+
+        public override string bleRevision
+        {
+            get
+            {
+                return "UNKNOWN";
             }
         }
 
@@ -262,7 +302,7 @@ namespace WasatchNET
 
         public override ushort laserTemperatureRaw => 0;
 
-        public override byte laserTemperatureSetpointRaw
+        public override ushort laserTemperatureSetpointRaw
         {
             get
             {
@@ -270,8 +310,21 @@ namespace WasatchNET
             }
             set
             {
-                laserTemperatureSetpointRaw_ = Math.Min((byte)127, value);
+                laserTemperatureSetpointRaw_ = value;
             }
+        }
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
         }
 
         public override ushort secondaryADC
