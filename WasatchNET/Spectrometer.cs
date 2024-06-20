@@ -1659,7 +1659,7 @@ namespace WasatchNET
                 if (!eeprom.hasLaser)
                     return false;
 
-                if (laserTECMode == 0)
+                if (laserTECMode == (ushort)LaserTECMode.OFF)
                     return false;
                 else
                     return true;
@@ -1670,9 +1670,9 @@ namespace WasatchNET
                     return;
 
                 if (value)
-                    laserTECMode = 1;
+                    laserTECMode = (ushort)LaserTECMode.ON;
                 else
-                    laserTECMode = 0;
+                    laserTECMode = (ushort)LaserTECMode.OFF;
             }
         }
         protected bool laserTECEnabled_ = false;
