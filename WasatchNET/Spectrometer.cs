@@ -83,7 +83,7 @@ namespace WasatchNET
         internal Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
         HashSet<Opcodes> armInvertedRetvals = OpcodeHelper.getInstance().getArmInvertedRetvals();
 
-        protected Logger logger = Logger.getInstance();
+        protected WPFLogger logger = WPFLogger.getInstance();
 
         protected object adcLock = new object();
         protected object acquisitionLock = new object(); //!< synchronizes getSpectrum, integrationTimeMS, scanAveraging, dark and boxcarHalfWidth

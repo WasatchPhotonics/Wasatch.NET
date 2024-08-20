@@ -27,7 +27,7 @@ namespace WasatchNET
 
         // private attributes
         Spectrometer spectrometer;
-        Logger logger = Logger.getInstance();
+        WPFLogger logger = WPFLogger.getInstance();
 
         public FPGAOptions(Spectrometer s)
         {

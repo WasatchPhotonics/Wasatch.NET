@@ -56,7 +56,7 @@ namespace WasatchNET
 
         /// <summary>the Spectrometer being optimized</summary>
         public Spectrometer spec;
-        Logger logger = Logger.getInstance();
+        WPFLogger logger = WPFLogger.getInstance();
 
         /// <summary>
         /// Instantiate a new IntegrationOptimizer on a particular Spectrometer.

@@ -41,7 +41,7 @@ namespace WasatchNET
     [ClassInterface(ClassInterfaceType.None)]
     public class FeatureIdentification : IFeatureIdentification
     {
-        Logger logger = Logger.getInstance();
+        WPFLogger logger = WPFLogger.getInstance();
 
         /// <summary>board configuration</summary>
         public BOARD_TYPES boardType { get; }

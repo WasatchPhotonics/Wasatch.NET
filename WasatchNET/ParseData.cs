@@ -50,12 +50,12 @@ namespace WasatchNET
             byte[] tmp = BitConverter.GetBytes(value);
             if (tmp == null || tmp.Length != 4)
             {
-                Logger.getInstance().error("ParseData.writeFloat: can't serialize {0}", value);
+                WPFLogger.getInstance().error("ParseData.writeFloat: can't serialize {0}", value);
                 return false;
             }
             Array.Copy(tmp, 0, buf, index, tmp.Length);
 
-            Logger logger = Logger.getInstance();
+            WPFLogger logger = WPFLogger.getInstance();
             logger.debug("writeFloat: wrote {0} as 0x{1:x2}{2:x2}{3:x2}{4:x2} to index {5} of {6}-byte buf",
                 value, tmp[0], tmp[1], tmp[2], tmp[3], index, buf.Length);
 
@@ -64,7 +64,7 @@ namespace WasatchNET
 
         public static bool writeString(string value, byte[] buf, int index, int maxLen)
         {
-            Logger logger = Logger.getInstance();
+            WPFLogger logger = WPFLogger.getInstance();
 
             if (value == null)
             {
@@ -91,11 +91,11 @@ namespace WasatchNET
 
         public static bool writeUInt16(UInt16 value, byte[] buf, int index)
         {
-            Logger logger = Logger.getInstance();
+            WPFLogger logger = WPFLogger.getInstance();
             byte[] tmp = BitConverter.GetBytes(value);
             if (tmp == null || tmp.Length != 2)
             {
-                Logger.getInstance().error("ParseData.writeUInt16: can't serialize {0}", value);
+                WPFLogger.getInstance().error("ParseData.writeUInt16: can't serialize {0}", value);
                 return false;
             }
             Array.Copy(tmp, 0, buf, index, tmp.Length);
@@ -106,11 +106,11 @@ namespace WasatchNET
 
         public static bool writeInt16(Int16 value, byte[] buf, int index)
         {
-            Logger logger = Logger.getInstance();
+            WPFLogger logger = WPFLogger.getInstance();
             byte[] tmp = BitConverter.GetBytes(value);
             if (tmp == null || tmp.Length != 2)
             {
-                Logger.getInstance().error("ParseData.writeInt16: can't serialize {0}", value);
+                WPFLogger.getInstance().error("ParseData.writeInt16: can't serialize {0}", value);
                 return false;
             }
             Array.Copy(tmp, 0, buf, index, tmp.Length);
@@ -121,11 +121,11 @@ namespace WasatchNET
 
         public static bool writeUInt32(UInt32 value, byte[] buf, int index)
         {
-            Logger logger = Logger.getInstance();
+            WPFLogger logger = WPFLogger.getInstance();
             byte[] tmp = BitConverter.GetBytes(value);
             if (tmp == null || tmp.Length != 4)
             {
-                Logger.getInstance().error("ParseData.writeUInt32: can't serialize {0}", value);
+                WPFLogger.getInstance().error("ParseData.writeUInt32: can't serialize {0}", value);
                 return false;
             }
             Array.Copy(tmp, 0, buf, index, tmp.Length);
@@ -138,7 +138,7 @@ namespace WasatchNET
         {
             buf[index] = (byte) (value ? 1 : 0);
 
-            Logger logger = Logger.getInstance();
+            WPFLogger logger = WPFLogger.getInstance();
             logger.debug("writeBool: wrote {0} as 0x{1:x2} to index {2} of {3}-byte buf",
                 value, buf[index], index, buf.Length);
 
@@ -149,7 +149,7 @@ namespace WasatchNET
         {
             buf[index] = value;
 
-            Logger logger = Logger.getInstance();
+            WPFLogger logger = WPFLogger.getInstance();
             logger.debug("writeByte: wrote {0} as 0x{1:x2} to index {2} of {3}-byte buf",
                 value, buf[index], index, buf.Length);
 

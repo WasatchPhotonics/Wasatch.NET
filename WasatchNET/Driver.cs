@@ -46,7 +46,7 @@ namespace WasatchNET
         bool suppressErrors = false;
         int resetCount = 0;
 
-        public Logger logger { get; } = Logger.getInstance();
+        public WPFLogger logger { get; } = WPFLogger.getInstance();
         public string version { get; }
 
         // This is a Driver-level (singleton) object which tracks whether any

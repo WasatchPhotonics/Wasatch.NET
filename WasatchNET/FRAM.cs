@@ -9,7 +9,7 @@ namespace WasatchNET
         internal const int FRAM_LIB_END = 8000;
         internal const ushort LIB_PAGE_SIZE = 61;
         public event EventHandler FRAMChanged;
-        protected Logger logger = Logger.getInstance();
+        protected WPFLogger logger = WPFLogger.getInstance();
         protected Spectrometer spectrometer;
         public byte librarySpectraNum
         {

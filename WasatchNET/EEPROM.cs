@@ -57,7 +57,7 @@ namespace WasatchNET
         protected const byte FORMAT = 14;
 
         protected Spectrometer spectrometer;
-        protected Logger logger = Logger.getInstance();
+        protected WPFLogger logger = WPFLogger.getInstance();
 
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;

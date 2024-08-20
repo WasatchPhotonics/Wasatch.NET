@@ -14,7 +14,7 @@ namespace WasatchNET
     /// </summary>
     public class Util
     {
-        static Logger logger = Logger.getInstance();
+        static WPFLogger logger = WPFLogger.getInstance();
 
         /// <summary>
         /// Given a 4th-order wavelength calibration, generates the array of wavelengths.

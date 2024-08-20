@@ -68,7 +68,7 @@ namespace WasatchNET
 
         // internal
         static Mutex  mut = new Mutex();
-        Logger logger = Logger.getInstance();
+        WPFLogger logger = WPFLogger.getInstance();
 
         public BoulderStatusRegister()
         {

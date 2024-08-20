@@ -54,7 +54,7 @@ namespace WasatchNET
         {
             if (f < 0 || f >= 256)
             {
-                Logger.getInstance().error("FunkyFloat: input float out-of-range: {0}", f);
+                WPFLogger.getInstance().error("FunkyFloat: input float out-of-range: {0}", f);
                 return 0;
             }
 

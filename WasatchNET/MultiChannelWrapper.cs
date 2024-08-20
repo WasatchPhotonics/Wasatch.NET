@@ -143,7 +143,7 @@ namespace WasatchNET
 
         static object mut = new object();
 
-        Logger logger = Logger.getInstance();
+        WPFLogger logger = WPFLogger.getInstance();
 
         ////////////////////////////////////////////////////////////////////////
         // Lifecycle
