@@ -3592,7 +3592,10 @@ namespace WasatchNET
             double[] temp = new double[pixels]; // default to all zeros
             double[] sum = new double[temp.Length * eeprom.activePixelsVert];
 
-            Task<bool> task = Task.Run(async () => await sendSWTriggerAsync());
+            //Task<bool> task = Task.Run(async () => await sendSWTriggerAsync());
+            //task.Wait();
+            sendSWTrigger();
+
 
             for (int i = 0; i < eeprom.activePixelsVert; ++i)
                 {
