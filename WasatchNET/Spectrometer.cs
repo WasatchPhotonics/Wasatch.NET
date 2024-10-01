@@ -2652,6 +2652,7 @@ namespace WasatchNET
         {
             logger.info("Resetting FPGA");
             bool good = sendCmd(Opcodes.FPGA_RESET);
+
             bool cacheHighGain = highGainModeEnabled;
             readOnce.Remove(Opcodes.GET_CF_SELECT);
             highGainModeEnabled = cacheHighGain;
