@@ -301,6 +301,18 @@ namespace WasatchNET
 
         public FeatureMask featureMask = new FeatureMask();
 
+        public UInt16 laserTECSetpoint
+        {
+            get { return _laserTECSetpoint; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _laserTECSetpoint = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _laserTECSetpoint;
+
         /////////////////////////////////////////////////////////////////////////       
         // Page 1
         /////////////////////////////////////////////////////////////////////////       
@@ -1424,6 +1436,10 @@ namespace WasatchNET
                 detectorOffset = ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
                 detectorGainOdd = ParseData.toFloat(pages[0], 54); // InGaAs-only
                 detectorOffsetOdd = ParseData.toInt16(pages[0], 58); // InGaAs-only
+                if (format >= 16)
+                    laserTECSetpoint = ParseData.toUInt16(pages[0], 60);
+                else
+                    laserTECSetpoint = 800;
 
                 wavecalCoeffs[0] = ParseData.toFloat(pages[1], 0);
                 wavecalCoeffs[1] = ParseData.toFloat(pages[1], 4);
@@ -2242,6 +2258,8 @@ namespace WasatchNET
             if (!ParseData.writeInt16(detectorOffset, pages[0], 52)) return false;
             if (!ParseData.writeFloat(detectorGainOdd, pages[0], 54)) return false;
             if (!ParseData.writeInt16(detectorOffsetOdd, pages[0], 58)) return false;
+            if (format >= 16)
+                if (!ParseData.writeUInt16(laserTECSetpoint, pages[0], 60)) return false;
 
             if (!ParseData.writeFloat(wavecalCoeffs[0], pages[1], 0)) return false;
             if (!ParseData.writeFloat(wavecalCoeffs[1], pages[1], 4)) return false;
@@ -2299,6 +2317,12 @@ namespace WasatchNET
 
             if (format >= 7)
                 if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
+            if (format >= 15)
+            {
+                if (!ParseData.writeUInt16(laserWatchdogTimer, pages[3], 52)) return false;
+                if (!ParseData.writeByte((byte)lightSourceType, pages[3], 54)) return false;
+
+            }
 
             byte[] userDataChunk2 = new byte[64];
             byte[] userDataChunk3 = new byte[64];
