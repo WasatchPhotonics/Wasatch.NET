@@ -52,7 +52,7 @@ namespace WasatchNET
         /// - rev 14
         ///     - adds SiG laser TEC and Has interlock feedback to feature mask
         /// </remarks>
-        protected const byte FORMAT = 14;
+        protected const byte FORMAT = 16;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
@@ -60,6 +60,8 @@ namespace WasatchNET
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
         public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS };
+        public enum LIGHT_SOURCE_TYPE { UNDEFINED, THREE_B_SINGLE_MODE, THREE_B_MULTI_MODE, NONE = 254};
+
         protected virtual void OnEEPROMChanged(EventArgs e)
         {
             EEPROMChanged?.Invoke(this, e);
@@ -709,6 +711,31 @@ namespace WasatchNET
         }
 
         float _avgResolution;
+
+        public UInt16 laserWatchdogTimer
+        {
+            get { return _laserWatchdogTimer; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _laserWatchdogTimer = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _laserWatchdogTimer;
+
+        public LIGHT_SOURCE_TYPE lightSourceType
+        {
+            get { return _lightSourceType; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _lightSourceType = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        LIGHT_SOURCE_TYPE _lightSourceType;
+
         /////////////////////////////////////////////////////////////////////////       
         // Page 4
         /////////////////////////////////////////////////////////////////////////       
@@ -1543,12 +1570,32 @@ namespace WasatchNET
 
                 if (format >= 9)
                     featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
+
+                if (format >= 15)
+                {
+                    laserWatchdogTimer = ParseData.toUInt16(pages[3], 52);
+                    lightSourceType = (LIGHT_SOURCE_TYPE)ParseData.toUInt8(pages[3], 54);
+                }
+                else
+                {
+                    laserWatchdogTimer = 0;
+                    lightSourceType = 0;
+                }
+
                 if (format < 12)
                     featureMask.evenOddHardwareCorrected = false;
                 if (format >= 10)
                     laserWarmupSec = pages[2][18];
                 else
                     laserWarmupSec = 20;
+                if (format < 15)
+                    featureMask.hasShutter = false;
+                if (format < 16)
+                {
+                    featureMask.disableBLEPower = false;
+                    featureMask.disableLaserArmedIndication = false;
+                }
+
 
                 if (format >= 11)
                 {
