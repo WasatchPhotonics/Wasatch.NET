@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
+using Newtonsoft.Json.Linq;
 
 namespace WasatchNET
 {
@@ -3054,7 +3055,32 @@ namespace WasatchNET
         public async Task<bool> resetFPGAAsync()
         {
             logger.info("Resetting FPGA");
-            return await sendCmdAsync(Opcodes.FPGA_RESET);
+            bool good = sendCmd(Opcodes.FPGA_RESET);
+
+            bool cacheHighGain = highGainModeEnabled;
+            readOnce.Remove(Opcodes.GET_CF_SELECT);
+            highGainModeEnabled = cacheHighGain;
+
+            uint cacheIntTime = integrationTimeMS;
+            readOnce.Remove(Opcodes.GET_INTEGRATION_TIME);
+            integrationTimeMS = cacheIntTime;
+
+            float cacheGain = detectorGain;
+            readOnce.Remove(Opcodes.GET_DETECTOR_GAIN);
+            detectorGain = cacheGain;
+
+            short cacheOffset = detectorOffset;
+            readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET);
+            detectorOffset = cacheOffset;
+
+            float cacheGainOdd = detectorGainOdd;
+            readOnce.Remove(Opcodes.GET_DETECTOR_GAIN_ODD);
+            detectorGainOdd = cacheGainOdd;
+
+            short cacheOffsetOdd = detectorOffsetOdd;
+            readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET_ODD);
+            detectorOffsetOdd = cacheOffsetOdd;
+            return good;
         }
 
         ////////////////////////////////////////////////////////////////////////
