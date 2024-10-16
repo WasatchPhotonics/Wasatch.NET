@@ -1912,6 +1912,7 @@ namespace WasatchNET
             detectorGainOdd = (float)json.DetectorGainOdd;
             detectorOffset = (Int16)json.DetectorOffset;
             detectorOffsetOdd = (Int16)json.DetectorOffsetOdd;
+            laserTECSetpoint = (ushort)json.LaserTECSetpoint;
 
             featureMask.bin2x2 = json.Bin2x2;
             featureMask.invertXAxis = json.FlipXAxis;
@@ -1920,6 +1921,9 @@ namespace WasatchNET
             featureMask.evenOddHardwareCorrected = json.EvenOddHardwareCorrected;
             featureMask.sigLaserTEC = json.SigLaserTEC;
             featureMask.hasInterlockFeedback = json.HasInterlockFeedback;
+            featureMask.hasShutter = json.HasShutter;
+            featureMask.disableBLEPower = json.DisableBLEPower;
+            featureMask.disableLaserArmedIndication = json.DisableLaserArmedIndication;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -1949,6 +1953,9 @@ namespace WasatchNET
             activePixelsVert = (UInt16)json.ActivePixelsVert;
             minIntegrationTimeMS = (UInt32)json.MinIntegrationTimeMS;
             maxIntegrationTimeMS = (UInt32)json.MaxIntegrationTimeMS;
+            laserWatchdogTimer = (ushort)json.LaserWatchdogTimer;
+            lightSourceType = (LIGHT_SOURCE_TYPE)json.LightSourceType; 
+
             ROIHorizStart = (UInt16)json.ROIHorizStart;
             ROIHorizEnd = (UInt16)json.ROIHorizEnd;
             ROIVertRegionStart[0] = (UInt16)json.ROIVertRegionStarts[0];
@@ -2074,6 +2081,7 @@ namespace WasatchNET
             json.DetectorGainOdd = detectorGainOdd;
             json.DetectorOffset = detectorOffset;
             json.DetectorOffsetOdd = detectorOffsetOdd;
+            json.LaserTECSetpoint = laserTECSetpoint;
             json.WavecalCoeffs = new double[5];
             if (wavecalCoeffs != null)
             {
@@ -2118,6 +2126,8 @@ namespace WasatchNET
             json.ActivePixelsVert = activePixelsVert;
             json.MinIntegrationTimeMS = (int)minIntegrationTimeMS;
             json.MaxIntegrationTimeMS = (int)maxIntegrationTimeMS;
+            json.LaserWatchdogTimer = laserWatchdogTimer;
+            json.LightSourceType = (byte)lightSourceType;
             json.ROIHorizStart = ROIHorizStart;
             json.ROIHorizEnd = ROIHorizEnd;
             json.ROIVertRegionStarts = new int[3];
@@ -2193,6 +2203,9 @@ namespace WasatchNET
                 json.EvenOddHardwareCorrected = featureMask.evenOddHardwareCorrected;
                 json.SigLaserTEC = featureMask.sigLaserTEC;
                 json.HasInterlockFeedback = featureMask.hasInterlockFeedback;
+                json.HasInterlockFeedback = featureMask.hasShutter;
+                json.DisableBLEPower = featureMask.disableBLEPower;
+                json.DisableLaserArmedIndication = featureMask.disableLaserArmedIndication;
             }
 
             json.LaserWarmupS = laserWarmupSec;
