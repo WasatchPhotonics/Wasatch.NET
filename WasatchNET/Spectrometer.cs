@@ -3173,10 +3173,41 @@ namespace WasatchNET
         }
 
         protected void correctBin2x2(ref double[] spectrum)
-        { 
+        {
             if (eeprom.featureMask.bin2x2 && !areaScanEnabled)
-                for (int i = 0; i < spectrum.Length - 1; i++)
-                    spectrum[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
+            {
+                var smoothed = new double[spectrum.Length];
+                if (eeprom.horizontalBinningMethod == EEPROM.HORIZONTAL_BINNING_METHOD.BIN_2X2)
+                {
+                    for (int i = 0; i < spectrum.Length - 1; i++)
+                        smoothed[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
+                    smoothed[spectrum.Length - 1] = spectrum[spectrum.Length - 1];
+                    spectrum = smoothed;
+                }
+                else if (eeprom.horizontalBinningMethod == EEPROM.HORIZONTAL_BINNING_METHOD.BIN_4X2_AVG)
+                {
+                    for (int i = 0; i < spectrum.Length - 1; i += 2)
+                    {
+                        smoothed[i] = (spectrum[i] + spectrum[i + 1]) / 2.0;
+                    }
+                    for (int i = 1; i < spectrum.Length - 1; i += 2)
+                    {
+                        if (i < spectrum.Length - 2)
+                        {
+                            smoothed[i] = (smoothed[i - 1] + smoothed[i + 1]) / 2.0;
+                        }
+                    }
+                    for (int i = spectrum.Length - 3; i < spectrum.Length; ++i)
+                    {
+                        if (smoothed[i] == 0)
+                            smoothed[i] = spectrum[i];
+                    }
+
+                    smoothed[spectrum.Length - 1] = spectrum[spectrum.Length - 1];
+                    spectrum = smoothed;
+                }
+                spectrum = smoothed;
+            }
         }
 
         /// <summary>
@@ -3304,7 +3335,7 @@ namespace WasatchNET
             // This should come BEFORE bin2x2
             correctBadPixels(ref sum);
 
-            correctBin2x2(ref sum);
+            //correctBin2x2(ref sum);
 
             if (dark != null && dark.Length == sum.Length)
                 for (int px = 0; px < pixels; px++)
