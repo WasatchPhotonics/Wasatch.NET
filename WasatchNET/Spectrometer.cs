@@ -2180,9 +2180,13 @@ namespace WasatchNET
                 }
             }
 
-            if (!eeprom.hasCooling && isSiG && eeprom.TECSetpoint > 100)
+            if (eeprom.format < 16 && !eeprom.hasCooling && isSiG && eeprom.TECSetpoint > 100)
             {
                 laserTemperatureSetpointRaw = (ushort)eeprom.TECSetpoint;
+            }
+            else if (eeprom.format >= 16 && isSiG && eeprom.laserTECSetpoint > 100)
+            {
+                laserTemperatureSetpointRaw = eeprom.laserTECSetpoint;
             }
 
             if (isSiG)
