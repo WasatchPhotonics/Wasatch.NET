@@ -40,7 +40,10 @@ namespace WasatchNET
         public int MinIntegrationTimeMS;
         public int MaxIntegrationTimeMS;
         public int LaserWatchdogTimer;
+        public int PowerWatchdogTimer;
+        public int DetectorTimeout;
         public byte LightSourceType;
+        public byte HorizontalBinningMethod;
         public int ROIHorizStart;
         public int ROIHorizEnd;
         public int[] ROIVertRegionStarts;
@@ -152,7 +155,13 @@ namespace WasatchNET
                 return false;
             if (item.LaserWatchdogTimer != this.LaserWatchdogTimer)
                 return false;
+            if (item.PowerWatchdogTimer != this.PowerWatchdogTimer)
+                return false;
+            if (item.DetectorTimeout != this.DetectorTimeout)
+                return false;
             if (item.LightSourceType != this.LightSourceType) 
+                return false;
+            if (item.HorizontalBinningMethod != this.HorizontalBinningMethod) 
                 return false;
             if (item.ROIHorizStart != this.ROIHorizStart)
                 return false;
@@ -317,7 +326,10 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + MinIntegrationTimeMS.GetHashCode();
             hashCode = hashCode * -1521134295 + MaxIntegrationTimeMS.GetHashCode();
             hashCode = hashCode * -1521134295 + LaserWatchdogTimer.GetHashCode();
+            hashCode = hashCode * -1521134295 + PowerWatchdogTimer.GetHashCode();
+            hashCode = hashCode * -1521134295 + DetectorTimeout.GetHashCode();
             hashCode = hashCode * -1521134295 + LightSourceType.GetHashCode();
+            hashCode = hashCode * -1521134295 + HorizontalBinningMethod.GetHashCode();
             hashCode = hashCode * -1521134295 + ROIHorizStart.GetHashCode();
             hashCode = hashCode * -1521134295 + ROIHorizEnd.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<int[]>.Default.GetHashCode(ROIVertRegionStarts);
@@ -408,7 +420,10 @@ namespace WasatchNET
             addField(sb, indent, "MinIntegrationTimeMS", MinIntegrationTimeMS);
             addField(sb, indent, "MaxIntegrationTimeMS", MaxIntegrationTimeMS);
             addField(sb, indent, "LaserWatchdogTimer", LaserWatchdogTimer);
+            addField(sb, indent, "PowerWatchdogTimer", PowerWatchdogTimer);
+            addField(sb, indent, "DetectorTimeout", DetectorTimeout);
             addField(sb, indent, "LightSourceType", LightSourceType);
+            addField(sb, indent, "HorizontalBinningMethod", HorizontalBinningMethod);
             addField(sb, indent, "ROIHorizStart", ROIHorizStart);
             addField(sb, indent, "ROIHorizEnd", ROIHorizEnd);
 
