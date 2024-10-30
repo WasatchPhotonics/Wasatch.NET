@@ -63,6 +63,7 @@ namespace WasatchNET
         public event EventHandler EEPROMChanged;
         public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS };
         public enum LIGHT_SOURCE_TYPE { UNDEFINED, THREE_B_SINGLE_MODE, THREE_B_MULTI_MODE, NONE = 254};
+        public enum HORIZONTAL_BINNING_METHOD { BIN_2X2, CORRECT_SSC, CORRECT_SSC_BIN2X2, BIN_4X2, BIN_4X2_INTERP, BIN_4X2_AVG };
 
         protected virtual void OnEEPROMChanged(EventArgs e)
         {
@@ -755,6 +756,42 @@ namespace WasatchNET
             }
         }
         LIGHT_SOURCE_TYPE _lightSourceType;
+
+        public UInt16 powerWatchdogTimer
+        {
+            get { return _powerWatchdogTimer; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _powerWatchdogTimer = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _powerWatchdogTimer;
+        
+        public UInt16 detectorTimeout
+        {
+            get { return _detectorTimeout; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _detectorTimeout = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _detectorTimeout;
+
+        public HORIZONTAL_BINNING_METHOD horizontalBinningMethod
+        {
+            get { return _horizontalBinningMethod; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _horizontalBinningMethod = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        HORIZONTAL_BINNING_METHOD _horizontalBinningMethod = HORIZONTAL_BINNING_METHOD.BIN_2X2;
 
         /////////////////////////////////////////////////////////////////////////       
         // Page 4
@@ -1688,6 +1725,20 @@ namespace WasatchNET
                     laserWatchdogTimer = 0;
                     lightSourceType = 0;
                 }
+                
+                if (format >= 16)
+                {
+                    powerWatchdogTimer = ParseData.toUInt16(pages[3], 55);
+                    detectorTimeout = ParseData.toUInt16(pages[3], 57);
+                    horizontalBinningMethod = (HORIZONTAL_BINNING_METHOD)ParseData.toUInt8(pages[3], 59);
+                }
+                else
+                {
+                    powerWatchdogTimer = 0;
+                    detectorTimeout = 0;
+                    horizontalBinningMethod = HORIZONTAL_BINNING_METHOD.BIN_2X2;
+                }
+
 
                 if (format < 12)
                     featureMask.evenOddHardwareCorrected = false;
@@ -1954,8 +2005,10 @@ namespace WasatchNET
             minIntegrationTimeMS = (UInt32)json.MinIntegrationTimeMS;
             maxIntegrationTimeMS = (UInt32)json.MaxIntegrationTimeMS;
             laserWatchdogTimer = (ushort)json.LaserWatchdogTimer;
+            powerWatchdogTimer = (ushort)json.PowerWatchdogTimer;
+            detectorTimeout = (ushort)json.DetectorTimeout;
             lightSourceType = (LIGHT_SOURCE_TYPE)json.LightSourceType; 
-
+            horizontalBinningMethod  = (HORIZONTAL_BINNING_METHOD)json.HorizontalBinningMethod;
             ROIHorizStart = (UInt16)json.ROIHorizStart;
             ROIHorizEnd = (UInt16)json.ROIHorizEnd;
             ROIVertRegionStart[0] = (UInt16)json.ROIVertRegionStarts[0];
@@ -2127,7 +2180,10 @@ namespace WasatchNET
             json.MinIntegrationTimeMS = (int)minIntegrationTimeMS;
             json.MaxIntegrationTimeMS = (int)maxIntegrationTimeMS;
             json.LaserWatchdogTimer = laserWatchdogTimer;
+            json.PowerWatchdogTimer = powerWatchdogTimer;
+            json.DetectorTimeout = detectorTimeout;
             json.LightSourceType = (byte)lightSourceType;
+            json.HorizontalBinningMethod = (byte)horizontalBinningMethod;
             json.ROIHorizStart = ROIHorizStart;
             json.ROIHorizEnd = ROIHorizEnd;
             json.ROIVertRegionStarts = new int[3];
@@ -2462,6 +2518,12 @@ namespace WasatchNET
                 if (!ParseData.writeUInt16(laserWatchdogTimer, pages[3], 52)) return false;
                 if (!ParseData.writeByte((byte)lightSourceType, pages[3], 54)) return false;
 
+            }
+            if (format >= 16)
+            {
+                if (!ParseData.writeUInt16(powerWatchdogTimer, pages[3], 55)) return false;
+                if (!ParseData.writeUInt16(detectorTimeout, pages[3], 57)) return false;
+                if (!ParseData.writeByte((byte)horizontalBinningMethod, pages[3], 59)) return false;
             }
 
             byte[] userDataChunk2 = new byte[64];
