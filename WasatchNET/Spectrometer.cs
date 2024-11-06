@@ -3140,11 +3140,37 @@ namespace WasatchNET
 
             if (eeprom.featureMask.bin2x2 && !areaScanEnabled)
             {
-                var smoothed = new double[spec.Length];
-                for (int i = 0; i < spec.Length - 1; i++)
-                    smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
-                smoothed[spec.Length - 1] = spec[spec.Length - 1];
-                spec = smoothed;
+                if (eeprom.horizontalBinningMethod == EEPROM.HORIZONTAL_BINNING_METHOD.BIN_2X2)
+                {
+                    var smoothed = new double[spec.Length];
+                    for (int i = 0; i < spec.Length - 1; i++)
+                        smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
+                    smoothed[spec.Length - 1] = spec[spec.Length - 1];
+                    spec = smoothed;
+                }
+                else if (eeprom.horizontalBinningMethod == EEPROM.HORIZONTAL_BINNING_METHOD.BIN_4X2_AVG)
+                {
+                    var smoothed = new double[spec.Length];
+                    for (int i = 0; i < spec.Length - 1; i += 2)
+                    {
+                        smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
+                    }
+                    for (int i = 1; i < spec.Length - 1; i += 2)
+                    {
+                        if (i < spec.Length - 2)
+                        {
+                            smoothed[i] = (smoothed[i - 1] + smoothed[i + 1]) / 2.0;
+                        }
+                    }
+                    for (int i =  spec.Length - 3; i < spec.Length; ++i)
+                    {
+                        if (smoothed[i] == 0)
+                            smoothed[i] = spec[i];
+                    }
+
+                    smoothed[spec.Length - 1] = spec[spec.Length - 1];
+                    spec = smoothed;
+                }
             }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
