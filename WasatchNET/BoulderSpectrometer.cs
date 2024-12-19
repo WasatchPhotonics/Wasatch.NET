@@ -22,6 +22,7 @@ namespace WasatchNET
 
         public bool commError = false;
         public int nonSpectrumTimeoutMS = 20000;
+        public int spectrumMinTimeoutMS = 1000;
         public bool correctPixelsMarkedBad = false;
 
         //internal Wrapper wrapper;
@@ -43,11 +44,13 @@ namespace WasatchNET
 
             if (!commError)
             {
-                lock(acquisitionLock)
+                logger.debug("init grabbing lock");
+                lock (acquisitionLock)
                 {
                     var task = Task.Run(async() => integrationTime_ = await getIntegrationTimeAsync());
                     task.Wait();
                 }
+                logger.debug("init releasing lock");
             }
 
             featureIdentification = new FeatureIdentification(0, 0);
@@ -255,6 +258,7 @@ namespace WasatchNET
             byte[] response;
             bool ok = false;
 
+            logger.debug("status grabbing lock");
             lock (acquisitionLock)
             {
                 ok = sbWrite(request, false);
@@ -277,7 +281,7 @@ namespace WasatchNET
                     return false;
                 }
 
-            // logger.info("updateStatus: updating from response");
+            logger.info("updateStatus: updating from response");
             status.update(response);
 
             // did anything significant change? this will include any button-presses, hence user behavior
@@ -297,7 +301,8 @@ namespace WasatchNET
                 // obviously something just happened, so brighten the display unless forced otherwise
                 //userOperation();
             }
-            
+            logger.debug("status releasing lock");
+
             return true;
         }
 
@@ -327,6 +332,7 @@ namespace WasatchNET
 
         protected async Task<bool> sbWriteAsync(byte[] data)
         {
+            logger.debug("launching sb write task");
             var task = launchSBWriteAsync(data);
             int timeout = nonSpectrumTimeoutMS;
             bool result = false;
@@ -438,10 +444,12 @@ namespace WasatchNET
             cmd[1] = (byte)((setpoint >> 8) & 0xff);
             cmd[2] = (byte)(setpoint & 0xff);
 
+            logger.debug("TEC setpoint grabbing lock");
             lock (acquisitionLock)
             {
                 sbWrite(cmd);
             }
+            logger.debug("TEC setpoint releasing lock");
         }
 
         public bool getDetectorTECEnabled()
@@ -481,11 +489,13 @@ namespace WasatchNET
             cmd[1] = (byte)(detectorFlag ? 1 : 0);
             cmd[2] = (byte)(laserFlag ? 1 : 0);
 
+            logger.debug("TEC enable grabbing lock");
             lock (acquisitionLock)
             {
                 result = sbWrite(cmd);
             }
-            
+            logger.debug("TEC enable releasing lock");
+
             if (!result)
             {
                 return false;
@@ -498,55 +508,63 @@ namespace WasatchNET
         {
             if (!commError)
             {
+                logger.debug("get spectrum grabbing lock");
+                double[] sum = null;
                 lock (acquisitionLock)
                 {
-                    double[] sum = getSpectrumRaw();
-                    if (sum == null)
-                    {
-                        logger.error("getSpectrum: getSpectrumRaw returned null");
-                        return null;
-                    }
-                    logger.debug("getSpectrum: received {0} pixels", sum.Length);
+                    logger.debug("grabbed acquisition lock");
 
-                    if (scanAveraging_ > 1)
-                    {
-                        // logger.debug("getSpectrum: getting additional spectra for averaging");
-                        for (uint i = 1; i < scanAveraging_; i++)
-                        {
-                            double[] tmp = getSpectrumRaw();
-                            if (tmp == null)
-                                return null;
+                    sum = getSpectrumRaw();
+                }
+                logger.debug("get spectrum releasing lock");
 
-                            for (int px = 0; px < pixels; px++)
-                                sum[px] += tmp[px];
-                        }
+                if (sum == null)
+                {
+                    logger.error("getSpectrum: getSpectrumRaw returned null");
+                    return null;
+                }
+                logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+                if (scanAveraging_ > 1)
+                {
+                    // logger.debug("getSpectrum: getting additional spectra for averaging");
+                    for (uint i = 1; i < scanAveraging_; i++)
+                    {
+                        double[] tmp = getSpectrumRaw();
+                        if (tmp == null)
+                            return null;
 
                         for (int px = 0; px < pixels; px++)
-                            sum[px] /= scanAveraging_;
+                            sum[px] += tmp[px];
                     }
 
-                    if (dark != null && dark.Length == sum.Length)
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] -= dark_[px];
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] /= scanAveraging_;
+                }
 
-                    if (correctPixelsMarkedBad)
-                        correctBadPixels(ref sum);
+                if (dark != null && dark.Length == sum.Length)
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] -= dark_[px];
 
-                    if (boxcarHalfWidth > 0)
-                    {
-                        // logger.debug("getSpectrum: returning boxcar");
-                        return Util.applyBoxcar(boxcarHalfWidth, sum);
-                    }
-                    else
-                    {
-                        // logger.debug("getSpectrum: returning sum");
-                        return sum;
-                    }
+                if (correctPixelsMarkedBad)
+                    correctBadPixels(ref sum);
+
+                if (boxcarHalfWidth > 0)
+                {
+                    // logger.debug("getSpectrum: returning boxcar");
+                    return Util.applyBoxcar(boxcarHalfWidth, sum);
+                }
+                else
+                {
+                    // logger.debug("getSpectrum: returning sum");
+                    return sum;
                 }
             }
             else
+            {
+                logger.error("comm error occurring, will not return spectra");
                 return new double[pixels];
-
+            }
         }
 
         protected override double[] getSpectrumRaw(bool skipTrigger = false)
@@ -630,22 +648,27 @@ namespace WasatchNET
             double[] spec = new double[pixels]; // default to all zeros
             spec = await getSpectrumAsync();
 
-            logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+            logger.debug("getSpectrumRawAsync: returning {0} pixels", spec.Length);
             return spec;
         }
 
 
         protected async Task<double[]> getSpectrumAsync()
         {
+            logger.debug("launching spectrum task");
+
             var task = launchSBSpectrumAsync();
-            int timeout = Math.Max( (int)integrationTimeMS * 3, nonSpectrumTimeoutMS);
+
+            logger.debug("spectrum task started");
+
+            int timeout = Math.Max( (int)integrationTimeMS * 3, spectrumMinTimeoutMS);
             double[] spec = new double[pixels];
 
             if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
             {
                 // task completed within timeout
                 spec = task.Result;
-                logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+                logger.debug("getSpectrumAsync: returning {0} pixels", spec.Length);
             }
             else
             {
@@ -662,11 +685,13 @@ namespace WasatchNET
             double[] spec = new double[pixels];
             int errorReader = 0;
 
+            logger.debug("launching lowest level wrapper call");
+
             var task = Task.Run(() => SeaBreezeWrapper.seabreeze_get_formatted_spectrum(specIndex, ref errorReader, ref spec[0], (int)pixels));
 
             await task;
 
-            logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+            logger.debug("launchSBSpectrumAsync: returning {0} pixels", spec.Length);
             return spec;
         }
 
@@ -707,6 +732,7 @@ namespace WasatchNET
                 //wrapper.setIntegrationTimeMillisec((long)value);
                 if (!commError)
                 {
+                    logger.debug("int time grabbing lock");
                     lock (acquisitionLock)
                     {
                         int errorReader = 0;
@@ -715,8 +741,12 @@ namespace WasatchNET
 
                         if (errorReader == 0)
                             integrationTime_ = value;
-
                     }
+                    logger.debug("int time releasing lock");
+                }
+                else
+                {
+                    logger.error("comm error occurring, will not set int time");
                 }
             }
         }
@@ -848,7 +878,10 @@ namespace WasatchNET
             {
                 bool readSuccess = updateStatus();
                 if (readSuccess)
+                {
+                    logger.debug("status update returned with temperature {0}", status.detectorTemperatureDegC);
                     return (float)status.detectorTemperatureDegC;
+                }
                 else
                     return 0;
             }
@@ -924,11 +957,17 @@ namespace WasatchNET
 
                 if (!commError)
                 {
+                    logger.debug("firmware grabbing lock");
                     lock (acquisitionLock)
                     {
                         var task = Task.Run(async () => retval = await getFirmwareRevAsync());
                         task.Wait();
                     }
+                    logger.debug("firmware releasing lock");
+                }
+                else
+                {
+                    logger.error("comm error occurring, will not return firmware");
                 }
                 return retval;
             }
@@ -998,6 +1037,8 @@ namespace WasatchNET
         {
             get
             {
+                string formatted = "";
+                logger.debug("fpga grabbing lock");
                 lock (acquisitionLock)
                 {
                     byte[] cmd = new byte[2];
@@ -1007,7 +1048,6 @@ namespace WasatchNET
                     sbWrite(cmd);
                     byte[] response = sbRead(3);
 
-                    string formatted = "";
 
                     if (response != null)
                     {
@@ -1021,8 +1061,9 @@ namespace WasatchNET
                         logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
                     }
 
-                    return formatted;
                 }
+                logger.debug("fpga releasing lock");
+                return formatted;
             }
         }
 
