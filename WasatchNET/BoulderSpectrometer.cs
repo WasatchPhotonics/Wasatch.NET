@@ -22,7 +22,7 @@ namespace WasatchNET
 
         public bool commError = false;
         public int nonSpectrumTimeoutMS = 20000;
-        public int spectrumMinTimeoutMS = 1000;
+        public int spectrumMinTimeoutMS = 5000;
         public bool correctPixelsMarkedBad = false;
 
         //internal Wrapper wrapper;
@@ -70,7 +70,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Int Time Get: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
             }
 
@@ -163,7 +163,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Open Spec: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 result = false;
             }
@@ -192,7 +192,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Pixel Count: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
             }
 
@@ -236,7 +236,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Close spec: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 return false;
             }
@@ -345,7 +345,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Generic Write: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 result = false;
             }
@@ -400,7 +400,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Generic Read: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 bytes = null;
             }
@@ -562,7 +562,7 @@ namespace WasatchNET
             }
             else
             {
-                logger.error("comm error occurring, will not return spectra");
+                logger.error("Get Spectrum: comm error occurring, will not return spectra");
                 return new double[pixels];
             }
         }
@@ -673,7 +673,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Get Spectrum: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
             }
 
@@ -740,7 +740,12 @@ namespace WasatchNET
                         task.Wait();
 
                         if (errorReader == 0)
+                        {
+                            spectrumMinTimeoutMS = Math.Max(3 * (int)integrationTimeMS_, 5000);
+                            logger.debug("setting min timeout to {0}", spectrumMinTimeoutMS);
+                            logger.debug("setting int time to {0}", value);
                             integrationTime_ = value;
+                        }
                     }
                     logger.debug("int time releasing lock");
                 }
@@ -766,7 +771,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Int Time Set: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 errorCode = -1;
             }
@@ -987,7 +992,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Firmware Get: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 firmware = "";
             }
