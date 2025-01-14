@@ -45,56 +45,44 @@ namespace WasatchNET
             if (!commError)
             {
                 logger.debug("init grabbing lock");
-                lock (acquisitionLock)
-                {
-                    var task = Task.Run(async() => integrationTime_ = await getIntegrationTimeAsync());
-                    task.Wait();
-                }
+                integrationTimeMS_ = (uint)getIntegrationTime();
                 logger.debug("init releasing lock");
             }
 
             featureIdentification = new FeatureIdentification(0, 0);
         }
 
-        protected async Task<long> getIntegrationTimeAsync()
-        {
-            var task = launchSBGetIntegrationAsync();
-            int timeout = nonSpectrumTimeoutMS;
-            long integrationTime = 8;
-
-            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
-            {
-                // task completed within timeout
-                integrationTime = task.Result;
-            }
-            else
-            {
-                // timeout logic
-                logger.error("Int Time Get: SeaBreeze failing to return in expected time, communication error likely");
-                commError = true;
-            }
-
-            return integrationTime;
-        }
-
-        protected async Task<long> launchSBGetIntegrationAsync()
+        protected long getIntegrationTime()
         {
             int errorReader = 0;
             long integrationTime = 8;
 
-            integrationTime = await Task.Run(() => SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader)) / 1000;
-            
+            integrationTime = SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(specIndex, ref errorReader) / 1000;
+
             if (errorReader != 0)
                 integrationTime = 8;
 
             return integrationTime;
-
         }
 
         override internal bool open()
         {
-            Task<bool> task = Task.Run(async () => await openAsync());
-            return task.Result;
+            eeprom = new BoulderEEPROM(this);
+            openSpectrometer();
+            pixels = (uint)getPixels();
+            bool ok = eeprom.read();
+
+            if (!ok)
+            {
+                logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                //wrapper.shutdown();
+                close();
+                return false;
+            }
+
+            regenerateWavelengths();
+
+            return true;
         }
 
         override internal async Task<bool> openAsync()
@@ -171,11 +159,26 @@ namespace WasatchNET
             return result;
         }
 
+        protected bool openSpectrometer()
+        {
+            int errorReader = 0;
+            bool ok = SeaBreezeWrapper.seabreeze_open_spectrometer(specIndex, ref errorReader) == 0;
+            return ok;
+        }
+
+
         protected async Task<bool> launchSBOpenSpecAsync()
         {
             int errorReader = 0;
             bool retVal = await Task.Run(() => SeaBreezeWrapper.seabreeze_open_spectrometer(specIndex, ref errorReader) == 0);
             return retVal;
+        }
+
+        protected int getPixels()
+        {
+            int errorReader = 0;
+            int pixels = SeaBreezeWrapper.seabreeze_get_formatted_spectrum_length(specIndex, ref errorReader);
+            return pixels;
         }
 
         protected async Task<int> getPixelAsync()
@@ -210,8 +213,8 @@ namespace WasatchNET
 
         public override void close()
         {
-            Task task = Task.Run(async () => await closeAsync());
-            task.Wait();
+            int errorReader = 0;
+            SeaBreezeWrapper.seabreeze_close_spectrometer(specIndex, ref errorReader);
         }
 
         public async override Task closeAsync()
@@ -259,20 +262,19 @@ namespace WasatchNET
             bool ok = false;
 
             logger.debug("status grabbing lock");
-            lock (acquisitionLock)
-            {
-                ok = sbWrite(request, false);
-                if (!ok)
-                {
-                    //wrapper.setError("Error requesting status register update");
-                    //mut.ReleaseMutex();
-                    //statusMut.ReleaseMutex();
-                    logger.info("updateStatus: failed");
-                    return false;
-                }
 
-                response = sbRead(16, false);
+            ok = sbWrite(request, false);
+            if (!ok)
+            {
+                //wrapper.setError("Error requesting status register update");
+                //mut.ReleaseMutex();
+                //statusMut.ReleaseMutex();
+                logger.info("updateStatus: failed");
+                return false;
             }
+
+            response = sbRead(16, false);
+            
 
             if (response == null || response.Length == 0)
                 if (!ok)
@@ -320,8 +322,8 @@ namespace WasatchNET
             if (!commError)
             {
                 bool result = false;
-                var task = Task.Run(async () => result = await sbWriteAsync(data));
-                task.Wait();
+                int errorCode = 0;
+                SeaBreezeWrapper.seabreeze_write_usb(specIndex, ref errorCode, txEndpoint, ref data[0], data.Length);
 
                 return result;
             }
@@ -370,12 +372,13 @@ namespace WasatchNET
         {
             byte[] data = null;
 
+            int errorCode = 0;
             if (!commError)
             {
-                var task = Task.Run(async () => data = await sbReadAsync(bytes));
-                task.Wait();
+                data = new byte[bytes];
+                SeaBreezeWrapper.seabreeze_read_usb(specIndex, ref errorCode, rxEndpoint, ref data[0], data.Length);
             }
-            if (log && data != null)
+            if (log && errorCode == 0)
             {
                 string debug = "";
                 for (int i = 0; i < data.Length; i++)
@@ -445,10 +448,7 @@ namespace WasatchNET
             cmd[2] = (byte)(setpoint & 0xff);
 
             logger.debug("TEC setpoint grabbing lock");
-            lock (acquisitionLock)
-            {
-                sbWrite(cmd);
-            }
+            sbWrite(cmd);
             logger.debug("TEC setpoint releasing lock");
         }
 
@@ -489,12 +489,7 @@ namespace WasatchNET
             cmd[1] = (byte)(detectorFlag ? 1 : 0);
             cmd[2] = (byte)(laserFlag ? 1 : 0);
 
-            logger.debug("TEC enable grabbing lock");
-            lock (acquisitionLock)
-            {
-                result = sbWrite(cmd);
-            }
-            logger.debug("TEC enable releasing lock");
+            result = sbWrite(cmd);
 
             if (!result)
             {
@@ -508,15 +503,10 @@ namespace WasatchNET
         {
             if (!commError)
             {
-                logger.debug("get spectrum grabbing lock");
                 double[] sum = null;
-                lock (acquisitionLock)
-                {
-                    logger.debug("grabbed acquisition lock");
 
-                    sum = getSpectrumRaw();
-                }
-                logger.debug("get spectrum releasing lock");
+                sum = getSpectrumRaw();
+
 
                 if (sum == null)
                 {
@@ -575,10 +565,10 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////////
 
             double[] spec = new double[pixels]; // default to all zeros
+            int errorReader = 0;
 
-            var task = Task.Run(async () => spec = await getSpectrumAsync());
-            task.Wait();
-
+            logger.debug("launching wrapper call");
+            SeaBreezeWrapper.seabreeze_get_formatted_spectrum(specIndex, ref errorReader, ref spec[0], (int)pixels);
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return spec;
         }
@@ -732,22 +722,16 @@ namespace WasatchNET
                 //wrapper.setIntegrationTimeMillisec((long)value);
                 if (!commError)
                 {
-                    logger.debug("int time grabbing lock");
-                    lock (acquisitionLock)
+                    int errorReader = 0;
+                    SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000));
+                    
+                    if (errorReader == 0)
                     {
-                        int errorReader = 0;
-                        var task = Task.Run(async () => errorReader = await setIntegrationAsync(value));
-                        task.Wait();
-
-                        if (errorReader == 0)
-                        {
-                            spectrumMinTimeoutMS = Math.Max(3 * (int)integrationTimeMS_, 5000);
-                            logger.debug("setting min timeout to {0}", spectrumMinTimeoutMS);
-                            logger.debug("setting int time to {0}", value);
-                            integrationTime_ = value;
-                        }
+                        spectrumMinTimeoutMS = Math.Max(3 * (int)integrationTimeMS_, 5000);
+                        logger.debug("setting min timeout to {0}", spectrumMinTimeoutMS);
+                        logger.debug("setting int time to {0}", value);
+                        integrationTime_ = value;
                     }
-                    logger.debug("int time releasing lock");
                 }
                 else
                 {
@@ -962,13 +946,27 @@ namespace WasatchNET
 
                 if (!commError)
                 {
-                    logger.debug("firmware grabbing lock");
-                    lock (acquisitionLock)
+                    byte[] raw = new byte[32];
+                    int error = 0;
+
+                    SeaBreezeWrapper.seabreeze_get_usb_descriptor_string(specIndex, ref error, 1, ref raw[0], raw.Length);
+
+                    if (error == 0)
                     {
-                        var task = Task.Run(async () => retval = await getFirmwareRevAsync());
-                        task.Wait();
+                        int len = 0;
+                        while (raw[len] != 0 && len + 1 < raw.Length)
+                            len++;
+
+                        byte[] cleanByte = Encoding.Convert(Encoding.GetEncoding("iso-8859-1"), Encoding.UTF8, raw);
+                        string text = Encoding.UTF8.GetString(cleanByte, 0, len);
+                        const string pattern = @"\b(\d+\.\d+\.\d+)\b";
+                        Regex regEx = new Regex(pattern);
+                        MatchCollection matches = regEx.Matches(text);
+                        if (matches.Count > 0)
+                            retval = matches[0].Groups[0].Value;
+                        else
+                            retval = text;
                     }
-                    logger.debug("firmware releasing lock");
                 }
                 else
                 {
@@ -978,94 +976,30 @@ namespace WasatchNET
             }
         }
 
-        protected async Task<string> getFirmwareRevAsync()
-        {
-            var task = launchSBGetFirmwareAsync();
-            int timeout = nonSpectrumTimeoutMS;
-            string firmware;
-
-            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
-            {
-                // task completed within timeout
-                firmware = task.Result;
-            }
-            else
-            {
-                // timeout logic
-                logger.error("Firmware Get: SeaBreeze failing to return in expected time, communication error likely");
-                commError = true;
-                firmware = "";
-            }
-
-            return firmware;
-        }
-
-        protected async Task<string> launchSBGetFirmwareAsync()
-        {
-            string retval = null;
-
-            try
-            {
-                byte[] raw = new byte[32];
-                int error = 0;
-
-                await Task.Run(() => SeaBreezeWrapper.seabreeze_get_usb_descriptor_string(specIndex, ref error, 1, ref raw[0], raw.Length));
-
-                if (error == 0)
-                {
-                    int len = 0;
-                    while (raw[len] != 0 && len + 1 < raw.Length)
-                        len++;
-
-                    byte[] cleanByte = Encoding.Convert(Encoding.GetEncoding("iso-8859-1"), Encoding.UTF8, raw);
-                    string text = Encoding.UTF8.GetString(cleanByte, 0, len);
-                    const string pattern = @"\b(\d+\.\d+\.\d+)\b";
-                    Regex regEx = new Regex(pattern);
-                    MatchCollection matches = regEx.Matches(text);
-                    if (matches.Count > 0)
-                        retval = matches[0].Groups[0].Value;
-                    else
-                        retval = text;
-                }
-            }
-            catch (Exception e)
-            {
-                logger.error("Error getting FX2 firmware version: {0}", e.Message);
-            }
-            
-
-            return retval;
-        }
-
-
         public override string fpgaRevision
         {
             get
             {
                 string formatted = "";
                 logger.debug("fpga grabbing lock");
-                lock (acquisitionLock)
+                byte[] cmd = new byte[2];
+                cmd[0] = 0x6b; // read FPGA register
+                cmd[1] = 0x04; // read FPGA version number
+
+                sbWrite(cmd);
+                byte[] response = sbRead(3);
+
+
+                if (response != null)
                 {
-                    byte[] cmd = new byte[2];
-                    cmd[0] = 0x6b; // read FPGA register
-                    cmd[1] = 0x04; // read FPGA version number
+                    UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
 
-                    sbWrite(cmd);
-                    byte[] response = sbRead(3);
+                    int major = (bytes >> 12) & 0x0f;
+                    int minor = (bytes >> 4) & 0xff;
+                    int build = (bytes) & 0x0f;
 
-
-                    if (response != null)
-                    {
-                        UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
-
-                        int major = (bytes >> 12) & 0x0f;
-                        int minor = (bytes >> 4) & 0xff;
-                        int build = (bytes) & 0x0f;
-
-                        formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
-                        logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
-                    }
-
+                    formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
+                    logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
                 }
                 logger.debug("fpga releasing lock");
                 return formatted;

@@ -30,8 +30,39 @@ namespace WasatchNET
 
         public override bool read()
         {
-            Task<bool> task = Task.Run(async () => await readAsync());
-            return task.Result;
+            BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
+
+            setDefault(spectrometer);
+
+            serialNumber = "";
+
+            hasCooling = true;
+            int errorReader = 0;
+            startupIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
+            double temp = a.detectorTemperatureDegC;
+            TECSetpoint = (short)temp;
+            if (TECSetpoint >= 99)
+                TECSetpoint = 15;
+            else if (TECSetpoint <= -50)
+                TECSetpoint = 15;
+            detectorGain = 0;
+            detectorOffset = 0;
+
+            detectorTempMax = 25;
+            detectorTempMin = 10;
+            activePixelsHoriz = (ushort)a.pixels;
+            activePixelsVert = 0;
+            minIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
+            maxIntegrationTimeMS = 1000000;
+            actualPixelsHoriz = (ushort)a.pixels;
+            laserExcitationWavelengthNMFloat = 830.0f;
+
+            featureMask.gen15 = false;
+
+            return true;
+
+            //Task<bool> task = Task.Run(async () => await readAsync());
+            //return task.Result;
         }
 
         public override bool write(bool allPages = false)
