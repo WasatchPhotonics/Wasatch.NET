@@ -958,25 +958,32 @@ namespace WasatchNET
         {
             get
             {
-                string retval = "";
-
-                if (!commError)
+                if (firmwareRevision_.Length == 0)
                 {
-                    logger.debug("firmware grabbing lock");
-                    lock (acquisitionLock)
+                    string retval = "";
+
+                    if (!commError)
                     {
-                        var task = Task.Run(async () => retval = await getFirmwareRevAsync());
-                        task.Wait();
+                        logger.debug("firmware grabbing lock");
+                        lock (acquisitionLock)
+                        {
+                            var task = Task.Run(async () => retval = await getFirmwareRevAsync());
+                            task.Wait();
+                        }
+                        logger.debug("firmware releasing lock");
                     }
-                    logger.debug("firmware releasing lock");
+                    else
+                    {
+                        logger.error("comm error occurring, will not return firmware");
+                    }
+                    firmwareRevision_ = retval;
+                    return retval;
                 }
                 else
-                {
-                    logger.error("comm error occurring, will not return firmware");
-                }
-                return retval;
+                    return firmwareRevision_;
             }
         }
+        string firmwareRevision_ = "";
 
         protected async Task<string> getFirmwareRevAsync()
         {
@@ -1042,35 +1049,43 @@ namespace WasatchNET
         {
             get
             {
-                string formatted = "";
-                logger.debug("fpga grabbing lock");
-                lock (acquisitionLock)
+                if (fpgaRevision_.Length == 0)
                 {
-                    byte[] cmd = new byte[2];
-                    cmd[0] = 0x6b; // read FPGA register
-                    cmd[1] = 0x04; // read FPGA version number
 
-                    sbWrite(cmd);
-                    byte[] response = sbRead(3);
-
-
-                    if (response != null)
+                    string formatted = "";
+                    logger.debug("fpga grabbing lock");
+                    lock (acquisitionLock)
                     {
-                        UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
+                        byte[] cmd = new byte[2];
+                        cmd[0] = 0x6b; // read FPGA register
+                        cmd[1] = 0x04; // read FPGA version number
 
-                        int major = (bytes >> 12) & 0x0f;
-                        int minor = (bytes >> 4) & 0xff;
-                        int build = (bytes) & 0x0f;
+                        sbWrite(cmd);
+                        byte[] response = sbRead(3);
 
-                        formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
-                        logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
+
+                        if (response != null)
+                        {
+                            UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
+
+                            int major = (bytes >> 12) & 0x0f;
+                            int minor = (bytes >> 4) & 0xff;
+                            int build = (bytes) & 0x0f;
+
+                            formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
+                            logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
+                            fpgaRevision_ = formatted;
+                        }
+
                     }
-
+                    logger.debug("fpga releasing lock");
+                    return formatted;
                 }
-                logger.debug("fpga releasing lock");
-                return formatted;
+                else
+                    return fpgaRevision_;
             }
         }
+        string fpgaRevision_ = "";
 
         public override string bleRevision
         {
