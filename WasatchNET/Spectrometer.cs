@@ -1671,7 +1671,7 @@ namespace WasatchNET
                     return;
 
                 if (value)
-                    laserTECMode = (ushort)LaserTECMode.ON;
+                    laserTECMode = (ushort)LaserTECMode.AUTO;
                 else
                     laserTECMode = (ushort)LaserTECMode.OFF;
             }
