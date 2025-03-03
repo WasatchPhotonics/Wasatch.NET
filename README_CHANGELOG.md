@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2025-??-?? 2.4.17
+    - fixed bad pixel correction (left-edge corner case)
 - 2024-03-19 2.4.16
 	- fixed issue with multi channel wrapper demo program
 - 2024-03-05 2.4.15
