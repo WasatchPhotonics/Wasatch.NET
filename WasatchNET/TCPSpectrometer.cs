@@ -138,6 +138,7 @@ namespace WasatchNET
             {
                 data.Add((byte)b);
             }
+            data.Add(0);
 
             client.Send(data.ToArray());
 
