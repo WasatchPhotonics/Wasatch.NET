@@ -212,7 +212,7 @@ namespace WasatchNET
 
                     SPISpectrometer spiSpec = new SPISpectrometer(null);
                     logger.debug("attempting to open spi spectrometer");
-                    bool opened = await spiSpec.openAsync();
+                    bool opened = spiSpec.open();
                     if (opened)
                     {
                         logger.debug("found SPISpectrometer");

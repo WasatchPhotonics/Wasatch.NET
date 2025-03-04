@@ -1469,12 +1469,12 @@ namespace WasatchNET
             writeParse();
         }
 
-        public virtual bool read()
+        public virtual bool read(bool skipRead = false)
         {
-            Task<bool> task = Task.Run(async () => await readAsync());
+            Task<bool> task = Task.Run(async () => await readAsync(skipRead));
             return task.Result;
         }
-        public virtual async Task<bool> readAsync()
+        public virtual async Task<bool> readAsync(bool skipRead = false)
         {
             ////////////////////////////////////////////////////////////////
             //                                                            //
@@ -1486,24 +1486,27 @@ namespace WasatchNET
             // read all (standard) pages into cache
             ////////////////////////////////////////////////////////////////
 
-            pages = new List<byte[]>();
-            for (ushort page = 0; page < MAX_PAGES; page++)
+            if (!skipRead)
             {
-                byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
-                if (buf is null)
+                pages = new List<byte[]>();
+                for (ushort page = 0; page < MAX_PAGES; page++)
                 {
-                    try
+                    byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                    if (buf is null)
                     {
-                        setDefault(spectrometer);
+                        try
+                        {
+                            setDefault(spectrometer);
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                        return true;
                     }
-                    catch
-                    {
-                        return false;
-                    }
-                    return true;
+                    pages.Add(buf);
+                    logger.hexdump(buf, String.Format("read page {0}: ", page));
                 }
-                pages.Add(buf);
-                logger.hexdump(buf, String.Format("read page {0}: ", page));
             }
 
             ////////////////////////////////////////////////////////////////
