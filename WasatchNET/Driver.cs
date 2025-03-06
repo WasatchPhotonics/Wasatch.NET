@@ -392,8 +392,29 @@ namespace WasatchNET
 #endif
             }
 
+            if (Environment.GetEnvironmentVariable("WASATCHNET_USE_IP") != null)
+            {
+                try
+                {
+                    TCPSpectrometer spectrometer = new TCPSpectrometer(null, "1.1.1.1", 100);
+                    bool ok = await spectrometer.openAsync();
+                    if (ok)
+                    {
+                        logger.info("found TCP/IP Spectrometer");
+                        spectrometers.Add(spectrometer);
+                    }
+                    else
+                    {
+                        logger.info("failed to open TCP/IP Spectrometer");
+                    }
+                }
+                catch (Exception e)
+                {
+                    logger.info("failed to initialize TCP/IP spec with exception {0}", e.Message);
+                }
+            }
 
-            logger.debug($"openAllSpectrometers: returning {spectrometers.Count}");
+                logger.debug($"openAllSpectrometers: returning {spectrometers.Count}");
 
             opened = true;
             return spectrometers.Count;

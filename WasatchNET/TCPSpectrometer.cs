@@ -45,12 +45,24 @@ namespace WasatchNET
 
         override internal async Task<bool> openAsync()
         {
-            client = new Socket(
-                ep.AddressFamily,
-                SocketType.Stream,
-                ProtocolType.Tcp);
+            try
+            {
+                client = new Socket(
+                    ep.AddressFamily,
+                    SocketType.Stream,
+                    ProtocolType.Tcp);
 
-            await client.ConnectAsync(ep);
+                await client.ConnectAsync(ep);
+            }
+            catch (Exception ex)
+            {
+                logger.info("TCP/IP socket connect failed with issue {0}", ex.Message);
+                return false;
+            }
+
+            if (!checkSocket())
+                return false;
+
 
             eeprom = new TCPEEPROM(this);
             if (!eeprom.read())
@@ -62,12 +74,23 @@ namespace WasatchNET
 
             setBinaryMode();
 
-
             regenerateWavelengths();
 
             logger.debug("Successfully connected to TCP Spectrometer");
 
             return true;
+        }
+
+        bool checkSocket()
+        {
+            bool part1 = client.Poll(10000, SelectMode.SelectRead);
+            bool part2 = (client.Available == 0);
+
+            if (part1 && part2)
+                return false;
+            else
+                return true;
+
         }
 
         bool setBinaryMode()
