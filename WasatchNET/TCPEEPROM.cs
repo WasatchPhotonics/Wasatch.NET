@@ -47,7 +47,7 @@ namespace WasatchNET
 
         public override async Task<bool> readAsync(bool skipRead = false)
         {
-            MockSpectrometer a = spectrometer as MockSpectrometer;
+            TCPSpectrometer a = spectrometer as TCPSpectrometer;
             setDefault(spectrometer);
             serialNumber = "";
             hasCooling = true;

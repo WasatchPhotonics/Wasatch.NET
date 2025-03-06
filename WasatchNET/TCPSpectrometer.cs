@@ -15,12 +15,17 @@ namespace WasatchNET
     public class TCPSpectrometer : Spectrometer
     {
         IPAddress address;
+        string ip;
+        int port;
         IPEndPoint ep;
-        Socket client;
+        TcpClient client;
+        NetworkStream stream;
 
         internal TCPSpectrometer(UsbRegistry usbReg, string address, int port, int index = 0) : base(usbReg)
         {
             this.address = IPAddress.Parse(address);
+            this.ip = address;
+            this.port = port;
             ep = new IPEndPoint(this.address, port);
         }
 
@@ -47,12 +52,8 @@ namespace WasatchNET
         {
             try
             {
-                client = new Socket(
-                    ep.AddressFamily,
-                    SocketType.Stream,
-                    ProtocolType.Tcp);
-
-                await client.ConnectAsync(ep);
+                client = new TcpClient(ip, port);
+                stream = client.GetStream();
             }
             catch (Exception ex)
             {
@@ -74,6 +75,7 @@ namespace WasatchNET
 
             setBinaryMode();
 
+            pixels = (uint)getPixels();
             regenerateWavelengths();
 
             logger.debug("Successfully connected to TCP Spectrometer");
@@ -83,6 +85,7 @@ namespace WasatchNET
 
         bool checkSocket()
         {
+            /*
             bool part1 = client.Poll(10000, SelectMode.SelectRead);
             bool part2 = (client.Available == 0);
 
@@ -90,13 +93,14 @@ namespace WasatchNET
                 return false;
             else
                 return true;
-
+            */
+            return true;
         }
 
         bool setBinaryMode()
         {
             byte[] data = readData(3);
-            if (data == null || (char)data[0] != 'O' || (char)data[1] != 'K' || (char)data[0] != '\n')
+            if (data == null || (char)data[0] != 'O' || (char)data[1] != 'K' || (char)data[2] != '\n')
             {
                 return false;
             }
@@ -115,7 +119,7 @@ namespace WasatchNET
             byte[] serialized = packet.serialize();
 
 
-            client.Send(serialized);
+            stream.Write(serialized, 0, serialized.Length);
             byte[] data = readData(bytesToRead);
             return data;
         }
@@ -124,8 +128,8 @@ namespace WasatchNET
         {
             TCPMessagePacket packet = new TCPMessagePacket(bRequest, (ushort)wValue, (ushort)wIndex, payload);
             byte[] serialized = packet.serialize();
-            
-            client.Send(serialized);
+
+            stream.Write(serialized, 0, serialized.Length);
 
             if (readBack != null)
             {
@@ -145,7 +149,7 @@ namespace WasatchNET
                 return null;
 
             byte[] response = new byte[length];
-            int read = client.Receive(response, length, SocketFlags.None);
+            int read = stream.Read(response, 0, length); //client.Receive(response, length, SocketFlags.None);
 
             if (read == length)
                 return response;
@@ -163,7 +167,7 @@ namespace WasatchNET
             }
             data.Add(0);
 
-            client.Send(data.ToArray());
+            stream.Write(data.ToArray(), 0, data.Count);
 
         }
 
@@ -292,6 +296,13 @@ namespace WasatchNET
 
         }
 
+        public int getPixels()
+        {
+            byte[] resp = getCommand(0x03, 2);
+            ushort pix = Unpack.toUshort(resp);
+            logger.info("TCP spec has {0} pixels", pix);
+            return pix;
+        }
 
         public override bool highGainModeEnabled
         {
@@ -330,7 +341,7 @@ namespace WasatchNET
                     UInt16 lsw = (ushort)(value & 0xffff);
                     byte msb = (byte)((value >> 16) & 0xff);
 
-                    sendCommand(0xff, lsw, msb);
+                    sendCommand(0xb2, lsw, msb);
 
                     integrationTimeMS_ = integTimeMS;
                 }

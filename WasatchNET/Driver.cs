@@ -396,7 +396,7 @@ namespace WasatchNET
             {
                 try
                 {
-                    TCPSpectrometer spectrometer = new TCPSpectrometer(null, "1.1.1.1", 100);
+                    TCPSpectrometer spectrometer = new TCPSpectrometer(null, "127.0.0.1", 9999);
                     bool ok = await spectrometer.openAsync();
                     if (ok)
                     {
