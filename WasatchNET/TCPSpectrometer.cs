@@ -2,6 +2,7 @@
 using MPSSELight;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -74,6 +75,8 @@ namespace WasatchNET
             }
 
             setBinaryMode();
+            //rawWriteSeq();
+            //rawWriteRan();
 
             pixels = (uint)getPixels();
             regenerateWavelengths();
@@ -111,13 +114,26 @@ namespace WasatchNET
                 return false;
         }
 
+        byte[] rawWriteSeq()
+        {
+            byte[] serialized = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
+            stream.Write(serialized, 0, serialized.Length);
+            return null;
+        }
+        
+        byte[] rawWriteRan()
+        {
+            byte[] serialized = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+            stream.Write(serialized, 0, serialized.Length);
+            return null;
+        }
+
         byte[] getCommand(byte bRequest, int len, int wValue = 0, int wIndex = 0, int fullLen = 0)
         {
             int bytesToRead = Math.Max(len, fullLen);
             byte[] buf = new byte[bytesToRead];
             TCPMessagePacket packet = new TCPMessagePacket(bRequest, (ushort)wValue, (ushort)wIndex, null);
             byte[] serialized = packet.serialize();
-
 
             stream.Write(serialized, 0, serialized.Length);
             byte[] data = readData(bytesToRead);
@@ -165,7 +181,7 @@ namespace WasatchNET
             {
                 data.Add((byte)b);
             }
-            data.Add(0);
+            //data.Add(0);
 
             stream.Write(data.ToArray(), 0, data.Count);
 
@@ -304,6 +320,61 @@ namespace WasatchNET
             return pix;
         }
 
+        public int getHeight()
+        {
+            byte[] resp = getCommand(0xff, 2, 0xaa10);
+            ushort pix = Unpack.toUshort(resp);
+            logger.info("TCP spec has {0} vertical pixels", pix);
+            return pix;
+        }
+
+        public string getSerialNumber()
+        {
+            byte[] resp = getCommand(0xff, 16, 0xaa09);
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in resp)
+            {
+                if (b == 0)
+                    break;
+                else 
+                    sb.Append(b);
+            }
+
+            logger.info("TCP spec S/N: {0}", sb.ToString());
+            return sb.ToString();
+        }
+
+        public string getModelName()
+        {
+            byte[] resp = getCommand(0xff, 32, 0xaa0b);
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in resp)
+            {
+                if (b == 0)
+                    break;
+                else 
+                    sb.Append(b);
+            }
+
+            logger.info("TCP spec model: {0}", sb.ToString());
+            return sb.ToString();
+        }
+
+        public float getWavecalCoeff(int exponent)
+        {
+            byte[] resp = getCommand(0xff, 4, 0xaa0d, exponent);
+            float coeff = System.BitConverter.ToSingle(resp, 0);
+            logger.info("TCP spec wavecal[{0}]: {1:f6}", exponent, coeff);
+            return coeff;
+        }
+        public float getExcitation()
+        {
+            byte[] resp = getCommand(0xff, 4, 0xaa12);
+            float excitation = System.BitConverter.ToSingle(resp, 0);
+            logger.info("TCP spec excitation {0:f4}", excitation);
+            return excitation;
+        }
+
         public override bool highGainModeEnabled
         {
             get { return false; }
@@ -331,20 +402,30 @@ namespace WasatchNET
         {
             get
             {
-                return (uint)integrationTimeMS_;
+                const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
+                if (haveCache(op))
+                    return integrationTimeMS_;
+
+                byte[] buf = getCommand(0xbf, 3);
+                if (buf is null)
+                    return 0;
+                readOnce.Add(op);
+                return integrationTimeMS_ = Unpack.toUint(buf);
             }
             set
             {
-                lock (acquisitionLock)
-                {
-                    uint integTimeMS = (uint)value;
-                    UInt16 lsw = (ushort)(value & 0xffff);
-                    byte msb = (byte)((value >> 16) & 0xff);
+                const Opcodes op = Opcodes.GET_INTEGRATION_TIME;
+                if (haveCache(op) && value == integrationTimeMS_)
+                    return;
 
-                    sendCommand(0xb2, lsw, msb);
+                uint integTimeMS = (uint)value;
+                UInt16 lsw = (ushort)(value & 0xffff);
+                byte msb = (byte)((value >> 16) & 0xff);
 
-                    integrationTimeMS_ = integTimeMS;
-                }
+                sendCommand(0xb2, lsw, msb);
+                readOnce.Add(op);
+
+                integrationTimeMS_ = integTimeMS;
             }
         }
 
@@ -373,13 +454,27 @@ namespace WasatchNET
 
         public override float detectorGain
         {
-            get // TS - this should probably be cached
+            get 
             {
-                return 0;
+                const Opcodes op = Opcodes.GET_DETECTOR_GAIN;
+                if (haveCache(op))
+                    return detectorGain_;
+
+                byte[] buf = getCommand(0xc5, 2);
+                if (buf is null)
+                    return 0;
+                readOnce.Add(op);
+                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(buf));
             }
             set
             {
+                const Opcodes op = Opcodes.GET_DETECTOR_GAIN;
+                if (haveCache(op) && value == detectorGain_)
+                    return;
 
+                ushort word = FunkyFloat.fromFloat(detectorGain_ = value);
+                sendCommand(0xb7, word);
+                readOnce.Add(op);
             }
         }
 
@@ -399,6 +494,57 @@ namespace WasatchNET
         }
 
         public override short detectorOffsetOdd { get => 0; set { } }
+
+        public override UInt16 detectorStartLine
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_START_LINE;
+                if (haveCache(op))
+                    return detectorStartLine_;
+
+                byte[] buf = getCommand(0xff, 2, 0x22);
+                detectorStartLine_ = Unpack.toUshort(buf);
+
+                readOnce.Add(op);
+                return detectorStartLine_;
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_START_LINE;
+                if (haveCache(op) && value == detectorStartLine_)
+                    return;
+
+                sendCommand(0xff, 0x21, detectorStartLine_ = value);
+                readOnce.Add(op);
+            }
+
+        }
+
+        public override UInt16 detectorStopLine
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_STOP_LINE;
+                if (haveCache(op))
+                    return detectorStopLine_;
+
+                byte[] buf = getCommand(0xff, 2, 0x24);
+                detectorStopLine_ = Unpack.toUshort(buf);
+
+                readOnce.Add(op);
+                return detectorStopLine_;
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_DETECTOR_STOP_LINE;
+                if (haveCache(op) && value == detectorStopLine_)
+                    return;
+
+                sendCommand(0xff, 0x23, detectorStopLine_ = value);
+                readOnce.Add(op);
+            }
+        }
 
         public override bool isARM => false;
         public override bool isInGaAs => eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase);
@@ -512,7 +658,31 @@ namespace WasatchNET
             get => 0;
         }
 
-        public override string firmwareRevision => "";
+        public override string firmwareRevision
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_FIRMWARE_REVISION;
+                if (haveCache(op))
+                    return firmwareRevision_;
+
+                List<string> sb = new List<string>();
+                byte[] resp = getCommand(0xff, 16, 0xaa09);
+
+                foreach (byte b in resp)
+                {
+                    if (b == 0)
+                        break;
+                    else
+                    {
+                        sb.Add(((char)b).ToString());
+                    }
+                }
+
+                readOnce.Add(op);
+                return firmwareRevision_ = String.Join(".", sb.ToArray());
+            }
+        }
 
         public override string fpgaRevision
         {

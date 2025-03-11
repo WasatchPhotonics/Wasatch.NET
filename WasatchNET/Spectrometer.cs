@@ -542,8 +542,8 @@ namespace WasatchNET
         // property caching 
         ////////////////////////////////////////////////////////////////////////
 
-        private HashSet<Opcodes> readOnce = new HashSet<Opcodes>();
-        private HashSet<Opcodes> noCache = new HashSet<Opcodes>();
+        protected HashSet<Opcodes> readOnce = new HashSet<Opcodes>();
+        protected HashSet<Opcodes> noCache = new HashSet<Opcodes>();
 
         public void useCache(Opcodes op) { noCache.Remove(op); }
         public void dontCache(Opcodes op) { noCache.Add(op); }
@@ -752,7 +752,7 @@ namespace WasatchNET
                 readOnce.Add(op);
             }
         }
-        float detectorGain_;
+        protected float detectorGain_;
 
         public virtual float detectorGainOdd
         {
@@ -904,7 +904,7 @@ namespace WasatchNET
             }
 
         }
-        ushort detectorStartLine_ = 0;
+        protected ushort detectorStartLine_ = 0;
 
         public virtual UInt16 detectorStopLine
         {
@@ -926,7 +926,7 @@ namespace WasatchNET
             }
 
         }
-        ushort detectorStopLine_ = 0;
+        protected ushort detectorStopLine_ = 0;
 
         public virtual bool detectorTECEnabled
         {
@@ -1093,7 +1093,7 @@ namespace WasatchNET
                 return firmwareRevision_ = s;
             }
         }
-        string firmwareRevision_;
+        protected string firmwareRevision_;
 
         public virtual string fpgaRevision
         {

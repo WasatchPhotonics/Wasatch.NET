@@ -49,7 +49,8 @@ namespace WasatchNET
         {
             TCPSpectrometer a = spectrometer as TCPSpectrometer;
             setDefault(spectrometer);
-            serialNumber = "";
+            serialNumber = a.getSerialNumber();
+            model = a.getModelName();
             hasCooling = true;
             startupIntegrationTimeMS = 8;
             //double temp = a.detectorTemperatureDegC;
@@ -62,11 +63,13 @@ namespace WasatchNET
 
             detectorName = "";
             activePixelsHoriz = (ushort)a.pixels;
-            activePixelsVert = 0;
+            activePixelsVert = (ushort)a.getHeight();
             minIntegrationTimeMS = 8;
             maxIntegrationTimeMS = 1000000;
             actualPixelsHoriz = (ushort)a.pixels;
-            laserExcitationWavelengthNMFloat = 830.0f;
+            laserExcitationWavelengthNMFloat = a.getExcitation();
+            for (int i = 0; i < 5; i++)
+                wavecalCoeffs[i] = a.getWavecalCoeff(i);
 
             featureMask.gen15 = false;
             format = FORMAT;
