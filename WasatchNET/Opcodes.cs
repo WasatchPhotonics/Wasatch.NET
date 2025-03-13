@@ -60,6 +60,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_FIRMWARE_REVISION                  ] = 0xc0;
             cmd[Opcodes.GET_FPGA_REVISION                      ] = 0xb4;
             cmd[Opcodes.GET_HORIZONTAL_BINNING                 ] = 0xbc;
+            cmd[Opcodes.GET_IMAGE_SENSOR_STATE                 ] = 0x97;
             cmd[Opcodes.GET_INTEGRATION_TIME                   ] = 0xbf;
             cmd[Opcodes.GET_LAMP_ENABLE                        ] = 0x33;
             cmd[Opcodes.GET_LASER_ENABLE                       ] = 0xe2;

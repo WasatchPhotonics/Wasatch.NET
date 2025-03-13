@@ -67,6 +67,18 @@ namespace WasatchNET
 
         public enum UntetheredCaptureStatus {  IDLE = 0, DARK = 1, WARMUP = 2, SAMPLE = 3, PROCESSING = 4, ERROR = 5 }
 
+        public enum IMAGE_SENSOR_STATUS
+        {
+            IMG_SNSR_STATE_UNKNOWN = 0,
+            IMG_SNSR_STATE_NA = IMG_SNSR_STATE_UNKNOWN,
+            IMG_SNSR_STATE_STANDBY = 1,
+            IMG_SNSR_STATE_TRANS_IN_OUT_STANDBY = 2,
+            IMG_SNSR_STATE_REG_HOLD = 3,
+            IMG_SNSR_STATE_ACTIVE = 4,
+            IMG_SNSR_STATE_ERROR = 5,
+            IMG_SNSR_STATE_READ_FAIL = 6
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
@@ -1706,6 +1718,21 @@ namespace WasatchNET
             }
         }
         protected ushort laserTECMode_ = 0;
+
+        public virtual IMAGE_SENSOR_STATUS imageSensorStatus
+        {
+            //we do NOT want to cache this one
+            get
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE;
+                byte[] pack = getCmd(op, 1);
+
+                if (pack != null && pack.Length > 0)
+                    return (IMAGE_SENSOR_STATUS)pack[0];
+
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_READ_FAIL;
+            }
+        }
 
         public uint lineLength
         {

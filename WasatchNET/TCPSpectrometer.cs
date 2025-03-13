@@ -28,6 +28,7 @@ namespace WasatchNET
             this.ip = address;
             this.port = port;
             ep = new IPEndPoint(this.address, port);
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         override internal bool open()
@@ -65,6 +66,7 @@ namespace WasatchNET
             if (!checkSocket())
                 return false;
 
+            setBinaryMode();
 
             eeprom = new TCPEEPROM(this);
             if (!eeprom.read())
@@ -74,7 +76,6 @@ namespace WasatchNET
                 return false;
             }
 
-            setBinaryMode();
             //rawWriteSeq();
             //rawWriteRan();
 
@@ -337,7 +338,7 @@ namespace WasatchNET
                 if (b == 0)
                     break;
                 else 
-                    sb.Append(b);
+                    sb.Append((char)b);
             }
 
             logger.info("TCP spec S/N: {0}", sb.ToString());
@@ -353,7 +354,7 @@ namespace WasatchNET
                 if (b == 0)
                     break;
                 else 
-                    sb.Append(b);
+                    sb.Append((char)b);
             }
 
             logger.info("TCP spec model: {0}", sb.ToString());
@@ -667,7 +668,7 @@ namespace WasatchNET
                     return firmwareRevision_;
 
                 List<string> sb = new List<string>();
-                byte[] resp = getCommand(0xff, 16, 0xaa09);
+                byte[] resp = getCommand(0xc0, 4);
 
                 foreach (byte b in resp)
                 {
