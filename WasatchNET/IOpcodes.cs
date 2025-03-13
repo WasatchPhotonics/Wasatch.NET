@@ -43,6 +43,7 @@ namespace WasatchNET
         GET_FPGA_REVISION,
         GET_STORAGE,
         GET_HORIZONTAL_BINNING,
+        GET_IMAGE_SENSOR_STATE,
         GET_INTEGRATION_TIME,
         GET_INVERT_X_AXIS,
         GET_LAMP_ENABLE,
