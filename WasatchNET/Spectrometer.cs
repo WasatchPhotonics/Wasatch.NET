@@ -3135,10 +3135,10 @@ namespace WasatchNET
             while (i < eeprom.badPixelList.Count)
             {
                 short badPix = eeprom.badPixelList[i];
-
                 if (badPix == 0)
                 {
                     // handle the left edge
+                    i++;
                     short nextGood = (short)(badPix + 1);
                     while (eeprom.badPixelSet.Contains(nextGood) && nextGood < spectrum.Length)
                     {
