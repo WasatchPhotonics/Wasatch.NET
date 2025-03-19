@@ -874,8 +874,8 @@ namespace WasatchNET
 
         public override bool laserInterlockEnabled { get => false; }
 
-        public override UInt64 laserModulationPeriod { get => 0; }
-        public override UInt64 laserModulationPulseWidth { get => 100; }
+        public override UInt64 laserModulationPeriod { get => 100; }
+        public override UInt64 laserModulationPulseWidth { get => 0; }
 
         public override float detectorGain 
         {

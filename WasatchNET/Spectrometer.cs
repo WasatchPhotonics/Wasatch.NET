@@ -1734,6 +1734,27 @@ namespace WasatchNET
             }
         }
 
+        public virtual ushort imageSensorTimeout
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT;
+                if (haveCache(op))
+                    return imageSensorTimeout_;
+                readOnce.Add(op);
+                return imageSensorTimeout_ = Unpack.toUshort(getCmd2(op, 2));
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT;
+                if (haveCache(op) && value == detectorStartLine_)
+                    return;
+                sendCmd2(Opcodes.SET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT, (ushort)(imageSensorTimeout_ = value));
+                readOnce.Add(op);
+            }
+        }
+        ushort imageSensorTimeout_ = 10000;
+
         public uint lineLength
         {
             get
@@ -2226,6 +2247,8 @@ namespace WasatchNET
                     detectorStartLine = start;
                     detectorStopLine = end;
                 }
+
+                imageSensorTimeout = 30000;
             }
 
 
