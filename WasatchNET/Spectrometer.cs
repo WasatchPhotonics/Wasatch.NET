@@ -1143,7 +1143,8 @@ namespace WasatchNET
                         break;
                     s += (char)buf[i];
                 }
-                readOnce.Add(op);
+                if (s.Length > 0)
+                    readOnce.Add(op);
                 return bleRevision_ = s.TrimEnd();
             }
         }
