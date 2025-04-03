@@ -934,6 +934,7 @@ namespace WinFormDemo
             double[] raw = await state.spectrometer.getSpectrumAsync();
             if (raw is null)
             {
+                logger.debug("doAcquireIteration: got nada");
                 if (useTasks)
                     await Task.Delay(minTaskDelayMS);
                 else

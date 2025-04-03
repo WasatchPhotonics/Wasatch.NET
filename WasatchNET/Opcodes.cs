@@ -61,6 +61,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_FPGA_REVISION                      ] = 0xb4;
             cmd[Opcodes.GET_HORIZONTAL_BINNING                 ] = 0xbc;
             cmd[Opcodes.GET_IMAGE_SENSOR_STATE                 ] = 0x97;
+            cmd[Opcodes.GET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT] = 0x72;
             cmd[Opcodes.GET_INTEGRATION_TIME                   ] = 0xbf;
             cmd[Opcodes.GET_LAMP_ENABLE                        ] = 0x33;
             cmd[Opcodes.GET_LASER_ENABLE                       ] = 0xe2;
@@ -96,6 +97,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_DFU_MODE                           ] = 0xfe;
             cmd[Opcodes.SET_HORIZONTAL_BINNING                 ] = 0xb8;
             cmd[Opcodes.SET_INTEGRATION_TIME                   ] = 0xb2;
+            cmd[Opcodes.SET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT ] = 0x71;
             cmd[Opcodes.SET_LAMP_ENABLE                        ] = 0x32;
             cmd[Opcodes.SET_LASER_ENABLE                       ] = 0xbe;
             cmd[Opcodes.SET_LASER_MOD_DURATION                 ] = 0xb9;

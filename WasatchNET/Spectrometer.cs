@@ -1143,7 +1143,8 @@ namespace WasatchNET
                         break;
                     s += (char)buf[i];
                 }
-                readOnce.Add(op);
+                if (s.Length > 0)
+                    readOnce.Add(op);
                 return bleRevision_ = s.TrimEnd();
             }
         }
@@ -1734,6 +1735,27 @@ namespace WasatchNET
             }
         }
 
+        public virtual ushort imageSensorTimeout
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT;
+                if (haveCache(op))
+                    return imageSensorTimeout_;
+                readOnce.Add(op);
+                return imageSensorTimeout_ = Unpack.toUshort(getCmd2(op, 2));
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT;
+                if (haveCache(op) && value == detectorStartLine_)
+                    return;
+                sendCmd2(Opcodes.SET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT, (ushort)(imageSensorTimeout_ = value));
+                readOnce.Add(op);
+            }
+        }
+        ushort imageSensorTimeout_ = 10000;
+
         public uint lineLength
         {
             get
@@ -2226,6 +2248,8 @@ namespace WasatchNET
                     detectorStartLine = start;
                     detectorStopLine = end;
                 }
+
+                imageSensorTimeout = 30000;
             }
 
 
@@ -3135,10 +3159,10 @@ namespace WasatchNET
             while (i < eeprom.badPixelList.Count)
             {
                 short badPix = eeprom.badPixelList[i];
-
                 if (badPix == 0)
                 {
                     // handle the left edge
+                    i++;
                     short nextGood = (short)(badPix + 1);
                     while (eeprom.badPixelSet.Contains(nextGood) && nextGood < spectrum.Length)
                     {
