@@ -2249,7 +2249,7 @@ namespace WasatchNET
                     detectorStopLine = end;
                 }
 
-                imageSensorTimeout = 30000;
+                imageSensorTimeout = 60000;
             }
 
 

@@ -45,6 +45,8 @@ namespace WasatchNET
         bool opened = false;
         bool suppressErrors = false;
         int resetCount = 0;
+        string ipAddr = "127.0.0.1";
+        int port = 9999;
 
         public Logger logger { get; } = Logger.getInstance();
         public string version { get; }
@@ -396,7 +398,7 @@ namespace WasatchNET
             {
                 try
                 {
-                    TCPSpectrometer spectrometer = new TCPSpectrometer(null, "127.0.0.1", 9999);
+                    TCPSpectrometer spectrometer = new TCPSpectrometer(null, ipAddr, port);
                     bool ok = await spectrometer.openAsync();
                     if (ok)
                     {
@@ -502,6 +504,16 @@ namespace WasatchNET
 
             opened = false;
             logger.debug("closeAllSpectrometers: done");
+        }
+
+        public void setTCPParams(string ip, int port)
+        {
+            System.Net.IPAddress ipAddress;
+            if (System.Net.IPAddress.TryParse(ip, out ipAddress))
+            {
+                ipAddr = ip;
+                this.port = port;
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////
