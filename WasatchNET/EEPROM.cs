@@ -936,7 +936,7 @@ namespace WasatchNET
             set
             {
                 EventHandler handler = EEPROMChanged;
-                if (_intensityCorrectionOrder != value)
+                if (_intensityCorrectionCoeffs != null && _intensityCorrectionOrder != value && _intensityCorrectionOrder == _intensityCorrectionCoeffs.Length)
                 {
                     float[] temp = new float[_intensityCorrectionCoeffs.Length];
                     _intensityCorrectionCoeffs.CopyTo(temp, 0);
