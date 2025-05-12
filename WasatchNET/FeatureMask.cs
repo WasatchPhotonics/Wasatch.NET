@@ -24,6 +24,7 @@ namespace WasatchNET
             HAS_SHUTTER                  = 0x0080, // 2^7
             DISABLE_BLE_POWER            = 0x0100, // 2^8
             DISABLE_LASER_ARMED_INDIC    = 0x0200, // 2^9
+            INTERLOCK_EXCLUDED           = 0x0400, // 2^10
         }
 
         public FeatureMask(ushort value = 0)
@@ -38,6 +39,7 @@ namespace WasatchNET
             hasShutter                   = 0 != (value & (ushort)Flags.HAS_SHUTTER);
             disableBLEPower              = 0 != (value & (ushort)Flags.DISABLE_BLE_POWER);
             disableLaserArmedIndication  = 0 != (value & (ushort)Flags.DISABLE_LASER_ARMED_INDIC);
+            interlockExcluded            = 0 != (value & (ushort)Flags.INTERLOCK_EXCLUDED);
         }
 
         public override string ToString()
@@ -58,6 +60,7 @@ namespace WasatchNET
             if (hasShutter)                  value |= (ushort)Flags.HAS_SHUTTER;
             if (disableBLEPower)             value |= (ushort)Flags.DISABLE_BLE_POWER;
             if (disableLaserArmedIndication) value |= (ushort)Flags.DISABLE_LASER_ARMED_INDIC;
+            if (interlockExcluded)           value |= (ushort)Flags.INTERLOCK_EXCLUDED;
 
             return value;
         }
@@ -156,6 +159,6 @@ namespace WasatchNET
         public bool hasShutter { get; set; }
         public bool disableBLEPower {  get; set; }
         public bool disableLaserArmedIndication { get; set; }
-
+        public bool interlockExcluded { get; set; }
     }
 }

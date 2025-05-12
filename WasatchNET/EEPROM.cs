@@ -54,7 +54,7 @@ namespace WasatchNET
         /// - rev 14
         ///     - adds SiG laser TEC and Has interlock feedback to feature mask
         /// </remarks>
-        protected const byte FORMAT = 16;
+        protected const byte FORMAT = 17;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
@@ -1756,6 +1756,10 @@ namespace WasatchNET
                     featureMask.disableBLEPower = false;
                     featureMask.disableLaserArmedIndication = false;
                 }
+                if (format < 17)
+                {
+                    featureMask.interlockExcluded = false;
+                }
 
 
                 if (format >= 11)
@@ -1978,6 +1982,7 @@ namespace WasatchNET
             featureMask.hasShutter = json.HasShutter;
             featureMask.disableBLEPower = json.DisableBLEPower;
             featureMask.disableLaserArmedIndication = json.DisableLaserArmedIndication;
+            featureMask.interlockExcluded = json.InterlockExcluded;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -2265,6 +2270,7 @@ namespace WasatchNET
                 json.HasInterlockFeedback = featureMask.hasShutter;
                 json.DisableBLEPower = featureMask.disableBLEPower;
                 json.DisableLaserArmedIndication = featureMask.disableLaserArmedIndication;
+                json.InterlockExcluded = featureMask.interlockExcluded;
             }
 
             json.LaserWarmupS = laserWarmupSec;
