@@ -22,6 +22,7 @@ namespace WasatchNET
         public double DetectorGainOdd;
         public int DetectorOffset;
         public int DetectorOffsetOdd;
+        public int LaserTECSetpoint;
         public double[] WavecalCoeffs;
         public double[] TempToDACCoeffs;
         public double[] ADCToTempCoeffs;
@@ -38,6 +39,11 @@ namespace WasatchNET
         public int ActivePixelsVert;
         public int MinIntegrationTimeMS;
         public int MaxIntegrationTimeMS;
+        public int LaserWatchdogTimer;
+        public int PowerWatchdogTimer;
+        public int DetectorTimeout;
+        public byte LightSourceType;
+        public byte HorizontalBinningMethod;
         public int ROIHorizStart;
         public int ROIHorizEnd;
         public int[] ROIVertRegionStarts;
@@ -74,6 +80,9 @@ namespace WasatchNET
         public byte RegionCount;
         public bool SigLaserTEC;
         public bool HasInterlockFeedback;
+        public bool HasShutter;
+        public bool DisableBLEPower;
+        public bool DisableLaserArmedIndication;
         public string FeatureMask;
 
         public override bool Equals(object obj)
@@ -111,6 +120,8 @@ namespace WasatchNET
                 return false;
             if (item.DetectorOffsetOdd != this.DetectorOffsetOdd)
                 return false;
+            if (item.LaserTECSetpoint != this.LaserTECSetpoint)
+                return false;
             if (!floatEq(item.WavecalCoeffs, this.WavecalCoeffs))
                 return false;
             if (!floatEq(item.TempToDACCoeffs, this.TempToDACCoeffs))
@@ -142,6 +153,16 @@ namespace WasatchNET
             if (item.MinIntegrationTimeMS != this.MinIntegrationTimeMS)
                 return false;
             if (item.MaxIntegrationTimeMS != this.MaxIntegrationTimeMS)
+                return false;
+            if (item.LaserWatchdogTimer != this.LaserWatchdogTimer)
+                return false;
+            if (item.PowerWatchdogTimer != this.PowerWatchdogTimer)
+                return false;
+            if (item.DetectorTimeout != this.DetectorTimeout)
+                return false;
+            if (item.LightSourceType != this.LightSourceType) 
+                return false;
+            if (item.HorizontalBinningMethod != this.HorizontalBinningMethod) 
                 return false;
             if (item.ROIHorizStart != this.ROIHorizStart)
                 return false;
@@ -190,6 +211,12 @@ namespace WasatchNET
             if (item.SigLaserTEC != this.SigLaserTEC)
                 return false;
             if (item.HasInterlockFeedback != this.HasInterlockFeedback)
+                return false;
+            if (item.HasShutter != this.HasShutter) 
+                return false;
+            if (item.DisableBLEPower != this.DisableBLEPower)
+                return false;
+            if (item.DisableLaserArmedIndication != this.DisableLaserArmedIndication)
                 return false;
             if (item.Subformat != this.Subformat)
                 return false;
@@ -284,6 +311,7 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + DetectorGainOdd.GetHashCode();
             hashCode = hashCode * -1521134295 + DetectorOffset.GetHashCode();
             hashCode = hashCode * -1521134295 + DetectorOffsetOdd.GetHashCode();
+            hashCode = hashCode * -1521134295 + LaserTECSetpoint.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<double[]>.Default.GetHashCode(WavecalCoeffs);
             hashCode = hashCode * -1521134295 + EqualityComparer<double[]>.Default.GetHashCode(TempToDACCoeffs);
             hashCode = hashCode * -1521134295 + EqualityComparer<double[]>.Default.GetHashCode(ADCToTempCoeffs);
@@ -300,6 +328,11 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + ActivePixelsVert.GetHashCode();
             hashCode = hashCode * -1521134295 + MinIntegrationTimeMS.GetHashCode();
             hashCode = hashCode * -1521134295 + MaxIntegrationTimeMS.GetHashCode();
+            hashCode = hashCode * -1521134295 + LaserWatchdogTimer.GetHashCode();
+            hashCode = hashCode * -1521134295 + PowerWatchdogTimer.GetHashCode();
+            hashCode = hashCode * -1521134295 + DetectorTimeout.GetHashCode();
+            hashCode = hashCode * -1521134295 + LightSourceType.GetHashCode();
+            hashCode = hashCode * -1521134295 + HorizontalBinningMethod.GetHashCode();
             hashCode = hashCode * -1521134295 + ROIHorizStart.GetHashCode();
             hashCode = hashCode * -1521134295 + ROIHorizEnd.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<int[]>.Default.GetHashCode(ROIVertRegionStarts);
@@ -323,6 +356,9 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + Subformat.GetHashCode();
             hashCode = hashCode * -1521134295 + SigLaserTEC.GetHashCode();
             hashCode = hashCode * -1521134295 + HasInterlockFeedback.GetHashCode();
+            hashCode = hashCode * -1521134295 + HasShutter.GetHashCode();
+            hashCode = hashCode * -1521134295 + DisableBLEPower.GetHashCode();
+            hashCode = hashCode * -1521134295 + DisableLaserArmedIndication.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMask.GetHashCode();
 
             return hashCode;
@@ -366,6 +402,7 @@ namespace WasatchNET
             addField(sb, indent, "DetectorOffset", DetectorOffset);
 
             addField(sb, indent, "DetectorOffsetOdd", DetectorOffsetOdd);
+            addField(sb, indent, "LaserTECSetpoint", LaserTECSetpoint);
 
             addField(sb, indent, "WavecalCoeffs", WavecalCoeffs);
 
@@ -386,6 +423,11 @@ namespace WasatchNET
             addField(sb, indent, "ActivePixelsVert", ActivePixelsVert);
             addField(sb, indent, "MinIntegrationTimeMS", MinIntegrationTimeMS);
             addField(sb, indent, "MaxIntegrationTimeMS", MaxIntegrationTimeMS);
+            addField(sb, indent, "LaserWatchdogTimer", LaserWatchdogTimer);
+            addField(sb, indent, "PowerWatchdogTimer", PowerWatchdogTimer);
+            addField(sb, indent, "DetectorTimeout", DetectorTimeout);
+            addField(sb, indent, "LightSourceType", LightSourceType);
+            addField(sb, indent, "HorizontalBinningMethod", HorizontalBinningMethod);
             addField(sb, indent, "ROIHorizStart", ROIHorizStart);
             addField(sb, indent, "ROIHorizEnd", ROIHorizEnd);
 
@@ -417,6 +459,9 @@ namespace WasatchNET
             addField(sb, indent, "EvenOddHardwareCorrected", EvenOddHardwareCorrected);
             addField(sb, indent, "SigLaserTEC", SigLaserTEC);
             addField(sb, indent, "HasInterlockFeedback", HasInterlockFeedback);
+            addField(sb, indent, "HasShutter", HasShutter);
+            addField(sb, indent, "DisableBLEPower", DisableBLEPower);
+            addField(sb, indent, "DisableLaserArmedIndication", DisableLaserArmedIndication);
             addField(sb, indent, "FeatureMask", FeatureMask);
             sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
 

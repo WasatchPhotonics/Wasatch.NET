@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -251,8 +251,12 @@ namespace WasatchNET
         /// Non-ROI pixels are not corrected. 
         /// </summary>
         ///
+        /// <remarks>
+        /// This is kind of ridiculously inefficient...we should generate and 
+        /// cache the scaling factors when we first load the EEPROM.
+        /// </remarks>
+        ///
         /// <returns>The given spectrum, with ROI srm-corrected, as an array of doubles</returns>
-        /// 
         public static double[] applyRamanCorrection(double[] spectrum, float[] correctionCoeffs, int roiStart, int roiEnd)
         {
             if (roiStart >= roiEnd)
@@ -278,5 +282,30 @@ namespace WasatchNET
             return temp;
         }
 
+        // copy-pasted directly from WPSC for consistency
+        public static bool validTECCal(Spectrometer spec)
+        {
+            if (!spec.eeprom.hasCooling)
+                return true;
+
+            if (spec is HOCTSpectrometer || spec is BoulderSpectrometer || spec is SPISpectrometer)
+                return true;
+
+#if WIN32 || x64
+            if (spec is AndorSpectrometer)
+                return true;
+#endif
+
+            if (spec.eeprom.degCToDACCoeffs.Length != 3)
+                return false;
+            if (spec.eeprom.degCToDACCoeffs[0] == 2700)
+                return false;
+            if (spec.eeprom.degCToDACCoeffs[1] == 0)
+                return false;
+            if (spec.eeprom.degCToDACCoeffs[2] == 0)
+                return false;
+
+            return true;
+        }
     }
 }

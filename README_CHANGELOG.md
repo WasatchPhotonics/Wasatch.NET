@@ -3,11 +3,30 @@
 - 2022-03-03 2.5.2
 	- beta
 	- some additions to EEPROM/JSON formatting
+- 2025-??-?? 2.4.17
+    - fixed bad pixel correction (left-edge corner case)
+- 2024-03-19 2.4.16
+	- fixed issue with multi channel wrapper demo program
+- 2024-03-05 2.4.15
+    - added Spectrometer.isAndor
+	- fixes to multi channel wrapper timing
+	- attempted changes for hardware triggering
+- 2023-09-26 2.4.14
+    - updates for 1064XL
+    - don't enable detector TEC unless degCToDACCoeffs has a non-default calibration
+    - added Spectrometer.loadFromJSON for XL
+    - fixed AnyCPU build
+- 2023-04-20 2.4.13
+    - add warning when encountering unsupported / higher EEPROM format
+- 2022-12-19 2.4.12
+    - explicitly default High-Gain Mode true for Hamamatsu InGaAs detectors
 - 2022-11-03 2.5.1
 	- beta
 	- some Anbdor noodling
 	- made sync wrappers a little safer
 	- moved standard spec properties back to sync for now (async set caused a huge out of order bug, see README)
+- 2022-09-20 2.4.11
+    - added checkBoxLaserPowerInMW to WinFormDemo
 - 2022-09-XX 2.5.0
 	- beta
 	- added async versions of a number of key functions

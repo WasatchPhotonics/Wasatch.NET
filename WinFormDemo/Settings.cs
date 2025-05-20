@@ -201,18 +201,24 @@ namespace WinFormDemo
             update("detectorTempMax",               spec.eeprom.detectorTempMax);
             update("detectorTempMin",               spec.eeprom.detectorTempMin);
             update("excitationNM",                  spec.excitationWavelengthNM);
-            update("featureBoardType",              spec.featureIdentification.boardType);
-            update("featureDesc",                   spec.featureIdentification.firmwareDesc);
-            update("VID",                           string.Format("0x{0:x4}", spec.featureIdentification.vid));
-            update("PID",                           string.Format("0x{0:x4}", spec.featureIdentification.pid));
-            update("fpgaDataHeader",                spec.fpgaOptions.dataHeader);
-            update("fpgaHasActualIntegTime",        spec.fpgaOptions.hasActualIntegTime);
-            update("fpgaHasAreaScan",               spec.fpgaOptions.hasAreaScan);
-            update("fpgaHasCFSelect",               spec.fpgaOptions.hasCFSelect);
-            update("fpgaHasHorizBinning",           spec.fpgaOptions.hasHorizBinning);
-            update("fpgaIntegrationTimeResolution", spec.fpgaOptions.integrationTimeResolution);
-            update("fpgaLaserControl",              spec.fpgaOptions.laserControl);
-            update("fpgaLaserType",                 spec.fpgaOptions.laserType);
+            if (spec.featureIdentification != null)
+            {
+                update("featureBoardType",          spec.featureIdentification.boardType);
+                update("featureDesc",               spec.featureIdentification.firmwareDesc);
+                update("VID", string.Format("0x{0:x4}", spec.featureIdentification.vid));
+                update("PID", string.Format("0x{0:x4}", spec.featureIdentification.pid));
+            }
+            if (spec.fpgaOptions != null)
+            {
+                update("fpgaDataHeader",            spec.fpgaOptions.dataHeader);
+                update("fpgaHasActualIntegTime",    spec.fpgaOptions.hasActualIntegTime);
+                update("fpgaHasAreaScan",           spec.fpgaOptions.hasAreaScan);
+                update("fpgaHasCFSelect",           spec.fpgaOptions.hasCFSelect);
+                update("fpgaHasHorizBinning",       spec.fpgaOptions.hasHorizBinning);
+                update("fpgaIntegrationTimeResolution", spec.fpgaOptions.integrationTimeResolution);
+                update("fpgaLaserControl",          spec.fpgaOptions.laserControl);
+                update("fpgaLaserType",             spec.fpgaOptions.laserType);
+            }
             update("hasBattery",                    spec.eeprom.hasBattery);
             update("hasCooling",                    spec.eeprom.hasCooling);
             update("hasLaser",                      spec.eeprom.hasLaser);
@@ -299,7 +305,7 @@ namespace WinFormDemo
             }
             logger.debug("updateAll: past hasCooling");
 
-            if (false)
+            if (false && spec.fpgaOptions != null)
             {
                 if (spec.fpgaOptions.hasActualIntegTime)
                     update("actualIntegrationTimeUS", spec.actualIntegrationTimeUS);
@@ -308,7 +314,7 @@ namespace WinFormDemo
                     update("horizBinning", spec.horizontalBinning);
             }
 
-            if (spec.fpgaOptions.hasAreaScan)
+            if (spec.fpgaOptions != null && spec.fpgaOptions.hasAreaScan)
                 update("areaScanEnabled", spec.areaScanEnabled);
 
             logger.debug("updateAll: starting laser");
