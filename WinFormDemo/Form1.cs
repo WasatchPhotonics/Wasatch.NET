@@ -124,21 +124,28 @@ namespace WinFormDemo
         void initializeSpectrometer(Spectrometer s)
         {
             SpectrometerState state = new SpectrometerState(s, opts);
+            logger.debug($"initializing spectrometer {s.eeprom.serialNumber}");
 
             // TODO: move into SpectrometerState ctor
             if (!useTasks)
             {
+                logger.debug("assigning background worker");
                 state.worker.DoWork += backgroundWorker_DoWork;
                 state.worker.RunWorkerCompleted += backgroundWorker_RunWorkerCompleted;
             }
 
+            logger.debug("adding to spectrometerStates and series");
             spectrometerStates.Add(s, state);
 
             chart1.Series.Add(state.series);
 
             if (!s.isARM)
+            {
+                logger.debug("not ARM, so disabling external trigger (in case it had been set)");
                 s.triggerSource = TRIGGER_SOURCE.INTERNAL;
+            }
 
+            logger.debug("applying integration time limits");
             numericUpDownIntegTimeMS.Minimum = s.eeprom.minIntegrationTimeMS;
             numericUpDownIntegTimeMS.Value = s.integrationTimeMS;
             // numericUpDownIntegTimeMS.Maximum = s.eeprom.maxIntegrationTimeMS; // disabled to allow long integration times
@@ -149,12 +156,15 @@ namespace WinFormDemo
             else
                 logger.error("Found [model: {0}] [serial: {1}] with {2} pixels", s.model, s.serialNumber, s.pixels);
 
-            // default to high-resolution laser power
+            logger.debug("defaulting to high-resolution laser power");
             s.laserPowerResolution = Spectrometer.LaserPowerResolution.LASER_POWER_RESOLUTION_1000;
+
+            logger.debug("done initializing spectrometer");
         }
 
         void updateCurrentSpectrometer()
         {
+            logger.debug("updateCurrentSpectrometer: start");
             if (currentSpectrometer is null)
             {
                 logger.debug("updateCurrentSpectrometer: null");
@@ -170,53 +180,73 @@ namespace WinFormDemo
             if (state is null)
                 return;
 
-            // update tree view
-            treeViewSettings_DoubleClick(null, null);
+            logger.debug("updating settings");
+            treeViewSettings_DoubleClick(null, null); 
 
-            // update start button
+            logger.debug("update start button");
             updateStartButton(state.running);
 
-            // update basic controls
+            logger.debug("update basic controls");
             DemoUtil.expandNUD(numericUpDownIntegTimeMS, (int)currentSpectrometer.integrationTimeMS);
             numericUpDownBoxcarHalfWidth.Value = currentSpectrometer.boxcarHalfWidth;
             numericUpDownScanAveraging.Value = currentSpectrometer.scanAveraging;
 
-            // update TEC controls
+            logger.debug("update high-gain mode");
+            if (currentSpectrometer.isInGaAs)
+            {
+                checkBoxHighGainMode.Enabled = true;
+                checkBoxHighGainMode.Checked = currentSpectrometer.highGainModeEnabled;
+            }
+            else
+            {
+                checkBoxHighGainMode.Enabled = false;
+            }
+
+            logger.debug("update TEC controls");
             numericUpDownDetectorSetpointDegC.Minimum = (int)currentSpectrometer.eeprom.detectorTempMin;
             numericUpDownDetectorSetpointDegC.Maximum = (int)currentSpectrometer.eeprom.detectorTempMax;
             numericUpDownDetectorSetpointDegC.Enabled = currentSpectrometer.eeprom.hasCooling;
 
-            // update laser controls
+            logger.debug("update laser controls");
             if (currentSpectrometer.hasLaser)
             {
-                numericUpDownLaserPowerPerc.Enabled =
+                logger.debug("has laser, so enabling controls");
                 checkBoxLaserEnable.Enabled = true;
                 checkBoxLaserEnable.Checked = currentSpectrometer.laserEnabled;
 
                 if (currentSpectrometer.eeprom.hasLaserPowerCalibration())
                 {
-                    numericUpDownLaserPowerMW.Enabled = true;
+                    logger.debug("configuring laser power limits");
+                    checkBoxLaserPowerInMW.Checked = true;
+                    checkBoxLaserPowerInMW.Enabled = true;
                     numericUpDownLaserPowerMW.Maximum = (decimal)currentSpectrometer.eeprom.maxLaserPowerMW;
                     numericUpDownLaserPowerMW.Minimum = (decimal)currentSpectrometer.eeprom.minLaserPowerMW;
+                    logger.debug("done configuring laser power limits");
                 }
                 else
                 {
-                    numericUpDownLaserPowerMW.Enabled = false;
+                    logger.debug("has no laser power calibration");
+                    checkBoxLaserPowerInMW.Checked = false;
+                    checkBoxLaserPowerInMW.Enabled = false;
                 }
             }
             else
             {
+                logger.debug("no laser, so disabling controls");
                 numericUpDownLaserPowerPerc.Enabled =
                 numericUpDownLaserPowerMW.Enabled =
                 checkBoxLaserEnable.Enabled =
+                checkBoxLaserPowerInMW.Enabled = 
                 checkBoxLaserEnable.Checked = false;
             }
 
             //checkBoxAccessoriesEnabled.Enabled = 
 
+            logger.debug("configuring dark/ref");
             checkBoxTakeDark.Enabled = buttonSave.Enabled = state.spectrum != null;
             checkBoxTakeReference.Enabled = state.spectrum != null && currentSpectrometer.dark != null;
 
+            logger.debug("configuring technique");
             if (state.processingMode == SpectrometerState.ProcessingModes.SCOPE)
                 radioButtonModeScope.Checked = true;
             else if (state.processingMode == SpectrometerState.ProcessingModes.TRANSMISSION)
@@ -224,10 +254,13 @@ namespace WinFormDemo
             else
                 radioButtonModeAbsorbance.Checked = true;
 
+            logger.debug("enabling options");
             groupBoxSettings.Enabled = 
             groupBoxControl.Enabled = 
             toolStripMenuItemTest.Enabled = 
             labelDetTempDegC.Visible = true;
+
+            logger.debug("done updating current spectrometer");
         }
 
         void updateStartButton(bool isRunning)
@@ -350,22 +383,29 @@ namespace WinFormDemo
 
             if (driver.openAllSpectrometers() > 0)
             {
+                logger.debug("successfully openedAllSpectrometers");
                 for (int i = 0; i < driver.getNumberOfSpectrometers(); i++)
                 {
+                    logger.debug($"preparing spectrometer {i}");
                     Spectrometer s = driver.getSpectrometer(i);
                     currentSpectrometer = s;
                     spectrometers.Add(s);
                     comboBoxSpectrometer.Items.Add(String.Format("{0} ({1})", s.model, s.serialNumber));
                     initializeSpectrometer(s);
+                    logger.debug("back from initializing spectrometer");
 
                     if (opts.integrationTimeMS > 0)
+                    {
+                        logger.debug("overriding integration time");
                         s.integrationTimeMS = opts.integrationTimeMS;
+                    }
 
+                    logger.debug("selecting spectrometer");
                     comboBoxSpectrometer.SelectedIndex = comboBoxSpectrometer.Items.Count - 1;
                     await Task.Delay(minThreadSleepMS);
 
-                    logger.debug($"clicking Start button for {s.serialNumber}");
-                    buttonStart_Click(null, null);
+                    // logger.debug($"clicking Start button for {s.serialNumber}");
+                    // buttonStart_Click(null, null);
                     await Task.Delay(minThreadSleepMS);
                 }
 
@@ -375,6 +415,7 @@ namespace WinFormDemo
 
                 groupBoxSpectrometers.Enabled = true;
 
+                logger.debug("selecting first spectrometer");
                 comboBoxSpectrometer.SelectedIndex = 0;
 
                 // AcceptButton = buttonStart;
@@ -422,11 +463,13 @@ namespace WinFormDemo
         private void comboBoxSpectrometer_SelectedIndexChanged(object sender, EventArgs e)
         {
             int index = comboBoxSpectrometer.SelectedIndex;
+            logger.debug($"selecting spectrometer {index}");
             if (index >= 0 && index < spectrometers.Count)
             { 
                 currentSpectrometer = spectrometers[index];
                 updateCurrentSpectrometer();
             }
+            logger.debug($"done selecting spectrometer {index}");
         }
 
         private void numericUpDownIntegTimeMS_ValueChanged(object sender, EventArgs e)
@@ -457,6 +500,13 @@ namespace WinFormDemo
             currentSpectrometer.ramanIntensityCorrectionEnabled = checkBoxRamanCorrection.Checked;
             checkBoxTakeDark.Enabled = !checkBoxRamanCorrection.Checked;
 
+        }
+
+        private void checkBoxHighGainMode_CheckedChanged(object sender, EventArgs e)
+        {
+            var cb = sender as CheckBox;
+            logger.debug($"changing currentSpectrometer {currentSpectrometer.serialNumber} High-Gain Mode to {cb.Checked}");
+            currentSpectrometer.highGainModeEnabled = cb.Checked;
         }
 
         private void checkBoxAccessoriesEnabled_CheckedChanged(object sender, EventArgs e)
@@ -649,6 +699,27 @@ namespace WinFormDemo
             logger.info("EEPROM as JSON: {0}", eepromJSON);
         }
 
+        private void toolStripMenuItemLoadFromJSON_Click(object sender, EventArgs e)
+        {
+            if (currentSpectrometer is null)
+                return;
+
+            openFileDialog1.DefaultExt = "json";
+            var result = openFileDialog1.ShowDialog();
+            if (result != DialogResult.OK)
+                return;
+
+            string pathname = openFileDialog1.FileName;
+            if (!currentSpectrometer.loadFromJSON(pathname))
+            {
+                logger.error($"Failed to load EEPROM from {pathname}");
+                return;
+            }
+
+            logger.info($"Successfully loaded EEPROM from {pathname}");
+            settings.update(currentSpectrometer);
+        }
+
         private void setDFUModeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (currentSpectrometer is null)
@@ -664,14 +735,20 @@ namespace WinFormDemo
 
         private void numericUpDownLaserPowerPerc_ValueChanged(object sender, EventArgs e)
         {
-            if (currentSpectrometer != null)
-                currentSpectrometer.setLaserPowerPercentage(((float)numericUpDownLaserPowerPerc.Value) / 100.0f);
+            if (currentSpectrometer == null)
+                return;
+            var perc = (float)(sender as NumericUpDown).Value / 100.0f;
+            logger.debug($"setting laser power to {perc}");
+            currentSpectrometer.setLaserPowerPercentage(perc);
         }
 
         private void numericUpDownLaserPowerMW_ValueChanged(object sender, EventArgs e)
         {
-            if (currentSpectrometer != null)
-                currentSpectrometer.laserPowerSetpointMW = (float)numericUpDownLaserPowerMW.Value;
+            if (currentSpectrometer == null)
+                return;
+            var mW = (float)(sender as NumericUpDown).Value;
+            logger.debug($"setting laser power to {mW}mW");
+            currentSpectrometer.laserPowerSetpointMW = mW;
         }
 
         private void numericUpDownDetectorSetpointDegC_ValueChanged(object sender, EventArgs e)
@@ -857,6 +934,7 @@ namespace WinFormDemo
             double[] raw = await state.spectrometer.getSpectrumAsync();
             if (raw is null)
             {
+                logger.debug("doAcquireIteration: got nada");
                 if (useTasks)
                     await Task.Delay(minTaskDelayMS);
                 else
@@ -945,6 +1023,13 @@ namespace WinFormDemo
                 else
                     logger.debug("shutdown still pending %s", string.Join(", ", waitList));
             }
+        }
+
+        private void checkBoxLaserPowerInMW_CheckedChanged(object sender, EventArgs e)
+        {
+            var cb = sender as CheckBox;
+            numericUpDownLaserPowerMW.Enabled = cb.Checked;
+            numericUpDownLaserPowerPerc.Enabled = !cb.Checked;
         }
     }
 }

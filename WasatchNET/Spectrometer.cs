@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
+using Newtonsoft.Json.Linq;
 
 namespace WasatchNET
 {
@@ -174,6 +175,12 @@ namespace WasatchNET
         /// spectrometers in several respects, such as producing both 2D and 3D imagery.
         /// </summary>
         public bool isOCT { get; protected set; } = false;
+
+        /// <summary>
+        /// XL-series spectrometers use an Andor camera requiring special drivers and
+        /// EEPROM handling.
+        /// </summary>
+        public bool isAndor { get; protected set; } = false;
 
         /// <summary>
         /// Some spectrometers send a start-of-frame marker in the first pixel of
@@ -670,7 +677,7 @@ namespace WasatchNET
             }
         }
 
-        public bool continuousAcquisitionEnable
+        public virtual bool continuousAcquisitionEnable
         {
             get
             {
@@ -693,7 +700,7 @@ namespace WasatchNET
         }
         bool continuousAcquisitionEnable_;
 
-        public byte continuousFrames
+        public virtual byte continuousFrames
         {
             get
             {
@@ -1020,7 +1027,7 @@ namespace WasatchNET
         /// <remarks>
         /// Caches results so it won't query the spectrometer faster than 1Hz
         /// </remarks>
-        public ushort detectorTemperatureRaw
+        public virtual ushort detectorTemperatureRaw
         {
             get
             {
@@ -1952,7 +1959,7 @@ namespace WasatchNET
             bool needsInitialization = uptime.needsInitialization(uniqueKey);
             uptime.setUnknown(uniqueKey);
             logger.debug($"needsInitialization = {needsInitialization}");
-
+            
             // clear cache
             readOnce.Clear();
 
@@ -2219,8 +2226,16 @@ namespace WasatchNET
                 logger.debug("setting TEC setpoint to {0} deg C", degC);
                 detectorTECSetpointDegC = degC;
 
-                logger.debug("enabling detector TEC");
-                detectorTECEnabled = true;
+                if (Util.validTECCal(this))
+                {
+                    logger.debug("enabling detector TEC");
+                    detectorTECEnabled = true;
+                }
+                else
+                {
+                    // user can manually enable it if they wish and feel this is a safe thing to do
+                    logger.info("declining to auto-enable detector TEC because no valid TEC calibration found");
+                }
             }
 
             // if this was intended to be a relatively lightweight "change as
@@ -2285,6 +2300,9 @@ namespace WasatchNET
                 detectorGainOdd = eeprom.detectorGainOdd;
                 detectorOffsetOdd = eeprom.detectorOffsetOdd;
             }
+
+            // default high for InGaAs (1064, NIR1, NIR2); note Andor logic is in AndorSpectrometer
+            highGainModeEnabled = isInGaAs;
 
             logger.debug("Spectrometer.open: complete (initialized)");
             return true;
@@ -2369,7 +2387,7 @@ namespace WasatchNET
 
         public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
         public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx");
-        public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase));
+        public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase)); 
 
         public virtual bool hasLaser
         {
@@ -2409,6 +2427,12 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
         // Utilities
         ////////////////////////////////////////////////////////////////////////
+
+        public virtual bool loadFromJSON(string pathname)
+        {
+            logger.error("only implemented for Andor/XL spectrometers");
+            return false;
+        }
 
         public virtual void regenerateWavelengths()
         {
@@ -3041,7 +3065,32 @@ namespace WasatchNET
         public bool resetFPGA()
         {
             logger.info("Resetting FPGA");
-            return sendCmd(Opcodes.FPGA_RESET);
+            bool good = sendCmd(Opcodes.FPGA_RESET);
+
+            bool cacheHighGain = highGainModeEnabled;
+            readOnce.Remove(Opcodes.GET_CF_SELECT);
+            highGainModeEnabled = cacheHighGain;
+
+            uint cacheIntTime = integrationTimeMS;
+            readOnce.Remove(Opcodes.GET_INTEGRATION_TIME);
+            integrationTimeMS = cacheIntTime;
+
+            float cacheGain = detectorGain;
+            readOnce.Remove(Opcodes.GET_DETECTOR_GAIN);
+            detectorGain = cacheGain;
+
+            short cacheOffset = detectorOffset;
+            readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET);
+            detectorOffset = cacheOffset;
+
+            float cacheGainOdd = detectorGainOdd;
+            readOnce.Remove(Opcodes.GET_DETECTOR_GAIN_ODD);
+            detectorGainOdd = cacheGainOdd;
+
+            short cacheOffsetOdd = detectorOffsetOdd;
+            readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET_ODD);
+            detectorOffsetOdd = cacheOffsetOdd;
+            return good;
         }
 
         // this is not a Property because it has no value and cannot be undone
@@ -3082,10 +3131,10 @@ namespace WasatchNET
             while (i < eeprom.badPixelList.Count)
             {
                 short badPix = eeprom.badPixelList[i];
-
                 if (badPix == 0)
                 {
                     // handle the left edge
+                    i++;
                     short nextGood = (short)(badPix + 1);
                     while (eeprom.badPixelSet.Contains(nextGood) && nextGood < spectrum.Length)
                     {
@@ -3538,7 +3587,7 @@ namespace WasatchNET
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
                 sendSWTrigger();
 
-            if ((!skipTrigger || isStroker) && !areaScanEnabled)
+            if ((isStroker) && !areaScanEnabled)
             {
                 var strokerDelayMS = integrationTimeMS_ + 5;
                 logger.debug($"getSpectrumRaw: extra Stroker delay {strokerDelayMS}ms");
@@ -3674,11 +3723,37 @@ namespace WasatchNET
 
             if (eeprom.featureMask.bin2x2 && !areaScanEnabled)
             {
-                var smoothed = new double[spec.Length];
-                for (int i = 0; i < spec.Length - 1; i++)
-                    smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
-                smoothed[spec.Length - 1] = spec[spec.Length - 1];
-                spec = smoothed;
+                if (eeprom.horizontalBinningMethod == EEPROM.HORIZONTAL_BINNING_METHOD.BIN_2X2)
+                {
+                    var smoothed = new double[spec.Length];
+                    for (int i = 0; i < spec.Length - 1; i++)
+                        smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
+                    smoothed[spec.Length - 1] = spec[spec.Length - 1];
+                    spec = smoothed;
+                }
+                else if (eeprom.horizontalBinningMethod == EEPROM.HORIZONTAL_BINNING_METHOD.BIN_4X2_AVG)
+                {
+                    var smoothed = new double[spec.Length];
+                    for (int i = 0; i < spec.Length - 1; i += 2)
+                    {
+                        smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
+                    }
+                    for (int i = 1; i < spec.Length - 1; i += 2)
+                    {
+                        if (i < spec.Length - 2)
+                        {
+                            smoothed[i] = (smoothed[i - 1] + smoothed[i + 1]) / 2.0;
+                        }
+                    }
+                    for (int i =  spec.Length - 3; i < spec.Length; ++i)
+                    {
+                        if (smoothed[i] == 0)
+                            smoothed[i] = spec[i];
+                    }
+
+                    smoothed[spec.Length - 1] = spec[spec.Length - 1];
+                    spec = smoothed;
+                }
             }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);

@@ -8,9 +8,13 @@ using LibUsbDotNet;
 using LibUsbDotNet.Info;
 using LibUsbDotNet.Main;
 #if WIN32
+#warning Building 32-bit Andor
 using ATMCD32CS;
 #elif x64
+#warning Building 64-bit Andor
 using ATMCD64CS;
+#else
+#warning Andor not supported
 #endif
 
 namespace WasatchNET

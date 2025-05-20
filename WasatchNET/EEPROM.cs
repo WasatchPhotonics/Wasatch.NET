@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -53,7 +54,7 @@ namespace WasatchNET
         /// - rev 14
         ///     - adds SiG laser TEC and Has interlock feedback to feature mask
         /// </remarks>
-        protected const byte FORMAT = 14;
+        protected const byte FORMAT = 16;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
@@ -61,6 +62,9 @@ namespace WasatchNET
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
         public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS };
+        public enum LIGHT_SOURCE_TYPE { UNDEFINED, THREE_B_SINGLE_MODE, THREE_B_MULTI_MODE, NONE = 254};
+        public enum HORIZONTAL_BINNING_METHOD { BIN_2X2, CORRECT_SSC, CORRECT_SSC_BIN2X2, BIN_4X2, BIN_4X2_INTERP, BIN_4X2_AVG };
+
         protected virtual void OnEEPROMChanged(EventArgs e)
         {
             EEPROMChanged?.Invoke(this, e);
@@ -299,6 +303,18 @@ namespace WasatchNET
         short _detectorOffsetOdd;
 
         public FeatureMask featureMask = new FeatureMask();
+
+        public UInt16 laserTECSetpoint
+        {
+            get { return _laserTECSetpoint; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _laserTECSetpoint = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _laserTECSetpoint;
 
         /////////////////////////////////////////////////////////////////////////       
         // Page 1
@@ -710,6 +726,67 @@ namespace WasatchNET
         }
 
         float _avgResolution;
+
+        public UInt16 laserWatchdogTimer
+        {
+            get { return _laserWatchdogTimer; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _laserWatchdogTimer = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _laserWatchdogTimer;
+
+        public LIGHT_SOURCE_TYPE lightSourceType
+        {
+            get { return _lightSourceType; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _lightSourceType = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        LIGHT_SOURCE_TYPE _lightSourceType;
+
+        public UInt16 powerWatchdogTimer
+        {
+            get { return _powerWatchdogTimer; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _powerWatchdogTimer = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _powerWatchdogTimer;
+        
+        public UInt16 detectorTimeout
+        {
+            get { return _detectorTimeout; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _detectorTimeout = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _detectorTimeout;
+
+        public HORIZONTAL_BINNING_METHOD horizontalBinningMethod
+        {
+            get { return _horizontalBinningMethod; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _horizontalBinningMethod = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        HORIZONTAL_BINNING_METHOD _horizontalBinningMethod = HORIZONTAL_BINNING_METHOD.BIN_2X2;
+
         /////////////////////////////////////////////////////////////////////////       
         // Page 4
         /////////////////////////////////////////////////////////////////////////       
@@ -1399,6 +1476,15 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////
 
             format = pages[0][63];
+
+            if (format > FORMAT)
+            {
+                // log but optimistically proceed
+                logger.error("WasatchNET {0} was built and tested against EEPROM formats {1} and below.",
+                    Assembly.GetExecutingAssembly().GetName().Version.ToString(), FORMAT);
+                logger.error("EEPROM format {0} may require a newer version of WasatchNET for proper operation.", format);
+            }
+
             if (format >= 8)
                 subformat = (PAGE_SUBFORMAT)ParseData.toUInt8(pages[5], 63);
             else if (format >= 6)
@@ -1443,6 +1529,10 @@ namespace WasatchNET
                 detectorOffset = ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
                 detectorGainOdd = ParseData.toFloat(pages[0], 54); // InGaAs-only
                 detectorOffsetOdd = ParseData.toInt16(pages[0], 58); // InGaAs-only
+                if (format >= 16)
+                    laserTECSetpoint = ParseData.toUInt16(pages[0], 60);
+                else
+                    laserTECSetpoint = 800;
 
                 wavecalCoeffs[0] = ParseData.toFloat(pages[1], 0);
                 wavecalCoeffs[1] = ParseData.toFloat(pages[1], 4);
@@ -1899,12 +1989,46 @@ namespace WasatchNET
 
                 if (format >= 9)
                     featureMask = new FeatureMask(ParseData.toUInt16(pages[0], 39));
+
+                if (format >= 15)
+                {
+                    laserWatchdogTimer = ParseData.toUInt16(pages[3], 52);
+                    lightSourceType = (LIGHT_SOURCE_TYPE)ParseData.toUInt8(pages[3], 54);
+                }
+                else
+                {
+                    laserWatchdogTimer = 0;
+                    lightSourceType = 0;
+                }
+                
+                if (format >= 16)
+                {
+                    powerWatchdogTimer = ParseData.toUInt16(pages[3], 55);
+                    detectorTimeout = ParseData.toUInt16(pages[3], 57);
+                    horizontalBinningMethod = (HORIZONTAL_BINNING_METHOD)ParseData.toUInt8(pages[3], 59);
+                }
+                else
+                {
+                    powerWatchdogTimer = 0;
+                    detectorTimeout = 0;
+                    horizontalBinningMethod = HORIZONTAL_BINNING_METHOD.BIN_2X2;
+                }
+
+
                 if (format < 12)
                     featureMask.evenOddHardwareCorrected = false;
                 if (format >= 10)
                     laserWarmupSec = pages[2][18];
                 else
                     laserWarmupSec = 20;
+                if (format < 15)
+                    featureMask.hasShutter = false;
+                if (format < 16)
+                {
+                    featureMask.disableBLEPower = false;
+                    featureMask.disableLaserArmedIndication = false;
+                }
+
 
                 if (format >= 11)
                 {
@@ -2093,6 +2217,7 @@ namespace WasatchNET
             detectorGainOdd = (float)json.DetectorGainOdd;
             detectorOffset = (Int16)json.DetectorOffset;
             detectorOffsetOdd = (Int16)json.DetectorOffsetOdd;
+            laserTECSetpoint = (ushort)json.LaserTECSetpoint;
 
             featureMask.bin2x2 = json.Bin2x2;
             featureMask.invertXAxis = json.FlipXAxis;
@@ -2101,6 +2226,9 @@ namespace WasatchNET
             featureMask.evenOddHardwareCorrected = json.EvenOddHardwareCorrected;
             featureMask.sigLaserTEC = json.SigLaserTEC;
             featureMask.hasInterlockFeedback = json.HasInterlockFeedback;
+            featureMask.hasShutter = json.HasShutter;
+            featureMask.disableBLEPower = json.DisableBLEPower;
+            featureMask.disableLaserArmedIndication = json.DisableLaserArmedIndication;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -2130,6 +2258,11 @@ namespace WasatchNET
             activePixelsVert = (UInt16)json.ActivePixelsVert;
             minIntegrationTimeMS = (UInt32)json.MinIntegrationTimeMS;
             maxIntegrationTimeMS = (UInt32)json.MaxIntegrationTimeMS;
+            laserWatchdogTimer = (ushort)json.LaserWatchdogTimer;
+            powerWatchdogTimer = (ushort)json.PowerWatchdogTimer;
+            detectorTimeout = (ushort)json.DetectorTimeout;
+            lightSourceType = (LIGHT_SOURCE_TYPE)json.LightSourceType; 
+            horizontalBinningMethod  = (HORIZONTAL_BINNING_METHOD)json.HorizontalBinningMethod;
             ROIHorizStart = (UInt16)json.ROIHorizStart;
             ROIHorizEnd = (UInt16)json.ROIHorizEnd;
             ROIVertRegionStart[0] = (UInt16)json.ROIVertRegionStarts[0];
@@ -2244,6 +2377,7 @@ namespace WasatchNET
             json.DetectorGainOdd = detectorGainOdd;
             json.DetectorOffset = detectorOffset;
             json.DetectorOffsetOdd = detectorOffsetOdd;
+            json.LaserTECSetpoint = laserTECSetpoint;
             json.WavecalCoeffs = new double[5];
             if (wavecalCoeffs != null)
             {
@@ -2288,6 +2422,11 @@ namespace WasatchNET
             json.ActivePixelsVert = activePixelsVert;
             json.MinIntegrationTimeMS = (int)minIntegrationTimeMS;
             json.MaxIntegrationTimeMS = (int)maxIntegrationTimeMS;
+            json.LaserWatchdogTimer = laserWatchdogTimer;
+            json.PowerWatchdogTimer = powerWatchdogTimer;
+            json.DetectorTimeout = detectorTimeout;
+            json.LightSourceType = (byte)lightSourceType;
+            json.HorizontalBinningMethod = (byte)horizontalBinningMethod;
             json.ROIHorizStart = ROIHorizStart;
             json.ROIHorizEnd = ROIHorizEnd;
             json.ROIVertRegionStarts = new int[3];
@@ -2362,6 +2501,9 @@ namespace WasatchNET
                 json.EvenOddHardwareCorrected = featureMask.evenOddHardwareCorrected;
                 json.SigLaserTEC = featureMask.sigLaserTEC;
                 json.HasInterlockFeedback = featureMask.hasInterlockFeedback;
+                json.HasInterlockFeedback = featureMask.hasShutter;
+                json.DisableBLEPower = featureMask.disableBLEPower;
+                json.DisableLaserArmedIndication = featureMask.disableLaserArmedIndication;
             }
 
             json.LaserWarmupS = laserWarmupSec;
@@ -2551,6 +2693,8 @@ namespace WasatchNET
             if (!ParseData.writeInt16(detectorOffset, pages[0], 52)) return false;
             if (!ParseData.writeFloat(detectorGainOdd, pages[0], 54)) return false;
             if (!ParseData.writeInt16(detectorOffsetOdd, pages[0], 58)) return false;
+            if (format >= 16)
+                if (!ParseData.writeUInt16(laserTECSetpoint, pages[0], 60)) return false;
 
             if (!ParseData.writeFloat(wavecalCoeffs[0], pages[1], 0)) return false;
             if (!ParseData.writeFloat(wavecalCoeffs[1], pages[1], 4)) return false;
@@ -2608,6 +2752,18 @@ namespace WasatchNET
 
             if (format >= 7)
                 if (!ParseData.writeFloat(avgResolution, pages[3], 48)) return false;
+            if (format >= 15)
+            {
+                if (!ParseData.writeUInt16(laserWatchdogTimer, pages[3], 52)) return false;
+                if (!ParseData.writeByte((byte)lightSourceType, pages[3], 54)) return false;
+
+            }
+            if (format >= 16)
+            {
+                if (!ParseData.writeUInt16(powerWatchdogTimer, pages[3], 55)) return false;
+                if (!ParseData.writeUInt16(detectorTimeout, pages[3], 57)) return false;
+                if (!ParseData.writeByte((byte)horizontalBinningMethod, pages[3], 59)) return false;
+            }
 
             byte[] userDataChunk2 = new byte[64];
             byte[] userDataChunk3 = new byte[64];
