@@ -20,18 +20,24 @@ namespace WasatchNET
             CUTOFF_INSTALLED             = 0x0008, // 2^3
             HARDWARE_EVEN_ODD_CORRECTION = 0x0010, // 2^4
             SIG_LASER_TEC                = 0x0020, // 2^5
-            HAS_INTERLOCK_FEEDBACK       = 0x0040  // 2^6
+            HAS_INTERLOCK_FEEDBACK       = 0x0040, // 2^6
+            HAS_SHUTTER                  = 0x0080, // 2^7
+            DISABLE_BLE_POWER            = 0x0100, // 2^8
+            DISABLE_LASER_ARMED_INDIC    = 0x0200, // 2^9
         }
 
         public FeatureMask(ushort value = 0)
         {
-            invertXAxis              = 0 != (value & (ushort)Flags.INVERT_X_AXIS);
-            bin2x2                   = 0 != (value & (ushort)Flags.BIN_2X2);
-            gen15                    = 0 != (value & (ushort)Flags.GEN15);
-            cutoffInstalled          = 0 != (value & (ushort)Flags.CUTOFF_INSTALLED);
-            evenOddHardwareCorrected = 0 != (value & (ushort)Flags.HARDWARE_EVEN_ODD_CORRECTION);
-            sigLaserTEC              = 0 != (value & (ushort)Flags.SIG_LASER_TEC);
-            hasInterlockFeedback     = 0 != (value & (ushort)Flags.HAS_INTERLOCK_FEEDBACK);
+            invertXAxis                  = 0 != (value & (ushort)Flags.INVERT_X_AXIS);
+            bin2x2                       = 0 != (value & (ushort)Flags.BIN_2X2);
+            gen15                        = 0 != (value & (ushort)Flags.GEN15);
+            cutoffInstalled              = 0 != (value & (ushort)Flags.CUTOFF_INSTALLED);
+            evenOddHardwareCorrected     = 0 != (value & (ushort)Flags.HARDWARE_EVEN_ODD_CORRECTION);
+            sigLaserTEC                  = 0 != (value & (ushort)Flags.SIG_LASER_TEC);
+            hasInterlockFeedback         = 0 != (value & (ushort)Flags.HAS_INTERLOCK_FEEDBACK);
+            hasShutter                   = 0 != (value & (ushort)Flags.HAS_SHUTTER);
+            disableBLEPower              = 0 != (value & (ushort)Flags.DISABLE_BLE_POWER);
+            disableLaserArmedIndication  = 0 != (value & (ushort)Flags.DISABLE_LASER_ARMED_INDIC);
         }
 
         public override string ToString()
@@ -42,13 +48,17 @@ namespace WasatchNET
         public ushort toUInt16()
         {
             ushort value = 0;
-            if (invertXAxis)                value |= (ushort)Flags.INVERT_X_AXIS;
-            if (bin2x2)                     value |= (ushort)Flags.BIN_2X2;
-            if (gen15)                      value |= (ushort)Flags.GEN15;
-            if (cutoffInstalled)            value |= (ushort)Flags.CUTOFF_INSTALLED;
-            if (evenOddHardwareCorrected)   value |= (ushort)Flags.HARDWARE_EVEN_ODD_CORRECTION;
-            if (sigLaserTEC)                value |= (ushort)Flags.SIG_LASER_TEC;
-            if (hasInterlockFeedback)       value |= (ushort)Flags.HAS_INTERLOCK_FEEDBACK;
+            if (invertXAxis)                 value |= (ushort)Flags.INVERT_X_AXIS;
+            if (bin2x2)                      value |= (ushort)Flags.BIN_2X2;
+            if (gen15)                       value |= (ushort)Flags.GEN15;
+            if (cutoffInstalled)             value |= (ushort)Flags.CUTOFF_INSTALLED;
+            if (evenOddHardwareCorrected)    value |= (ushort)Flags.HARDWARE_EVEN_ODD_CORRECTION;
+            if (sigLaserTEC)                 value |= (ushort)Flags.SIG_LASER_TEC;
+            if (hasInterlockFeedback)        value |= (ushort)Flags.HAS_INTERLOCK_FEEDBACK;
+            if (hasShutter)                  value |= (ushort)Flags.HAS_SHUTTER;
+            if (disableBLEPower)             value |= (ushort)Flags.DISABLE_BLE_POWER;
+            if (disableLaserArmedIndication) value |= (ushort)Flags.DISABLE_LASER_ARMED_INDIC;
+
             return value;
         }
 
@@ -142,5 +152,10 @@ namespace WasatchNET
         /// the installed firmware and wiring support this feature.
         /// </summary>
         public bool hasInterlockFeedback { get; set; }
+
+        public bool hasShutter { get; set; }
+        public bool disableBLEPower {  get; set; }
+        public bool disableLaserArmedIndication { get; set; }
+
     }
 }

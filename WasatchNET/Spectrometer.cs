@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
+using Newtonsoft.Json.Linq;
 
 namespace WasatchNET
 {
@@ -177,6 +178,12 @@ namespace WasatchNET
         /// spectrometers in several respects, such as producing both 2D and 3D imagery.
         /// </summary>
         public bool isOCT { get; protected set; } = false;
+
+        /// <summary>
+        /// XL-series spectrometers use an Andor camera requiring special drivers and
+        /// EEPROM handling.
+        /// </summary>
+        public bool isAndor { get; protected set; } = false;
 
         /// <summary>
         /// This is a quick way to know if we should expect our spectrometer to
@@ -1915,7 +1922,7 @@ namespace WasatchNET
             bool needsInitialization = uptime.needsInitialization(uniqueKey);
             uptime.setUnknown(uniqueKey);
             logger.debug($"needsInitialization = {needsInitialization}");
-
+            
             // clear cache
             readOnce.Clear();
 
@@ -2219,6 +2226,12 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
         // Utilities
         ////////////////////////////////////////////////////////////////////////
+
+        public virtual bool loadFromJSON(string pathname)
+        {
+            logger.error("only implemented for Andor/XL spectrometers");
+            return false;
+        }
 
         public virtual void regenerateWavelengths()
         {
@@ -2873,7 +2886,32 @@ namespace WasatchNET
         public async Task<bool> resetFPGAAsync()
         {
             logger.info("Resetting FPGA");
-            return await sendCmdAsync(Opcodes.FPGA_RESET);
+            bool good = sendCmd(Opcodes.FPGA_RESET);
+
+            bool cacheHighGain = highGainModeEnabled;
+            readOnce.Remove(Opcodes.GET_CF_SELECT);
+            highGainModeEnabled = cacheHighGain;
+
+            uint cacheIntTime = integrationTimeMS;
+            readOnce.Remove(Opcodes.GET_INTEGRATION_TIME);
+            integrationTimeMS = cacheIntTime;
+
+            float cacheGain = detectorGain;
+            readOnce.Remove(Opcodes.GET_DETECTOR_GAIN);
+            detectorGain = cacheGain;
+
+            short cacheOffset = detectorOffset;
+            readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET);
+            detectorOffset = cacheOffset;
+
+            float cacheGainOdd = detectorGainOdd;
+            readOnce.Remove(Opcodes.GET_DETECTOR_GAIN_ODD);
+            detectorGainOdd = cacheGainOdd;
+
+            short cacheOffsetOdd = detectorOffsetOdd;
+            readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET_ODD);
+            detectorOffsetOdd = cacheOffsetOdd;
+            return good;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -2897,10 +2935,10 @@ namespace WasatchNET
             while (i < eeprom.badPixelList.Count)
             {
                 short badPix = eeprom.badPixelList[i];
-
                 if (badPix == 0)
                 {
                     // handle the left edge
+                    i++;
                     short nextGood = (short)(badPix + 1);
                     while (eeprom.badPixelSet.Contains(nextGood) && nextGood < spectrum.Length)
                     {
@@ -3232,7 +3270,7 @@ namespace WasatchNET
             if (triggerSource_ == TRIGGER_SOURCE.INTERNAL && autoTrigger && !skipTrigger)
                 await sendSWTriggerAsync();
 
-            if ((!skipTrigger || isStroker) && !areaScanEnabled)
+            if ((isStroker) && !areaScanEnabled)
             {
                 var strokerDelayMS = integrationTimeMS_ + 5;
                 logger.debug($"getSpectrumRaw: extra Stroker delay {strokerDelayMS}ms");
@@ -3368,11 +3406,37 @@ namespace WasatchNET
 
             if (eeprom.featureMask.bin2x2 && !areaScanEnabled)
             {
-                var smoothed = new double[spec.Length];
-                for (int i = 0; i < spec.Length - 1; i++)
-                    smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
-                smoothed[spec.Length - 1] = spec[spec.Length - 1];
-                spec = smoothed;
+                if (eeprom.horizontalBinningMethod == EEPROM.HORIZONTAL_BINNING_METHOD.BIN_2X2)
+                {
+                    var smoothed = new double[spec.Length];
+                    for (int i = 0; i < spec.Length - 1; i++)
+                        smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
+                    smoothed[spec.Length - 1] = spec[spec.Length - 1];
+                    spec = smoothed;
+                }
+                else if (eeprom.horizontalBinningMethod == EEPROM.HORIZONTAL_BINNING_METHOD.BIN_4X2_AVG)
+                {
+                    var smoothed = new double[spec.Length];
+                    for (int i = 0; i < spec.Length - 1; i += 2)
+                    {
+                        smoothed[i] = (spec[i] + spec[i + 1]) / 2.0;
+                    }
+                    for (int i = 1; i < spec.Length - 1; i += 2)
+                    {
+                        if (i < spec.Length - 2)
+                        {
+                            smoothed[i] = (smoothed[i - 1] + smoothed[i + 1]) / 2.0;
+                        }
+                    }
+                    for (int i =  spec.Length - 3; i < spec.Length; ++i)
+                    {
+                        if (smoothed[i] == 0)
+                            smoothed[i] = spec[i];
+                    }
+
+                    smoothed[spec.Length - 1] = spec[spec.Length - 1];
+                    spec = smoothed;
+                }
             }
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
