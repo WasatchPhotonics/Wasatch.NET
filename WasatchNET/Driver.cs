@@ -1,11 +1,14 @@
 using System;
 using System.IO;
+using System.IO.Ports;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Threading.Tasks;
 using LibUsbDotNet;
 using LibUsbDotNet.Info;
 using LibUsbDotNet.Main;
+using static IWPOCTCamera;
 #if WIN32
 #warning Building 32-bit Andor
 using ATMCD32CS;
@@ -25,6 +28,7 @@ namespace WasatchNET
     public class Driver : IDriver
     {
         const int MAX_RESETS = 3;
+        const string DEFAULT_CCF_FILE = "./W_Cobra-S_2Tap_IntTrigger_MX4_1.ccf";
 
         [DllImport("kernel32", SetLastError = true)]
         static extern IntPtr LoadLibrary(string lpFileName);
@@ -37,6 +41,7 @@ namespace WasatchNET
         static Driver instance = new Driver();
         List<Spectrometer> spectrometers = new List<Spectrometer>();
 
+        public string ccfFile = DEFAULT_CCF_FILE;
         bool opened = false;
         bool suppressErrors = false;
         int resetCount = 0;
@@ -85,7 +90,13 @@ namespace WasatchNET
         /// Driver.closeAllSpectrometers().
         /// </remarks>
         /// <returns>number of Wasatch Photonics USB spectrometers found</returns>
+        /// 
         public int openAllSpectrometers()
+        {
+            Task<int> task = Task.Run(async () => await openAllSpectrometersAsync());
+            return task.Result;
+        }
+        public async Task<int> openAllSpectrometersAsync()
         {
             logger.header("openAllSpectrometers: start");
 
@@ -135,7 +146,7 @@ namespace WasatchNET
                 if (usbRegistry.Vid == 0x24aa && usbRegistry.Pid == 0x5000)
                 {
                     HOCTSpectrometer spectrometer = new HOCTSpectrometer(usbRegistry);
-                    if (spectrometer.open())
+                    if (await spectrometer.openAsync())
                     {
                         string key = String.Format("{0}-{1}", "HOCT", "0000");
                         if (!sorted.ContainsKey(key))
@@ -146,7 +157,7 @@ namespace WasatchNET
                 else if (usbRegistry.Vid == 0x24aa)
                 {
                     Spectrometer spectrometer = new Spectrometer(usbRegistry) { uptime = uptime };
-                    if (spectrometer.open())
+                    if (await spectrometer.openAsync())
                     {
                         // sort them by model, serial (allow duplicates for unconfigured)
                         string key = String.Format("{0}-{1}", spectrometer.eeprom.model, spectrometer.eeprom.serialNumber);
@@ -250,7 +261,7 @@ namespace WasatchNET
                     {
                         BoulderSpectrometer boulderSpectrometer = new BoulderSpectrometer(usbRegistry2, boulderIndex);
 
-                        while (boulderSpectrometer.open())
+                        while (await boulderSpectrometer.openAsync())
                         {
                             boulderSpectrometer.detectorTECSetpointDegC = 15.0f;
                             spectrometers.Add(boulderSpectrometer);
@@ -285,11 +296,102 @@ namespace WasatchNET
                 {
                     logger.info("Attempting to open Andor camera {0}", i);
                     AndorSpectrometer spec = new AndorSpectrometer(null, i);
-                    if (spec.open())
+                    if (await spec.openAsync())
                         spectrometers.Add(spec);
                 }
             }
 #endif
+
+            if (Environment.GetEnvironmentVariable("WASATCHNET_USE_WPOCT") != null)
+            {
+#if x64
+                try
+                {
+                    IWPOCTCamera.CameraType cameraType = IWPOCTCamera.CameraType.USB3;
+                    IWPOCTCamera camera = IWPOCTCamera.GetOCTCamera(cameraType);
+                    camera.InitializeLibrary();
+                    if (camera.IsInitialized())
+                    {
+                        int numCameras = camera.GetNumCameras();
+                        if (numCameras > 0)
+                        {
+                            for (int i = 0; i < numCameras; i++)
+                            {
+                                string camID = camera.GetCameraID(i);
+                                bool ok = camera.Open(camID);
+                                if (ok)
+                                {
+                                    WPOCTSpectrometer spec = new WPOCTSpectrometer(camera, camID, null, 0);
+                                    if (await spec.openAsync())
+                                        spectrometers.Add(spec);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    logger.info("WPOCT Drivers are missing so OCT systems will not be found");
+                }
+
+                try
+                {
+                    logger.info("Looking for COM Ports for OCT");
+                    string[] ports = SerialPort.GetPortNames();
+                    foreach (string portName in ports)
+                    {
+                        logger.info("Trying port {0} for OCT", portName);
+                        IWPOCTCamera.CameraType cameraType = IWPOCTCamera.CameraType.CameraLink;
+                        IWPOCTCamera camera = IWPOCTCamera.GetOCTCamera(cameraType);
+                        camera.InitializeLibrary();
+                        logger.info("Try initialize camera");
+                        if (camera.IsInitialized())
+                        {
+                            logger.info("camera is initialized");
+                            logger.info("last camera error {0}", camera.GetLastError().ToString());
+                            camera.SetCameraFileName(ccfFile);
+                            logger.info("ccf file set to {0}", ccfFile);
+                            logger.info("last camera error {0}", camera.GetLastError().ToString());
+                            await Task.Delay(100);
+                            int numCameras = camera.GetNumCameras();
+                            logger.info("found {0} cameras", numCameras);
+                            if (numCameras > 0)
+                            {
+                                for (int i = 0; i < numCameras; i++)
+                                {
+                                    string camID = camera.GetCameraID(i);
+                                    
+                                    if (string.IsNullOrEmpty(camID))
+                                        continue;
+                                    
+                                    logger.info("trying camera {0}", camID);
+                                    bool ok = camera.Open(camID);
+                                    logger.info("last camera error {0}", camera.GetLastError().ToString());
+                                    if (ok)
+                                    {
+                                        logger.info("camera {0} is open for oct driver", camID);
+                                        COMOCTSpectrometer spec = new COMOCTSpectrometer(portName, null, camera, camID, null);
+                                        if (await spec.openAsync())
+                                        {
+                                            logger.info("opened {0} successfully", camID);
+                                            spectrometers.Add(spec);
+                                        }
+                                        else
+                                            logger.info("failed to open {0}", camID);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                }
+                catch (Exception)
+                {
+                    logger.info("WPOCT Drivers are missing so OCT systems will not be found");
+                }
+#endif
+            }
+
 
             logger.debug($"openAllSpectrometers: returning {spectrometers.Count}");
 
@@ -300,7 +402,16 @@ namespace WasatchNET
         public int openMockSpectrometer(uint pixels)
         {
             MockSpectrometer mockSpectrometer = new MockSpectrometer(null);
-            if(mockSpectrometer.open(pixels))
+            if (mockSpectrometer.open(pixels))
+                spectrometers.Add(mockSpectrometer);
+
+            return spectrometers.Count;
+        }
+
+        public async Task<int> openMockSpectrometerAsync(uint pixels)
+        {
+            MockSpectrometer mockSpectrometer = new MockSpectrometer(null);
+            if(await mockSpectrometer.openAsync(pixels))
                 spectrometers.Add(mockSpectrometer);
 
             return spectrometers.Count;
@@ -335,6 +446,11 @@ namespace WasatchNET
         /// </summary>
         public void closeAllSpectrometers()
         {
+            Task task = Task.Run(async () => await closeAllSpectrometersAsync());
+            task.Wait();
+        }
+        public async Task closeAllSpectrometersAsync()
+        {
             if (!opened)
             {
                 logger.debug("closeAllSpectrometers: not opened");
@@ -343,27 +459,25 @@ namespace WasatchNET
 
             logger.debug("closeAllSpectrometers: start");
 
-            lock (this)
+            if (spectrometers.Count > 0)
             {
-                if (spectrometers.Count > 0)
+                foreach (Spectrometer spectrometer in spectrometers)
                 {
-                    foreach (Spectrometer spectrometer in spectrometers)
-                    {
-                        logger.debug("closeAllSpectrometers: closing spectrometer");
-                        spectrometer.close();
-                    }
-                    spectrometers.Clear();
-
+                    logger.debug("closeAllSpectrometers: closing spectrometer");
+                    await spectrometer.closeAsync();
                 }
-                else
-                    logger.debug("closeAllSpectrometers: no spectrometers to close");
+                spectrometers.Clear();
 
-                logger.debug("closeAllSpectrometers: unregistering error handler");
-                UsbDevice.UsbErrorEvent -= OnUsbError;
-
-                logger.debug("closeAllSpectrometers: exiting UsbDevice");
-                UsbDevice.Exit();
             }
+            else
+                logger.debug("closeAllSpectrometers: no spectrometers to close");
+
+            logger.debug("closeAllSpectrometers: unregistering error handler");
+            UsbDevice.UsbErrorEvent -= OnUsbError;
+
+            logger.debug("closeAllSpectrometers: exiting UsbDevice");
+            UsbDevice.Exit();
+            
 
             opened = false;
             logger.debug("closeAllSpectrometers: done");

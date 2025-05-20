@@ -42,7 +42,7 @@ namespace WasatchNET
 
         // These will come with ENG-0034 Rev 4
         ushort startupIntegrationTimeMS { get; set; }
-        short startupDetectorTemperatureDegC { get; set; }
+        short TECSetpoint { get; set; }
         byte startupTriggeringMode { get; set; }
         float detectorGain { get; set; }
         short detectorOffset { get; set; }
@@ -217,6 +217,6 @@ namespace WasatchNET
         /// <summary>Called automatically when Spectrometer opened</summary>
         /// <remarks>Can be re-called to overwrite local changes to field contents with spectrometer data</remarks>
         /// <returns>true on success, false on failure</returns>
-        bool read();
+        bool read(bool skipRead = false);
     }
 }

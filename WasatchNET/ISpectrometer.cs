@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace WasatchNET
 {
@@ -30,6 +31,7 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         bool isARM { get; }
+        bool isOCT { get; }
         bool isSiG { get; }
         bool isSPI { get; }
         bool isGen15 { get; }
@@ -142,6 +144,7 @@ namespace WasatchNET
 
         string firmwareRevision { get; }
         string fpgaRevision { get; }
+        string bleRevision { get; }
 
         bool highGainModeEnabled { get; set; }
 
@@ -301,7 +304,10 @@ namespace WasatchNET
         /// as the final temperature is generated in hardware as a combination of
         /// the DAC setpoint value and the physical potentiometer.
         /// </remarks>
-        byte laserTemperatureSetpointRaw { get; set; }
+        ushort laserTemperatureSetpointRaw { get; set; }
+        UInt16 laserWatchdogSec { get; set; }
+        bool laserTECEnabled { get; set; }
+        ushort laserTECMode { get; set; }
 
         uint lineLength { get; }
 
@@ -318,6 +324,8 @@ namespace WasatchNET
         FPGA_LASER_CONTROL optLaserControl { get; }
 
         ushort primaryADC { get; }
+
+        bool prioritizeVirtualEEPROM { get; }
 
         /// <summary>
         /// This is provided for spectrometers with a secondary ADC connected to an external 
@@ -397,5 +405,6 @@ namespace WasatchNET
         /// </summary>
         /// <returns>The acquired spectrum as an array of doubles</returns>
         double[] getSpectrum(bool forceNew);
+        ushort[] getFrame(bool direct);
     }
 }

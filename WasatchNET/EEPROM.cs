@@ -2,6 +2,8 @@
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace WasatchNET
 {
@@ -52,7 +54,7 @@ namespace WasatchNET
         /// - rev 14
         ///     - adds SiG laser TEC and Has interlock feedback to feature mask
         /// </remarks>
-        protected const byte FORMAT = 16;
+        protected const byte FORMAT = 17;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
@@ -223,17 +225,23 @@ namespace WasatchNET
         ushort _startupIntegrationTimeMS;
         public short startupDetectorTemperatureDegC
         {
-            get { return _startupDetectorTemperatureDegC; }
+            get { return TECSetpoint; }
+            set
+            {
+                TECSetpoint = value;
+            }
+        }
+        public short TECSetpoint
+        {
+            get { return _TECSetpoint; }
             set
             {
                 EventHandler handler = EEPROMChanged;
-                _startupDetectorTemperatureDegC = value;
+                _TECSetpoint = value;
                 handler?.Invoke(this, new EventArgs());
-
             }
         }
-
-        short _startupDetectorTemperatureDegC;
+        short _TECSetpoint;
         public byte startupTriggeringMode
         {
             get { return _startupTriggeringMode; }
@@ -859,6 +867,26 @@ namespace WasatchNET
         public List<short> badPixelList { get; protected set; }
         public SortedSet<short> badPixelSet { get; protected set; }
 
+        public void addBadPixel(short pixel)
+        {
+            if (!badPixelSet.Contains(pixel))
+            {
+                int addIndex = -1;
+                for (int i = 0; i < badPixels.Length; ++i)
+                {
+                    if (badPixels[i] == -1)
+                        addIndex = i;
+                }
+
+                if (addIndex != -1)
+                {
+                    badPixels[addIndex] = pixel;
+                    badPixelSet.Add(pixel);
+                    badPixelList.Add(pixel);
+                }
+            }
+        }
+
         public string productConfiguration
         {
             get { return _productConfiguration; }
@@ -908,7 +936,7 @@ namespace WasatchNET
             set
             {
                 EventHandler handler = EEPROMChanged;
-                if (_intensityCorrectionOrder != value)
+                if (_intensityCorrectionCoeffs != null && _intensityCorrectionOrder != value && _intensityCorrectionOrder == _intensityCorrectionCoeffs.Length)
                 {
                     float[] temp = new float[_intensityCorrectionCoeffs.Length];
                     _intensityCorrectionCoeffs.CopyTo(temp, 0);
@@ -1237,6 +1265,31 @@ namespace WasatchNET
         List<UInt16> _librarySpectrum;
 
         /////////////////////////////////////////////////////////////////////////
+        // Virtual Pages
+        /////////////////////////////////////////////////////////////////////////
+        
+        /*
+         * These fields are not currently apportioned space on the physical EEPROM
+         * and thus are exclusively used with units that have purely virtual "EEPROM."
+         * 
+         * This is defined in the base class so we don't need downstream casts or some
+         * intermediate subclass to cast to...though that would make some sense too
+         * 
+         */
+
+        public string detectorSerialNumber
+        {
+            get { return _detectorSerialNumber; }
+            set
+            {
+                _detectorSerialNumber = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+
+        string _detectorSerialNumber;
+
+        /////////////////////////////////////////////////////////////////////////
         // Compound Fields
         /////////////////////////////////////////////////////////////////////////
 
@@ -1307,7 +1360,13 @@ namespace WasatchNET
         /// </todo>
         ///
         /// <returns>true on success, false on failure</returns>
-        public virtual bool write(bool allPages=false)
+        /// 
+        public virtual bool write(bool allPages = false)
+        {
+            Task<bool> task = Task.Run(async () => await writeAsync(allPages));
+            return task.Result;
+        }
+        public virtual async Task<bool> writeAsync(bool allPages=false)
         {
             ////////////////////////////////////////////////////////////////
             //                                                            //
@@ -1331,7 +1390,8 @@ namespace WasatchNET
                 if (spectrometer.isARM)
                 {
                     logger.hexdump(pages[page], String.Format("writing page {0} [ARM]: ", page));
-                    ok = spectrometer.sendCmd(
+
+                    ok = await spectrometer.sendCmdAsync(
                         opcode: Opcodes.SECOND_TIER_COMMAND,
                         wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM],
                         wIndex: (ushort)page,
@@ -1342,12 +1402,13 @@ namespace WasatchNET
                     const uint DATA_START = 0x3c00; // from Wasatch Stroker Console's EnhancedStroker.SetModelInformation()
                     ushort pageOffset = (ushort)(DATA_START + page * 64);
                     logger.hexdump(pages[page], String.Format("writing page {0} to offset {1} [FX2]: ", page, pageOffset));
-                    ok = spectrometer.sendCmd(
+
+                    ok = await spectrometer.sendCmdAsync(
                         opcode: Opcodes.SET_MODEL_CONFIG_FX2,
                         wValue: pageOffset,
                         wIndex: 0,
                         buf: pages[page]);
-                }
+        }
                 if (!ok)
                 {
                     logger.error("EEPROM.write: failed to save page {0}", page);
@@ -1383,7 +1444,37 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
-        public virtual bool read()
+        public EEPROM(EEPROMJSON json)
+        {
+            wavecalCoeffs = new float[5];
+            degCToDACCoeffs = new float[3];
+            adcToDegCCoeffs = new float[3];
+            ROIVertRegionStart = new ushort[3];
+            ROIVertRegionEnd = new ushort[3];
+            badPixels = new short[15];
+            linearityCoeffs = new float[5];
+            laserPowerCoeffs = new float[4];
+            intensityCorrectionCoeffs = new float[12];
+
+            badPixelList = new List<short>();
+            badPixelSet = new SortedSet<short>();
+
+            pages = new List<byte[]>();
+            for (ushort page = 0; page < MAX_PAGES; page++)
+            {
+                pages.Add(new byte[64]);
+            }
+
+            setFromJSON(json);
+            writeParse();
+        }
+
+        public virtual bool read(bool skipRead = false)
+        {
+            Task<bool> task = Task.Run(async () => await readAsync(skipRead));
+            return task.Result;
+        }
+        public virtual async Task<bool> readAsync(bool skipRead = false)
         {
             ////////////////////////////////////////////////////////////////
             //                                                            //
@@ -1395,24 +1486,27 @@ namespace WasatchNET
             // read all (standard) pages into cache
             ////////////////////////////////////////////////////////////////
 
-            pages = new List<byte[]>();
-            for (ushort page = 0; page < MAX_PAGES; page++)
+            if (!skipRead)
             {
-                byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
-                if (buf is null)
+                pages = new List<byte[]>();
+                for (ushort page = 0; page < MAX_PAGES; page++)
                 {
-                    try
+                    byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                    if (buf is null)
                     {
-                        setDefault(spectrometer);
+                        try
+                        {
+                            setDefault(spectrometer);
+                        }
+                        catch
+                        {
+                            return false;
+                        }
+                        return true;
                     }
-                    catch
-                    {
-                        return false;
-                    }
-                    return true;
+                    pages.Add(buf);
+                    logger.hexdump(buf, String.Format("read page {0}: ", page));
                 }
-                pages.Add(buf);
-                logger.hexdump(buf, String.Format("read page {0}: ", page));
             }
 
             ////////////////////////////////////////////////////////////////
@@ -1449,7 +1543,7 @@ namespace WasatchNET
                 // read pages 8-73 (no need to do all MAX_PAGES_REAL)
                 for (ushort page = MAX_PAGES; page <= LIBRARY_STOP_PAGE; page++)
                 {
-                    byte[] buf = spectrometer.getCmd2(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                    byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                     pages.Add(buf);
                     logger.hexdump(buf, String.Format("read extra page {0}: ", page));
                 }
@@ -1467,7 +1561,7 @@ namespace WasatchNET
                 slitSizeUM = ParseData.toUInt16(pages[0], 41);
 
                 startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
-                startupDetectorTemperatureDegC = ParseData.toInt16(pages[0], 45);
+                TECSetpoint = ParseData.toInt16(pages[0], 45);
                 startupTriggeringMode = ParseData.toUInt8(pages[0], 47);
                 detectorGain = ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
                 detectorOffset = ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
@@ -1662,6 +1756,10 @@ namespace WasatchNET
                     featureMask.disableBLEPower = false;
                     featureMask.disableLaserArmedIndication = false;
                 }
+                if (format < 17)
+                {
+                    featureMask.interlockExcluded = false;
+                }
 
 
                 if (format >= 11)
@@ -1766,11 +1864,11 @@ namespace WasatchNET
 
             startupIntegrationTimeMS = 0;
             double temp = 0;
-            startupDetectorTemperatureDegC = (short)temp;
-            if (startupDetectorTemperatureDegC >= 99)
-                startupDetectorTemperatureDegC = 15;
-            else if (startupDetectorTemperatureDegC <= -50)
-                startupDetectorTemperatureDegC = 15;
+            TECSetpoint = (short)temp;
+            if (TECSetpoint >= 99)
+                TECSetpoint = 15;
+            else if (TECSetpoint <= -50)
+                TECSetpoint = 15;
             startupTriggeringMode = 2;
             detectorGain = a.detectorGain;
             detectorOffset = a.detectorOffset;
@@ -1831,6 +1929,27 @@ namespace WasatchNET
 
             featureMask = new FeatureMask();
         }
+
+        public string hexdump()
+        {
+            string line = "";
+
+            if (pages != null)
+            {
+                foreach (byte[] buf in pages)
+                {
+                    for (int i = 0; i < buf.Length; i++)
+                    {
+                        line += String.Format("{0:x2} ", buf[i]);
+                    }
+                }
+
+                line = line.Substring(0, line.Length - 1);
+            }
+
+            return line;
+        }
+
         public void setFromJSON(EEPROMJSON json)
         {
             if (json.Serial != null)
@@ -1845,7 +1964,7 @@ namespace WasatchNET
             hasLaser = json.IncLaser;
 
             startupIntegrationTimeMS = (ushort)json.StartupIntTimeMS;
-            startupDetectorTemperatureDegC = (short)json.StartupTempC;
+            TECSetpoint = (short)json.StartupTempC;
             startupTriggeringMode = (byte)json.StartupTriggerMode;
             detectorGain = (float)json.DetectorGain;
             detectorGainOdd = (float)json.DetectorGainOdd;
@@ -1863,6 +1982,7 @@ namespace WasatchNET
             featureMask.hasShutter = json.HasShutter;
             featureMask.disableBLEPower = json.DisableBLEPower;
             featureMask.disableLaserArmedIndication = json.DisableLaserArmedIndication;
+            featureMask.interlockExcluded = json.InterlockExcluded;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -1916,10 +2036,18 @@ namespace WasatchNET
             laserWarmupSec = json.LaserWarmupS;
             laserExcitationWavelengthNMFloat = (float)json.ExcitationWavelengthNM;
             avgResolution = (float)json.AvgResolution;
-            laserPowerCoeffs[0] = (float)json.LaserPowerCoeffs[0];
-            laserPowerCoeffs[1] = (float)json.LaserPowerCoeffs[1];
-            laserPowerCoeffs[2] = (float)json.LaserPowerCoeffs[2];
-            laserPowerCoeffs[3] = (float)json.LaserPowerCoeffs[3];
+
+            if (json.LaserPowerCoeffs != null)
+            {
+                laserPowerCoeffs[0] = (float)json.LaserPowerCoeffs[0];
+                laserPowerCoeffs[1] = (float)json.LaserPowerCoeffs[1];
+                laserPowerCoeffs[2] = (float)json.LaserPowerCoeffs[2];
+                laserPowerCoeffs[3] = (float)json.LaserPowerCoeffs[3];
+            }
+            else
+            {
+                laserPowerCoeffs = new float[4];
+            }
 
             if (json.UserText != null)
                 userText = json.UserText;
@@ -1940,10 +2068,13 @@ namespace WasatchNET
             badPixels[13] = (Int16)json.BadPixels[13];
             badPixels[14] = (Int16)json.BadPixels[14];
 
+            detectorSerialNumber = json.DetectorSN;
+
             if (json.ProductConfig != null)
                 productConfiguration = json.ProductConfig;
 
             PAGE_SUBFORMAT jsonSubformat = (PAGE_SUBFORMAT)json.Subformat;
+            subformat = jsonSubformat;
 
             if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
             {
@@ -2005,7 +2136,7 @@ namespace WasatchNET
             json.IncCooling = hasCooling;
             json.IncLaser = hasLaser;
             json.StartupIntTimeMS = startupIntegrationTimeMS;
-            json.StartupTempC = startupDetectorTemperatureDegC;
+            json.StartupTempC = TECSetpoint;
             json.StartupTriggerMode = startupTriggeringMode;
             json.DetectorGain = detectorGain;
             json.DetectorGainOdd = detectorGainOdd;
@@ -2108,6 +2239,7 @@ namespace WasatchNET
                 json.BadPixels[13] = badPixels[13];
                 json.BadPixels[14] = badPixels[14];
             }
+            json.DetectorSN = detectorSerialNumber;
             json.UserText = userText;
             json.ProductConfig = productConfiguration;
             if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
@@ -2138,6 +2270,7 @@ namespace WasatchNET
                 json.HasInterlockFeedback = featureMask.hasShutter;
                 json.DisableBLEPower = featureMask.disableBLEPower;
                 json.DisableLaserArmedIndication = featureMask.disableLaserArmedIndication;
+                json.InterlockExcluded = featureMask.interlockExcluded;
             }
 
             json.LaserWarmupS = laserWarmupSec;
@@ -2180,6 +2313,9 @@ namespace WasatchNET
                 json.Region3HorizEnd = region3HorizEnd;
                 json.RegionCount = regionCount;
             }
+
+            json.FeatureMask = featureMask.ToString();
+            json.HexDump = hexdump();
 
             return json;
         }
@@ -2321,7 +2457,7 @@ namespace WasatchNET
 
             if (!ParseData.writeUInt16(slitSizeUM, pages[0], 41)) return false;
             if (!ParseData.writeUInt16(startupIntegrationTimeMS, pages[0], 43)) return false;
-            if (!ParseData.writeInt16(startupDetectorTemperatureDegC, pages[0], 45)) return false;
+            if (!ParseData.writeInt16(TECSetpoint, pages[0], 45)) return false;
             if (!ParseData.writeByte(startupTriggeringMode, pages[0], 47)) return false;
             if (!ParseData.writeFloat(detectorGain, pages[0], 48)) return false;
             if (!ParseData.writeInt16(detectorOffset, pages[0], 52)) return false;
@@ -2584,7 +2720,7 @@ namespace WasatchNET
             logger.debug("slitSizeUM            = {0}", slitSizeUM);
 
             logger.debug("startupIntegrationTimeMS = {0}", startupIntegrationTimeMS);
-            logger.debug("startupDetectorTempDegC = {0}", startupDetectorTemperatureDegC);
+            logger.debug("startupDetectorTempDegC = {0}", TECSetpoint);
             logger.debug("startupTriggeringMode = {0}", startupTriggeringMode);
             logger.debug("detectorGain          = {0:f2}", detectorGain);
             logger.debug("detectorOffset        = {0}", detectorOffset);

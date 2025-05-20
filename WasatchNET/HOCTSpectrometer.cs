@@ -944,12 +944,12 @@ namespace WasatchNET
             }
         }
 
-
         internal HOCTSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             isOCT = true;
             //OctUsb.SetLinesPerFrame(500);
             integrationTimeMS_ = (uint)OctUsb.DefaultIntegrationTime();
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         protected CancellationTokenSource _cancellationTokenSource { get; set; } = new CancellationTokenSource();
@@ -987,6 +987,11 @@ namespace WasatchNET
 
         internal override bool open()
         {
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
+        }
+        internal override async Task<bool> openAsync()
+        {
             if (!commsOpen)
             {
                 bool openOk = OctUsb.OpenDevice(0x24AA, 0x5000);
@@ -1016,7 +1021,7 @@ namespace WasatchNET
                     pixels = (uint)1024;
 
                     eeprom = new HOCTEEPROM(this);
-                    if (!eeprom.read())
+                    if (!(await eeprom.readAsync()))
                     {
                         logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
                         return false;
@@ -1073,22 +1078,34 @@ namespace WasatchNET
             OctUsb.ClearProcessingBuffer();
         }
 
+
+
         public override void close()
+        {
+            Task task = Task.Run(async () => await closeAsync());
+            task.Wait();
+        }
+        public async override Task closeAsync()
         {
             if (commsOpen)
             {
                 _cancellationTokenSource.Cancel();
 
-                FrameProcess.Wait();
+                await FrameProcess;
 
-                bool closeOk = OctUsb.CloseDevice();
+                bool closeOk = await Task.Run(() => OctUsb.CloseDevice());
                 if (closeOk)
                     commsOpen = false;
-                
+
             }
         }
 
         public override double[] getSpectrum(bool forceNew = false)
+        {
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
+        }
+        public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
         {
             if (forceNew)
             {
@@ -1110,7 +1127,10 @@ namespace WasatchNET
 
                 Thread.Sleep(wait);
             }
-            ushort[] RawPixelData = getFrame();
+
+            Task<ushort[]> frameTask = Task.Run(() => getFrame());
+
+            ushort[] RawPixelData = await frameTask;
             double[] data = new double[pixels];
 
             lock (lineLock)
@@ -1124,7 +1144,7 @@ namespace WasatchNET
             return data;  
         }
 
-        public override ushort[] getFrame()
+        public override ushort[] getFrame(bool direct = true)
         {
             lock (frameLock)
             {
@@ -1216,6 +1236,30 @@ namespace WasatchNET
             }
         }
 
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
@@ -1235,6 +1279,11 @@ namespace WasatchNET
             }
         }
 
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
         public override string firmwareRevision
         {
             get
@@ -1250,6 +1299,16 @@ namespace WasatchNET
                 return "";
             }
             
+        }
+
+        public override string bleRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
+            }
         }
 
         public override uint integrationTimeMS
@@ -1295,7 +1354,20 @@ namespace WasatchNET
             {
                 return 0;
             }
-            
+
+        }
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
         }
 
         public override TRIGGER_SOURCE triggerSource

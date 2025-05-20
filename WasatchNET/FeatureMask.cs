@@ -1,4 +1,6 @@
-﻿namespace WasatchNET
+﻿using System.ComponentModel;
+
+namespace WasatchNET
 {
     /// <summary>
     /// This class encapsulates a 16-bit set of boolean flags which indicate
@@ -6,8 +8,10 @@
     /// expending quite as much storage as, for instance, legacy hasCooling,
     /// hasLaser or hasBattery bytes.
     /// </summary>
-    public class FeatureMask
+    public class FeatureMask : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
         enum Flags 
         { 
             INVERT_X_AXIS                = 0x0001, // 2^0 
@@ -20,6 +24,7 @@
             HAS_SHUTTER                  = 0x0080, // 2^7
             DISABLE_BLE_POWER            = 0x0100, // 2^8
             DISABLE_LASER_ARMED_INDIC    = 0x0200, // 2^9
+            INTERLOCK_EXCLUDED           = 0x0400, // 2^10
         }
 
         public FeatureMask(ushort value = 0)
@@ -34,6 +39,12 @@
             hasShutter                   = 0 != (value & (ushort)Flags.HAS_SHUTTER);
             disableBLEPower              = 0 != (value & (ushort)Flags.DISABLE_BLE_POWER);
             disableLaserArmedIndication  = 0 != (value & (ushort)Flags.DISABLE_LASER_ARMED_INDIC);
+            interlockExcluded            = 0 != (value & (ushort)Flags.INTERLOCK_EXCLUDED);
+        }
+
+        public override string ToString()
+        {
+            return $"0x{toUInt16():X4}";
         }
 
         public ushort toUInt16()
@@ -49,6 +60,7 @@
             if (hasShutter)                  value |= (ushort)Flags.HAS_SHUTTER;
             if (disableBLEPower)             value |= (ushort)Flags.DISABLE_BLE_POWER;
             if (disableLaserArmedIndication) value |= (ushort)Flags.DISABLE_LASER_ARMED_INDIC;
+            if (interlockExcluded)           value |= (ushort)Flags.INTERLOCK_EXCLUDED;
 
             return value;
         }
@@ -68,7 +80,22 @@
         /// between the spectrometer and driver and ensure correct internal 
         /// processing within the driver.
         /// </summary>
-        public bool invertXAxis { get; set; }
+        public bool invertXAxis 
+        { 
+            get
+            {
+                return _invertXAxis;
+            }
+            set
+            {
+                if (value != _invertXAxis)
+                {
+                    _invertXAxis = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(invertXAxis)));
+                }
+            }
+        }
+        bool _invertXAxis = false;
 
         /// <summary>
         /// Some 2D detectors use a Bayer filter in which pixel columns alternate
@@ -132,6 +159,6 @@
         public bool hasShutter { get; set; }
         public bool disableBLEPower {  get; set; }
         public bool disableLaserArmedIndication { get; set; }
-
+        public bool interlockExcluded { get; set; }
     }
 }

@@ -1,5 +1,55 @@
 # Wasatch.NET Changelog
 
+- 2025-05-12 2.5.13
+	- started adding EEPROM format 17
+	- hotfix for malformed SPI EEPROMs
+- 2025-04-22 2.5.12
+	- more SPI fixes
+	- switched default laser TEC Mode
+	- increased IMX timeout default and gave user access
+- 2025-03-13 2.5.11
+	- new debugging around issues with seabreeze specs
+	- fixes for SPI spectrometers
+	- another new opcode
+- 2024-10-16 2.5.10
+	- support for remaining EEPROM format 16
+	- support for multiple binning correction methods
+- 2024-??-?? 2.5.9
+	- support for some of EEPROM format 16
+- 2024-06-20 2.5.8
+    - beta release
+    - fixes for multi channel demo
+    - support for a number of new opcodes used with XS units
+- 2024-??-?? 2.5.7
+    - perform bin2x2 after bad-pixel correction
+    - WinFormDemo
+        - disable all the initial "getter" calls
+        - GUI tweaks
+- 2023-12-18 2.5.6
+	- beta release for downstream software
+	- adds support for both major classes of WPOCT spectrometers
+	- stability improvements for Boulder spectrometers
+- 2023-09-15 2.5.5
+	- beta release for downstream software
+	- most major addition is hexdump for EEPROM
+- 2023-06-21 2.5.4
+	- beta for testing
+	- main change is adding API for adding bad pixels to all data structures with one function call
+- 2023-06-01 2.5.3
+	- beta
+	- some downstream mock and function changes, mostly for new internal project
+- 2023-03-03 2.5.2
+	- beta
+	- some additions to EEPROM/JSON formatting
+- 2022-11-03 2.5.1
+	- beta
+	- some Andor noodling
+	- made sync wrappers a little safer
+	- moved standard spec properties back to sync for now (async set caused a huge out of order bug, see README)
+- 2022-09-XX 2.5.0
+	- beta
+	- added async versions of a number of key functions
+	- moved most "USB-based" properties to using "synchronous async" usb functions for standard spectometer
 - 2025-??-?? 2.4.17
     - fixed bad pixel correction (left-edge corner case)
 - 2024-03-19 2.4.16

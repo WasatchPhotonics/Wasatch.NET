@@ -10,5 +10,7 @@
         public string wp_model;
         public bool invert_x_axis;
         public double[] raman_intensity_coeffs;
+        public uint roi_horizontal_start;
+        public uint roi_horizontal_end;
     }
 }

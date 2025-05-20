@@ -40,6 +40,8 @@ namespace WasatchNET
         {
             isAndor = true;
 
+            prioritizeVirtualEEPROM = true;
+
             // internal "step x" numbers are intended to synchronize with matching
             // steps in Wasatch.PY's wasatch.AndorDevice
             
@@ -127,41 +129,50 @@ namespace WasatchNET
             integrationTimeMS = (uint)exposure;
             pixels = (uint)xPixels;
             eeprom = new AndorEEPROM(this);
+            featureIdentification = new FeatureIdentification(0, 0);
 
             // step 17: ENLIGHTEN then uses GetNumberPreAmpGains and GetPreAmpGain to support high-gain mode
         }
-
         override internal bool open()
+        {
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
+        }
+
+        override internal async Task<bool> openAsync()
         {
             eeprom = new AndorEEPROM(this);
 
-            lock (acquisitionLock)
+            logger.info("found spectrometer with {0} pixels", pixels);
+
+            if (!(await eeprom.readAsync()))
             {
-                logger.info("found spectrometer with {0} pixels", pixels);
-
-                if (!eeprom.read())
-                {
-                    logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                    //wrapper.shutdown();
-                    close();
-                    return false;
-                }
-                logger.debug("back from reading EEPROM");
-
-                regenerateWavelengths();
-                //detectorTECSetpointDegC = 15.0f;
-
-                logger.info("Opened Andor Spectrometer with index {0}", specIndex);
-
-                return true;
+                logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                //wrapper.shutdown();
+                close();
+                return false;
             }
+            logger.debug("back from reading EEPROM");
+
+            regenerateWavelengths();
+            //detectorTECSetpointDegC = 15.0f;
+
+            logger.info("Opened Andor Spectrometer with index {0}", specIndex);
+
+            return true;
+            
         }
 
         public override void close()
         {
+            Task task = Task.Run(async () => await closeAsync());
+            task.Wait();
+        }
+        public async override Task closeAsync()
+        {
             //wrapper.shutdown();
-            andorDriver.SetCurrentCamera(cameraHandle);
-            andorDriver.ShutDown();
+            await Task.Run(() => andorDriver.SetCurrentCamera(cameraHandle));
+            await Task.Run(() => andorDriver.ShutDown());
         }
 
         public override bool loadFromJSON(string pathname)
@@ -179,62 +190,65 @@ namespace WasatchNET
         {
             lock (acquisitionLock)
             {
-                // Take a temperature first. If you try to take temperature while acquiring bad things happen,
-                // but the acquisition also can take a long time, which can block things for a long time downstream.
-                // This way we just cache before measuring, and the cached value is returned if the user wants a temp
-                // during acquisition. It isn't perfect but neither is the Andor driver...to say the least -TS
-                int temp = 0;
-                andorDriver.GetTemperature(ref temp);
-                lastDetectorTemperatureDegC = temp;
-
-                double[] sum = getSpectrumRaw();
-                if (sum == null)
-                {
-                    logger.error("getSpectrum: getSpectrumRaw returned null");
-                    return null;
-                }
-                logger.debug("getSpectrum: received {0} pixels", sum.Length);
-
-                if (scanAveraging_ > 1)
-                {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
-                    for (uint i = 1; i < scanAveraging_; i++)
-                    {
-                        double[] tmp = getSpectrumRaw();
-                        if (tmp == null)
-                            return null;
-
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] += tmp[px];
-                    }
-
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] /= scanAveraging_;
-                }
-
-                if (dark != null && dark.Length == sum.Length)
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] -= dark_[px];
-
-                correctBadPixels(ref sum);
-
-                if (boxcarHalfWidth > 0)
-                {
-                    // logger.debug("getSpectrum: returning boxcar");
-                    return Util.applyBoxcar(boxcarHalfWidth, sum);
-                }
-                else
-                {
-                    // logger.debug("getSpectrum: returning sum");
-                    return sum;
-                }
+                Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+                return task.Result;
             }
-            
-
         }
+        public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
+        {
+            int temp = 0;
+            andorDriver.GetTemperature(ref temp);
+            lastDetectorTemperatureDegC = temp;
 
+            double[] sum = await getSpectrumRawAsync();
+            if (sum == null)
+            {
+                logger.error("getSpectrum: getSpectrumRaw returned null");
+                return null;
+            }
+            logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+            if (scanAveraging_ > 1)
+            {
+                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                for (uint i = 1; i < scanAveraging_; i++)
+                {
+                    double[] tmp = await getSpectrumRawAsync();
+                    if (tmp == null)
+                        return null;
+
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] += tmp[px];
+                }
+
+                for (int px = 0; px < pixels; px++)
+                    sum[px] /= scanAveraging_;
+            }
+
+            if (dark != null && dark.Length == sum.Length)
+                for (int px = 0; px < pixels; px++)
+                    sum[px] -= dark_[px];
+
+            correctBadPixels(ref sum);
+
+            if (boxcarHalfWidth > 0)
+            {
+                // logger.debug("getSpectrum: returning boxcar");
+                return Util.applyBoxcar(boxcarHalfWidth, sum);
+            }
+            else
+            {
+                // logger.debug("getSpectrum: returning sum");
+                return sum;
+            }
+        }
         // returns vertically-binned 1D array
         protected override double[] getSpectrumRaw(bool skipTrigger = false)
+        {
+            Task<double[]> task = Task.Run(async () => await getSpectrumRawAsync(skipTrigger));
+            return task.Result;
+        }
+        protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger = false)
         {
             logger.debug("requesting spectrum");
             ////////////////////////////////////////////////////////////////////
@@ -243,13 +257,10 @@ namespace WasatchNET
 
             if (!areaScanEnabled)
             {
-                int[] spec = new int[pixels];
-
-                // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
-                spec = new int[pixels];     //defaults to all zeros
+                int[] spec = new int[pixels]; //defaults to all zeros
                 andorDriver.StartAcquisition();
                 andorDriver.WaitForAcquisition();
-                uint success = andorDriver.GetAcquiredData(spec, (uint)(pixels));
+                uint success = await Task.Run(() => andorDriver.GetAcquiredData(spec, (uint)(pixels)));
 
                 if (success != DRV_SUCCESS)
                     return null;
@@ -265,10 +276,7 @@ namespace WasatchNET
             }
             else
             {
-                int[] spec = new int[yPixels * pixels / BINNING];
-
-                // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
-                spec = new int[yPixels * pixels / BINNING];     //defaults to all zeros
+                int[] spec = new int[yPixels * pixels / BINNING]; //defaults to all zeros
                 andorDriver.StartAcquisition();
                 andorDriver.WaitForAcquisition();
                 uint success = andorDriver.GetAcquiredData(spec, (uint)(yPixels * pixels / BINNING));
@@ -383,13 +391,56 @@ namespace WasatchNET
 
         public override ulong laserModulationPulseWidth { get => 0; set { } }
 
-        public override float detectorGain { get => 0; }
+        public override float detectorGain
+        {
+            get
+            {
+                return 0.0f;
+            }
+            set
+            {
 
-        public override float detectorGainOdd { get => 0; }
+            }
+        }
 
-        public override short detectorOffset { get => 0; }
 
-        public override short detectorOffsetOdd { get => 0; }
+        public override float detectorGainOdd
+        {
+            get
+            {
+                return 0.0f;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override short detectorOffset
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
+
+        public override short detectorOffsetOdd
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
 
         public override bool isARM => false;
 
@@ -409,7 +460,21 @@ namespace WasatchNET
 
         public override ushort laserTemperatureRaw { get => 0; }
 
-        public override byte laserTemperatureSetpointRaw { get => 0; }
+        public override ushort laserTemperatureSetpointRaw { get => 0; }
+
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
+        }
 
         public override float batteryPercentage
         {
@@ -455,6 +520,35 @@ namespace WasatchNET
             }
         }
 
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+                
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
@@ -496,9 +590,17 @@ namespace WasatchNET
             }
         }
 
-
-
         public override string fpgaRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
+            }
+        }
+
+        public override string bleRevision 
         {
             get
             {

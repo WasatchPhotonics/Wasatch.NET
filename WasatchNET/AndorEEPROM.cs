@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 #if WIN32
 using ATMCD32CS;
 #elif x64
@@ -47,25 +48,25 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
 
         }
+        public override bool read(bool skipRead = false)
+        {
+            Task<bool> task = Task.Run(async () => await readAsync());
+            return task.Result;
+        }
 
-        public override bool read()
+        public override bool write(bool allPages = false)
+        {
+            Task<bool> task = Task.Run(async () => await writeAsync(allPages));
+            return task.Result;
+        }
+
+        public override async Task<bool> readAsync(bool skipRead = false)
         {
             AndorSpectrometer a = spectrometer as AndorSpectrometer;
-            model = "";
 
+            setDefault(spectrometer);
             serialNumber = "";
-
-            wavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
-
-            baudRate = 0;
-
             hasCooling = true;
-            hasBattery = false;
-            hasLaser = false;
-
-            excitationNM = 0;
-
-            slitSizeUM = 0;
 
             int minTemp = 0;
             int maxTemp = 0;
@@ -76,65 +77,54 @@ namespace WasatchNET
 
             startupIntegrationTimeMS = (ushort)a.integrationTimeMS;
             double temp = a.detectorTECSetpointDegC;
-            startupDetectorTemperatureDegC = (short)temp;
+            TECSetpoint = (short)temp;
             startupTriggeringMode = 0;
-            detectorGain = 0;
-            detectorOffset = 0;
-            detectorGainOdd = 0;
-            detectorOffsetOdd = 0;
-
-            degCToDACCoeffs[0] = 0;
-            degCToDACCoeffs[1] = 0;
-            degCToDACCoeffs[2] = 0;
 
             //the min and max temps from the driver are known to be inaccurate, so we use const values
             detectorTempMax = effectiveMaxTemp;
             detectorTempMin = effectiveMinTemp;
             //detectorTempMax = (short)maxTemp;
             //detectorTempMin = (short)minTemp;
-            adcToDegCCoeffs[0] = 0;
-            adcToDegCCoeffs[1] = 0;
-            adcToDegCCoeffs[2] = 0;
-            thermistorResistanceAt298K = 0;
-            thermistorBeta = 0;
-            calibrationDate = "";
-            calibrationBy = "";
+
+            AndorSDK.AndorCapabilities caps = new AndorSDK.AndorCapabilities();
+            
+            //andorDriver.getca
+
+            string detModel = "";
+            andorDriver.GetHeadModel(ref detModel);
+
+            uint error = andorDriver.GetCapabilities(ref caps);
+
+            //
+            // Need to explore expanding the below, making detector name field more verbose
+            //
+
+            string detType = "";
+            if (error != AndorSpectrometer.DRV_SUCCESS)
+                detType = "iDus ";
+            else
+            {
+                if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_IDUS)
+                    detType = "iDus ";
+                else if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_NEWTON)
+                    detType = "Newton ";
+                else
+                    detType = "iDus ";
+            }
+
             int cameraSerial = 0;
-            uint error = andorDriver.GetCameraSerialNumber(ref cameraSerial);
+            error = andorDriver.GetCameraSerialNumber(ref cameraSerial);
             if (error != AndorSpectrometer.DRV_SUCCESS)
                 detectorSerialNumber = "";
             else
                 detectorSerialNumber = "CCD-" + cameraSerial.ToString();
+            //detectorName = detType + detModel;
             detectorName = "iDus";
             activePixelsHoriz = (ushort)xPixels;
             activePixelsVert = (ushort)(yPixels / AndorSpectrometer.BINNING);
             minIntegrationTimeMS = a.integrationTimeMS;
             maxIntegrationTimeMS = uint.MaxValue;
             actualPixelsHoriz = (ushort)xPixels;
-            ROIHorizStart = 0;
-            ROIHorizEnd = 0;
-            ROIVertRegionStart[0] = 0;
-            ROIVertRegionEnd[0] = 0;
-            ROIVertRegionStart[1] = 0;
-            ROIVertRegionEnd[1] = 0;
-            ROIVertRegionStart[2] = 0;
-            ROIVertRegionEnd[2] = 0;
-            linearityCoeffs[0] = 0;
-            linearityCoeffs[1] = 0;
-            linearityCoeffs[2] = 0;
-            linearityCoeffs[3] = 0;
-            linearityCoeffs[4] = 0;
-
-            laserPowerCoeffs[0] = 0;
-            laserPowerCoeffs[1] = 0;
-            laserPowerCoeffs[2] = 0;
-            laserPowerCoeffs[3] = 0;
-            maxLaserPowerMW = 0;
-            minLaserPowerMW = 0;
-
-            laserExcitationWavelengthNMFloat = 830.0f;
-
-            avgResolution = 0.0f;
 
             userData = new byte[63];
             subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
@@ -147,7 +137,7 @@ namespace WasatchNET
             return true;
         }
 
-        public override bool write(bool allPages = false)
+        public override async Task<bool> writeAsync(bool allPages = false)
         {
             defaultValues = false;
             return true;

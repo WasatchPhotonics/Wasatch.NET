@@ -22,7 +22,8 @@ namespace WasatchNET
 
         public bool commError = false;
         public int nonSpectrumTimeoutMS = 20000;
-        public bool correctPixels = false;
+        public int spectrumMinTimeoutMS = 5000;
+        public bool correctPixelsMarkedBad = false;
 
         //internal Wrapper wrapper;
         //internal SeaBreezeWrapper wrapper;
@@ -38,17 +39,21 @@ namespace WasatchNET
         {
             excitationWavelengthNM = 0;
             triggerSource = TRIGGER_SOURCE.EXTERNAL;
+            prioritizeVirtualEEPROM = true;
             specIndex = index;
 
             if (!commError)
             {
-                lock(acquisitionLock)
+                logger.debug("init grabbing lock");
+                lock (acquisitionLock)
                 {
                     var task = Task.Run(async() => integrationTime_ = await getIntegrationTimeAsync());
                     task.Wait();
                 }
+                logger.debug("init releasing lock");
             }
 
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         protected async Task<long> getIntegrationTimeAsync()
@@ -65,7 +70,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Int Time Get: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
             }
 
@@ -86,58 +91,61 @@ namespace WasatchNET
 
         }
 
-
         override internal bool open()
+        {
+            Task<bool> task = Task.Run(async () => await openAsync());
+            return task.Result;
+        }
+
+        override internal async Task<bool> openAsync()
         {
             eeprom = new BoulderEEPROM(this);
 
-            lock (acquisitionLock)
+            if (!commError)
             {
-                if (!commError)
-                {
-                    bool openSucceeded = false;
-                    var task = Task.Run(async () => openSucceeded = await openSpectrometerAsync());
-                    task.Wait();
+                bool openSucceeded = false;
+                var task = Task.Run(async () => openSucceeded = await openSpectrometerAsync());
+                task.Wait();
                     
-                    if (openSucceeded)
+                if (openSucceeded)
+                {
+                    if (!commError)
                     {
-                        if (!commError)
-                        {
-                            var pixelTask = Task.Run(async () => pixels = (uint) await getPixelAsync());
-                            pixelTask.Wait();
-                        }
-                        logger.info("found spectrometer with {0} pixels", pixels);
-
-                        if (!eeprom.read())
-                        {
-                            logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
-                            //wrapper.shutdown();
-                            close();
-                            return false;
-                        }
-                        logger.debug("back from reading EEPROM");
-
-                        regenerateWavelengths();
-                        //detectorTECSetpointDegC = 15.0f;
-
-                        logger.info("Opened Ocean Spectrometer with index {0}", specIndex);
-
-                        return true;
+                        var pixelTask = Task.Run(async () => pixels = (uint) await getPixelAsync());
+                        pixelTask.Wait();
                     }
+                    logger.info("found spectrometer with {0} pixels", pixels);
 
-                    else
+                    if (!(await eeprom.readAsync()))
                     {
-                        logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
+                        logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                        //wrapper.shutdown();
+                        close();
                         return false;
                     }
+                    logger.debug("back from reading EEPROM");
+
+                    regenerateWavelengths();
+                    //detectorTECSetpointDegC = 15.0f;
+
+                    logger.info("Opened SeaBreeze Spectrometer with index {0}", specIndex);
+
+                    return true;
                 }
 
                 else
                 {
-                    logger.debug("Unable to open Ocean spectrometer with index {0}", specIndex);
+                    logger.debug("Unable to open SeaBreeze spectrometer with index {0}", specIndex);
                     return false;
                 }
             }
+
+            else
+            {
+                logger.debug("Unable to open SeaBreeze spectrometer with index {0}", specIndex);
+                return false;
+            }
+            
 
         }
 
@@ -155,7 +163,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Open Spec: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 result = false;
             }
@@ -184,7 +192,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Pixel Count: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
             }
 
@@ -202,14 +210,16 @@ namespace WasatchNET
 
         public override void close()
         {
+            Task task = Task.Run(async () => await closeAsync());
+            task.Wait();
+        }
+
+        public async override Task closeAsync()
+        {
             //wrapper.shutdown();
             if (!commError)
             {
-                lock (acquisitionLock)
-                {
-                    var task = Task.Run(async () => await closeSpectrometerAsync());
-                    task.Wait();
-                }
+                await closeSpectrometerAsync();
             }
         }
 
@@ -226,7 +236,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Close spec: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 return false;
             }
@@ -248,6 +258,7 @@ namespace WasatchNET
             byte[] response;
             bool ok = false;
 
+            logger.debug("status grabbing lock");
             lock (acquisitionLock)
             {
                 ok = sbWrite(request, false);
@@ -270,7 +281,7 @@ namespace WasatchNET
                     return false;
                 }
 
-            // logger.info("updateStatus: updating from response");
+            logger.info("updateStatus: updating from response");
             status.update(response);
 
             // did anything significant change? this will include any button-presses, hence user behavior
@@ -290,7 +301,8 @@ namespace WasatchNET
                 // obviously something just happened, so brighten the display unless forced otherwise
                 //userOperation();
             }
-            
+            logger.debug("status releasing lock");
+
             return true;
         }
 
@@ -320,6 +332,7 @@ namespace WasatchNET
 
         protected async Task<bool> sbWriteAsync(byte[] data)
         {
+            logger.debug("launching sb write task");
             var task = launchSBWriteAsync(data);
             int timeout = nonSpectrumTimeoutMS;
             bool result = false;
@@ -332,7 +345,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Generic Write: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 result = false;
             }
@@ -387,7 +400,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Generic Read: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 bytes = null;
             }
@@ -431,10 +444,12 @@ namespace WasatchNET
             cmd[1] = (byte)((setpoint >> 8) & 0xff);
             cmd[2] = (byte)(setpoint & 0xff);
 
+            logger.debug("TEC setpoint grabbing lock");
             lock (acquisitionLock)
             {
                 sbWrite(cmd);
             }
+            logger.debug("TEC setpoint releasing lock");
         }
 
         public bool getDetectorTECEnabled()
@@ -474,11 +489,13 @@ namespace WasatchNET
             cmd[1] = (byte)(detectorFlag ? 1 : 0);
             cmd[2] = (byte)(laserFlag ? 1 : 0);
 
+            logger.debug("TEC enable grabbing lock");
             lock (acquisitionLock)
             {
                 result = sbWrite(cmd);
             }
-            
+            logger.debug("TEC enable releasing lock");
+
             if (!result)
             {
                 return false;
@@ -491,58 +508,66 @@ namespace WasatchNET
         {
             if (!commError)
             {
+                logger.debug("get spectrum grabbing lock");
+                double[] sum = null;
                 lock (acquisitionLock)
                 {
-                    double[] sum = getSpectrumRaw();
-                    if (sum == null)
-                    {
-                        logger.error("getSpectrum: getSpectrumRaw returned null");
-                        return null;
-                    }
-                    logger.debug("getSpectrum: received {0} pixels", sum.Length);
+                    logger.debug("grabbed acquisition lock");
 
-                    if (scanAveraging_ > 1)
-                    {
-                        // logger.debug("getSpectrum: getting additional spectra for averaging");
-                        for (uint i = 1; i < scanAveraging_; i++)
-                        {
-                            double[] tmp = getSpectrumRaw();
-                            if (tmp == null)
-                                return null;
+                    sum = getSpectrumRaw();
+                }
+                logger.debug("get spectrum releasing lock");
 
-                            for (int px = 0; px < pixels; px++)
-                                sum[px] += tmp[px];
-                        }
+                if (sum == null)
+                {
+                    logger.error("getSpectrum: getSpectrumRaw returned null");
+                    return null;
+                }
+                logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+                if (scanAveraging_ > 1)
+                {
+                    // logger.debug("getSpectrum: getting additional spectra for averaging");
+                    for (uint i = 1; i < scanAveraging_; i++)
+                    {
+                        double[] tmp = getSpectrumRaw();
+                        if (tmp == null)
+                            return null;
 
                         for (int px = 0; px < pixels; px++)
-                            sum[px] /= scanAveraging_;
+                            sum[px] += tmp[px];
                     }
 
-                    if (dark != null && dark.Length == sum.Length)
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] -= dark_[px];
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] /= scanAveraging_;
+                }
 
-                    if (correctPixels)
-                        correctBadPixels(ref sum);
+                if (dark != null && dark.Length == sum.Length)
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] -= dark_[px];
 
-                    if (boxcarHalfWidth > 0)
-                    {
-                        // logger.debug("getSpectrum: returning boxcar");
-                        return Util.applyBoxcar(boxcarHalfWidth, sum);
-                    }
-                    else
-                    {
-                        // logger.debug("getSpectrum: returning sum");
-                        return sum;
-                    }
+                if (correctPixelsMarkedBad)
+                    correctBadPixels(ref sum);
+
+                if (boxcarHalfWidth > 0)
+                {
+                    // logger.debug("getSpectrum: returning boxcar");
+                    return Util.applyBoxcar(boxcarHalfWidth, sum);
+                }
+                else
+                {
+                    // logger.debug("getSpectrum: returning sum");
+                    return sum;
                 }
             }
             else
+            {
+                logger.error("Get Spectrum: comm error occurring, will not return spectra");
                 return new double[pixels];
-
+            }
         }
 
-        protected override double[] getSpectrumRaw(bool skipTrigger=false)
+        protected override double[] getSpectrumRaw(bool skipTrigger = false)
         {
             logger.debug("requesting spectrum");
             ////////////////////////////////////////////////////////////////////
@@ -559,22 +584,96 @@ namespace WasatchNET
         }
 
 
+        public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
+        {
+            if (!commError)
+            {
+                double[] sum = await getSpectrumRawAsync();
+                if (sum == null)
+                {
+                    logger.error("getSpectrum: getSpectrumRaw returned null");
+                    return null;
+                }
+                logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+                if (scanAveraging_ > 1)
+                {
+                    // logger.debug("getSpectrum: getting additional spectra for averaging");
+                    for (uint i = 1; i < scanAveraging_; i++)
+                    {
+                        double[] tmp = await getSpectrumRawAsync();
+                        if (tmp == null)
+                            return null;
+
+                        for (int px = 0; px < pixels; px++)
+                            sum[px] += tmp[px];
+                    }
+
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] /= scanAveraging_;
+                }
+
+                if (dark != null && dark.Length == sum.Length)
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] -= dark_[px];
+
+                if (correctPixelsMarkedBad)
+                    correctBadPixels(ref sum);
+
+                if (boxcarHalfWidth > 0)
+                {
+                    // logger.debug("getSpectrum: returning boxcar");
+                    return Util.applyBoxcar(boxcarHalfWidth, sum);
+                }
+                else
+                {
+                    // logger.debug("getSpectrum: returning sum");
+                    return sum;
+                }
+                
+            }
+            else
+                return new double[pixels];
+
+        }
+
+
+        protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger=false)
+        {
+            logger.debug("requesting spectrum");
+            ////////////////////////////////////////////////////////////////////
+            // read spectrum
+            ////////////////////////////////////////////////////////////////////
+
+            double[] spec = new double[pixels]; // default to all zeros
+            spec = await getSpectrumAsync();
+
+            logger.debug("getSpectrumRawAsync: returning {0} pixels", spec.Length);
+            return spec;
+        }
+
+
         protected async Task<double[]> getSpectrumAsync()
         {
+            logger.debug("launching spectrum task");
+
             var task = launchSBSpectrumAsync();
-            int timeout = Math.Max( (int)integrationTimeMS * 3, nonSpectrumTimeoutMS);
+
+            logger.debug("spectrum task started");
+
+            int timeout = Math.Max( (int)integrationTimeMS * 3, spectrumMinTimeoutMS);
             double[] spec = new double[pixels];
 
             if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
             {
                 // task completed within timeout
                 spec = task.Result;
-                logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+                logger.debug("getSpectrumAsync: returning {0} pixels", spec.Length);
             }
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Get Spectrum: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
             }
 
@@ -586,11 +685,13 @@ namespace WasatchNET
             double[] spec = new double[pixels];
             int errorReader = 0;
 
+            logger.debug("launching lowest level wrapper call");
+
             var task = Task.Run(() => SeaBreezeWrapper.seabreeze_get_formatted_spectrum(specIndex, ref errorReader, ref spec[0], (int)pixels));
 
             await task;
 
-            logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+            logger.debug("launchSBSpectrumAsync: returning {0} pixels", spec.Length);
             return spec;
         }
 
@@ -631,6 +732,7 @@ namespace WasatchNET
                 //wrapper.setIntegrationTimeMillisec((long)value);
                 if (!commError)
                 {
+                    logger.debug("int time grabbing lock");
                     lock (acquisitionLock)
                     {
                         int errorReader = 0;
@@ -638,9 +740,18 @@ namespace WasatchNET
                         task.Wait();
 
                         if (errorReader == 0)
+                        {
+                            spectrumMinTimeoutMS = Math.Max(3 * (int)integrationTimeMS_, 5000);
+                            logger.debug("setting min timeout to {0}", spectrumMinTimeoutMS);
+                            logger.debug("setting int time to {0}", value);
                             integrationTime_ = value;
-
+                        }
                     }
+                    logger.debug("int time releasing lock");
+                }
+                else
+                {
+                    logger.error("comm error occurring, will not set int time");
                 }
             }
         }
@@ -660,7 +771,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Int Time Set: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 errorCode = -1;
             }
@@ -725,7 +836,20 @@ namespace WasatchNET
 
         public override ushort laserTemperatureRaw { get => 0; }
 
-        public override byte laserTemperatureSetpointRaw { get => 0; }
+        public override ushort laserTemperatureSetpointRaw { get => 0; }
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
+        }
 
         public override float batteryPercentage
         {
@@ -759,9 +883,41 @@ namespace WasatchNET
             {
                 bool readSuccess = updateStatus();
                 if (readSuccess)
+                {
+                    logger.debug("status update returned with temperature {0}", status.detectorTemperatureDegC);
                     return (float)status.detectorTemperatureDegC;
+                }
                 else
                     return 0;
+            }
+        }
+
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
             }
         }
 
@@ -802,19 +958,32 @@ namespace WasatchNET
         {
             get
             {
-                string retval = "";
-
-                if (!commError)
+                if (firmwareRevision_.Length == 0)
                 {
-                    lock (acquisitionLock)
+                    string retval = "";
+
+                    if (!commError)
                     {
-                        var task = Task.Run(async () => retval = await getFirmwareRevAsync());
-                        task.Wait();
+                        logger.debug("firmware grabbing lock");
+                        lock (acquisitionLock)
+                        {
+                            var task = Task.Run(async () => retval = await getFirmwareRevAsync());
+                            task.Wait();
+                        }
+                        logger.debug("firmware releasing lock");
                     }
+                    else
+                    {
+                        logger.error("comm error occurring, will not return firmware");
+                    }
+                    firmwareRevision_ = retval;
+                    return retval;
                 }
-                return retval;
+                else
+                    return firmwareRevision_;
             }
         }
+        string firmwareRevision_ = "";
 
         protected async Task<string> getFirmwareRevAsync()
         {
@@ -830,7 +999,7 @@ namespace WasatchNET
             else
             {
                 // timeout logic
-                logger.error("SeaBreeze failing to return in expected time, communication error likely");
+                logger.error("Firmware Get: SeaBreeze failing to return in expected time, communication error likely");
                 commError = true;
                 firmware = "";
             }
@@ -880,31 +1049,51 @@ namespace WasatchNET
         {
             get
             {
-                lock (acquisitionLock)
+                if (fpgaRevision_.Length == 0)
                 {
-                    byte[] cmd = new byte[2];
-                    cmd[0] = 0x6b; // read FPGA register
-                    cmd[1] = 0x04; // read FPGA version number
-
-                    sbWrite(cmd);
-                    byte[] response = sbRead(3);
 
                     string formatted = "";
-
-                    if (response != null)
+                    logger.debug("fpga grabbing lock");
+                    lock (acquisitionLock)
                     {
-                        UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
+                        byte[] cmd = new byte[2];
+                        cmd[0] = 0x6b; // read FPGA register
+                        cmd[1] = 0x04; // read FPGA version number
 
-                        int major = (bytes >> 12) & 0x0f;
-                        int minor = (bytes >> 4) & 0xff;
-                        int build = (bytes) & 0x0f;
+                        sbWrite(cmd);
+                        byte[] response = sbRead(3);
 
-                        formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
-                        logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
+
+                        if (response != null)
+                        {
+                            UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
+
+                            int major = (bytes >> 12) & 0x0f;
+                            int minor = (bytes >> 4) & 0xff;
+                            int build = (bytes) & 0x0f;
+
+                            formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
+                            logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
+                            fpgaRevision_ = formatted;
+                        }
+
                     }
-
+                    logger.debug("fpga releasing lock");
                     return formatted;
                 }
+                else
+                    return fpgaRevision_;
+            }
+        }
+        string fpgaRevision_ = "";
+
+        public override string bleRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
             }
         }
 
