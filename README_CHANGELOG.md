@@ -1,5 +1,21 @@
 # Wasatch.NET Changelog
 
+- 2025-05-12 2.5.13
+	- started adding EEPROM format 17
+	- hotfix for malformed SPI EEPROMs
+- 2025-04-22 2.5.12
+	- more SPI fixes
+	- switched default laser TEC Mode
+	- increased IMX timeout default and gave user access
+- 2025-03-13 2.5.11
+	- new debugging around issues with seabreeze specs
+	- fixes for SPI spectrometers
+	- another new opcode
+- 2024-10-16 2.5.10
+	- support for remaining EEPROM format 16
+	- support for multiple binning correction methods
+- 2024-??-?? 2.5.9
+	- support for some of EEPROM format 16
 - 2024-06-20 2.5.8
     - beta release
     - fixes for multi channel demo
