@@ -738,7 +738,8 @@ namespace WasatchNET
             byte[] command = padding((int)pixels * 2 + STANDARD_PADDING * 2);
 
             //actual result
-            byte[] result = spi.readWrite(command);
+            byte[] result = null;
+            result = spi.readWrite(command);
 
             //unpack pixels
             for (int i = 0; i < pixels; ++i)
@@ -900,6 +901,9 @@ namespace WasatchNET
                     ++index;
                 }
 
+                if (index == result.Length)
+                    return 0f;
+
                 while (result[index] == START_CMD)
                     ++index;
                 --index;
@@ -947,6 +951,9 @@ namespace WasatchNET
                         break;
                     ++index;
                 }
+
+                if (index == result.Length)
+                    return 0;
 
                 while (result[index] == START_CMD)
                     ++index;
@@ -1105,7 +1112,9 @@ namespace WasatchNET
                 byte[] payload = new byte[0];
 
                 byte[] command = wrapCommand(GET_FPGA_REV, payload, STANDARD_PADDING);
-                byte[] result = spi.readWrite(command);
+                byte[] result = null;
+
+                result = spi.readWrite(command);
 
                 byte[] lenBytes = new byte[2];//{ result[0], result[1] };
 
@@ -1117,6 +1126,9 @@ namespace WasatchNET
                         break;
                     ++index;
                 }
+
+                if (index == result.Length)
+                    return "";
 
                 while (result[index] == START_CMD)
                     ++index;
