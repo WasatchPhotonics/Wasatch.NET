@@ -19,6 +19,9 @@
     - explicitly default High-Gain Mode true for Hamamatsu InGaAs detectors
 - 2022-09-20 2.4.11
     - added checkBoxLaserPowerInMW to WinFormDemo
+- 2022-09-XX 2.5.0
+	- added async versions of a number of key functions
+	- moved most "USB-based" properties to using "synchronous async" usb functions for standard spectometer
 - 2022-08-17 2.4.10
 	- add temperature caching for Andor spectrometers to prevent long reads
 - 2022-07-28 2.4.9

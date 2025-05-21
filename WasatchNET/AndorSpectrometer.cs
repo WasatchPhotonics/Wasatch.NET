@@ -130,7 +130,6 @@ namespace WasatchNET
 
             // step 17: ENLIGHTEN then uses GetNumberPreAmpGains and GetPreAmpGain to support high-gain mode
         }
-
         override internal bool open()
         {
             eeprom = new AndorEEPROM(this);
@@ -156,6 +155,31 @@ namespace WasatchNET
                 return true;
             }
         }
+
+        override internal async Task<bool> openAsync()
+        {
+            eeprom = new AndorEEPROM(this);
+
+            logger.info("found spectrometer with {0} pixels", pixels);
+
+            if (!(await eeprom.readAsync()))
+            {
+                logger.error("Spectrometer: failed to GET_MODEL_CONFIG");
+                //wrapper.shutdown();
+                close();
+                return false;
+            }
+            logger.debug("back from reading EEPROM");
+
+            regenerateWavelengths();
+            //detectorTECSetpointDegC = 15.0f;
+
+            logger.info("Opened Andor Spectrometer with index {0}", specIndex);
+
+            return true;
+            
+        }
+
 
         public override void close()
         {
@@ -229,10 +253,57 @@ namespace WasatchNET
                     return sum;
                 }
             }
-            
+
 
         }
+        public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
+        {
+            int temp = 0;
+            andorDriver.GetTemperature(ref temp);
+            lastDetectorTemperatureDegC = temp;
 
+            double[] sum = await getSpectrumRawAsync();
+            if (sum == null)
+            {
+                logger.error("getSpectrum: getSpectrumRaw returned null");
+                return null;
+            }
+            logger.debug("getSpectrum: received {0} pixels", sum.Length);
+
+            if (scanAveraging_ > 1)
+            {
+                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                for (uint i = 1; i < scanAveraging_; i++)
+                {
+                    double[] tmp = await getSpectrumRawAsync();
+                    if (tmp == null)
+                        return null;
+
+                    for (int px = 0; px < pixels; px++)
+                        sum[px] += tmp[px];
+                }
+
+                for (int px = 0; px < pixels; px++)
+                    sum[px] /= scanAveraging_;
+            }
+
+            if (dark != null && dark.Length == sum.Length)
+                for (int px = 0; px < pixels; px++)
+                    sum[px] -= dark_[px];
+
+            correctBadPixels(ref sum);
+
+            if (boxcarHalfWidth > 0)
+            {
+                // logger.debug("getSpectrum: returning boxcar");
+                return Util.applyBoxcar(boxcarHalfWidth, sum);
+            }
+            else
+            {
+                // logger.debug("getSpectrum: returning sum");
+                return sum;
+            }
+        }
         // returns vertically-binned 1D array
         protected override double[] getSpectrumRaw(bool skipTrigger = false)
         {
@@ -250,6 +321,58 @@ namespace WasatchNET
                 andorDriver.StartAcquisition();
                 andorDriver.WaitForAcquisition();
                 uint success = andorDriver.GetAcquiredData(spec, (uint)(pixels));
+
+                if (success != DRV_SUCCESS)
+                    return null;
+
+                double[] convertedSpec = Array.ConvertAll(spec, item => (double)item);
+
+
+                if (eeprom.featureMask.invertXAxis)
+                    Array.Reverse(convertedSpec);
+
+                logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+                return convertedSpec;
+            }
+            else
+            {
+                int[] spec = new int[yPixels * pixels / BINNING];
+
+                // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
+                spec = new int[yPixels * pixels / BINNING];     //defaults to all zeros
+                andorDriver.StartAcquisition();
+                andorDriver.WaitForAcquisition();
+                uint success = andorDriver.GetAcquiredData(spec, (uint)(yPixels * pixels / BINNING));
+
+                if (success != DRV_SUCCESS)
+                    return null;
+
+                double[] convertedSpec = Array.ConvertAll(spec, item => (double)item);
+
+                if (eeprom.featureMask.invertXAxis)
+                    Array.Reverse(convertedSpec);
+
+                logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
+                return convertedSpec;
+            }
+
+        }
+        protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger = false)
+        {
+            logger.debug("requesting spectrum");
+            ////////////////////////////////////////////////////////////////////
+            // read spectrum
+            ////////////////////////////////////////////////////////////////////
+
+            if (!areaScanEnabled)
+            {
+                int[] spec = new int[pixels];
+
+                // ask for spectrum then collect, NOT multithreaded (though we should look into that!), blocks
+                spec = new int[pixels];     //defaults to all zeros
+                andorDriver.StartAcquisition();
+                andorDriver.WaitForAcquisition();
+                uint success = await Task.Run(() => andorDriver.GetAcquiredData(spec, (uint)(pixels)));
 
                 if (success != DRV_SUCCESS)
                     return null;
