@@ -6,6 +6,7 @@ using System.Linq;
 using LibUsbDotNet.Main;
 using MPSSELight;
 using System.Runtime.Remoting.Messaging;
+using System.ComponentModel;
 
 namespace WasatchNET
 {
@@ -511,45 +512,8 @@ namespace WasatchNET
 
         public override double[] getSpectrum(bool forceNew = false)
         {
-            double[] sum = getSpectrumRaw();
-            if (sum == null)
-            {
-                logger.error("getSpectrum: getSpectrumRaw returned null");
-                return null;
-            }
-            logger.debug("getSpectrum: received {0} pixels", sum.Length);
-
-            if (scanAveraging_ > 1)
-            {
-                // logger.debug("getSpectrum: getting additional spectra for averaging");
-                for (uint i = 1; i < scanAveraging_; i++)
-                {
-                    double[] tmp = getSpectrumRaw();
-                    if (tmp == null)
-                        return null;
-
-                    for (int px = 0; px < pixels; px++)
-                        sum[px] += tmp[px];
-                }
-
-                for (int px = 0; px < pixels; px++)
-                    sum[px] /= scanAveraging_;
-            }
-
-            if (dark != null && dark.Length == sum.Length)
-                for (int px = 0; px < pixels; px++)
-                    sum[px] -= dark_[px];
-
-            if (boxcarHalfWidth > 0)
-            {
-                // logger.debug("getSpectrum: returning boxcar");
-                return Util.applyBoxcar(boxcarHalfWidth, sum);
-            }
-            else
-            {
-                // logger.debug("getSpectrum: returning sum");
-                return sum;
-            }
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
         }
         public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
         {
@@ -761,7 +725,7 @@ namespace WasatchNET
         }
         protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger=false)
         {
-            logger.debug("requesting spectrum");
+            logger.info("requesting SPI spectrum");
             ////////////////////////////////////////////////////////////////////
             // read spectrum
             ////////////////////////////////////////////////////////////////////
@@ -775,34 +739,75 @@ namespace WasatchNET
                 Thread.Sleep((int)integrationTimeMS);
             mpsse.SetDataBitsHighByte(FtdiPin.None, FtdiPin.GPIOH0);
 
+            int timeout = (int)integrationTimeMS * 2 + 50;
+            await Task.Delay(10);
             byte read = mpsse.ReadDataBitsHighByte();
+            DateTime start = DateTime.Now;
             while ((read & 0b0010) != 0b0010)
             {
                 read = mpsse.ReadDataBitsHighByte();
+                logger.info("mpsse read result {0}", read);
+                DateTime now = DateTime.Now;
+
+                if ((now - start).TotalMilliseconds > timeout)
+                {
+                    logger.error("get spectrum read/write timed out on bit read, continuing anyway");
+                    return null;
+                    //return await getSpectrumAsync();
+                }
+
+                await Task.Delay(10);
             }
 
             byte[] command = padding((int)pixels * 2 + STANDARD_PADDING * 2);
 
             //actual result
-            byte[] result = await Task.Run(() => spi.readWrite(command));
+            Task<byte[]> task = Task.Run(() => spi.readWrite(command));
 
-            //unpack pixels
-            for (int i = 0; i < pixels; ++i)
+            if (await Task.WhenAny(task, Task.Delay(timeout)) == task)
             {
-                int msb = result[i * 2 + 1];
-                int lsb = result[i * 2 + 2];
+                byte[] result = await task;
 
-                UInt16 pixel = (ushort)((msb << 8) | lsb);
+                //unpack pixels
+                for (int i = 0; i < pixels; ++i)
+                {
+                    int msb = result[i * 2 + 1];
+                    int lsb = result[i * 2 + 2];
 
-                spec[i] = pixel;
+                    UInt16 pixel = (ushort)((msb << 8) | lsb);
 
+                    spec[i] = pixel;
+
+                }
+
+                if (eeprom.featureMask.invertXAxis)
+                    Array.Reverse(spec);
+
+                return spec;
+            }
+            else
+            {
+                logger.error("get spectrum read/write timed out, trying again");
+                return await getSpectrumAsync();
+            }
+        }
+
+        async Task monitorLoop(int timeoutMS)
+        {
+            DateTime start = DateTime.Now;
+
+            while (true)
+            {
+                logger.info("monitor loop still running");
+
+                DateTime current = DateTime.Now;
+                if ((current - start).TotalMilliseconds > timeoutMS)
+                    break;
+
+                await Task.Delay(Math.Max(1, timeoutMS / 100));
             }
 
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spec);
-
-            return spec;
-            
+            logger.info("monitor loop returned");
         }
 
         public override bool highGainModeEnabled
