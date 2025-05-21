@@ -31,6 +31,9 @@
     - fixed AnyCPU build
 - 2023-04-20 2.4.13
     - add warning when encountering unsupported / higher EEPROM format
+- 2023-03-03 2.5.2
+	- beta
+	- some additions to EEPROM/JSON formatting
 - 2022-12-19 2.4.12
     - explicitly default High-Gain Mode true for Hamamatsu InGaAs detectors
 - 2022-11-03 2.5.1

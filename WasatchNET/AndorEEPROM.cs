@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 #if WIN32
 using ATMCD32CS;
