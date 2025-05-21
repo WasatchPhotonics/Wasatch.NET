@@ -73,6 +73,7 @@ namespace WasatchNET
 
             bool openBase = await base.openAsync();
 
+
             linePeriod = 50;
             integrationTimeUS = 45;
             eeprom.startupIntegrationTimeMS = 45;

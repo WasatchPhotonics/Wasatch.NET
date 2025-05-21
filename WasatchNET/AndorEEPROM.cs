@@ -78,7 +78,7 @@ namespace WasatchNET
 
             startupIntegrationTimeMS = (ushort)a.integrationTimeMS;
             double temp = a.detectorTECSetpointDegC;
-            startupDetectorTemperatureDegC = (short)temp;
+            TECSetpoint = (short)temp;
             startupTriggeringMode = 0;
 
             //the min and max temps from the driver are known to be inaccurate, so we use const values

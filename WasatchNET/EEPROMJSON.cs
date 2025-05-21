@@ -81,11 +81,11 @@ namespace WasatchNET
         public byte RegionCount;
         public bool SigLaserTEC;
         public bool HasInterlockFeedback;
-        public string FeatureMask;
-        public string DetectorSN;
         public bool HasShutter;
         public bool DisableBLEPower;
         public bool DisableLaserArmedIndication;
+        public string FeatureMask;
+        public string DetectorSN;
 
         public override bool Equals(object obj)
         {

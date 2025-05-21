@@ -42,6 +42,8 @@ namespace WasatchNET
 
             isAndor = true;
 
+            prioritizeVirtualEEPROM = true;
+
             // internal "step x" numbers are intended to synchronize with matching
             // steps in Wasatch.PY's wasatch.AndorDevice
             
@@ -129,6 +131,7 @@ namespace WasatchNET
             integrationTimeMS = (uint)exposure;
             pixels = (uint)xPixels;
             eeprom = new AndorEEPROM(this);
+            featureIdentification = new FeatureIdentification(0, 0);
 
             // step 17: ENLIGHTEN then uses GetNumberPreAmpGains and GetPreAmpGain to support high-gain mode
         }
@@ -390,13 +393,56 @@ namespace WasatchNET
 
         public override ulong laserModulationPulseWidth { get => 0; set { } }
 
-        public override float detectorGain { get => 0; }
+        public override float detectorGain
+        {
+            get
+            {
+                return 0.0f;
+            }
+            set
+            {
 
-        public override float detectorGainOdd { get => 0; }
+            }
+        }
 
-        public override short detectorOffset { get => 0; }
 
-        public override short detectorOffsetOdd { get => 0; }
+        public override float detectorGainOdd
+        {
+            get
+            {
+                return 0.0f;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override short detectorOffset
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
+
+        public override short detectorOffsetOdd
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
 
         public override bool isARM => false;
 
@@ -416,7 +462,21 @@ namespace WasatchNET
 
         public override ushort laserTemperatureRaw { get => 0; }
 
-        public override byte laserTemperatureSetpointRaw { get => 0; }
+        public override ushort laserTemperatureSetpointRaw { get => 0; }
+
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
+        }
 
         public override float batteryPercentage
         {
@@ -462,6 +522,35 @@ namespace WasatchNET
             }
         }
 
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+                
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
@@ -503,9 +592,17 @@ namespace WasatchNET
             }
         }
 
-
-
         public override string fpgaRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
+            }
+        }
+
+        public override string bleRevision 
         {
             get
             {

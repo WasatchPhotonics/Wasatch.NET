@@ -75,11 +75,11 @@ namespace WasatchNET
 
             startupIntegrationTimeMS = (ushort)HOCTSpectrometer.OctUsb.DefaultIntegrationTime();
             double temp = a.detectorTemperatureDegC;
-            startupDetectorTemperatureDegC = (short)temp;
-            if (startupDetectorTemperatureDegC >= 99)
-                startupDetectorTemperatureDegC = 15;
-            else if (startupDetectorTemperatureDegC <= -50)
-                startupDetectorTemperatureDegC = 15;
+            TECSetpoint = (short)temp;
+            if (TECSetpoint >= 99)
+                TECSetpoint = 15;
+            else if (TECSetpoint <= -50)
+                TECSetpoint = 15;
             startupTriggeringMode = 0;
             detectorGain = 0;
             detectorOffset = 0;

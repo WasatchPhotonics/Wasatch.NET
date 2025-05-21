@@ -225,17 +225,30 @@ namespace WasatchNET
         ushort _startupIntegrationTimeMS;
         public short startupDetectorTemperatureDegC
         {
-            get { return _startupDetectorTemperatureDegC; }
+            get { return TECSetpoint; }
             set
             {
-                EventHandler handler = EEPROMChanged;
-                _startupDetectorTemperatureDegC = value;
-                handler?.Invoke(this, new EventArgs());
-
+                TECSetpoint = value;
             }
         }
 
-        short _startupDetectorTemperatureDegC;
+        //
+        // this field used to be exclusively be used for the above for which it is now aliased (startup temp)
+        // however it briefly was given a second functionality to set the laser TEC setpoint. As of format 16 this
+        // secondary use case is deprecated by laserTECSetpoint. There are not currently any spectrometers that use
+        // both laser tec setpoint and non-ambient detectors, but format 16 would allow us to use both via laserTECSetpoint
+        //
+        public short TECSetpoint
+        {
+            get { return _TECSetpoint; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _TECSetpoint = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        short _TECSetpoint;
         public byte startupTriggeringMode
         {
             get { return _startupTriggeringMode; }
@@ -1552,7 +1565,7 @@ namespace WasatchNET
                 slitSizeUM = ParseData.toUInt16(pages[0], 41);
 
                 startupIntegrationTimeMS = ParseData.toUInt16(pages[0], 43);
-                startupDetectorTemperatureDegC = ParseData.toInt16(pages[0], 45);
+                TECSetpoint = ParseData.toInt16(pages[0], 45);
                 startupTriggeringMode = ParseData.toUInt8(pages[0], 47);
                 detectorGain = ParseData.toFloat(pages[0], 48); // "even pixels" for InGaAs
                 detectorOffset = ParseData.toInt16(pages[0], 52); // "even pixels" for InGaAs
@@ -1851,11 +1864,11 @@ namespace WasatchNET
 
             startupIntegrationTimeMS = 0;
             double temp = 0;
-            startupDetectorTemperatureDegC = (short)temp;
-            if (startupDetectorTemperatureDegC >= 99)
-                startupDetectorTemperatureDegC = 15;
-            else if (startupDetectorTemperatureDegC <= -50)
-                startupDetectorTemperatureDegC = 15;
+            TECSetpoint = (short)temp;
+            if (TECSetpoint >= 99)
+                TECSetpoint = 15;
+            else if (TECSetpoint <= -50)
+                TECSetpoint = 15;
             startupTriggeringMode = 2;
             detectorGain = a.detectorGain;
             detectorOffset = a.detectorOffset;
@@ -1951,7 +1964,7 @@ namespace WasatchNET
             hasLaser = json.IncLaser;
 
             startupIntegrationTimeMS = (ushort)json.StartupIntTimeMS;
-            startupDetectorTemperatureDegC = (short)json.StartupTempC;
+            TECSetpoint = (short)json.StartupTempC;
             startupTriggeringMode = (byte)json.StartupTriggerMode;
             detectorGain = (float)json.DetectorGain;
             detectorGainOdd = (float)json.DetectorGainOdd;
@@ -2122,7 +2135,7 @@ namespace WasatchNET
             json.IncCooling = hasCooling;
             json.IncLaser = hasLaser;
             json.StartupIntTimeMS = startupIntegrationTimeMS;
-            json.StartupTempC = startupDetectorTemperatureDegC;
+            json.StartupTempC = TECSetpoint;
             json.StartupTriggerMode = startupTriggeringMode;
             json.DetectorGain = detectorGain;
             json.DetectorGainOdd = detectorGainOdd;
@@ -2442,7 +2455,7 @@ namespace WasatchNET
 
             if (!ParseData.writeUInt16(slitSizeUM, pages[0], 41)) return false;
             if (!ParseData.writeUInt16(startupIntegrationTimeMS, pages[0], 43)) return false;
-            if (!ParseData.writeInt16(startupDetectorTemperatureDegC, pages[0], 45)) return false;
+            if (!ParseData.writeInt16(TECSetpoint, pages[0], 45)) return false;
             if (!ParseData.writeByte(startupTriggeringMode, pages[0], 47)) return false;
             if (!ParseData.writeFloat(detectorGain, pages[0], 48)) return false;
             if (!ParseData.writeInt16(detectorOffset, pages[0], 52)) return false;
@@ -2705,7 +2718,7 @@ namespace WasatchNET
             logger.debug("slitSizeUM            = {0}", slitSizeUM);
 
             logger.debug("startupIntegrationTimeMS = {0}", startupIntegrationTimeMS);
-            logger.debug("startupDetectorTempDegC = {0}", startupDetectorTemperatureDegC);
+            logger.debug("startupDetectorTempDegC = {0}", TECSetpoint);
             logger.debug("startupTriggeringMode = {0}", startupTriggeringMode);
             logger.debug("detectorGain          = {0:f2}", detectorGain);
             logger.debug("detectorOffset        = {0}", detectorOffset);

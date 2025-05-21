@@ -53,7 +53,7 @@ namespace WasatchNET
             hasCooling = true;
             startupIntegrationTimeMS = 8;
             //double temp = a.detectorTemperatureDegC;
-            startupDetectorTemperatureDegC = 15;
+            TECSetpoint = 15;
             detectorGain = 0;
             detectorOffset = 0;
 

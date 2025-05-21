@@ -362,7 +362,7 @@ namespace WasatchNET
                                     string camID = camera.GetCameraID(i);
                                     
                                     if (string.IsNullOrEmpty(camID))
-                                        camID = "Xtium-CL_MX4_1";
+                                        continue;
                                     
                                     logger.info("trying camera {0}", camID);
                                     bool ok = camera.Open(camID);
