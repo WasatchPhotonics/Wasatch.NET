@@ -31,6 +31,7 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         bool isARM { get; }
+        bool isOCT { get; }
         bool isSiG { get; }
         bool isSPI { get; }
         bool isGen15 { get; }
@@ -320,6 +321,8 @@ namespace WasatchNET
 
         ushort primaryADC { get; }
 
+        bool prioritizeVirtualEEPROM { get; }
+
         /// <summary>
         /// This is provided for spectrometers with a secondary ADC connected to an external 
         /// laser, photodiode or what-have-you.  Attempts to read it on spectrometers where it
@@ -398,5 +401,6 @@ namespace WasatchNET
         /// </summary>
         /// <returns>The acquired spectrum as an array of doubles</returns>
         double[] getSpectrum(bool forceNew);
+        ushort[] getFrame(bool direct);
     }
 }

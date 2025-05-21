@@ -96,6 +96,10 @@ namespace WasatchNET
 
             uint error = andorDriver.GetCapabilities(ref caps);
 
+            //
+            // Need to explore expanding the below, making detector name field more verbose
+            //
+
             string detType = "";
             if (error != AndorSpectrometer.DRV_SUCCESS)
                 detType = "iDus ";
@@ -108,7 +112,6 @@ namespace WasatchNET
                 else
                     detType = "iDus ";
             }
-            //caps.t
 
             int cameraSerial = 0;
             error = andorDriver.GetCameraSerialNumber(ref cameraSerial);

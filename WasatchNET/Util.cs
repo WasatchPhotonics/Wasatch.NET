@@ -1,5 +1,7 @@
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
@@ -246,6 +248,55 @@ namespace WasatchNET
             return tmp;
         }
 
+        public static float coeffConvertForward(float value, float[] coeffs)
+        {
+            float total = coeffs[0];
+
+            for (int i = 1; i < coeffs.Length; ++i)
+                total += (float)(coeffs[i] * Math.Pow(value, i));
+
+            return total;
+        }
+
+        public static float coeffConvertBackwardsNewton(float targetY, float[] coeffs, float minY, float maxY, float minX, float maxX)
+        {
+            double thresh = 0.01;
+
+            float increments = (maxX - minX) / 1000;
+
+
+            double pctY = (targetY - minY) / (maxY - minY);
+
+            float guessX = minX + (float)pctY * (maxX - minX);
+
+            if (guessX <= minX)
+                return minX;
+            if (guessX >= maxX)
+                return maxX;
+
+            float result = coeffConvertForward(guessX, coeffs);
+            double delta = targetY - result;
+            double absDelta = Math.Abs(targetY - result);
+
+            while (absDelta > thresh) 
+            {
+                double momentarySlope = (coeffConvertForward(guessX + increments, coeffs) - coeffConvertForward(guessX, coeffs)) / increments;
+
+                guessX = guessX + ((float)delta * (1 / (float)momentarySlope)); 
+                result = coeffConvertForward(guessX, coeffs);
+                delta = targetY - result;
+                absDelta = Math.Abs(targetY - result);
+
+                if (guessX <= minX)
+                    return minX;
+                if (guessX >= maxX)
+                    return maxX;
+            }
+
+            return guessX;
+        }
+
+
         /// <summary>
         /// Performs SRM correction on the given spectrum using the proivided ROI and coefficients.
         /// Non-ROI pixels are not corrected. 
@@ -307,5 +358,31 @@ namespace WasatchNET
 
             return true;
         }
+
+        public static double[] reverseRamanCorrection(double[] spectrum, float[] correctionCoeffs, int roiStart, int roiEnd)
+        {
+            if (roiStart >= roiEnd)
+                return spectrum;
+
+            double[] temp = new double[spectrum.Length];
+            spectrum.CopyTo(temp, 0);
+
+            for (int i = roiStart; i <= roiEnd; ++i)
+            {
+                double logTen = 0.0;
+                for (int j = 0; j < correctionCoeffs.Length; j++)
+                {
+                    double x_to_i = Math.Pow(i, j);
+                    double scaled = correctionCoeffs[j] * x_to_i;
+                    logTen += scaled;
+                }
+
+                double expanded = Math.Pow(10, logTen);
+                temp[i] /= expanded;
+            }
+
+            return temp;
+        }
+
     }
 }

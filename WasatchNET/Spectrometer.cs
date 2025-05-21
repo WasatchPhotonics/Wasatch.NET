@@ -1,4 +1,5 @@
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -114,6 +115,8 @@ namespace WasatchNET
         // Convenience lookups
         ////////////////////////////////////////////////////////////////////////
 
+        public bool prioritizeVirtualEEPROM { get; protected set; } = false;
+
         /// <summary>how many pixels does the spectrometer have (spectrum length)</summary>
         public uint pixels { get; protected set; }
 
@@ -181,6 +184,15 @@ namespace WasatchNET
         /// EEPROM handling.
         /// </summary>
         public bool isAndor { get; protected set; } = false;
+
+        /// <summary>
+        /// This is a quick way to know if we should expect our spectrometer to
+        /// generate wavenumbers or not, all values above 0 are considered viable 
+        /// </summary>
+        public bool looksRaman
+        {
+            get { return excitationWavelengthNM > 0; } 
+        }
 
         /// <summary>
         /// Some spectrometers send a start-of-frame marker in the first pixel of
@@ -2224,7 +2236,7 @@ namespace WasatchNET
         public virtual void regenerateWavelengths()
         {
             wavelengths = Util.generateWavelengths(pixels, eeprom.wavecalCoeffs);
-            if (excitationWavelengthNM > 0)
+            if (looksRaman)
                 wavenumbers = Util.wavelengthsToWavenumbers(excitationWavelengthNM, wavelengths);
         }
 
@@ -2818,7 +2830,10 @@ namespace WasatchNET
                 }
 
                 // generate and cache the MW
-                laserPowerSetpointMW_ = Math.Min(eeprom.maxLaserPowerMW, Math.Max(eeprom.minLaserPowerMW, value));
+                if (ignorePowerLimits)
+                    laserPowerSetpointMW_ = value;
+                else
+                    laserPowerSetpointMW_ = Math.Min(eeprom.maxLaserPowerMW, Math.Max(eeprom.minLaserPowerMW, value));
 
                 // convert to percent and apply
                 float perc = eeprom.laserPowerCoeffs[0]
@@ -2835,6 +2850,7 @@ namespace WasatchNET
         }
         protected float laserPowerSetpointMW_ = 0;
 
+        public bool ignorePowerLimits { get; set; } = false;
 
         public ushort getDAC_UNUSED()
         {
@@ -2932,6 +2948,8 @@ namespace WasatchNET
                     if (nextGood < spectrum.Length)
                         for (int j = 0; j < nextGood; j++)
                             spectrum[j] = spectrum[nextGood];
+
+                    i++;
                 }
                 else
                 {
@@ -3482,7 +3500,7 @@ namespace WasatchNET
             return sum;
         }
 
-        public virtual ushort[] getFrame()
+        public virtual ushort[] getFrame(bool direct = true)
         {
             return null;
         }

@@ -174,4 +174,49 @@ namespace WasatchNET
             armInvertedRetvals.Add(Opcodes.PROCESS_LIBRARY);
         }
     }
+    public class OCTOpcodeHelper 
+    {
+        static readonly OCTOpcodeHelper instance = new OCTOpcodeHelper();
+
+        public static OCTOpcodeHelper getInstance()
+        {
+            return instance;
+        }
+
+        Dictionary<Opcodes, string> cmd = new Dictionary<Opcodes, string>();
+
+        public Dictionary<Opcodes, string> getDict()
+        {
+            return cmd;
+        }
+
+        OCTOpcodeHelper()
+        {
+            cmd[Opcodes.GET_DETECTOR_GAIN                      ] = "tbd";
+            cmd[Opcodes.GET_DETECTOR_OFFSET                    ] = "tbd";
+            cmd[Opcodes.GET_FIRMWARE_REVISION                  ] = "tbd";
+            cmd[Opcodes.GET_FPGA_REVISION                      ] = "tbd";
+            cmd[Opcodes.GET_INTEGRATION_TIME                   ] = "r tint";
+            cmd[Opcodes.GET_LINE_PERIOD                        ] = "r tper";
+            cmd[Opcodes.GET_TEST_PATTERN                       ] = "r srce";
+            cmd[Opcodes.GET_MODEL_CONFIG                       ] = "r deid";
+            cmd[Opcodes.GET_FIRMWARE_REVISION                  ] = "r dfwv";
+            cmd[Opcodes.GET_OCT_ANALOG_GAIN                    ] = "r pamp";
+            cmd[Opcodes.GET_DETECTOR_GAIN                      ] = "r gain";
+            cmd[Opcodes.GET_DETECTOR_OFFSET                    ] = "r offs";
+            cmd[Opcodes.GET_COLLECTION_MODE                    ] = "r mode";
+            cmd[Opcodes.GET_INVERT_X_AXIS                      ] = "r revr";
+
+            cmd[Opcodes.SET_DETECTOR_GAIN                      ] = "tbd";
+            cmd[Opcodes.SET_DETECTOR_OFFSET                    ] = "tbd";
+            cmd[Opcodes.SET_INTEGRATION_TIME                   ] = "w tint";
+            cmd[Opcodes.SET_LINE_PERIOD                        ] = "w tper";
+            cmd[Opcodes.SET_TEST_PATTERN                       ] = "w srce";
+            cmd[Opcodes.SET_OCT_ANALOG_GAIN                    ] = "w pamp";
+            cmd[Opcodes.SET_DETECTOR_GAIN                      ] = "w gain";
+            cmd[Opcodes.SET_DETECTOR_OFFSET                    ] = "w offs";
+            cmd[Opcodes.SET_COLLECTION_MODE                    ] = "w mode";
+            cmd[Opcodes.SET_INVERT_X_AXIS                      ] = "w revr";
+        }
+    }
 }

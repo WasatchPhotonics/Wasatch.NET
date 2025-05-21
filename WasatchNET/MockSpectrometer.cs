@@ -19,6 +19,10 @@ namespace WasatchNET
         string currentSource = "";
         Random noiseMaker = new Random();
         public bool noisy = true;
+
+        public double? spectralNoiseMean = null;
+        public double? spectralNoiseSD = null;
+
         public enum SAMPLE_METHOD { EXACT, LINEAR_INTERPOLATION, NOISY_LINEAR_INTERPOLATION };
 
         /// <summary>
@@ -40,12 +44,12 @@ namespace WasatchNET
         /// </summary>
         internal MockSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
-
+            prioritizeVirtualEEPROM = true;
         }
 
         public MockSpectrometer() : base(null)
         {
-
+            prioritizeVirtualEEPROM = true;
         }
 
         public override bool areaScanEnabled
@@ -80,7 +84,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0f;
+                return eeprom.detectorGain;
             }
             set
             {
@@ -92,7 +96,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0f;
+                return eeprom.detectorGainOdd;
             }
             set
             {
@@ -104,7 +108,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0;
+                return eeprom.detectorOffset;
             }
             set
             {
@@ -116,7 +120,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0;
+                return eeprom.detectorOffsetOdd;
             }
             set
             {
@@ -156,6 +160,13 @@ namespace WasatchNET
             get
             {
                 return noisy ? (float)addNoise(detectorTECSetpointDegC, .1, .03) : detectorTECSetpointDegC;
+            }
+        }
+        public override ushort detectorTemperatureRaw
+        {
+            get
+            {
+                return 0;
             }
         }
 
@@ -496,9 +507,6 @@ namespace WasatchNET
                 }
             }
 
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spec);
-
             if (eeprom.featureMask.bin2x2)
             {
                 var smoothed = new double[spec.Length];
@@ -519,7 +527,7 @@ namespace WasatchNET
             return spec;
         }
 
-        public override ushort[] getFrame()
+        public override ushort[] getFrame(bool direct = true)
         {
             logger.debug($"getSpectrumRaw: requesting spectrum {id}");
 
@@ -541,10 +549,6 @@ namespace WasatchNET
                     logger.debug("Unable to generate spectrum for {0} in getSpectrum, returning noise", currentSource);
                 }
             }
-
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spec);
-
 
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
 
@@ -811,7 +815,12 @@ namespace WasatchNET
 
             //TS: apply noise if desired. Probably should have higher SD and be more data driven
             if (sampleMethod == SAMPLE_METHOD.NOISY_LINEAR_INTERPOLATION)
-                final = addNoise(final, 20, 1);
+            {
+                if (spectralNoiseMean.HasValue && spectralNoiseSD.HasValue)
+                    final = addNoise(final, spectralNoiseMean.Value, spectralNoiseSD.Value);
+                else
+                    final = addNoise(final, 20, 1);
+            }
 
             return final;
         }

@@ -944,7 +944,6 @@ namespace WasatchNET
             }
         }
 
-
         internal HOCTSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
             isOCT = true;
@@ -1144,7 +1143,7 @@ namespace WasatchNET
             return data;  
         }
 
-        public override ushort[] getFrame()
+        public override ushort[] getFrame(bool direct = true)
         {
             lock (frameLock)
             {

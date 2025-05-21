@@ -1,4 +1,6 @@
-﻿namespace WasatchNET
+﻿using System.ComponentModel;
+
+namespace WasatchNET
 {
     /// <summary>
     /// This class encapsulates a 16-bit set of boolean flags which indicate
@@ -6,8 +8,10 @@
     /// expending quite as much storage as, for instance, legacy hasCooling,
     /// hasLaser or hasBattery bytes.
     /// </summary>
-    public class FeatureMask
+    public class FeatureMask : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
         enum Flags 
         { 
             INVERT_X_AXIS                = 0x0001, // 2^0 
@@ -73,7 +77,22 @@
         /// between the spectrometer and driver and ensure correct internal 
         /// processing within the driver.
         /// </summary>
-        public bool invertXAxis { get; set; }
+        public bool invertXAxis 
+        { 
+            get
+            {
+                return _invertXAxis;
+            }
+            set
+            {
+                if (value != _invertXAxis)
+                {
+                    _invertXAxis = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(invertXAxis)));
+                }
+            }
+        }
+        bool _invertXAxis = false;
 
         /// <summary>
         /// Some 2D detectors use a Bayer filter in which pixel columns alternate

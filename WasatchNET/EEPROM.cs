@@ -861,6 +861,26 @@ namespace WasatchNET
         public List<short> badPixelList { get; protected set; }
         public SortedSet<short> badPixelSet { get; protected set; }
 
+        public void addBadPixel(short pixel)
+        {
+            if (!badPixelSet.Contains(pixel))
+            {
+                int addIndex = -1;
+                for (int i = 0; i < badPixels.Length; ++i)
+                {
+                    if (badPixels[i] == -1)
+                        addIndex = i;
+                }
+
+                if (addIndex != -1)
+                {
+                    badPixels[addIndex] = pixel;
+                    badPixelSet.Add(pixel);
+                    badPixelList.Add(pixel);
+                }
+            }
+        }
+
         public string productConfiguration
         {
             get { return _productConfiguration; }
@@ -1239,6 +1259,31 @@ namespace WasatchNET
         List<UInt16> _librarySpectrum;
 
         /////////////////////////////////////////////////////////////////////////
+        // Virtual Pages
+        /////////////////////////////////////////////////////////////////////////
+        
+        /*
+         * These fields are not currently apportioned space on the physical EEPROM
+         * and thus are exclusively used with units that have purely virtual "EEPROM."
+         * 
+         * This is defined in the base class so we don't need downstream casts or some
+         * intermediate subclass to cast to...though that would make some sense too
+         * 
+         */
+
+        public string detectorSerialNumber
+        {
+            get { return _detectorSerialNumber; }
+            set
+            {
+                _detectorSerialNumber = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+
+        string _detectorSerialNumber;
+
+        /////////////////////////////////////////////////////////////////////////
         // Compound Fields
         /////////////////////////////////////////////////////////////////////////
 
@@ -1391,6 +1436,31 @@ namespace WasatchNET
 
             badPixelList = new List<short>();
             badPixelSet = new SortedSet<short>();
+        }
+
+        public EEPROM(EEPROMJSON json)
+        {
+            wavecalCoeffs = new float[5];
+            degCToDACCoeffs = new float[3];
+            adcToDegCCoeffs = new float[3];
+            ROIVertRegionStart = new ushort[3];
+            ROIVertRegionEnd = new ushort[3];
+            badPixels = new short[15];
+            linearityCoeffs = new float[5];
+            laserPowerCoeffs = new float[4];
+            intensityCorrectionCoeffs = new float[12];
+
+            badPixelList = new List<short>();
+            badPixelSet = new SortedSet<short>();
+
+            pages = new List<byte[]>();
+            for (ushort page = 0; page < MAX_PAGES; page++)
+            {
+                pages.Add(new byte[64]);
+            }
+
+            setFromJSON(json);
+            writeParse();
         }
 
         public virtual bool read()
@@ -1846,6 +1916,27 @@ namespace WasatchNET
 
             featureMask = new FeatureMask();
         }
+
+        public string hexdump()
+        {
+            string line = "";
+
+            if (pages != null)
+            {
+                foreach (byte[] buf in pages)
+                {
+                    for (int i = 0; i < buf.Length; i++)
+                    {
+                        line += String.Format("{0:x2} ", buf[i]);
+                    }
+                }
+
+                line = line.Substring(0, line.Length - 1);
+            }
+
+            return line;
+        }
+
         public void setFromJSON(EEPROMJSON json)
         {
             if (json.Serial != null)
@@ -1931,10 +2022,18 @@ namespace WasatchNET
             laserWarmupSec = json.LaserWarmupS;
             laserExcitationWavelengthNMFloat = (float)json.ExcitationWavelengthNM;
             avgResolution = (float)json.AvgResolution;
-            laserPowerCoeffs[0] = (float)json.LaserPowerCoeffs[0];
-            laserPowerCoeffs[1] = (float)json.LaserPowerCoeffs[1];
-            laserPowerCoeffs[2] = (float)json.LaserPowerCoeffs[2];
-            laserPowerCoeffs[3] = (float)json.LaserPowerCoeffs[3];
+
+            if (json.LaserPowerCoeffs != null)
+            {
+                laserPowerCoeffs[0] = (float)json.LaserPowerCoeffs[0];
+                laserPowerCoeffs[1] = (float)json.LaserPowerCoeffs[1];
+                laserPowerCoeffs[2] = (float)json.LaserPowerCoeffs[2];
+                laserPowerCoeffs[3] = (float)json.LaserPowerCoeffs[3];
+            }
+            else
+            {
+                laserPowerCoeffs = new float[4];
+            }
 
             if (json.UserText != null)
                 userText = json.UserText;
@@ -1955,10 +2054,13 @@ namespace WasatchNET
             badPixels[13] = (Int16)json.BadPixels[13];
             badPixels[14] = (Int16)json.BadPixels[14];
 
+            detectorSerialNumber = json.DetectorSN;
+
             if (json.ProductConfig != null)
                 productConfiguration = json.ProductConfig;
 
             PAGE_SUBFORMAT jsonSubformat = (PAGE_SUBFORMAT)json.Subformat;
+            subformat = jsonSubformat;
 
             if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
             {
@@ -2123,6 +2225,7 @@ namespace WasatchNET
                 json.BadPixels[13] = badPixels[13];
                 json.BadPixels[14] = badPixels[14];
             }
+            json.DetectorSN = detectorSerialNumber;
             json.UserText = userText;
             json.ProductConfig = productConfiguration;
             if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
@@ -2197,6 +2300,7 @@ namespace WasatchNET
             }
 
             json.FeatureMask = featureMask.ToString();
+            json.HexDump = hexdump();
 
             return json;
         }

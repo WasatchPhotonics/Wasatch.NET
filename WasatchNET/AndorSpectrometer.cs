@@ -38,6 +38,8 @@ namespace WasatchNET
 
         internal AndorSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
+            prioritizeVirtualEEPROM = true;
+
             isAndor = true;
 
             // internal "step x" numbers are intended to synchronize with matching

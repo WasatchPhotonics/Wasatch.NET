@@ -65,6 +65,7 @@ namespace WasatchNET
         public bool EvenOddHardwareCorrected;
         public byte LaserWarmupS;
         public byte Subformat;
+        public string HexDump;
         EEPROM.PAGE_SUBFORMAT subformat => (EEPROM.PAGE_SUBFORMAT)Subformat;
         public double[] Region1WavecalCoeffs;
         public double[] Region2WavecalCoeffs;
@@ -80,10 +81,11 @@ namespace WasatchNET
         public byte RegionCount;
         public bool SigLaserTEC;
         public bool HasInterlockFeedback;
+        public string FeatureMask;
+        public string DetectorSN;
         public bool HasShutter;
         public bool DisableBLEPower;
         public bool DisableLaserArmedIndication;
-        public string FeatureMask;
 
         public override bool Equals(object obj)
         {
@@ -257,6 +259,8 @@ namespace WasatchNET
                 return false;
             if (item.FeatureMask != this.FeatureMask)
                 return false;
+            if (item.DetectorSN != this.DetectorSN)
+                return false;
 
             return true;
         }
@@ -360,6 +364,7 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + DisableBLEPower.GetHashCode();
             hashCode = hashCode * -1521134295 + DisableLaserArmedIndication.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMask.GetHashCode();
+            hashCode = hashCode * -1521134295 + DetectorSN.GetHashCode();
 
             return hashCode;
         }
@@ -445,6 +450,7 @@ namespace WasatchNET
 
             addField(sb, indent, "UserText", UserText);
             addField(sb, indent, "ProductConfig", ProductConfig);
+            addField(sb, indent, "DetectorSN", DetectorSN);
             addField(sb, indent, "Subformat", Subformat);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE)
@@ -463,6 +469,7 @@ namespace WasatchNET
             addField(sb, indent, "DisableBLEPower", DisableBLEPower);
             addField(sb, indent, "DisableLaserArmedIndication", DisableLaserArmedIndication);
             addField(sb, indent, "FeatureMask", FeatureMask);
+            addField(sb, indent, "HexDump", HexDump);
             sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.DETECTOR_REGIONS)
