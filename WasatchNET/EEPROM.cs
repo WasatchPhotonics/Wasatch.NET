@@ -231,6 +231,13 @@ namespace WasatchNET
                 TECSetpoint = value;
             }
         }
+
+        //
+        // this field used to be exclusively be used for the above for which it is now aliased (startup temp)
+        // however it briefly was given a second functionality to set the laser TEC setpoint. As of format 16 this
+        // secondary use case is deprecated by laserTECSetpoint. There are not currently any spectrometers that use
+        // both laser tec setpoint and non-ambient detectors, but format 16 would allow us to use both via laserTECSetpoint
+        //
         public short TECSetpoint
         {
             get { return _TECSetpoint; }
