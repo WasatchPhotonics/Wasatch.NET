@@ -83,6 +83,7 @@ namespace WasatchNET
         public bool HasShutter;
         public bool DisableBLEPower;
         public bool DisableLaserArmedIndication;
+        public string FeatureMask;
 
         public override bool Equals(object obj)
         {
@@ -254,6 +255,8 @@ namespace WasatchNET
                 return false;
             if (item.RegionCount != this.RegionCount)
                 return false;
+            if (item.FeatureMask != this.FeatureMask)
+                return false;
 
             return true;
         }
@@ -356,6 +359,7 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + HasShutter.GetHashCode();
             hashCode = hashCode * -1521134295 + DisableBLEPower.GetHashCode();
             hashCode = hashCode * -1521134295 + DisableLaserArmedIndication.GetHashCode();
+            hashCode = hashCode * -1521134295 + FeatureMask.GetHashCode();
 
             return hashCode;
         }
@@ -458,6 +462,7 @@ namespace WasatchNET
             addField(sb, indent, "HasShutter", HasShutter);
             addField(sb, indent, "DisableBLEPower", DisableBLEPower);
             addField(sb, indent, "DisableLaserArmedIndication", DisableLaserArmedIndication);
+            addField(sb, indent, "FeatureMask", FeatureMask);
             sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.DETECTOR_REGIONS)

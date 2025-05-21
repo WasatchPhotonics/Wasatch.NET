@@ -36,6 +36,11 @@
             disableLaserArmedIndication  = 0 != (value & (ushort)Flags.DISABLE_LASER_ARMED_INDIC);
         }
 
+        public override string ToString()
+        {
+            return $"0x{toUInt16():X4}";
+        }
+
         public ushort toUInt16()
         {
             ushort value = 0;

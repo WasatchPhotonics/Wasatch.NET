@@ -30,125 +30,26 @@ namespace WasatchNET
 
         public override bool read()
         {
-            BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
-            model = "";
-
-            serialNumber = "";
-
-            wavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
-
-            baudRate = 0;
-
-            hasCooling = true;
-            hasBattery = false;
-            hasLaser = false;
-
-            excitationNM = 0;
-
-            slitSizeUM = 0;
-
-            byte[] buffer = new byte[16];
-            int errorReader = 0;
-
-            string test = buffer.ToString();
-
-            startupIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
-            double temp = a.detectorTemperatureDegC;
-            startupDetectorTemperatureDegC = (short)temp;
-            if (startupDetectorTemperatureDegC >= 99)
-                startupDetectorTemperatureDegC = 15;
-            else if (startupDetectorTemperatureDegC <= -50)
-                startupDetectorTemperatureDegC = 15;
-            startupTriggeringMode = 2;
-            detectorGain = 0;
-            detectorOffset = 0;
-            detectorGainOdd = 0;
-            detectorOffsetOdd = 0;
-
-            degCToDACCoeffs[0] = 0;
-            degCToDACCoeffs[1] = 0;
-            degCToDACCoeffs[2] = 0;
-            detectorTempMax = 25;
-            detectorTempMin = 10;
-            adcToDegCCoeffs[0] = 0;
-            adcToDegCCoeffs[1] = 0;
-            adcToDegCCoeffs[2] = 0;
-            thermistorResistanceAt298K = 0;
-            thermistorBeta = 0;
-            calibrationDate = "";
-            calibrationBy = "";
-
-            detectorName = "";
-            activePixelsHoriz = (ushort)a.pixels;
-            activePixelsVert = 0;
-            minIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
-            maxIntegrationTimeMS = 1000000;
-            actualPixelsHoriz = (ushort)a.pixels;
-            ROIHorizStart = 0;
-            ROIHorizEnd = 0;
-            ROIVertRegionStart[0] = 0;
-            ROIVertRegionEnd[0] = 0;
-            ROIVertRegionStart[1] = 0;
-            ROIVertRegionEnd[1] = 0;
-            ROIVertRegionStart[2] = 0;
-            ROIVertRegionEnd[2] = 0;
-            linearityCoeffs[0] = 0;
-            linearityCoeffs[1] = 0;
-            linearityCoeffs[2] = 0;
-            linearityCoeffs[3] = 0;
-            linearityCoeffs[4] = 0;
-
-            laserPowerCoeffs[0] = 0;
-            laserPowerCoeffs[1] = 0;
-            laserPowerCoeffs[2] = 0;
-            laserPowerCoeffs[3] = 0;
-            maxLaserPowerMW = 0;
-            minLaserPowerMW = 0;
-            laserExcitationWavelengthNMFloat = 830.0f;
-
-            avgResolution = 0.0f;
-
-            userData = new byte[63];
-
-            badPixelSet = new SortedSet<short>();
-            productConfiguration = "";
-
-            intensityCorrectionOrder = 0;
-            featureMask.gen15 = false;
-
-            return true;
+            Task<bool> task = Task.Run(async () => await readAsync());
+            return task.Result;
         }
 
         public override bool write(bool allPages = false)
         {
-            defaultValues = false;
-            return true;
+            Task<bool> task = Task.Run(async () => await writeAsync(allPages));
+            return task.Result;
         }
 
         public override async Task<bool> readAsync()
         {
             BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
-            model = "";
+
+            setDefault(spectrometer);
 
             serialNumber = "";
 
-            wavecalCoeffs = new float[] { 0, 1, 0, 0, 0 };
-
-            baudRate = 0;
-
             hasCooling = true;
-            hasBattery = false;
-            hasLaser = false;
-
-            excitationNM = 0;
-
-            slitSizeUM = 0;
-
-            byte[] buffer = new byte[16];
             int errorReader = 0;
-
-            string test = buffer.ToString();
-
             startupIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
             double temp = a.detectorTemperatureDegC;
             startupDetectorTemperatureDegC = (short)temp;
@@ -156,61 +57,18 @@ namespace WasatchNET
                 startupDetectorTemperatureDegC = 15;
             else if (startupDetectorTemperatureDegC <= -50)
                 startupDetectorTemperatureDegC = 15;
-            startupTriggeringMode = 2;
             detectorGain = 0;
             detectorOffset = 0;
-            detectorGainOdd = 0;
-            detectorOffsetOdd = 0;
 
-            degCToDACCoeffs[0] = 0;
-            degCToDACCoeffs[1] = 0;
-            degCToDACCoeffs[2] = 0;
             detectorTempMax = 25;
             detectorTempMin = 10;
-            adcToDegCCoeffs[0] = 0;
-            adcToDegCCoeffs[1] = 0;
-            adcToDegCCoeffs[2] = 0;
-            thermistorResistanceAt298K = 0;
-            thermistorBeta = 0;
-            calibrationDate = "";
-            calibrationBy = "";
-
-            detectorName = "";
             activePixelsHoriz = (ushort)a.pixels;
             activePixelsVert = 0;
             minIntegrationTimeMS = (ushort)(SeaBreezeWrapper.seabreeze_get_min_integration_time_microsec(a.specIndex, ref errorReader) / 1000);
             maxIntegrationTimeMS = 1000000;
             actualPixelsHoriz = (ushort)a.pixels;
-            ROIHorizStart = 0;
-            ROIHorizEnd = 0;
-            ROIVertRegionStart[0] = 0;
-            ROIVertRegionEnd[0] = 0;
-            ROIVertRegionStart[1] = 0;
-            ROIVertRegionEnd[1] = 0;
-            ROIVertRegionStart[2] = 0;
-            ROIVertRegionEnd[2] = 0;
-            linearityCoeffs[0] = 0;
-            linearityCoeffs[1] = 0;
-            linearityCoeffs[2] = 0;
-            linearityCoeffs[3] = 0;
-            linearityCoeffs[4] = 0;
-
-            laserPowerCoeffs[0] = 0;
-            laserPowerCoeffs[1] = 0;
-            laserPowerCoeffs[2] = 0;
-            laserPowerCoeffs[3] = 0;
-            maxLaserPowerMW = 0;
-            minLaserPowerMW = 0;
             laserExcitationWavelengthNMFloat = 830.0f;
 
-            avgResolution = 0.0f;
-
-            userData = new byte[63];
-
-            badPixelSet = new SortedSet<short>();
-            productConfiguration = "";
-
-            intensityCorrectionOrder = 0;
             featureMask.gen15 = false;
 
             return true;
