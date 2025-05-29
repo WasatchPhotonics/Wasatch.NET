@@ -67,6 +67,18 @@ namespace WasatchNET
 
         public enum UntetheredCaptureStatus {  IDLE = 0, DARK = 1, WARMUP = 2, SAMPLE = 3, PROCESSING = 4, ERROR = 5 }
 
+        public enum IMAGE_SENSOR_STATUS
+        {
+            IMG_SNSR_STATE_UNKNOWN = 0,
+            IMG_SNSR_STATE_NA = IMG_SNSR_STATE_UNKNOWN,
+            IMG_SNSR_STATE_STANDBY = 1,
+            IMG_SNSR_STATE_TRANS_IN_OUT_STANDBY = 2,
+            IMG_SNSR_STATE_REG_HOLD = 3,
+            IMG_SNSR_STATE_ACTIVE = 4,
+            IMG_SNSR_STATE_ERROR = 5,
+            IMG_SNSR_STATE_READ_FAIL = 6
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
@@ -542,8 +554,8 @@ namespace WasatchNET
         // property caching 
         ////////////////////////////////////////////////////////////////////////
 
-        private HashSet<Opcodes> readOnce = new HashSet<Opcodes>();
-        private HashSet<Opcodes> noCache = new HashSet<Opcodes>();
+        protected HashSet<Opcodes> readOnce = new HashSet<Opcodes>();
+        protected HashSet<Opcodes> noCache = new HashSet<Opcodes>();
 
         public void useCache(Opcodes op) { noCache.Remove(op); }
         public void dontCache(Opcodes op) { noCache.Add(op); }
@@ -752,7 +764,7 @@ namespace WasatchNET
                 readOnce.Add(op);
             }
         }
-        float detectorGain_;
+        protected float detectorGain_;
 
         public virtual float detectorGainOdd
         {
@@ -904,7 +916,7 @@ namespace WasatchNET
             }
 
         }
-        ushort detectorStartLine_ = 0;
+        protected ushort detectorStartLine_ = 0;
 
         public virtual UInt16 detectorStopLine
         {
@@ -926,7 +938,7 @@ namespace WasatchNET
             }
 
         }
-        ushort detectorStopLine_ = 0;
+        protected ushort detectorStopLine_ = 0;
 
         public virtual bool detectorTECEnabled
         {
@@ -1093,7 +1105,7 @@ namespace WasatchNET
                 return firmwareRevision_ = s;
             }
         }
-        string firmwareRevision_;
+        protected string firmwareRevision_;
 
         public virtual string fpgaRevision
         {
@@ -1131,7 +1143,8 @@ namespace WasatchNET
                         break;
                     s += (char)buf[i];
                 }
-                readOnce.Add(op);
+                if (s.Length > 0)
+                    readOnce.Add(op);
                 return bleRevision_ = s.TrimEnd();
             }
         }
@@ -1677,7 +1690,7 @@ namespace WasatchNET
                     return;
 
                 if (value)
-                    laserTECMode = (ushort)LaserTECMode.ON;
+                    laserTECMode = (ushort)LaserTECMode.AUTO;
                 else
                     laserTECMode = (ushort)LaserTECMode.OFF;
             }
@@ -1712,6 +1725,42 @@ namespace WasatchNET
             }
         }
         protected ushort laserTECMode_ = 0;
+
+        public virtual IMAGE_SENSOR_STATUS imageSensorStatus
+        {
+            //we do NOT want to cache this one
+            get
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE;
+                byte[] pack = getCmd(op, 1);
+
+                if (pack != null && pack.Length > 0)
+                    return (IMAGE_SENSOR_STATUS)pack[0];
+
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_READ_FAIL;
+            }
+        }
+
+        public virtual ushort imageSensorTimeout
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT;
+                if (haveCache(op))
+                    return imageSensorTimeout_;
+                readOnce.Add(op);
+                return imageSensorTimeout_ = Unpack.toUshort(getCmd2(op, 2));
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT;
+                if (haveCache(op) && value == detectorStartLine_)
+                    return;
+                sendCmd2(Opcodes.SET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT, (ushort)(imageSensorTimeout_ = value));
+                readOnce.Add(op);
+            }
+        }
+        ushort imageSensorTimeout_ = 10000;
 
         public uint lineLength
         {
@@ -2205,6 +2254,8 @@ namespace WasatchNET
                     detectorStartLine = start;
                     detectorStopLine = end;
                 }
+
+                imageSensorTimeout = 60000;
             }
 
 

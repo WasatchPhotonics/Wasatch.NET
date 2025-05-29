@@ -37,7 +37,7 @@ namespace WasatchNET
             return task.Result;
         }
 
-        public override bool read()
+        public override bool read(bool skipRead = false)
         {
             Task<bool> task = Task.Run(async () => await readAsync());
             return task.Result;
@@ -57,7 +57,7 @@ namespace WasatchNET
             return writeOK;
         }
 
-        public override async Task<bool> readAsync()
+        public override async Task<bool> readAsync(bool skipRead = false)
         {
             WPOCTSpectrometer a = spectrometer as WPOCTSpectrometer;
             setDefault(spectrometer);

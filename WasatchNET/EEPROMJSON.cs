@@ -84,6 +84,7 @@ namespace WasatchNET
         public bool HasShutter;
         public bool DisableBLEPower;
         public bool DisableLaserArmedIndication;
+        public bool InterlockExcluded;
         public string FeatureMask;
         public string DetectorSN;
 
@@ -219,6 +220,8 @@ namespace WasatchNET
             if (item.DisableBLEPower != this.DisableBLEPower)
                 return false;
             if (item.DisableLaserArmedIndication != this.DisableLaserArmedIndication)
+                return false;
+            if (item.InterlockExcluded != this.InterlockExcluded)
                 return false;
             if (item.Subformat != this.Subformat)
                 return false;
@@ -363,6 +366,7 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + HasShutter.GetHashCode();
             hashCode = hashCode * -1521134295 + DisableBLEPower.GetHashCode();
             hashCode = hashCode * -1521134295 + DisableLaserArmedIndication.GetHashCode();
+            hashCode = hashCode * -1521134295 + InterlockExcluded.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMask.GetHashCode();
             hashCode = hashCode * -1521134295 + DetectorSN.GetHashCode();
 
@@ -468,6 +472,7 @@ namespace WasatchNET
             addField(sb, indent, "HasShutter", HasShutter);
             addField(sb, indent, "DisableBLEPower", DisableBLEPower);
             addField(sb, indent, "DisableLaserArmedIndication", DisableLaserArmedIndication);
+            addField(sb, indent, "InterlockExcluded", InterlockExcluded);
             addField(sb, indent, "FeatureMask", FeatureMask);
             addField(sb, indent, "HexDump", HexDump);
             sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
