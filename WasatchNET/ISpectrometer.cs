@@ -144,6 +144,7 @@ namespace WasatchNET
 
         string firmwareRevision { get; }
         string fpgaRevision { get; }
+        string bleRevision { get; }
 
         bool highGainModeEnabled { get; set; }
 
@@ -303,7 +304,10 @@ namespace WasatchNET
         /// as the final temperature is generated in hardware as a combination of
         /// the DAC setpoint value and the physical potentiometer.
         /// </remarks>
-        byte laserTemperatureSetpointRaw { get; set; }
+        ushort laserTemperatureSetpointRaw { get; set; }
+        UInt16 laserWatchdogSec { get; set; }
+        bool laserTECEnabled { get; set; }
+        ushort laserTECMode { get; set; }
 
         uint lineLength { get; }
 

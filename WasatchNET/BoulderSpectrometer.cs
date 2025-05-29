@@ -50,6 +50,7 @@ namespace WasatchNET
                 }
             }
 
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         protected async Task<long> getIntegrationTimeAsync()
@@ -800,7 +801,20 @@ namespace WasatchNET
 
         public override ushort laserTemperatureRaw { get => 0; }
 
-        public override byte laserTemperatureSetpointRaw { get => 0; }
+        public override ushort laserTemperatureSetpointRaw { get => 0; }
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
+        }
 
         public override float batteryPercentage
         {
@@ -837,6 +851,35 @@ namespace WasatchNET
                     return (float)status.detectorTemperatureDegC;
                 else
                     return 0;
+            }
+        }
+
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
             }
         }
 
@@ -980,6 +1023,16 @@ namespace WasatchNET
 
                     return formatted;
                 }
+            }
+        }
+
+        public override string bleRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
             }
         }
 

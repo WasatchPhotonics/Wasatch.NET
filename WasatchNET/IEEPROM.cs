@@ -42,7 +42,7 @@ namespace WasatchNET
 
         // These will come with ENG-0034 Rev 4
         ushort startupIntegrationTimeMS { get; set; }
-        short startupDetectorTemperatureDegC { get; set; }
+        short TECSetpoint { get; set; }
         byte startupTriggeringMode { get; set; }
         float detectorGain { get; set; }
         short detectorOffset { get; set; }

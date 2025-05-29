@@ -79,6 +79,7 @@ namespace WasatchNET
             isOCT = true;
             this.camera = camera;
             this.camID = camID;
+            featureIdentification = new FeatureIdentification(0, 0);
         }
 
         internal override bool open()
@@ -93,6 +94,11 @@ namespace WasatchNET
 
             if (openOk)
             {
+                if (!camID.ToLower().Contains("mx4") &&  !camID.ToLower().Contains("dual"))
+                {
+                    camera.SetResourceIndex(0);
+                }
+
                 pixels = (uint)camera.GetScanWidth();
                 eeprom = new WPOCTEEPROM(this, camera);
                 if (!(await eeprom.readAsync()))
@@ -124,8 +130,14 @@ namespace WasatchNET
             camera.Close();
         }
 
+        public float explicitPeriod()
+        {
+            return camera.GetLinePeriod();
+        }
+
         public override double[] getSpectrum(bool forceNew = false)
         {
+            //camera.StartAcquiring();
             if (forceNew)
             {
                 int minWait = 20;
@@ -181,6 +193,7 @@ namespace WasatchNET
                     sum[px] /= scanAveraging_;
             }
 
+            //camera.StopAcquiring(true);
             return sum;
         }
 
@@ -403,6 +416,30 @@ namespace WasatchNET
             }
         }
 
+        public override bool laserTECEnabled
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ushort laserTECMode
+        {
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
@@ -422,6 +459,11 @@ namespace WasatchNET
             }
         }
 
+        public override short ambientTemperatureDegC
+        {
+            get { return 0; }
+        }
+
         public override string firmwareRevision
         {
             get
@@ -437,6 +479,16 @@ namespace WasatchNET
                 return "";
             }
 
+        }
+
+        public override string bleRevision
+        {
+            get
+            {
+                string retval = "";
+
+                return retval;
+            }
         }
 
         public virtual int testPattern
@@ -545,6 +597,30 @@ namespace WasatchNET
             }
         }
 
+        public override ulong laserModulationPulseWidth 
+        {
+            get
+            {
+                return 1;
+            }
+            set
+            {
+
+            }
+        }
+
+        public override ulong laserModulationPeriod
+        {
+            get
+            {
+                return 1;
+            }
+            set
+            {
+
+            }
+        }
+
         public override ushort laserTemperatureRaw
         {
             get
@@ -553,6 +629,30 @@ namespace WasatchNET
             }
 
         }
+
+        public override UInt16 laserWatchdogSec
+        {
+
+            get
+            {
+                return 0;
+            }
+            set
+            {
+
+            }
+
+        }
+
+
+        public override float batteryPercentage
+        {
+            get
+            {
+                return 1;
+            }
+        }
+
 
         public override TRIGGER_SOURCE triggerSource
         {
