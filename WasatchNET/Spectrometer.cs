@@ -1539,7 +1539,7 @@ namespace WasatchNET
             }
             set
             {
-                const Opcodes op = Opcodes.GET_DETECTOR_START_LINE;
+                const Opcodes op = Opcodes.GET_LASER_WATCHDOG_SEC;
                 if (haveCache(op) && value == laserWatchdogSec_)
                     return;
                 ushort temp = swapBytes(value);
@@ -1584,6 +1584,12 @@ namespace WasatchNET
 
                 if (isSiG)
                 {
+                    //
+                    // these are very specifically for 220250 Rev4 MAX1978ETM-T
+                    // we may want to consider a more flexible long term solution
+                    // but okay for now with only a single board needing support
+                    // - TS (h/t MZ)
+                    //
                     double[] coeffs = new double[] { 1.5712971947853123e+000,
                            1.4453391889061071e-002,
                           -1.8534086153440592e-006,

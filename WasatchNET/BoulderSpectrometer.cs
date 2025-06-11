@@ -33,7 +33,7 @@ namespace WasatchNET
 
         /// <summary>
         /// Project Boulder is an OEM spectrometer with customer-supplied electronics 
-        /// using Ocean Optics-derived firmware interface, hence SeaBreeze communications
+        /// using Seabreeze-derived firmware interface, hence SeaBreeze communications
         /// </summary>
         internal BoulderSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {

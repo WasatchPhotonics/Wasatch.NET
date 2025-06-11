@@ -54,7 +54,7 @@ namespace WasatchNET
         /// - rev 14
         ///     - adds SiG laser TEC and Has interlock feedback to feature mask
         /// </remarks>
-        protected const byte FORMAT = 16;
+        protected const byte FORMAT = 17;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
@@ -231,6 +231,13 @@ namespace WasatchNET
                 TECSetpoint = value;
             }
         }
+
+        //
+        // this field used to be exclusively be used for the above for which it is now aliased (startup temp)
+        // however it briefly was given a second functionality to set the laser TEC setpoint. As of format 16 this
+        // secondary use case is deprecated by laserTECSetpoint. There are not currently any spectrometers that use
+        // both laser tec setpoint and non-ambient detectors, but format 16 would allow us to use both via laserTECSetpoint
+        //
         public short TECSetpoint
         {
             get { return _TECSetpoint; }
@@ -936,7 +943,7 @@ namespace WasatchNET
             set
             {
                 EventHandler handler = EEPROMChanged;
-                if (_intensityCorrectionOrder != value)
+                if (_intensityCorrectionCoeffs != null && _intensityCorrectionOrder != value && _intensityCorrectionOrder == _intensityCorrectionCoeffs.Length)
                 {
                     float[] temp = new float[_intensityCorrectionCoeffs.Length];
                     _intensityCorrectionCoeffs.CopyTo(temp, 0);
@@ -1756,6 +1763,10 @@ namespace WasatchNET
                     featureMask.disableBLEPower = false;
                     featureMask.disableLaserArmedIndication = false;
                 }
+                if (format < 17)
+                {
+                    featureMask.interlockExcluded = false;
+                }
 
 
                 if (format >= 11)
@@ -1978,6 +1989,7 @@ namespace WasatchNET
             featureMask.hasShutter = json.HasShutter;
             featureMask.disableBLEPower = json.DisableBLEPower;
             featureMask.disableLaserArmedIndication = json.DisableLaserArmedIndication;
+            featureMask.interlockExcluded = json.InterlockExcluded;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -2265,6 +2277,7 @@ namespace WasatchNET
                 json.HasInterlockFeedback = featureMask.hasShutter;
                 json.DisableBLEPower = featureMask.disableBLEPower;
                 json.DisableLaserArmedIndication = featureMask.disableLaserArmedIndication;
+                json.InterlockExcluded = featureMask.interlockExcluded;
             }
 
             json.LaserWarmupS = laserWarmupSec;
