@@ -138,6 +138,8 @@ namespace WasatchNET
 
             stream.Write(serialized, 0, serialized.Length);
             byte[] data = readData(bytesToRead);
+            logger.hexdump(serialized, "send getCommand");
+            logger.hexdump(data, "getCommand reposonse");
             return data;
         }
 
@@ -145,12 +147,14 @@ namespace WasatchNET
         {
             TCPMessagePacket packet = new TCPMessagePacket(bRequest, (ushort)wValue, (ushort)wIndex, payload);
             byte[] serialized = packet.serialize();
+            logger.hexdump(serialized, "sendCommand");
 
             stream.Write(serialized, 0, serialized.Length);
 
             if (readBack != null)
             {
                 byte[] data = readData(readBack.Value);
+                logger.hexdump(data, "sendCommand reposonse");
                 return data;
             }
             else

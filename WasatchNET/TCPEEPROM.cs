@@ -51,7 +51,7 @@ namespace WasatchNET
             setDefault(spectrometer);
             serialNumber = a.getSerialNumber();
             model = a.getModelName();
-            hasCooling = true;
+            hasCooling = false;
             startupIntegrationTimeMS = 8;
             //double temp = a.detectorTemperatureDegC;
             TECSetpoint = 15;
@@ -68,8 +68,16 @@ namespace WasatchNET
             maxIntegrationTimeMS = 1000000;
             actualPixelsHoriz = (ushort)a.pixels;
             laserExcitationWavelengthNMFloat = a.getExcitation();
+            if (laserExcitationWavelengthNMFloat < 300)
+                laserExcitationWavelengthNMFloat = 785;
+
             for (int i = 0; i < 5; i++)
                 wavecalCoeffs[i] = a.getWavecalCoeff(i);
+            wavecalCoeffs[0] = 0;
+            wavecalCoeffs[1] = 1;
+            wavecalCoeffs[2] = 0;
+            wavecalCoeffs[3] = 0;
+            wavecalCoeffs[4] = 0;
 
             featureMask.gen15 = false;
             format = FORMAT;
