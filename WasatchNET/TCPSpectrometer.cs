@@ -54,7 +54,11 @@ namespace WasatchNET
         {
             try
             {
-                client = new TcpClient(ip, port);
+                //client = new TcpClient(ip, port);
+                client = new TcpClient();
+                if (!client.ConnectAsync(IPAddress.Parse(ip), port).Wait(100))
+                    return false;
+
                 stream = client.GetStream();
             }
             catch (Exception ex)
