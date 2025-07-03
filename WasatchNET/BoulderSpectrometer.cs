@@ -821,6 +821,18 @@ namespace WasatchNET
 
         public override short detectorOffsetOdd { get => 0; }
 
+        public override ushort detectorStartLine
+        {
+            get { return detectorStartLine_; }
+            set { lock (acquisitionLock) detectorStartLine_ = value; }
+        }
+
+        public override ushort detectorStopLine
+        {
+            get { return detectorStopLine_; }
+            set { lock (acquisitionLock) detectorStopLine_ = value; }
+        }
+
         public override bool isARM => false;
         public override bool isInGaAs => false;
         public override TRIGGER_SOURCE triggerSource

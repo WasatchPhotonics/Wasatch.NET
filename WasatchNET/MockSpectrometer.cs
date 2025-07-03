@@ -130,6 +130,18 @@ namespace WasatchNET
             }
         }
 
+        public override ushort detectorStartLine
+        {
+            get { return detectorStartLine_; }
+            set { lock (acquisitionLock) detectorStartLine_ = value; }
+        }
+
+        public override ushort detectorStopLine
+        {
+            get { return detectorStopLine_; }
+            set { lock (acquisitionLock) detectorStopLine_ = value; }
+        }
+
         public override bool detectorTECEnabled
         {
             get
