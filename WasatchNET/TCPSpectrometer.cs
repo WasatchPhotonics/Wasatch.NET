@@ -473,7 +473,11 @@ namespace WasatchNET
                 if (buf is null)
                     return 0;
                 readOnce.Add(op);
-                return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(buf));
+
+                float scaled = (float)Unpack.toUshort(buf) / 10f;
+
+                //return detectorGain_ = FunkyFloat.toFloat(Unpack.toUshort(buf));
+                return detectorGain_ = scaled;
             }
             set
             {
@@ -481,7 +485,10 @@ namespace WasatchNET
                 if (haveCache(op) && value == detectorGain_)
                     return;
 
-                ushort word = FunkyFloat.fromFloat(detectorGain_ = value);
+                //ushort word = FunkyFloat.fromFloat(detectorGain_ = value);
+                detectorGain_ = (float)Math.Round(value, 1);
+
+                ushort word = (ushort)Math.Round(value * 10);
                 sendCommand(0xb7, word);
                 readOnce.Add(op);
             }
