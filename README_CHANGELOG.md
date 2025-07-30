@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2025-07-30 2.5.15
+	- beta that is essentially 2.5.14 with early TCP/IP comm support
 - 2025-07-30 2.5.14
 	- added clamping to 7-bit and 12-bit (as appropriate) to raw temp setpoint setters
 - 2025-05-12 2.5.13
