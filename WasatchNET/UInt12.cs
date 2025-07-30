@@ -17,7 +17,7 @@ namespace WasatchNET
 
         public UInt12(ushort value)
         {
-            val = (ushort)(val & 0xFFF);
+            val = (ushort)(value & 0xFFF);
         }
     }
 }
