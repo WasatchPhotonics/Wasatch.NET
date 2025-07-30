@@ -1,5 +1,7 @@
 # Wasatch.NET Changelog
 
+- 2025-07-30 2.5.14
+	- added clamping to 7-bit and 12-bit (as appropriate) to raw temp setpoint setters
 - 2025-05-12 2.5.13
 	- started adding EEPROM format 17
 	- hotfix for malformed SPI EEPROMs
