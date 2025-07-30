@@ -1677,7 +1677,7 @@ namespace WasatchNET
                 else
                 {
                     //clamp setpoint to 7-bit max (127)
-                    laserTemperatureSetpointRaw_ = (ushort)(0x7F & value);
+                    laserTemperatureSetpointRaw_ = (value > 0x7F) ? (byte)0x7F : value;
                     byte clamped = (byte)laserTemperatureSetpointRaw;
                     sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, clamped);
                 }
