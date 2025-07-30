@@ -1009,7 +1009,9 @@ namespace WasatchNET
                     if (haveCache(op) && value == detectorTECSetpointRaw_)
                         return;
 
-                    sendCmd(Opcodes.SET_DETECTOR_TEC_SETPOINT, detectorTECSetpointRaw_ = value);
+                    // passing value into UInt12 caps set value to 4095 (as per ENG-0001)
+                    UInt12 val = new UInt12(detectorTECSetpointRaw_ = value);
+                    sendCmd(Opcodes.SET_DETECTOR_TEC_SETPOINT, val.val);
                     readOnce.Add(op);
                 }
             }
@@ -1652,8 +1654,8 @@ namespace WasatchNET
                 const Opcodes op = Opcodes.GET_LASER_TEC_SETPOINT;
                 if (haveCache(op))
                     return laserTemperatureSetpointRaw_;
-                if (isSiG) // || featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
-                    return 0;
+                //if (isSiG) // || featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
+                    //return 0;
                 readOnce.Add(op);
                 return laserTemperatureSetpointRaw_ = Unpack.toUshort(getCmd(op, 1));
             }
@@ -1666,7 +1668,19 @@ namespace WasatchNET
                 if (haveCache(op) && value == laserTemperatureSetpointRaw_)
                     return;
 
-                sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ =  value);
+                if (isSiG)
+                {
+                    //clamp setpoint to 12-bit max (4095)
+                    UInt12 val = new UInt12(laserTemperatureSetpointRaw_ = value);
+                    sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, val.val);
+                }
+                else
+                {
+                    //clamp setpoint to 7-bit max (127)
+                    laserTemperatureSetpointRaw_ = (ushort)(0x7F & value);
+                    byte clamped = (byte)laserTemperatureSetpointRaw;
+                    sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, clamped);
+                }
                 readOnce.Add(op);
             }
         }
@@ -2482,7 +2496,7 @@ namespace WasatchNET
         /// </summary>
         /// <param name="raw">input value in one endian</param>
         /// <returns>same value with the bytes reversed</returns>
-        ushort swapBytes(ushort raw)
+        protected ushort swapBytes(ushort raw)
         {
             byte lsb = (byte)(raw & 0xff);
             byte msb = (byte)((raw >> 8) & 0xff);

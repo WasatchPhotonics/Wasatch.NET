@@ -139,6 +139,7 @@
     <Compile Include="IntegrationOptimizer.cs" />
     <Compile Include="IOpcodes.cs" />
     <Compile Include="ISpectrometer.cs" />
+    <Compile Include="IUInt12.cs" />
     <Compile Include="IUInt40.cs" />
     <Compile Include="EEPROM.cs" />
     <Compile Include="IWPOCTCamera.cs" />
@@ -154,6 +155,7 @@
     <Compile Include="BoulderStatusRegister.cs" />
     <Compile Include="TCPEEPROM.cs" />
     <Compile Include="TCPSpectrometer.cs" />
+    <Compile Include="UInt12.cs" />
     <Compile Include="Unpack.cs" />
     <Compile Include="FunkyFloat.cs" />
     <Compile Include="Opcodes.cs" />
