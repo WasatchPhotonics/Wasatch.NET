@@ -321,6 +321,32 @@ namespace WasatchNET
 
         }
 
+        public void setStartPixel(int value)
+        {
+            sendCommand(0xff, 0xaa04, value);
+        }
+
+        public void setEndPixel(int value)
+        {
+            sendCommand(0xff, 0xaa06, value);
+        }
+
+        public int getStartPixel()
+        {
+            byte[] resp = getCommand(0xff, 2, 0xaa05);
+            ushort pix = Unpack.toUshort(resp);
+            //logger.info("TCP spec has {0} vertical pixels", pix);
+            return pix;
+        }
+
+        public int getStopPixel()
+        {
+            byte[] resp = getCommand(0xff, 2, 0xaa07);
+            ushort pix = Unpack.toUshort(resp);
+            //logger.info("TCP spec has {0} vertical pixels", pix);
+            return pix;
+        }
+
         public int getPixels()
         {
             byte[] resp = getCommand(0x03, 2);
@@ -376,6 +402,7 @@ namespace WasatchNET
             logger.info("TCP spec wavecal[{0}]: {1:f6}", exponent, coeff);
             return coeff;
         }
+
         public float getExcitation()
         {
             byte[] resp = getCommand(0xff, 4, 0xaa12);
@@ -489,6 +516,7 @@ namespace WasatchNET
                 detectorGain_ = (float)Math.Round(value, 1);
 
                 ushort word = (ushort)Math.Round(value * 10);
+                word = swapBytes(word);
                 sendCommand(0xb7, word);
                 readOnce.Add(op);
             }
