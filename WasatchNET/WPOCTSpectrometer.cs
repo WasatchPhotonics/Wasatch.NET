@@ -319,6 +319,14 @@ namespace WasatchNET
             camera.FlushBuffers();
             bool ok = camera.GetBufferCopy(bufferLocal);
 
+            while (!ok)
+            {
+                int retryCount = 1;
+                logger.debug("failed to grab buffer, retry number {0} after 50ms", retryCount);
+                Thread.Sleep(50);
+                ok = camera.GetBufferCopy(bufferLocal);
+            }
+
             if (ok)
             {
                 GCHandle pinnedArray = GCHandle.Alloc(bufferLocal, GCHandleType.Pinned);
