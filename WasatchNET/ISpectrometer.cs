@@ -183,6 +183,7 @@ namespace WasatchNET
         /// Requires FeatureMask.HAS_INTERLOCK_FEEDBACK.
         /// </summary>
         bool laserInterlockEnabled { get; }
+        byte laserWarningDelaySec { get; set; }
 
         bool laserModulationEnabled { get; set; }
         bool laserModulationLinkedToIntegrationTime { get; set; }

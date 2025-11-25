@@ -1374,6 +1374,18 @@ namespace WasatchNET
                 return Unpack.toBool(getCmd(Opcodes.GET_LASER_INTERLOCK, 1));
             }
         }
+        
+        public virtual byte laserWarningDelaySec
+        {
+            get => _laserWarningDelaySec;
+            set
+            {
+                //ushort temp = swapBytes(value);
+                sendCmd(Opcodes.SET_LASER_WARNING_DELAY, (ushort)value);
+                _laserWarningDelaySec = value;
+            }
+        }
+        byte _laserWarningDelaySec;
 
         public bool laserModulationLinkedToIntegrationTime
         {

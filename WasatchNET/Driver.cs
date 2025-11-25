@@ -45,7 +45,7 @@ namespace WasatchNET
         bool opened = false;
         bool suppressErrors = false;
         int resetCount = 0;
-        string ipAddr = "192.168.1.100";
+        string ipAddr = "192.168.1.101";
         int port = 9999;
 
         public Logger logger { get; } = Logger.getInstance();
