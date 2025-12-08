@@ -42,6 +42,12 @@ namespace WasatchNET
 
         public override async Task<bool> writeAsync(bool allPages = false)
         {
+            TCPSpectrometer a = spectrometer as TCPSpectrometer;
+            for (int i = 0; i < 5; i++)
+                a.setWavecalCoeff(i, wavecalCoeffs[i]);
+
+            a.setExcitation(excitationNM);
+
             return true;
         }
 
@@ -52,6 +58,7 @@ namespace WasatchNET
             serialNumber = a.getSerialNumber();
             model = a.getModelName();
             hasCooling = false;
+            hasLaser = false;
             startupIntegrationTimeMS = 8;
             //double temp = a.detectorTemperatureDegC;
             TECSetpoint = 15;
@@ -73,11 +80,11 @@ namespace WasatchNET
 
             for (int i = 0; i < 5; i++)
                 wavecalCoeffs[i] = a.getWavecalCoeff(i);
-            wavecalCoeffs[0] = 0;
-            wavecalCoeffs[1] = 1;
-            wavecalCoeffs[2] = 0;
-            wavecalCoeffs[3] = 0;
-            wavecalCoeffs[4] = 0;
+
+            if (wavecalCoeffs[1] == 0)
+                wavecalCoeffs[1] = 1;
+            if (float.IsNaN(wavecalCoeffs[4]))
+                wavecalCoeffs[4] = 0;
 
             featureMask.gen15 = false;
             format = FORMAT;

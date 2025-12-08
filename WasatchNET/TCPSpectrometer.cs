@@ -1,5 +1,6 @@
 ﻿using LibUsbDotNet.Main;
 using MPSSELight;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -140,7 +141,7 @@ namespace WasatchNET
             TCPMessagePacket packet = new TCPMessagePacket(bRequest, (ushort)wValue, (ushort)wIndex, null);
             byte[] serialized = packet.serialize();
 
-            stream.Write(serialized, 0, serialized.Length);
+             stream.Write(serialized, 0, serialized.Length);
             byte[] data = readData(bytesToRead);
             logger.hexdump(serialized, "send getCommand");
             logger.hexdump(data, "getCommand reposonse");
@@ -379,6 +380,20 @@ namespace WasatchNET
             return sb.ToString();
         }
 
+        public void setSerialNumber(string value)
+        {
+            byte[] payload = new byte[32];
+            for (int i = 0; i < payload.Length; i++)
+            {
+                if (i < value.Length)
+                    payload[i] = (byte)value[i];
+                else
+                    payload[i] = (byte)'\0';
+            }
+
+            byte[] ok = sendCommand(0xff, 0xaa08, 0, payload);
+        }
+
         public string getModelName()
         {
             byte[] resp = getCommand(0xff, 32, 0xaa0b);
@@ -403,12 +418,29 @@ namespace WasatchNET
             return coeff;
         }
 
+        public void setWavecalCoeff(int exponent, float value)
+        {
+            byte[] payload = BitConverter.GetBytes(value);
+            byte[] pay2 = payload.Reverse().ToArray();
+
+            byte[] ok = sendCommand(0xff, 0xaa0c, exponent, pay2);
+        }
+
+
         public float getExcitation()
         {
             byte[] resp = getCommand(0xff, 4, 0xaa12);
             float excitation = System.BitConverter.ToSingle(resp, 0);
             logger.info("TCP spec excitation {0:f4}", excitation);
             return excitation;
+        }
+
+        public void setExcitation(float value)
+        {
+            byte[] payload = BitConverter.GetBytes(value);
+            byte[] pay2 = payload.Reverse().ToArray();
+
+            byte[] ok = sendCommand(0xff, 0xaa11, 0, pay2);
         }
 
         public override bool highGainModeEnabled
@@ -486,7 +518,7 @@ namespace WasatchNET
         public override bool laserInterlockEnabled { get => false; }
         public override byte laserWarningDelaySec { get => 0; set { } }
 
-        public override UInt64 laserModulationPeriod { get => 0; }
+        public override UInt64 laserModulationPeriod { get => 100; }
         public override UInt64 laserModulationPulseWidth { get => 100; }
 
         public override float detectorGain

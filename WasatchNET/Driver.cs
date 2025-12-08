@@ -98,6 +98,13 @@ namespace WasatchNET
             Task<int> task = Task.Run(async () => await openAllSpectrometersAsync());
             return task.Result;
         }
+        public int openAllSpectrometers(string ipAddr, int port)
+        {
+            this.ipAddr = ipAddr;
+            this.port = port;
+            Task<int> task = Task.Run(async () => await openAllSpectrometersAsync());
+            return task.Result;
+        }
         public async Task<int> openAllSpectrometersAsync()
         {
             logger.header("openAllSpectrometers: start");
