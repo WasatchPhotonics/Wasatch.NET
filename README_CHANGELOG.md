@@ -1,5 +1,11 @@
 # Wasatch.NET Changelog
-
+- 2025-12-16 2.5.18
+	- added laser warning delay and detector start/stop accessors
+	- added support for TCP/IP comms
+- 2025-10-14 2.5.17
+	- internal release
+- 2025-09-17 2.5.16
+	- internal release
 - 2025-07-30 2.5.15
 	- beta that is essentially 2.5.14 with early TCP/IP comm support
 - 2025-07-30 2.5.14
