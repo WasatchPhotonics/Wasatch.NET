@@ -71,7 +71,7 @@ namespace WasatchNET
             detectorName = "";
             activePixelsHoriz = (ushort)a.pixels;
             activePixelsVert = (ushort)a.getHeight();
-            minIntegrationTimeMS = 8;
+            minIntegrationTimeMS = 2;
             maxIntegrationTimeMS = 1000000;
             actualPixelsHoriz = (ushort)a.pixels;
             laserExcitationWavelengthNMFloat = a.getExcitation();
