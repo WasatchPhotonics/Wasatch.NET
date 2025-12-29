@@ -153,6 +153,8 @@
     <Compile Include="SPIEEPROM.cs" />
     <Compile Include="SPISpectrometer.cs" />
     <Compile Include="BoulderStatusRegister.cs" />
+    <Compile Include="TCPEEPROM.cs" />
+    <Compile Include="TCPSpectrometer.cs" />
     <Compile Include="UInt12.cs" />
     <Compile Include="Unpack.cs" />
     <Compile Include="FunkyFloat.cs" />

@@ -1374,6 +1374,18 @@ namespace WasatchNET
                 return Unpack.toBool(getCmd(Opcodes.GET_LASER_INTERLOCK, 1));
             }
         }
+        
+        public virtual byte laserWarningDelaySec
+        {
+            get => _laserWarningDelaySec;
+            set
+            {
+                //ushort temp = swapBytes(value);
+                sendCmd(Opcodes.SET_LASER_WARNING_DELAY, (ushort)value);
+                _laserWarningDelaySec = value;
+            }
+        }
+        byte _laserWarningDelaySec;
 
         public bool laserModulationLinkedToIntegrationTime
         {
@@ -1678,7 +1690,7 @@ namespace WasatchNET
                 {
                     //clamp setpoint to 7-bit max (127)
                     laserTemperatureSetpointRaw_ = (value > 0x7F) ? (byte)0x7F : value;
-                    byte clamped = (byte)laserTemperatureSetpointRaw;
+                    byte clamped = (byte)laserTemperatureSetpointRaw_;
                     sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, clamped);
                 }
                 readOnce.Add(op);

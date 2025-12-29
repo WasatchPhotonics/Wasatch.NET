@@ -874,6 +874,7 @@ namespace WasatchNET
         }
 
         public override bool laserInterlockEnabled { get => false; }
+        public override byte laserWarningDelaySec { get => 0; set { } }
 
         public override UInt64 laserModulationPeriod { get => 100; }
         public override UInt64 laserModulationPulseWidth { get => 0; }
@@ -990,6 +991,18 @@ namespace WasatchNET
         }
 
         public override short detectorOffsetOdd { get => 0; set { } }
+
+        public override ushort detectorStartLine
+        {
+            get { return detectorStartLine_; }
+            set { lock (acquisitionLock) detectorStartLine_ = value; }
+        }
+
+        public override ushort detectorStopLine
+        {
+            get { return detectorStopLine_; }
+            set { lock (acquisitionLock) detectorStopLine_ = value; }
+        }
 
         public override bool isARM => false;
         public override bool isInGaAs => eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase);

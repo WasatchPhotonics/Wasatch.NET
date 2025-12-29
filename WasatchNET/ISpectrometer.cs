@@ -147,6 +147,9 @@ namespace WasatchNET
         string bleRevision { get; }
 
         bool highGainModeEnabled { get; set; }
+        ushort detectorStartLine { get; set; }
+        ushort detectorStopLine { get; set; }
+
 
         /// <summary>
         /// Current integration time in milliseconds.
@@ -180,6 +183,7 @@ namespace WasatchNET
         /// Requires FeatureMask.HAS_INTERLOCK_FEEDBACK.
         /// </summary>
         bool laserInterlockEnabled { get; }
+        byte laserWarningDelaySec { get; set; }
 
         bool laserModulationEnabled { get; set; }
         bool laserModulationLinkedToIntegrationTime { get; set; }

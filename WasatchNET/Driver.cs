@@ -45,6 +45,8 @@ namespace WasatchNET
         bool opened = false;
         bool suppressErrors = false;
         int resetCount = 0;
+        string ipAddr = "192.168.1.101";
+        int port = 9999;
 
         public Logger logger { get; } = Logger.getInstance();
         public string version { get; }
@@ -93,6 +95,13 @@ namespace WasatchNET
         /// 
         public int openAllSpectrometers()
         {
+            Task<int> task = Task.Run(async () => await openAllSpectrometersAsync());
+            return task.Result;
+        }
+        public int openAllSpectrometers(string ipAddr, int port)
+        {
+            this.ipAddr = ipAddr;
+            this.port = port;
             Task<int> task = Task.Run(async () => await openAllSpectrometersAsync());
             return task.Result;
         }
@@ -392,8 +401,29 @@ namespace WasatchNET
 #endif
             }
 
+            if (Environment.GetEnvironmentVariable("WASATCHNET_USE_IP") != null)
+            {
+                try
+                {
+                    TCPSpectrometer spectrometer = new TCPSpectrometer(null, ipAddr, port);
+                    bool ok = await spectrometer.openAsync();
+                    if (ok)
+                    {
+                        logger.info("found TCP/IP Spectrometer");
+                        spectrometers.Add(spectrometer);
+                    }
+                    else
+                    {
+                        logger.info("failed to open TCP/IP Spectrometer");
+                    }
+                }
+                catch (Exception e)
+                {
+                    logger.info("failed to initialize TCP/IP spec with exception {0}", e.Message);
+                }
+            }
 
-            logger.debug($"openAllSpectrometers: returning {spectrometers.Count}");
+                logger.debug($"openAllSpectrometers: returning {spectrometers.Count}");
 
             opened = true;
             return spectrometers.Count;
@@ -481,6 +511,16 @@ namespace WasatchNET
 
             opened = false;
             logger.debug("closeAllSpectrometers: done");
+        }
+
+        public void setTCPParams(string ip, int port)
+        {
+            System.Net.IPAddress ipAddress;
+            if (System.Net.IPAddress.TryParse(ip, out ipAddress))
+            {
+                ipAddr = ip;
+                this.port = port;
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////
