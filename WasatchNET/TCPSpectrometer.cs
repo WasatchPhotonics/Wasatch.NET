@@ -120,20 +120,6 @@ namespace WasatchNET
                 return false;
         }
 
-        byte[] rawWriteSeq()
-        {
-            byte[] serialized = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06 };
-            stream.Write(serialized, 0, serialized.Length);
-            return null;
-        }
-        
-        byte[] rawWriteRan()
-        {
-            byte[] serialized = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
-            stream.Write(serialized, 0, serialized.Length);
-            return null;
-        }
-
         byte[] getCommand(byte bRequest, int len, int wValue = 0, int wIndex = 0, int fullLen = 0)
         {
             int bytesToRead = Math.Max(len, fullLen);
