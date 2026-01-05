@@ -34,7 +34,7 @@ namespace WasatchNET
             return task.Result;
         }
 
-        public override bool read()
+        public override bool read(bool skipRead = false)
         {
             Task<bool> task = Task.Run(async () => await readAsync());
             return task.Result;
@@ -45,7 +45,7 @@ namespace WasatchNET
             return true;
         }
 
-        public override async Task<bool> readAsync()
+        public override async Task<bool> readAsync(bool skipRead = false)
         {
             MockSpectrometer a = spectrometer as MockSpectrometer;
             setDefault(spectrometer);

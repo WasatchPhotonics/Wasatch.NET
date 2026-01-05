@@ -105,7 +105,7 @@ namespace WasatchNET
             switch (value)
             {
                 case 0: return FPGA_DATA_HEADER.NONE;
-                case 1: return FPGA_DATA_HEADER.OCEAN_OPTICS;
+                case 1: return FPGA_DATA_HEADER.SEABREEZE;
                 case 2: return FPGA_DATA_HEADER.WASATCH;
             }
             return FPGA_DATA_HEADER.ERROR;

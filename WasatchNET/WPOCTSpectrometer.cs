@@ -319,6 +319,14 @@ namespace WasatchNET
             camera.FlushBuffers();
             bool ok = camera.GetBufferCopy(bufferLocal);
 
+            while (!ok)
+            {
+                int retryCount = 1;
+                logger.debug("failed to grab buffer, retry number {0} after 50ms", retryCount);
+                Thread.Sleep(50);
+                ok = camera.GetBufferCopy(bufferLocal);
+            }
+
             if (ok)
             {
                 GCHandle pinnedArray = GCHandle.Alloc(bufferLocal, GCHandleType.Pinned);
@@ -396,6 +404,18 @@ namespace WasatchNET
             {
 
             }
+        }
+
+        public override ushort detectorStartLine
+        {
+            get { return detectorStartLine_; }
+            set { lock (acquisitionLock) detectorStartLine_ = value; }
+        }
+
+        public override ushort detectorStopLine
+        {
+            get { return detectorStopLine_; }
+            set { lock (acquisitionLock) detectorStopLine_ = value; }
         }
 
         public override bool highGainModeEnabled

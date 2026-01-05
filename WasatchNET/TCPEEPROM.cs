@@ -6,14 +6,11 @@ using System.Threading.Tasks;
 
 namespace WasatchNET
 {
-    public class WPOCTEEPROM : EEPROM
+    public class TCPEEPROM : EEPROM
     {
-        IWPOCTCamera camera = null;
-
-        internal WPOCTEEPROM(WPOCTSpectrometer spec, IWPOCTCamera camera) : base(spec)
+        internal TCPEEPROM(TCPSpectrometer spec) : base(spec)
         {
             spectrometer = spec;
-            this.camera = camera;
 
             defaultValues = false;
 
@@ -45,46 +42,55 @@ namespace WasatchNET
 
         public override async Task<bool> writeAsync(bool allPages = false)
         {
-            byte[] buffer = new byte[32];
+            TCPSpectrometer a = spectrometer as TCPSpectrometer;
+            for (int i = 0; i < 5; i++)
+                a.setWavecalCoeff(i, wavecalCoeffs[i]);
 
-            if (!ParseData.writeString(serialNumber, buffer, 0, 16)) return false;
-            if (!ParseData.writeFloat(wavecalCoeffs[0], buffer, 16)) return false;
-            if (!ParseData.writeFloat(wavecalCoeffs[1], buffer, 20)) return false;
-            if (!ParseData.writeFloat(wavecalCoeffs[2], buffer, 24)) return false;
-            if (!ParseData.writeFloat(wavecalCoeffs[3], buffer, 28)) return false;
+            a.setExcitation(excitationNM);
 
-            bool writeOK = true; //HOCTSpectrometer.OctUsb.WriteCalibration(0, buffer);
-            return writeOK;
+            return true;
         }
 
         public override async Task<bool> readAsync(bool skipRead = false)
         {
-            WPOCTSpectrometer a = spectrometer as WPOCTSpectrometer;
+            TCPSpectrometer a = spectrometer as TCPSpectrometer;
             setDefault(spectrometer);
-            serialNumber = detectorSerialNumber = a.camID;
-
-            double temp = a.detectorTemperatureDegC;
-            TECSetpoint = (short)temp;
-            if (TECSetpoint >= 99)
-                TECSetpoint = 15;
-            else if (TECSetpoint <= -50)
-                TECSetpoint = 15;
-            startupTriggeringMode = 0;
+            serialNumber = a.getSerialNumber();
+            model = a.getModelName();
+            hasCooling = false;
+            hasLaser = false;
+            startupIntegrationTimeMS = 8;
+            //double temp = a.detectorTemperatureDegC;
+            TECSetpoint = 15;
             detectorGain = 0;
             detectorOffset = 0;
 
-            activePixelsHoriz = (ushort)a.pixels;
-            activePixelsVert = (ushort)camera.GetScanHeight();
-            minIntegrationTimeMS = 13;
-            maxIntegrationTimeMS = 655;
-            actualPixelsHoriz = (ushort)a.pixels;
-            ROIHorizStart = 0;
-            ROIHorizEnd = (ushort)(a.pixels - 1);
+            detectorTempMax = 25;
+            detectorTempMin = 10;
 
-            laserExcitationWavelengthNMFloat = 0.0f;
+            detectorName = "";
+            activePixelsHoriz = (ushort)a.pixels;
+            activePixelsVert = (ushort)a.getHeight();
+            minIntegrationTimeMS = 2;
+            maxIntegrationTimeMS = 1000000;
+            actualPixelsHoriz = (ushort)a.pixels;
+            laserExcitationWavelengthNMFloat = a.getExcitation();
+            if (laserExcitationWavelengthNMFloat < 300)
+                laserExcitationWavelengthNMFloat = 785;
+
+            for (int i = 0; i < 5; i++)
+                wavecalCoeffs[i] = a.getWavecalCoeff(i);
+
+            if (wavecalCoeffs[1] == 0)
+                wavecalCoeffs[1] = 1;
+            if (float.IsNaN(wavecalCoeffs[4]))
+                wavecalCoeffs[4] = 0;
+
             featureMask.gen15 = false;
+            format = FORMAT;
 
             return true;
         }
+
     }
 }
