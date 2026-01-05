@@ -60,6 +60,8 @@ namespace WasatchNET
             cmd[Opcodes.GET_FIRMWARE_REVISION                  ] = 0xc0;
             cmd[Opcodes.GET_FPGA_REVISION                      ] = 0xb4;
             cmd[Opcodes.GET_HORIZONTAL_BINNING                 ] = 0xbc;
+            cmd[Opcodes.GET_IMAGE_SENSOR_STATE                 ] = 0x97;
+            cmd[Opcodes.GET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT] = 0x72;
             cmd[Opcodes.GET_INTEGRATION_TIME                   ] = 0xbf;
             cmd[Opcodes.GET_LAMP_ENABLE                        ] = 0x33;
             cmd[Opcodes.GET_LASER_ENABLE                       ] = 0xe2;
@@ -95,6 +97,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_DFU_MODE                           ] = 0xfe;
             cmd[Opcodes.SET_HORIZONTAL_BINNING                 ] = 0xb8;
             cmd[Opcodes.SET_INTEGRATION_TIME                   ] = 0xb2;
+            cmd[Opcodes.SET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT ] = 0x71;
             cmd[Opcodes.SET_LAMP_ENABLE                        ] = 0x32;
             cmd[Opcodes.SET_LASER_ENABLE                       ] = 0xbe;
             cmd[Opcodes.SET_LASER_MOD_DURATION                 ] = 0xb9;
@@ -104,6 +107,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_LASER_MOD_PULSE_WIDTH              ] = 0xdb;
             cmd[Opcodes.SET_LASER_TEC_SETPOINT                 ] = 0xe7;
             cmd[Opcodes.SET_LASER_TEC_MODE                     ] = 0x84;
+            cmd[Opcodes.SET_LASER_WARNING_DELAY                ] = 0x8a;
             cmd[Opcodes.SET_LINK_LASER_MOD_TO_INTEGRATION_TIME ] = 0xdd;
             cmd[Opcodes.SET_MODEL_CONFIG_FX2                   ] = 0xa2; // legacy, used for FX2
             cmd[Opcodes.SET_SELECTED_ADC                       ] = 0xed;

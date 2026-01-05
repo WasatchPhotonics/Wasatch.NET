@@ -28,7 +28,7 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
         }
 
-        public override bool read()
+        public override bool read(bool skipRead = false)
         {
             BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
 
@@ -71,7 +71,7 @@ namespace WasatchNET
             return task.Result;
         }
 
-        public override async Task<bool> readAsync()
+        public override async Task<bool> readAsync(bool skipRead = false)
         {
             BoulderSpectrometer a = spectrometer as BoulderSpectrometer;
 

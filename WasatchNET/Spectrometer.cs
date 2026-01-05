@@ -67,6 +67,18 @@ namespace WasatchNET
 
         public enum UntetheredCaptureStatus {  IDLE = 0, DARK = 1, WARMUP = 2, SAMPLE = 3, PROCESSING = 4, ERROR = 5 }
 
+        public enum IMAGE_SENSOR_STATUS
+        {
+            IMG_SNSR_STATE_UNKNOWN = 0,
+            IMG_SNSR_STATE_NA = IMG_SNSR_STATE_UNKNOWN,
+            IMG_SNSR_STATE_STANDBY = 1,
+            IMG_SNSR_STATE_TRANS_IN_OUT_STANDBY = 2,
+            IMG_SNSR_STATE_REG_HOLD = 3,
+            IMG_SNSR_STATE_ACTIVE = 4,
+            IMG_SNSR_STATE_ERROR = 5,
+            IMG_SNSR_STATE_READ_FAIL = 6
+        }
+
         ////////////////////////////////////////////////////////////////////////
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
@@ -542,8 +554,8 @@ namespace WasatchNET
         // property caching 
         ////////////////////////////////////////////////////////////////////////
 
-        private HashSet<Opcodes> readOnce = new HashSet<Opcodes>();
-        private HashSet<Opcodes> noCache = new HashSet<Opcodes>();
+        protected HashSet<Opcodes> readOnce = new HashSet<Opcodes>();
+        protected HashSet<Opcodes> noCache = new HashSet<Opcodes>();
 
         public void useCache(Opcodes op) { noCache.Remove(op); }
         public void dontCache(Opcodes op) { noCache.Add(op); }
@@ -752,7 +764,7 @@ namespace WasatchNET
                 readOnce.Add(op);
             }
         }
-        float detectorGain_;
+        protected float detectorGain_;
 
         public virtual float detectorGainOdd
         {
@@ -904,7 +916,7 @@ namespace WasatchNET
             }
 
         }
-        ushort detectorStartLine_ = 0;
+        protected ushort detectorStartLine_ = 0;
 
         public virtual UInt16 detectorStopLine
         {
@@ -926,7 +938,7 @@ namespace WasatchNET
             }
 
         }
-        ushort detectorStopLine_ = 0;
+        protected ushort detectorStopLine_ = 0;
 
         public virtual bool detectorTECEnabled
         {
@@ -997,7 +1009,9 @@ namespace WasatchNET
                     if (haveCache(op) && value == detectorTECSetpointRaw_)
                         return;
 
-                    sendCmd(Opcodes.SET_DETECTOR_TEC_SETPOINT, detectorTECSetpointRaw_ = value);
+                    // passing value into UInt12 caps set value to 4095 (as per ENG-0001)
+                    UInt12 val = new UInt12(detectorTECSetpointRaw_ = value);
+                    sendCmd(Opcodes.SET_DETECTOR_TEC_SETPOINT, val.val);
                     readOnce.Add(op);
                 }
             }
@@ -1093,7 +1107,7 @@ namespace WasatchNET
                 return firmwareRevision_ = s;
             }
         }
-        string firmwareRevision_;
+        protected string firmwareRevision_;
 
         public virtual string fpgaRevision
         {
@@ -1131,7 +1145,8 @@ namespace WasatchNET
                         break;
                     s += (char)buf[i];
                 }
-                readOnce.Add(op);
+                if (s.Length > 0)
+                    readOnce.Add(op);
                 return bleRevision_ = s.TrimEnd();
             }
         }
@@ -1359,6 +1374,18 @@ namespace WasatchNET
                 return Unpack.toBool(getCmd(Opcodes.GET_LASER_INTERLOCK, 1));
             }
         }
+        
+        public virtual byte laserWarningDelaySec
+        {
+            get => _laserWarningDelaySec;
+            set
+            {
+                //ushort temp = swapBytes(value);
+                sendCmd(Opcodes.SET_LASER_WARNING_DELAY, (ushort)value);
+                _laserWarningDelaySec = value;
+            }
+        }
+        byte _laserWarningDelaySec;
 
         public bool laserModulationLinkedToIntegrationTime
         {
@@ -1526,7 +1553,7 @@ namespace WasatchNET
             }
             set
             {
-                const Opcodes op = Opcodes.GET_DETECTOR_START_LINE;
+                const Opcodes op = Opcodes.GET_LASER_WATCHDOG_SEC;
                 if (haveCache(op) && value == laserWatchdogSec_)
                     return;
                 ushort temp = swapBytes(value);
@@ -1571,6 +1598,12 @@ namespace WasatchNET
 
                 if (isSiG)
                 {
+                    //
+                    // these are very specifically for 220250 Rev4 MAX1978ETM-T
+                    // we may want to consider a more flexible long term solution
+                    // but okay for now with only a single board needing support
+                    // - TS (h/t MZ)
+                    //
                     double[] coeffs = new double[] { 1.5712971947853123e+000,
                            1.4453391889061071e-002,
                           -1.8534086153440592e-006,
@@ -1633,8 +1666,8 @@ namespace WasatchNET
                 const Opcodes op = Opcodes.GET_LASER_TEC_SETPOINT;
                 if (haveCache(op))
                     return laserTemperatureSetpointRaw_;
-                if (isSiG) // || featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
-                    return 0;
+                //if (isSiG) // || featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2)
+                    //return 0;
                 readOnce.Add(op);
                 return laserTemperatureSetpointRaw_ = Unpack.toUshort(getCmd(op, 1));
             }
@@ -1647,7 +1680,19 @@ namespace WasatchNET
                 if (haveCache(op) && value == laserTemperatureSetpointRaw_)
                     return;
 
-                sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, laserTemperatureSetpointRaw_ =  value);
+                if (isSiG)
+                {
+                    //clamp setpoint to 12-bit max (4095)
+                    UInt12 val = new UInt12(laserTemperatureSetpointRaw_ = value);
+                    sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, val.val);
+                }
+                else
+                {
+                    //clamp setpoint to 7-bit max (127)
+                    laserTemperatureSetpointRaw_ = (value > 0x7F) ? (byte)0x7F : value;
+                    byte clamped = (byte)laserTemperatureSetpointRaw_;
+                    sendCmd(Opcodes.SET_LASER_TEC_SETPOINT, clamped);
+                }
                 readOnce.Add(op);
             }
         }
@@ -1671,7 +1716,7 @@ namespace WasatchNET
                     return;
 
                 if (value)
-                    laserTECMode = (ushort)LaserTECMode.ON;
+                    laserTECMode = (ushort)LaserTECMode.AUTO;
                 else
                     laserTECMode = (ushort)LaserTECMode.OFF;
             }
@@ -1706,6 +1751,42 @@ namespace WasatchNET
             }
         }
         protected ushort laserTECMode_ = 0;
+
+        public virtual IMAGE_SENSOR_STATUS imageSensorStatus
+        {
+            //we do NOT want to cache this one
+            get
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE;
+                byte[] pack = getCmd(op, 1);
+
+                if (pack != null && pack.Length > 0)
+                    return (IMAGE_SENSOR_STATUS)pack[0];
+
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_READ_FAIL;
+            }
+        }
+
+        public virtual ushort imageSensorTimeout
+        {
+            get
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT;
+                if (haveCache(op))
+                    return imageSensorTimeout_;
+                readOnce.Add(op);
+                return imageSensorTimeout_ = Unpack.toUshort(getCmd2(op, 2));
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT;
+                if (haveCache(op) && value == detectorStartLine_)
+                    return;
+                sendCmd2(Opcodes.SET_IMAGE_SENSOR_STATE_TRANSITION_TIMEOUT, (ushort)(imageSensorTimeout_ = value));
+                readOnce.Add(op);
+            }
+        }
+        ushort imageSensorTimeout_ = 10000;
 
         public uint lineLength
         {
@@ -2199,6 +2280,8 @@ namespace WasatchNET
                     detectorStartLine = start;
                     detectorStopLine = end;
                 }
+
+                imageSensorTimeout = 60000;
             }
 
 
@@ -2425,7 +2508,7 @@ namespace WasatchNET
         /// </summary>
         /// <param name="raw">input value in one endian</param>
         /// <returns>same value with the bytes reversed</returns>
-        ushort swapBytes(ushort raw)
+        protected ushort swapBytes(ushort raw)
         {
             byte lsb = (byte)(raw & 0xff);
             byte msb = (byte)((raw >> 8) & 0xff);
@@ -3108,10 +3191,10 @@ namespace WasatchNET
             while (i < eeprom.badPixelList.Count)
             {
                 short badPix = eeprom.badPixelList[i];
-
                 if (badPix == 0)
                 {
                     // handle the left edge
+                    i++;
                     short nextGood = (short)(badPix + 1);
                     while (eeprom.badPixelSet.Contains(nextGood) && nextGood < spectrum.Length)
                     {

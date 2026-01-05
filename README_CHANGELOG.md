@@ -1,5 +1,33 @@
 # Wasatch.NET Changelog
-
+- 2025-12-16 2.5.18
+	- added laser warning delay and detector start/stop accessors
+	- added support for TCP/IP comms
+- 2025-10-14 2.5.17
+	- internal release
+- 2025-09-17 2.5.16
+	- internal release
+- 2025-07-30 2.5.15
+	- beta that is essentially 2.5.14 with early TCP/IP comm support
+- 2025-07-30 2.5.14
+	- added clamping to 7-bit and 12-bit (as appropriate) to raw temp setpoint setters
+- 2025-05-12 2.5.13
+	- started adding EEPROM format 17
+	- hotfix for malformed SPI EEPROMs
+- 2025-04-22 2.5.12
+	- more SPI fixes
+	- switched default laser TEC Mode
+	- increased IMX timeout default and gave user access
+- 2025-03-13 2.5.11
+	- new debugging around issues with seabreeze specs
+	- fixes for SPI spectrometers
+	- another new opcode
+- 2025-??-?? 2.4.17
+    - fixed bad pixel correction (left-edge corner case)
+- 2024-10-16 2.5.10
+	- support for remaining EEPROM format 16
+	- support for multiple binning correction methods
+- 2024-??-?? 2.5.9
+	- support for some of EEPROM format 16
 - 2024-06-20 2.5.8
     - beta release
     - fixes for multi channel demo
@@ -9,10 +37,21 @@
     - WinFormDemo
         - disable all the initial "getter" calls
         - GUI tweaks
+- 2024-03-19 2.4.16
+	- fixed issue with multi channel wrapper demo program
+- 2024-03-05 2.4.15
+    - added Spectrometer.isAndor
+	- fixes to multi channel wrapper timing
+	- attempted changes for hardware triggering
 - 2023-12-18 2.5.6
 	- beta release for downstream software
 	- adds support for both major classes of WPOCT spectrometers
 	- stability improvements for Boulder spectrometers
+- 2023-09-26 2.4.14
+    - updates for 1064XL
+    - don't enable detector TEC unless degCToDACCoeffs has a non-default calibration
+    - added Spectrometer.loadFromJSON for XL
+    - fixed AnyCPU build
 - 2023-09-15 2.5.5
 	- beta release for downstream software
 	- most major addition is hexdump for EEPROM
@@ -22,19 +61,27 @@
 - 2023-06-01 2.5.3
 	- beta
 	- some downstream mock and function changes, mostly for new internal project
+- 2023-04-20 2.4.13
+    - add warning when encountering unsupported / higher EEPROM format
 - 2023-03-03 2.5.2
 	- beta
 	- some additions to EEPROM/JSON formatting
+- 2022-12-19 2.4.12
+    - explicitly default High-Gain Mode true for Hamamatsu InGaAs detectors
 - 2022-11-03 2.5.1
 	- beta
 	- some Andor noodling
 	- made sync wrappers a little safer
 	- moved standard spec properties back to sync for now (async set caused a huge out of order bug, see README)
+- 2022-09-20 2.4.11
+    - added checkBoxLaserPowerInMW to WinFormDemo
 - 2022-09-XX 2.5.0
 	- beta
 	- added async versions of a number of key functions
 	- moved most "USB-based" properties to using "synchronous async" usb functions for standard spectometer
-- 2023-??-?? 2.4.14
+<<<<<<< HEAD
+- 2025-??-?? 2.4.17
+    - fixed bad pixel correction (left-edge corner case)
 - 2024-03-19 2.4.16
 	- fixed issue with multi channel wrapper demo program
 - 2024-03-05 2.4.15
@@ -52,6 +99,8 @@
     - explicitly default High-Gain Mode true for Hamamatsu InGaAs detectors
 - 2022-09-20 2.4.11
     - added checkBoxLaserPowerInMW to WinFormDemo
+=======
+>>>>>>> master
 - 2022-08-17 2.4.10
 	- add temperature caching for Andor spectrometers to prevent long reads
 - 2022-07-28 2.4.9

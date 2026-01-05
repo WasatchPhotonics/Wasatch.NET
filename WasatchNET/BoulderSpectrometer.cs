@@ -33,7 +33,7 @@ namespace WasatchNET
 
         /// <summary>
         /// Project Boulder is an OEM spectrometer with customer-supplied electronics 
-        /// using Ocean Optics-derived firmware interface, hence SeaBreeze communications
+        /// using Seabreeze-derived firmware interface, hence SeaBreeze communications
         /// </summary>
         internal BoulderSpectrometer(UsbRegistry usbReg, int index = 0) : base(usbReg)
         {
@@ -45,7 +45,10 @@ namespace WasatchNET
             if (!commError)
             {
                 logger.debug("init grabbing lock");
-                integrationTimeMS_ = (uint)getIntegrationTime();
+                lock (acquisitionLock)
+                {
+                    integrationTimeMS_ = (uint)getIntegrationTime();
+                }
                 logger.debug("init releasing lock");
             }
 
@@ -68,9 +71,14 @@ namespace WasatchNET
         override internal bool open()
         {
             eeprom = new BoulderEEPROM(this);
-            openSpectrometer();
-            pixels = (uint)getPixels();
-            bool ok = eeprom.read();
+
+            bool ok = false;
+            lock (acquisitionLock)
+            {
+                openSpectrometer();
+                pixels = (uint)getPixels();
+                ok = eeprom.read();
+            }
 
             if (!ok)
             {
@@ -261,9 +269,13 @@ namespace WasatchNET
             byte[] response;
             bool ok = false;
 
-            logger.debug("status grabbing lock");
+            logger.debug("status request grabbing lock");
+            lock (acquisitionLock)
+            {
+                ok = sbWrite(request, false);
+            }
+            logger.debug("status request released lock");
 
-            ok = sbWrite(request, false);
             if (!ok)
             {
                 //wrapper.setError("Error requesting status register update");
@@ -273,15 +285,18 @@ namespace WasatchNET
                 return false;
             }
 
-            response = sbRead(16, false);
-            
+            logger.debug("status read grabbing lock");
+            lock (acquisitionLock)
+            {
+                response = sbRead(16, false);
+            }
+            logger.debug("status read released lock");
 
             if (response == null || response.Length == 0)
-                if (!ok)
-                {
-                    logger.info("updateStatus: failed");
-                    return false;
-                }
+            {
+                logger.info("updateStatus: failed");
+                return false;
+            }
 
             logger.info("updateStatus: updating from response");
             status.update(response);
@@ -303,7 +318,6 @@ namespace WasatchNET
                 // obviously something just happened, so brighten the display unless forced otherwise
                 //userOperation();
             }
-            logger.debug("status releasing lock");
 
             return true;
         }
@@ -448,7 +462,10 @@ namespace WasatchNET
             cmd[2] = (byte)(setpoint & 0xff);
 
             logger.debug("TEC setpoint grabbing lock");
-            sbWrite(cmd);
+            lock (acquisitionLock)
+            {
+                sbWrite(cmd);
+            }
             logger.debug("TEC setpoint releasing lock");
         }
 
@@ -489,7 +506,12 @@ namespace WasatchNET
             cmd[1] = (byte)(detectorFlag ? 1 : 0);
             cmd[2] = (byte)(laserFlag ? 1 : 0);
 
-            result = sbWrite(cmd);
+            logger.debug("TEC enable grabbing lock");
+            lock (acquisitionLock)
+            {
+                result = sbWrite(cmd);
+            }
+            logger.debug("TEC enable releasing lock");
 
             if (!result)
             {
@@ -568,7 +590,13 @@ namespace WasatchNET
             int errorReader = 0;
 
             logger.debug("launching wrapper call");
-            SeaBreezeWrapper.seabreeze_get_formatted_spectrum(specIndex, ref errorReader, ref spec[0], (int)pixels);
+            logger.debug("getSpectrumRaw grabbing lock");
+            lock (acquisitionLock)
+            {
+                logger.debug("getSpectrumRaw grabbed lock");
+                SeaBreezeWrapper.seabreeze_get_formatted_spectrum(specIndex, ref errorReader, ref spec[0], (int)pixels);
+            }
+            logger.debug("getSpectrumRaw released lock");
             logger.debug("getSpectrumRaw: returning {0} pixels", spec.Length);
             return spec;
         }
@@ -723,8 +751,14 @@ namespace WasatchNET
                 if (!commError)
                 {
                     int errorReader = 0;
-                    SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000));
-                    
+                    logger.debug("int time set grabbing lock");
+                    lock (acquisitionLock)
+                    {
+                        logger.debug("int time set grabbed lock");
+                        SeaBreezeWrapper.seabreeze_set_integration_time_microsec(specIndex, ref errorReader, (long)(value * 1000));
+                    }
+                    logger.debug("int time set released lock");
+
                     if (errorReader == 0)
                     {
                         spectrumMinTimeoutMS = Math.Max(3 * (int)integrationTimeMS_, 5000);
@@ -792,6 +826,7 @@ namespace WasatchNET
         }
 
         public override bool laserInterlockEnabled { get => false; }
+        public override byte laserWarningDelaySec { get => 0; set { } }
 
         public override UInt64 laserModulationPeriod { get => 100; }
 
@@ -804,6 +839,18 @@ namespace WasatchNET
         public override short detectorOffset { get => 0; }
 
         public override short detectorOffsetOdd { get => 0; }
+
+        public override ushort detectorStartLine
+        {
+            get { return detectorStartLine_; }
+            set { lock (acquisitionLock) detectorStartLine_ = value; }
+        }
+
+        public override ushort detectorStopLine
+        {
+            get { return detectorStopLine_; }
+            set { lock (acquisitionLock) detectorStopLine_ = value; }
+        }
 
         public override bool isARM => false;
         public override bool isInGaAs => false;
@@ -854,9 +901,12 @@ namespace WasatchNET
             }
             set
             {
-                bool ok = enableDetectorTEC(value);
-                if (ok)
-                    tecEnabled_ = value;
+                if (value != tecEnabled_)
+                {
+                    bool ok = enableDetectorTEC(value);
+                    if (ok)
+                        tecEnabled_ = value;
+                }
             }
         }
         bool tecEnabled_ = false;
@@ -942,37 +992,52 @@ namespace WasatchNET
         {
             get
             {
-                string retval = "";
-
-                if (!commError)
+                if (firmwareRevision_ == null || firmwareRevision_.Length == 0)
                 {
-                    byte[] raw = new byte[32];
-                    int error = 0;
+                    string retval = "";
 
-                    SeaBreezeWrapper.seabreeze_get_usb_descriptor_string(specIndex, ref error, 1, ref raw[0], raw.Length);
-
-                    if (error == 0)
+                    if (!commError)
                     {
-                        int len = 0;
-                        while (raw[len] != 0 && len + 1 < raw.Length)
-                            len++;
+                        byte[] raw = new byte[32];
+                        int error = 0;
 
-                        byte[] cleanByte = Encoding.Convert(Encoding.GetEncoding("iso-8859-1"), Encoding.UTF8, raw);
-                        string text = Encoding.UTF8.GetString(cleanByte, 0, len);
-                        const string pattern = @"\b(\d+\.\d+\.\d+)\b";
-                        Regex regEx = new Regex(pattern);
-                        MatchCollection matches = regEx.Matches(text);
-                        if (matches.Count > 0)
-                            retval = matches[0].Groups[0].Value;
-                        else
-                            retval = text;
+                        logger.debug("firmware read grabbing lock");
+                        lock (acquisitionLock)
+                        {
+                            logger.debug("firmware read grabbed lock");
+                            SeaBreezeWrapper.seabreeze_get_usb_descriptor_string(specIndex, ref error, 1, ref raw[0], raw.Length);
+                        }
+                        logger.debug("firmware read released lock");
+
+                        if (error == 0)
+                        {
+                            int len = 0;
+                            while (raw[len] != 0 && len + 1 < raw.Length)
+                                len++;
+
+                            byte[] cleanByte = Encoding.Convert(Encoding.GetEncoding("iso-8859-1"), Encoding.UTF8, raw);
+                            string text = Encoding.UTF8.GetString(cleanByte, 0, len);
+                            const string pattern = @"\b(\d+\.\d+\.\d+)\b";
+                            Regex regEx = new Regex(pattern);
+                            MatchCollection matches = regEx.Matches(text);
+                            if (matches.Count > 0)
+                                retval = matches[0].Groups[0].Value;
+                            else
+                                retval = text;
+
+                            firmwareRevision_ = retval;
+                        }
                     }
+                    else
+                    {
+                        logger.error("comm error occurring, will not return firmware");
+                    }
+                    return retval;
                 }
                 else
                 {
-                    logger.error("comm error occurring, will not return firmware");
+                    return firmwareRevision_;
                 }
-                return retval;
             }
         }
 
@@ -980,31 +1045,44 @@ namespace WasatchNET
         {
             get
             {
-                string formatted = "";
-                logger.debug("fpga grabbing lock");
-                byte[] cmd = new byte[2];
-                cmd[0] = 0x6b; // read FPGA register
-                cmd[1] = 0x04; // read FPGA version number
-
-                sbWrite(cmd);
-                byte[] response = sbRead(3);
-
-
-                if (response != null)
+                if (fpgaRevision_ == null || fpgaRevision_.Length == 0)
                 {
-                    UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
 
-                    int major = (bytes >> 12) & 0x0f;
-                    int minor = (bytes >> 4) & 0xff;
-                    int build = (bytes) & 0x0f;
+                    string formatted = "";
+                    logger.debug("fpga grabbing lock");
+                    lock (acquisitionLock)
+                    {
+                        logger.debug("fpga grabbed lock");
+                        byte[] cmd = new byte[2];
+                        cmd[0] = 0x6b; // read FPGA register
+                        cmd[1] = 0x04; // read FPGA version number
 
-                    formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
-                    logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
+                        sbWrite(cmd);
+                        byte[] response = sbRead(3);
+
+
+                        if (response != null)
+                        {
+                            UInt16 bytes = (UInt16)((response[2] << 8) | response[1]);
+
+                            int major = (bytes >> 12) & 0x0f;
+                            int minor = (bytes >> 4) & 0xff;
+                            int build = (bytes) & 0x0f;
+
+                            formatted = String.Format("{0:x1}.{1:x2}.{2:x1}", major, minor, build);
+                            logger.debug("converted raw FPGA version {0:x4} to {1}", bytes, formatted);
+                            fpgaRevision_ = formatted;
+                        }
+
+                    }
+                    logger.debug("fpga releasing lock");
+                    return formatted;
                 }
-                logger.debug("fpga releasing lock");
-                return formatted;
+                else
+                    return fpgaRevision_;
             }
         }
+        string fpgaRevision_ = "";
 
         public override string bleRevision
         {
