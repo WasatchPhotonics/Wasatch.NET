@@ -1387,6 +1387,17 @@ namespace WasatchNET
         }
         byte _laserWarningDelaySec;
 
+        public virtual byte laserPowerAttenuation
+        {
+            get => _laserPowerAttenuation;
+            set
+            {
+                sendCmd(Opcodes.SET_LASER_POWER_ATTENUATOR, (byte)value);
+                _laserPowerAttenuation = value;
+            }
+        }
+        byte _laserPowerAttenuation;
+
         public bool laserModulationLinkedToIntegrationTime
         {
             get

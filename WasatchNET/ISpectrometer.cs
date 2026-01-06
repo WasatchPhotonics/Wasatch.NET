@@ -184,6 +184,7 @@ namespace WasatchNET
         /// </summary>
         bool laserInterlockEnabled { get; }
         byte laserWarningDelaySec { get; set; }
+        byte laserPowerAttenuation { get; set; }
 
         bool laserModulationEnabled { get; set; }
         bool laserModulationLinkedToIntegrationTime { get; set; }

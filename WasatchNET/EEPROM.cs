@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Serialization;
 
 namespace WasatchNET
 {
@@ -678,6 +679,20 @@ namespace WasatchNET
         // public int laserLifetimeOperationMinutes { get; private set; }
         // public short laserTemperatureMax { get; private set; }
         // public short laserTemperatureMin { get; private set; }
+
+        public byte maxLaserTempDegC
+        {
+            get { return _maxLaserTempDegC; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _maxLaserTempDegC = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _maxLaserTempDegC;
+
+
         public float maxLaserPowerMW
         {
             get { return _maxLaserPowerMW; }
@@ -800,6 +815,18 @@ namespace WasatchNET
         }
         HORIZONTAL_BINNING_METHOD _horizontalBinningMethod = HORIZONTAL_BINNING_METHOD.BIN_2X2;
 
+        public byte laserDacAttenuation
+        {
+            get { return _laserDacAttenuation; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _laserDacAttenuation = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _laserDacAttenuation = 0;
+
         /////////////////////////////////////////////////////////////////////////       
         // Page 4
         /////////////////////////////////////////////////////////////////////////       
@@ -906,6 +933,18 @@ namespace WasatchNET
         }
 
         string _productConfiguration;
+
+        public byte[] assemblyRevision
+        {
+            get { return _assemblyRevision; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _assemblyRevision = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte[] _assemblyRevision;
 
         public PAGE_SUBFORMAT subformat
         {
@@ -1255,6 +1294,25 @@ namespace WasatchNET
             }
         }
         byte _librarySpectraNum = 1;
+
+        /////////////////////////////////////////////////////////////////////////       
+        // Page 8 Handheld Devices
+        /////////////////////////////////////////////////////////////////////////  
+        
+        public string laserPassword
+        {
+            get { return _laserPassword; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _laserPassword = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+
+        string _laserPassword;
+
+        public FeatureMaskXS featureMaskXS = new FeatureMaskXS();
 
         /////////////////////////////////////////////////////////////////////////
         // Pages 10-73 (subformat UNTETHERED_DEVICE)
@@ -1645,6 +1703,12 @@ namespace WasatchNET
                     maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
                 }
 
+                if (format >= 18)
+                {
+                    maxLaserTempDegC = ParseData.toUInt8(pages[3], 11);
+                }
+
+
                 userData = format < 4 ? new byte[63] : new byte[64];
                 Array.Copy(pages[4], userData, userData.Length);
 
@@ -1662,6 +1726,14 @@ namespace WasatchNET
                     productConfiguration = ParseData.toString(pages[5], 30, 16);
                 else
                     productConfiguration = "";
+
+
+                assemblyRevision = new byte[6];
+                if (format >= 18)
+                {
+                    Array.Copy(pages[5], 46, assemblyRevision, 0, assemblyRevision.Length);
+                }
+
 
                 if (format >= 6 && (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
                                     subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE))
@@ -1749,6 +1821,15 @@ namespace WasatchNET
                     horizontalBinningMethod = HORIZONTAL_BINNING_METHOD.BIN_2X2;
                 }
 
+                if (format >= 18)
+                {
+                    laserDacAttenuation = ParseData.toUInt8(pages[3], 61);
+                }
+                else
+                {
+                    //default to halfway point
+                    laserDacAttenuation = 127;
+                }
 
                 if (format < 12)
                     featureMask.evenOddHardwareCorrected = false;
@@ -1828,6 +1909,12 @@ namespace WasatchNET
 
                         regionCount = ParseData.toUInt8(pages[7], 0);
                     }
+                }
+
+                if (format >= 18 && spectrometer.isSiG && pages.Count >= 8)
+                {
+                    laserPassword = ParseData.toString(pages[8], 0, 16);
+                    featureMaskXS = new FeatureMaskXS(ParseData.toUInt32(pages[8], 16));
                 }
             }
             catch (Exception ex)
@@ -1990,6 +2077,9 @@ namespace WasatchNET
             featureMask.disableBLEPower = json.DisableBLEPower;
             featureMask.disableLaserArmedIndication = json.DisableLaserArmedIndication;
             featureMask.interlockExcluded = json.InterlockExcluded;
+            featureMask.laserTimeoutInCounts = json.LaserTimeoutInCounts;
+            featureMask.isOEM = json.IsOEM;
+            featureMaskXS.BLEDoorSensor = json.BLEDoorSensor;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -2038,10 +2128,12 @@ namespace WasatchNET
             linearityCoeffs[3] = (float)json.LinearityCoeffs[3];
             linearityCoeffs[4] = (float)json.LinearityCoeffs[4];
 
+            maxLaserTempDegC = json.MaxLaserTempDegC;
             maxLaserPowerMW = (float)json.MaxLaserPowerMW;
             minLaserPowerMW = (float)json.MinLaserPowerMW;
             laserWarmupSec = json.LaserWarmupS;
             laserExcitationWavelengthNMFloat = (float)json.ExcitationWavelengthNM;
+            laserDacAttenuation = json.LaserDACAttenuation;
             avgResolution = (float)json.AvgResolution;
 
             if (json.LaserPowerCoeffs != null)
@@ -2074,7 +2166,9 @@ namespace WasatchNET
             badPixels[12] = (Int16)json.BadPixels[12];
             badPixels[13] = (Int16)json.BadPixels[13];
             badPixels[14] = (Int16)json.BadPixels[14];
-
+            assemblyRevision = new byte[json.AssemblyRevision.Length];
+            Array.Copy(json.AssemblyRevision, assemblyRevision, json.AssemblyRevision.Length);
+            
             detectorSerialNumber = json.DetectorSN;
 
             if (json.ProductConfig != null)
@@ -2128,7 +2222,7 @@ namespace WasatchNET
                 regionCount = json.RegionCount;
             }
 
-
+            laserPassword = json.LaserPassword;
         }
 
         public EEPROMJSON toJSON()
@@ -2223,9 +2317,11 @@ namespace WasatchNET
                 json.LaserPowerCoeffs[2] = laserPowerCoeffs[2];
                 json.LaserPowerCoeffs[3] = laserPowerCoeffs[3];
             }
+            json.MaxLaserTempDegC = maxLaserTempDegC;
             json.MaxLaserPowerMW = maxLaserPowerMW;
             json.MinLaserPowerMW = minLaserPowerMW;
             json.ExcitationWavelengthNM = laserExcitationWavelengthNMFloat;
+            json.LaserDACAttenuation = laserDacAttenuation;
             json.AvgResolution = avgResolution;
             json.BadPixels = new int[15];
             if (badPixels != null)
@@ -2246,6 +2342,12 @@ namespace WasatchNET
                 json.BadPixels[13] = badPixels[13];
                 json.BadPixels[14] = badPixels[14];
             }
+            if (assemblyRevision != null)
+            {
+                json.AssemblyRevision = new byte[assemblyRevision.Length];
+                Array.Copy(assemblyRevision, json.AssemblyRevision, assemblyRevision.Length);   
+            }
+
             json.DetectorSN = detectorSerialNumber;
             json.UserText = userText;
             json.ProductConfig = productConfiguration;
@@ -2278,6 +2380,12 @@ namespace WasatchNET
                 json.DisableBLEPower = featureMask.disableBLEPower;
                 json.DisableLaserArmedIndication = featureMask.disableLaserArmedIndication;
                 json.InterlockExcluded = featureMask.interlockExcluded;
+                json.LaserTimeoutInCounts = featureMask.laserTimeoutInCounts;
+                json.IsOEM = featureMask.isOEM;
+            }
+            if (featureMaskXS != null)
+            {
+                json.BLEDoorSensor = featureMaskXS.BLEDoorSensor;
             }
 
             json.LaserWarmupS = laserWarmupSec;
@@ -2321,7 +2429,9 @@ namespace WasatchNET
                 json.RegionCount = regionCount;
             }
 
+            json.LaserPassword = laserPassword;
             json.FeatureMask = featureMask.ToString();
+            json.FeatureMaskXS = featureMaskXS.ToString();
             json.HexDump = hexdump();
 
             return json;
@@ -2540,6 +2650,18 @@ namespace WasatchNET
                 if (!ParseData.writeUInt16(powerWatchdogTimer, pages[3], 55)) return false;
                 if (!ParseData.writeUInt16(detectorTimeout, pages[3], 57)) return false;
                 if (!ParseData.writeByte((byte)horizontalBinningMethod, pages[3], 59)) return false;
+            }
+            if (format >= 18)
+            {
+                if (!ParseData.writeByte(maxLaserTempDegC, pages[3], 11)) return false;
+                if (!ParseData.writeByte(laserDacAttenuation, pages[3], 61)) return false;
+
+                Array.Copy(assemblyRevision, 0, pages[5], 46, assemblyRevision.Length);
+                if (spectrometer.isSiG && pages.Count >= 8)
+                {
+                    if (!ParseData.writeString(laserPassword, pages[8], 0, 16)) return false;
+                    if (!ParseData.writeUInt32(featureMaskXS.toUInt32(), pages[8], 16)) return false;
+                }
             }
 
             byte[] userDataChunk2 = new byte[64];

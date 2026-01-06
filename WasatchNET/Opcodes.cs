@@ -71,6 +71,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_LASER_MOD_PERIOD                   ] = 0xcb;
             cmd[Opcodes.GET_LASER_MOD_PULSE_DELAY              ] = 0xca;
             cmd[Opcodes.GET_LASER_MOD_PULSE_WIDTH              ] = 0xdc;
+            cmd[Opcodes.GET_LASER_POWER_ATTENUATOR             ] = 0x83;
             cmd[Opcodes.GET_LASER_TEC_SETPOINT                 ] = 0xe8;
             cmd[Opcodes.GET_LASER_TEC_MODE                     ] = 0x85;
             cmd[Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME ] = 0xde;
@@ -105,6 +106,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_LASER_MOD_PERIOD                   ] = 0xc7;
             cmd[Opcodes.SET_LASER_MOD_PULSE_DELAY              ] = 0xc6;
             cmd[Opcodes.SET_LASER_MOD_PULSE_WIDTH              ] = 0xdb;
+            cmd[Opcodes.SET_LASER_POWER_ATTENUATOR             ] = 0x83;
             cmd[Opcodes.SET_LASER_TEC_SETPOINT                 ] = 0xe7;
             cmd[Opcodes.SET_LASER_TEC_MODE                     ] = 0x84;
             cmd[Opcodes.SET_LASER_WARNING_DELAY                ] = 0x8a;
