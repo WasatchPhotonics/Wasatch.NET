@@ -261,6 +261,7 @@ namespace WasatchNET
             logger.debug("status grabbing lock");
             lock (acquisitionLock)
             {
+                logger.debug("status grabbed lock");
                 ok = sbWrite(request, false);
                 if (!ok)
                 {
@@ -273,6 +274,7 @@ namespace WasatchNET
 
                 response = sbRead(16, false);
             }
+            logger.debug("status released lock");
 
             if (response == null || response.Length == 0)
                 if (!ok)
@@ -527,15 +529,21 @@ namespace WasatchNET
 
                 if (scanAveraging_ > 1)
                 {
-                    // logger.debug("getSpectrum: getting additional spectra for averaging");
+                    logger.debug("getSpectrum: getting additional spectra for averaging");
                     for (uint i = 1; i < scanAveraging_; i++)
                     {
-                        double[] tmp = getSpectrumRaw();
-                        if (tmp == null)
-                            return null;
+                        logger.debug("avgd get spectrum grabbing lock");
+                        lock (acquisitionLock)
+                        {
+                            logger.debug("avgd get spectrum grabbed lock");
+                            double[] tmp = getSpectrumRaw();
+                            if (tmp == null)
+                                return null;
 
-                        for (int px = 0; px < pixels; px++)
-                            sum[px] += tmp[px];
+                            for (int px = 0; px < pixels; px++)
+                                sum[px] += tmp[px];
+                        }
+                        logger.debug("avgd get spectrum releasing lock");
                     }
 
                     for (int px = 0; px < pixels; px++)
@@ -730,11 +738,12 @@ namespace WasatchNET
             {
                 //if (value < wrapper.getMaxIntegrationTimeMillisec())
                 //wrapper.setIntegrationTimeMillisec((long)value);
-                if (!commError)
+                if (!commError && value != integrationTime_)
                 {
                     logger.debug("int time grabbing lock");
                     lock (acquisitionLock)
                     {
+                        logger.debug("int time grabbed lock");
                         int errorReader = 0;
                         var task = Task.Run(async () => errorReader = await setIntegrationAsync(value));
                         task.Wait();
@@ -749,7 +758,7 @@ namespace WasatchNET
                     }
                     logger.debug("int time releasing lock");
                 }
-                else
+                else if (commError)
                 {
                     logger.error("comm error occurring, will not set int time");
                 }
@@ -971,7 +980,7 @@ namespace WasatchNET
         {
             get
             {
-                if (firmwareRevision_.Length == 0)
+                if (firmwareRevision_ == null || firmwareRevision_.Length == 0)
                 {
                     string retval = "";
 
@@ -980,6 +989,7 @@ namespace WasatchNET
                         logger.debug("firmware grabbing lock");
                         lock (acquisitionLock)
                         {
+                            logger.debug("firmware grabbed lock");
                             var task = Task.Run(async () => retval = await getFirmwareRevAsync());
                             task.Wait();
                         }
@@ -1062,13 +1072,14 @@ namespace WasatchNET
         {
             get
             {
-                if (fpgaRevision_.Length == 0)
+                if (fpgaRevision_ == null || fpgaRevision_.Length == 0)
                 {
 
                     string formatted = "";
                     logger.debug("fpga grabbing lock");
                     lock (acquisitionLock)
                     {
+                        logger.debug("fpga grabbed lock");
                         byte[] cmd = new byte[2];
                         cmd[0] = 0x6b; // read FPGA register
                         cmd[1] = 0x04; // read FPGA version number
