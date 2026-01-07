@@ -4,7 +4,6 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Serialization;
 
 namespace WasatchNET
 {
@@ -39,7 +38,7 @@ namespace WasatchNET
         /// accessible from existing firmware on our ARM models.  A future update
         /// to /FX2 firmware will make them available on all spectrometers.
         /// </remarks>
-        internal const int MAX_PAGES = 8;
+        internal const int MAX_PAGES = 9;
         internal const int MAX_PAGES_REAL = 512;
         internal const int MAX_NAME_LEN = 16;
         internal const int MAX_LIB_ENTRIES = 8;
@@ -55,7 +54,7 @@ namespace WasatchNET
         /// - rev 14
         ///     - adds SiG laser TEC and Has interlock feedback to feature mask
         /// </remarks>
-        protected const byte FORMAT = 17;
+        protected const byte FORMAT = 18;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
