@@ -325,6 +325,12 @@ namespace WasatchNET
         }
         bool byteArrayEq(byte[] a, byte[] b)
         {
+            if (a == null && b == null)
+                return true;
+
+            if (a == null || b == null) 
+                return false;
+
             if (a.Length != b.Length)
                 return false;
 
@@ -389,7 +395,8 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(UserText);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(ProductConfig);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(LaserPassword);
-            hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(AssemblyRevision);
+            if (AssemblyRevision != null)
+                hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(AssemblyRevision);
             hashCode = hashCode * -1521134295 + RelIntCorrOrder.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<double[]>.Default.GetHashCode(RelIntCorrCoeffs);
             hashCode = hashCode * -1521134295 + Bin2x2.GetHashCode();
@@ -495,7 +502,8 @@ namespace WasatchNET
             addField(sb, indent, "AvgResolution", AvgResolution);
 
             addField(sb, indent, "BadPixels", BadPixels);
-            addField(sb, indent, "AssemblyRevision", AssemblyRevision);
+            if (AssemblyRevision != null)
+                addField(sb, indent, "AssemblyRevision", AssemblyRevision);
 
             addField(sb, indent, "UserText", UserText);
             addField(sb, indent, "ProductConfig", ProductConfig);
