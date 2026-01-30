@@ -2165,8 +2165,11 @@ namespace WasatchNET
             badPixels[12] = (Int16)json.BadPixels[12];
             badPixels[13] = (Int16)json.BadPixels[13];
             badPixels[14] = (Int16)json.BadPixels[14];
-            assemblyRevision = new byte[json.AssemblyRevision.Length];
-            Array.Copy(json.AssemblyRevision, assemblyRevision, json.AssemblyRevision.Length);
+            if (json.AssemblyRevision != null)
+            {
+                assemblyRevision = new byte[json.AssemblyRevision.Length];
+                Array.Copy(json.AssemblyRevision, assemblyRevision, json.AssemblyRevision.Length);
+            }
             
             detectorSerialNumber = json.DetectorSN;
 

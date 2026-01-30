@@ -106,7 +106,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_LASER_MOD_PERIOD                   ] = 0xc7;
             cmd[Opcodes.SET_LASER_MOD_PULSE_DELAY              ] = 0xc6;
             cmd[Opcodes.SET_LASER_MOD_PULSE_WIDTH              ] = 0xdb;
-            cmd[Opcodes.SET_LASER_POWER_ATTENUATOR             ] = 0x83;
+            cmd[Opcodes.SET_LASER_POWER_ATTENUATOR             ] = 0x82;
             cmd[Opcodes.SET_LASER_TEC_SETPOINT                 ] = 0xe7;
             cmd[Opcodes.SET_LASER_TEC_MODE                     ] = 0x84;
             cmd[Opcodes.SET_LASER_WARNING_DELAY                ] = 0x8a;
@@ -178,6 +178,7 @@ namespace WasatchNET
             armInvertedRetvals.Add(Opcodes.SET_LASER_MOD_PULSE_WIDTH);
             armInvertedRetvals.Add(Opcodes.SET_LASER_TEC_SETPOINT);
             armInvertedRetvals.Add(Opcodes.SET_LASER_MOD_PERIOD);
+            //armInvertedRetvals.Add(Opcodes.SET_LASER_POWER_ATTENUATOR);
             armInvertedRetvals.Add(Opcodes.SET_LASER_MOD_PULSE_DELAY);
             armInvertedRetvals.Add(Opcodes.SET_CONTINUOUS_ACQUISITION);
             armInvertedRetvals.Add(Opcodes.SET_CONTINUOUS_FRAMES);
