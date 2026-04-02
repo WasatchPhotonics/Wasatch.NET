@@ -18,6 +18,13 @@ using ATMCD64CS;
 
 namespace WasatchNET
 {
+    public struct camSpeed
+    {
+        public int channel;
+        public int speedIndex;
+        public float speed;
+    }
+
     public class AndorSpectrometer : Spectrometer
     {
 #if WIN32
@@ -28,6 +35,7 @@ namespace WasatchNET
         internal int specIndex;
         int cameraHandle = 0;
         int yPixels;
+        public List<camSpeed> speedOptions = new List<camSpeed>();
 
         //see page 330 of Andor SDK documentation
         public const int DRV_SUCCESS = 20002;
@@ -81,12 +89,14 @@ namespace WasatchNET
             }
 
             // Set Horizontal Speed to max (step 13)
+            // Populate speed list
             float STemp = 0;
             int HSnumber = 0;
             int ADnumber = 0;
             int nAD = 0;
             int sIndex = 0;
             errorValue = andorDriver.GetNumberADChannels(ref nAD); // 13.1
+            speedOptions.Clear();
             if (errorValue != DRV_SUCCESS)
             {
 
@@ -99,6 +109,14 @@ namespace WasatchNET
                     for (int iSpeed = 0; iSpeed < sIndex; iSpeed++)
                     {
                         andorDriver.GetHSSpeed(iAD, 0, iSpeed, ref speed); // 13.3
+                        speedOptions.Add(
+                        new camSpeed
+                        {
+                            channel = iAD,
+                            speedIndex = iSpeed,
+                            speed = speed
+                        });
+
                         if (speed > STemp)
                         {
                             STemp = speed;
@@ -297,6 +315,17 @@ namespace WasatchNET
 
         }
 
+        public bool setCamSpeed(camSpeed option)
+        {
+            uint errorValue = andorDriver.SetADChannel(option.channel); 
+
+            if (errorValue != DRV_SUCCESS)
+                return false;
+
+            errorValue = andorDriver.SetHSSpeed(0, option.speedIndex);
+
+            return errorValue == DRV_SUCCESS;
+        }
 
         public override bool areaScanEnabled
         {
