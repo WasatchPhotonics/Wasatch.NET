@@ -805,6 +805,8 @@ namespace WasatchNET
             
         }
 
+        public override bool resetFPGA() => true;
+
         public override bool highGainModeEnabled
         {
             get { return false; }

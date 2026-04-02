@@ -341,6 +341,8 @@ namespace WasatchNET
             return null;
         }
 
+        public override bool resetFPGA() => true;
+
         public override string serialNumber
         {
             get { return eeprom.serialNumber; }
