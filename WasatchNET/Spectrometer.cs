@@ -3358,7 +3358,11 @@ namespace WasatchNET
                 if (retries++ < acquisitionMaxRetries && !untetheredAcquisitionEnabled)
                 {
                     // retry the whole thing (including ACQUIRE)
-                    logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                    logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}"); 
+                    if (retries == 1 && isInGaAs)
+                    {
+                        await resetFPGAAsync();
+                    }
                     continue;
                 }
                 else if (errorOnTimeout)
@@ -3588,14 +3592,6 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////////
             // read spectrum
             ////////////////////////////////////////////////////////////////////
-
-            if (isInGaAs)
-            {
-                Random rand = new Random();
-                if (rand.Next(100) == 75)
-                    return null;
-            }
-
 
             if (useReadoutMutex)
                 readoutMutex.WaitOne();
