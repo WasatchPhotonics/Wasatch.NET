@@ -94,6 +94,12 @@ namespace WasatchNET
             return ok && openBase;
         }
 
+        async Task tryClose(SerialPort port)
+        {
+            port.Close();
+            port.Dispose();
+        }
+
         private void FeatureMask_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             reverseSpectrum = eeprom.featureMask.invertXAxis;
