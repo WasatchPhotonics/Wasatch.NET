@@ -58,6 +58,8 @@ namespace WasatchNET
 
                     if (!sendCOMCommand(Opcodes.GET_LINE_PERIOD, ref resp, null))
                     {
+                        port.Close();
+                        port.Dispose();
                         port = null;
                         return false;
                     }
