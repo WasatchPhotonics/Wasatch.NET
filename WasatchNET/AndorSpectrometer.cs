@@ -315,6 +315,7 @@ namespace WasatchNET
 
         }
 
+        public override bool resetFPGA() => true;
         public bool setCamSpeed(camSpeed option)
         {
             uint errorValue = andorDriver.SetADChannel(option.channel); 

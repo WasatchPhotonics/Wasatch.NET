@@ -419,5 +419,8 @@ namespace WasatchNET
                 return resp.Contains("Ok");
             }
         }
+
+        public override bool resetFPGA() => true;
+
     }
 }

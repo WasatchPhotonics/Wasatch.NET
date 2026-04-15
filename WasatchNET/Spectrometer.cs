@@ -3213,7 +3213,7 @@ namespace WasatchNET
         }
 
         // this is not a Property because it has no value and cannot be undone
-        public bool resetFPGA()
+        public virtual bool resetFPGA()
         {
             Task<bool> task = Task.Run(async () => await resetFPGAAsync());
             return task.Result;
@@ -3234,6 +3234,8 @@ namespace WasatchNET
         {
             logger.info("Resetting FPGA");
             bool good = sendCmd(Opcodes.FPGA_RESET);
+
+            await Task.Delay(3000);
 
             bool cacheHighGain = highGainModeEnabled;
             readOnce.Remove(Opcodes.GET_CF_SELECT);
@@ -3447,7 +3449,11 @@ namespace WasatchNET
                 if (retries++ < acquisitionMaxRetries && !untetheredAcquisitionEnabled)
                 {
                     // retry the whole thing (including ACQUIRE)
-                    logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                    logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}"); 
+                    if (retries == 1 && isInGaAs)
+                    {
+                        await resetFPGAAsync();
+                    }
                     continue;
                 }
                 else if (errorOnTimeout)
@@ -3490,6 +3496,11 @@ namespace WasatchNET
                         {
                             // retry the whole thing (including ACQUIRE)
                             logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                            if (retries == 1 && isInGaAs)
+                            {
+                                await resetFPGAAsync();
+                            }
+
                             continue;
                         }
                         else if (errorOnTimeout)

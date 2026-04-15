@@ -1058,6 +1058,7 @@ namespace WasatchNET
             return retval;
         }
 
+        public override bool resetFPGA() => true;
 
         public override string fpgaRevision
         {

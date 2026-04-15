@@ -493,6 +493,8 @@ namespace WasatchNET
             return false;
         }
 
+        public override bool resetFPGA() => true;
+
         public override LaserPowerResolution laserPowerResolution
         {
             get

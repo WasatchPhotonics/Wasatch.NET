@@ -638,6 +638,8 @@ namespace WasatchNET
             return interpolationSamples.Keys.ToArray();
         }
 
+        public override bool resetFPGA() => true;
+
         public bool initSpectrometer(string jsonFile)
         {
             MockSpectrometerJSON json = null;
