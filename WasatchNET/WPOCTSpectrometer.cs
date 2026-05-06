@@ -343,6 +343,11 @@ namespace WasatchNET
 
         public override bool resetFPGA() => true;
 
+        public virtual void saveUserSettings()
+        {
+
+        }
+
         public override string serialNumber
         {
             get { return eeprom.serialNumber; }
@@ -525,6 +530,19 @@ namespace WasatchNET
             }
         }
         protected int testPattern_ = 0;
+
+        public virtual int testPatternHeight
+        {
+            get
+            {
+                return testPatternHeight_;
+            }
+            set
+            {
+                testPatternHeight_ = value;
+            }
+        }
+        protected int testPatternHeight_ = 0;
 
         public virtual float linePeriod
         {

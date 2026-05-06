@@ -68,7 +68,7 @@ namespace WasatchNET
             }
             catch (Exception)
             {
-                return false;
+                 return false;
             }
 
             bool openBase = await base.openAsync();
@@ -86,6 +86,7 @@ namespace WasatchNET
             }
 
             testPattern = 0;
+            testPatternHeight = eeprom.activePixelsVert;
 
             eeprom.featureMask.PropertyChanged += FeatureMask_PropertyChanged;
             eeprom.featureMask.invertXAxis = false;
@@ -111,6 +112,14 @@ namespace WasatchNET
             port.Close();
             port.Dispose();
             port = null;
+        }
+
+        public override void saveUserSettings()
+        {
+            string resp = "";
+            bool ok = sendCOMCommand(Opcodes.SET_USER_SETTINGS, ref resp, new float[] { 1 }, new int[] { 0 });
+            if (ok)
+                logger.debug("User settings save response: {0}", resp.Split('\r')[0].Trim());
         }
 
         public override string firmwareRevision
@@ -246,6 +255,30 @@ namespace WasatchNET
                 }
             }
         }
+
+        public override int testPatternHeight
+        {
+            get
+            {
+                return testPatternHeight_;
+            }
+            set
+            {
+                int prevValue = testPatternHeight_;
+                string resp = "";
+                bool ok = sendCOMCommand(Opcodes.SET_TEST_HEIGHT, ref resp, new float[] { value }, new int[] { 0 });
+                if (ok)
+                {
+                    ok = sendCOMCommand(Opcodes.GET_TEST_HEIGHT, ref resp, null);
+
+                    if (ok)
+                        testPatternHeight_ = System.Convert.ToInt32(resp.Split('\r')[0]);
+                    else
+                        testPatternHeight_ = prevValue;
+                }
+            }
+        }
+
 
         public override float linePeriod
         {
