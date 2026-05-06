@@ -25,6 +25,8 @@ namespace WasatchNET
             DISABLE_BLE_POWER            = 0x0100, // 2^8
             DISABLE_LASER_ARMED_INDIC    = 0x0200, // 2^9
             INTERLOCK_EXCLUDED           = 0x0400, // 2^10
+            LASER_TIMEOUT_IN_COUNTS      = 0x0800, // 2^10
+            IS_OEM                       = 0x1000  // 2^10
         }
 
         public FeatureMask(ushort value = 0)
@@ -40,6 +42,8 @@ namespace WasatchNET
             disableBLEPower              = 0 != (value & (ushort)Flags.DISABLE_BLE_POWER);
             disableLaserArmedIndication  = 0 != (value & (ushort)Flags.DISABLE_LASER_ARMED_INDIC);
             interlockExcluded            = 0 != (value & (ushort)Flags.INTERLOCK_EXCLUDED);
+            laserTimeoutInCounts         = 0 != (value & (ushort)Flags.LASER_TIMEOUT_IN_COUNTS);
+            isOEM                        = 0 != (value & (ushort)Flags.IS_OEM);
         }
 
         public override string ToString()
@@ -61,6 +65,8 @@ namespace WasatchNET
             if (disableBLEPower)             value |= (ushort)Flags.DISABLE_BLE_POWER;
             if (disableLaserArmedIndication) value |= (ushort)Flags.DISABLE_LASER_ARMED_INDIC;
             if (interlockExcluded)           value |= (ushort)Flags.INTERLOCK_EXCLUDED;
+            if (laserTimeoutInCounts)        value |= (ushort)Flags.INTERLOCK_EXCLUDED;
+            if (isOEM)                       value |= (ushort)Flags.IS_OEM;
 
             return value;
         }
@@ -160,5 +166,37 @@ namespace WasatchNET
         public bool disableBLEPower {  get; set; }
         public bool disableLaserArmedIndication { get; set; }
         public bool interlockExcluded { get; set; }
+        public bool laserTimeoutInCounts { get; set; }
+        public bool isOEM { get; set; }
+    }
+    public class FeatureMaskXS : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        enum Flags 
+        { 
+            BLE_DOOR_SENSOR         = 0x00000001, // 2^0 
+        }
+
+        public FeatureMaskXS(uint value = 0)
+        {
+            BLEDoorSensor = 0 != (value & (ushort)Flags.BLE_DOOR_SENSOR);
+        }
+
+        public override string ToString()
+        {
+            return $"0x{toUInt32():X8}";
+        }
+
+        public uint toUInt32()
+        {
+            uint value = 0;
+            if (BLEDoorSensor)                 value |= (ushort)Flags.BLE_DOOR_SENSOR;
+
+            return value;
+        }
+
+        
+        public bool BLEDoorSensor { get; set; }
     }
 }

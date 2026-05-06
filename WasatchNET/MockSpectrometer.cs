@@ -280,6 +280,7 @@ namespace WasatchNET
             }
         }
         public override byte laserWarningDelaySec { get => 0; set { } }
+        public override byte laserPowerAttenuation { get => 0; set { } }
 
         public override UInt64 laserModulationPeriod
         {
@@ -636,6 +637,8 @@ namespace WasatchNET
         {
             return interpolationSamples.Keys.ToArray();
         }
+
+        public override bool resetFPGA() => true;
 
         public bool initSpectrometer(string jsonFile)
         {

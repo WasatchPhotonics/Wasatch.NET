@@ -94,6 +94,12 @@ namespace WasatchNET
             return ok && openBase;
         }
 
+        async Task tryClose(SerialPort port)
+        {
+            port.Close();
+            port.Dispose();
+        }
+
         private void FeatureMask_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             reverseSpectrum = eeprom.featureMask.invertXAxis;
@@ -343,7 +349,23 @@ namespace WasatchNET
                 }
                 command += "\r";
 
-                port.Write(command);
+                try
+                {
+                    Thread t1 = new Thread(() => port.Write(command));
+                    t1.Start();
+                    if (!t1.Join(TimeSpan.FromMilliseconds(100)))
+                    {
+                        return false;
+                    }
+
+                }
+                catch (Exception e)
+                {
+                    logger.info("{0} failed with exception {1}", portName, e.Message);
+                    return false;   
+                }
+
+
                 Thread.Sleep(33);
                 string resp = "";
                 Thread t = new Thread(() => resp = tryPort(port));
@@ -405,5 +427,8 @@ namespace WasatchNET
                 return resp.Contains("Ok");
             }
         }
+
+        public override bool resetFPGA() => true;
+
     }
 }

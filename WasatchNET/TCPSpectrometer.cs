@@ -493,6 +493,8 @@ namespace WasatchNET
             return false;
         }
 
+        public override bool resetFPGA() => true;
+
         public override LaserPowerResolution laserPowerResolution
         {
             get
@@ -503,6 +505,7 @@ namespace WasatchNET
 
         public override bool laserInterlockEnabled { get => false; }
         public override byte laserWarningDelaySec { get => 0; set { } }
+        public override byte laserPowerAttenuation { get => 0; set { } }
 
         public override UInt64 laserModulationPeriod { get => 100; }
         public override UInt64 laserModulationPulseWidth { get => 100; }
