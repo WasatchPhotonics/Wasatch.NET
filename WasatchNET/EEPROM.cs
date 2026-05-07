@@ -54,16 +54,17 @@ namespace WasatchNET
         /// - rev 14
         ///     - adds SiG laser TEC and Has interlock feedback to feature mask
         /// </remarks>
-        protected const byte FORMAT = 18;
+        protected const byte FORMAT = 19;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
 
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
-        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS };
+        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS, PIXEL_CALIBRATION };
         public enum LIGHT_SOURCE_TYPE { UNDEFINED, THREE_B_SINGLE_MODE, THREE_B_MULTI_MODE, NONE = 254};
         public enum HORIZONTAL_BINNING_METHOD { BIN_2X2, CORRECT_SSC, CORRECT_SSC_BIN2X2, BIN_4X2, BIN_4X2_INTERP, BIN_4X2_AVG };
+        public enum PIXEL_CALIBRATION_TYPE { NONE, USER_DATA, ETALON_CORRECTION, EVEN_ODD, IRRADIANCE };
 
         protected virtual void OnEEPROMChanged(EventArgs e)
         {
@@ -1313,6 +1314,40 @@ namespace WasatchNET
 
         public FeatureMaskXS featureMaskXS = new FeatureMaskXS();
 
+        public PIXEL_CALIBRATION_TYPE pixelCalibrationType
+        {
+            get { return _pixelCalibrationType; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _pixelCalibrationType = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        PIXEL_CALIBRATION_TYPE _pixelCalibrationType  = PIXEL_CALIBRATION_TYPE.NONE;
+
+        public UInt16 pixelCalibrationStart
+        {
+            get { return _pixelCalibrationStart; }
+            set
+            {
+                _pixelCalibrationStart = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _pixelCalibrationStart = 0;
+
+        public UInt16 pixelCalibrationCount
+        {
+            get { return _pixelCalibrationCount; }
+            set
+            {
+                _pixelCalibrationCount = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        UInt16 _pixelCalibrationCount = 0;
+
         /////////////////////////////////////////////////////////////////////////
         // Pages 10-73 (subformat UNTETHERED_DEVICE)
         /////////////////////////////////////////////////////////////////////////
@@ -1327,6 +1362,21 @@ namespace WasatchNET
             }
         }
         List<UInt16> _librarySpectrum;
+
+        /////////////////////////////////////////////////////////////////////////
+        // Pages 10-137 (subformat PIXEL_CALIBRATION)
+        /////////////////////////////////////////////////////////////////////////
+
+        public List<float> pixelCalibrationFactors
+        {
+            get { return _pixelCalibrationFactors; }
+            set
+            {
+                _pixelCalibrationFactors = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        List<float> _pixelCalibrationFactors;
 
         /////////////////////////////////////////////////////////////////////////
         // Virtual Pages
@@ -1735,7 +1785,8 @@ namespace WasatchNET
 
 
                 if (format >= 6 && (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
-                                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE))
+                                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE ||
+                                    subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION))
                 {
                     // load Raman Intensity Correction whether subformat is 1 or 3
                     logger.debug("loading Raman Intensity Correction");
@@ -1915,6 +1966,39 @@ namespace WasatchNET
                     laserPassword = ParseData.toString(pages[8], 0, 16);
                     featureMaskXS = new FeatureMaskXS(ParseData.toUInt32(pages[8], 16));
                 }
+
+                if (format >= 19)
+                {
+                    if (subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
+                    {
+                        pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(pages[8], 39);
+                        pixelCalibrationStart = ParseData.toUInt16(pages[8], 40);
+                        pixelCalibrationCount = ParseData.toUInt16(pages[8], 42);
+
+                        if (pixelCalibrationCount > 0 && pixelCalibrationType == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION)
+                        {
+                            int factorPage = 10;
+                            int offset = 0;
+                            pixelCalibrationFactors = new List<float>();
+
+                            for (int i = 0; i < pixelCalibrationCount; i++)
+                            {
+                                pixelCalibrationFactors.Add(ParseData.toFloat(pages[factorPage], offset));
+                                if (offset == 63)
+                                {
+                                    offset = 0;
+                                    ++factorPage;
+                                }
+                                else
+                                {
+                                    offset += 4;
+                                }
+                            }
+                        }
+                    }
+
+                }
+
             }
             catch (Exception ex)
             {
@@ -2225,6 +2309,14 @@ namespace WasatchNET
             }
 
             laserPassword = json.LaserPassword;
+
+            if (jsonSubformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
+            {
+                pixelCalibrationFactors = new List<float>(json.PixelCalibrationFactors);
+                pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)json.PixelCalibrationType;
+                pixelCalibrationStart = json.PixelCalibrationStart;
+                pixelCalibrationCount = json.PixelCalibrationCount;
+            }
         }
 
         public EEPROMJSON toJSON()
@@ -2432,6 +2524,10 @@ namespace WasatchNET
             }
 
             json.LaserPassword = laserPassword;
+            json.PixelCalibrationFactors = pixelCalibrationFactors?.ToArray();
+            json.PixelCalibrationType = (byte)pixelCalibrationType;
+            json.PixelCalibrationStart = pixelCalibrationStart;
+            json.PixelCalibrationCount = pixelCalibrationCount;
             json.FeatureMask = featureMask.ToString();
             json.FeatureMaskXS = featureMaskXS.ToString();
             json.HexDump = hexdump();
@@ -2663,6 +2759,27 @@ namespace WasatchNET
                 {
                     if (!ParseData.writeString(laserPassword, pages[8], 0, 16)) return false;
                     if (!ParseData.writeUInt32(featureMaskXS.toUInt32(), pages[8], 16)) return false;
+                }
+            }
+            if (format >= 19 && subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION && pixelCalibrationFactors != null)
+            {
+                if (!ParseData.writeByte((byte)pixelCalibrationType, pages[8], 39)) return false;
+                if (!ParseData.writeUInt16(pixelCalibrationStart, pages[8], 40)) return false;
+                if (!ParseData.writeUInt16((ushort)pixelCalibrationFactors.Count, pages[8], 42)) return false;
+
+                int pixelIndex = 0;
+                int page = 10;
+
+                foreach (float correction in pixelCalibrationFactors)
+                {
+                    if (!ParseData.writeFloat(correction, pages[page], pixelIndex)) return false;
+                }
+
+                pixelIndex += 4;
+                if (pixelIndex > 63)
+                {
+                    pixelIndex = 0;
+                    ++page;
                 }
             }
 

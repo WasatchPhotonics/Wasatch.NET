@@ -95,6 +95,10 @@ namespace WasatchNET
         public string FeatureMask;
         public string FeatureMaskXS;
         public string DetectorSN;
+        public float[] PixelCalibrationFactors;
+        public byte PixelCalibrationType;
+        public ushort PixelCalibrationStart;
+        public ushort PixelCalibrationCount;
 
         public override bool Equals(object obj)
         {
@@ -287,6 +291,17 @@ namespace WasatchNET
                 return false;
             if (item.DetectorSN != this.DetectorSN)
                 return false;
+            if (item.PixelCalibrationFactors != null && this.PixelCalibrationFactors != null)
+            {
+                if (!floatEq(item.PixelCalibrationFactors, this.PixelCalibrationFactors)) 
+                    return false;
+            }
+            if (item.PixelCalibrationType != this.PixelCalibrationType)
+                return false;
+            if (item.PixelCalibrationStart  != this.PixelCalibrationStart) 
+                return false;
+            if (item.PixelCalibrationCount  != this.PixelCalibrationCount) 
+                return false;
 
             return true;
         }
@@ -297,6 +312,18 @@ namespace WasatchNET
             if (Math.Abs(a - b) > Math.Abs(thresh * a))
                 return false;
 
+            return true;
+        }
+
+        bool floatEq(float[] a, float[] b, float thresh = 0.0001f)
+        {
+            if (a.Length != b.Length)
+                return false;
+
+            for (int i = 0; i < a.Length; ++i)
+                if (!floatEq(a[i], b[i], thresh))
+                    return false;
+                
             return true;
         }
 
@@ -418,6 +445,11 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + FeatureMask.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMaskXS.GetHashCode();
             hashCode = hashCode * -1521134295 + DetectorSN.GetHashCode();
+            if (PixelCalibrationFactors != null)
+                hashCode = hashCode * -1521134295 + EqualityComparer<float[]>.Default.GetHashCode(PixelCalibrationFactors);
+            hashCode = hashCode * -1521134295 + PixelCalibrationType.GetHashCode();
+            hashCode = hashCode * -1521134295 + PixelCalibrationStart.GetHashCode();
+            hashCode = hashCode * -1521134295 + PixelCalibrationCount.GetHashCode();
 
             return hashCode;
         }
@@ -511,7 +543,7 @@ namespace WasatchNET
             addField(sb, indent, "Subformat", Subformat);
             addField(sb, indent, "LaserPassword", LaserPassword);
 
-            if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE)
+            if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE || subformat == EEPROM.PAGE_SUBFORMAT.PIXEL_CALIBRATION)
                 addField(sb, indent, "RelIntCorrOrder", RelIntCorrOrder);
             if (RelIntCorrCoeffs != null)
                 addField(sb, indent, "RelIntCorrCoeffs", RelIntCorrCoeffs);
@@ -551,6 +583,12 @@ namespace WasatchNET
                 addField(sb, indent, "RegionCount", RegionCount);
             }
 
+            if (subformat == EEPROM.PAGE_SUBFORMAT.PIXEL_CALIBRATION && PixelCalibrationFactors != null)
+                addField(sb, indent, "PixelCalibrationFactors", PixelCalibrationFactors);
+            addField(sb, indent, "PixelCalibrationType", PixelCalibrationType);
+            addField(sb, indent, "PixelCalibrationStart", PixelCalibrationStart);
+            addField(sb, indent, "PixelCalibrationCount", PixelCalibrationCount);
+
 
             return "{\n" + sb.ToString() + "\n" + finalIndent + "}";
         }
@@ -582,6 +620,15 @@ namespace WasatchNET
             sb.Append(" " + string.Join(", ", value));
             sb.Append(" ],\n");
         }
+
+        void addField(StringBuilder sb, string indent, string name, float[] value)
+        {
+            sb.AppendFormat("{0}\"{1}\": ", indent, name);
+            sb.Append("[");
+            sb.Append(" " + string.Join(", ", value));
+            sb.Append(" ],\n");
+        }
+
         void addField(StringBuilder sb, string indent, string name, byte[] value)
         {
             sb.AppendFormat("{0}\"{1}\": ", indent, name);
