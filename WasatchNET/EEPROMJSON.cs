@@ -99,6 +99,7 @@ namespace WasatchNET
         public byte PixelCalibrationType;
         public ushort PixelCalibrationStart;
         public ushort PixelCalibrationCount;
+        public string USBMfgName;
 
         public override bool Equals(object obj)
         {
@@ -302,6 +303,8 @@ namespace WasatchNET
                 return false;
             if (item.PixelCalibrationCount  != this.PixelCalibrationCount) 
                 return false;
+            if (item.USBMfgName != this.USBMfgName) 
+                return false;
 
             return true;
         }
@@ -450,6 +453,7 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + PixelCalibrationType.GetHashCode();
             hashCode = hashCode * -1521134295 + PixelCalibrationStart.GetHashCode();
             hashCode = hashCode * -1521134295 + PixelCalibrationCount.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(USBMfgName);
 
             return hashCode;
         }
@@ -588,6 +592,7 @@ namespace WasatchNET
             addField(sb, indent, "PixelCalibrationType", PixelCalibrationType);
             addField(sb, indent, "PixelCalibrationStart", PixelCalibrationStart);
             addField(sb, indent, "PixelCalibrationCount", PixelCalibrationCount);
+            addField(sb, indent, "USBMfgName", USBMfgName);
 
 
             return "{\n" + sb.ToString() + "\n" + finalIndent + "}";

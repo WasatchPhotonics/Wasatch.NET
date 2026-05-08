@@ -1348,6 +1348,18 @@ namespace WasatchNET
         }
         UInt16 _pixelCalibrationCount = 0;
 
+        public string usbMfgName
+        {
+            get { return _usbMfgName; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _usbMfgName = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        string _usbMfgName;
+
         /////////////////////////////////////////////////////////////////////////
         // Pages 10-73 (subformat UNTETHERED_DEVICE)
         /////////////////////////////////////////////////////////////////////////
@@ -1969,6 +1981,7 @@ namespace WasatchNET
 
                 if (format >= 19)
                 {
+                    usbMfgName = ParseData.toString(pages[8], 40, 20);
                     if (subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
                     {
                         pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(pages[8], 39);
@@ -2309,6 +2322,7 @@ namespace WasatchNET
             }
 
             laserPassword = json.LaserPassword;
+            usbMfgName = json.USBMfgName;
 
             if (jsonSubformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
             {
@@ -2524,6 +2538,7 @@ namespace WasatchNET
             }
 
             json.LaserPassword = laserPassword;
+            json.USBMfgName = usbMfgName;
             json.PixelCalibrationFactors = pixelCalibrationFactors?.ToArray();
             json.PixelCalibrationType = (byte)pixelCalibrationType;
             json.PixelCalibrationStart = pixelCalibrationStart;
@@ -2760,6 +2775,10 @@ namespace WasatchNET
                     if (!ParseData.writeString(laserPassword, pages[8], 0, 16)) return false;
                     if (!ParseData.writeUInt32(featureMaskXS.toUInt32(), pages[8], 16)) return false;
                 }
+            }
+            if (format >= 19)
+            {
+                if (!ParseData.writeString(usbMfgName, pages[8], 40, 20)) return false;
             }
             if (format >= 19 && subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION && pixelCalibrationFactors != null)
             {
