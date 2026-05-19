@@ -569,7 +569,7 @@ namespace WasatchNET
             addField(sb, indent, "FeatureMask", FeatureMask);
             addField(sb, indent, "FeatureMaskXS", FeatureMaskXS);
             addField(sb, indent, "HexDump", HexDump);
-            sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
+            addField(sb, indent, "LaserWarmupS", LaserWarmupS);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.DETECTOR_REGIONS)
             {

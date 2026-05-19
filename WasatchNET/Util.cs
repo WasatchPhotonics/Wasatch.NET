@@ -333,6 +333,19 @@ namespace WasatchNET
             return temp;
         }
 
+        public static double[] applyEtalonCorrection(double[] spectrum, float[] correctionFactors, int correctionStart)
+        {
+            double[] temp = new double[spectrum.Length];
+            spectrum.CopyTo(temp, 0);
+
+            for (int i = 0; i < correctionFactors.Length; ++i)
+            {
+                temp[i + correctionStart] *= correctionFactors[i];
+            }
+
+            return temp;
+        }
+
         // copy-pasted directly from WPSC for consistency
         public static bool validTECCal(Spectrometer spec)
         {

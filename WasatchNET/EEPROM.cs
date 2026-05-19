@@ -38,7 +38,7 @@ namespace WasatchNET
         /// accessible from existing firmware on our ARM models.  A future update
         /// to /FX2 firmware will make them available on all spectrometers.
         /// </remarks>
-        internal const int MAX_PAGES = 9;
+        internal const int MAX_PAGES = 138;
         internal const int MAX_PAGES_REAL = 512;
         internal const int MAX_NAME_LEN = 16;
         internal const int MAX_LIB_ENTRIES = 8;
@@ -1997,14 +1997,12 @@ namespace WasatchNET
                             for (int i = 0; i < pixelCalibrationCount; i++)
                             {
                                 pixelCalibrationFactors.Add(ParseData.toFloat(pages[factorPage], offset));
-                                if (offset == 63)
+
+                                offset += 4;
+                                if (offset >= 63)
                                 {
                                     offset = 0;
                                     ++factorPage;
-                                }
-                                else
-                                {
-                                    offset += 4;
                                 }
                             }
                         }
@@ -2276,7 +2274,7 @@ namespace WasatchNET
             PAGE_SUBFORMAT jsonSubformat = (PAGE_SUBFORMAT)json.Subformat;
             subformat = jsonSubformat;
 
-            if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
+            if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE || jsonSubformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
             {
                 intensityCorrectionOrder = (byte)json.RelIntCorrOrder;
                 if (json.RelIntCorrOrder > 0)
@@ -2459,7 +2457,7 @@ namespace WasatchNET
             json.DetectorSN = detectorSerialNumber;
             json.UserText = userText;
             json.ProductConfig = productConfiguration;
-            if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
+            if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE || subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
             {
                 json.RelIntCorrOrder = intensityCorrectionOrder;
                 if (json.RelIntCorrOrder > 0 && intensityCorrectionCoeffs != null)
@@ -2792,13 +2790,13 @@ namespace WasatchNET
                 foreach (float correction in pixelCalibrationFactors)
                 {
                     if (!ParseData.writeFloat(correction, pages[page], pixelIndex)) return false;
-                }
 
-                pixelIndex += 4;
-                if (pixelIndex > 63)
-                {
-                    pixelIndex = 0;
-                    ++page;
+                    pixelIndex += 4;
+                    if (pixelIndex >= 63)
+                    {
+                        pixelIndex = 0;
+                        ++page;
+                    }
                 }
             }
 
@@ -2861,7 +2859,8 @@ namespace WasatchNET
                 }
                 
                 if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
-                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
+                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE || 
+                    subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
                 {
                     if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
                     if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)

@@ -3534,6 +3534,10 @@ namespace WasatchNET
             if (ramanIntensityCorrectionEnabled)
                 sum = correctRamanIntensity(sum);
 
+            if (etalonCorrectionEnabled)
+                sum = applyEtalonCorrection(sum);
+
+
             // this should be enough to update the cached value
             if (readTemperatureAfterSpectrum && eeprom.hasCooling)
                 _ = detectorTemperatureDegC;
@@ -3558,6 +3562,8 @@ namespace WasatchNET
         /// <returns>The given spectrum, with ROI srm-corrected, as an array of doubles</returns>
         /// 
         public double[] correctRamanIntensity(double[] spectrum) => eeprom.intensityCorrectionCoeffs != null && eeprom.intensityCorrectionOrder != 0 ? Util.applyRamanCorrection(spectrum, eeprom.intensityCorrectionCoeffs, eeprom.ROIHorizStart, eeprom.ROIHorizEnd) : spectrum;
+        
+        public double[] applyEtalonCorrection(double[] spectrum) => eeprom.pixelCalibrationFactors != null && eeprom.pixelCalibrationType == EEPROM.PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION ? Util.applyEtalonCorrection(spectrum, eeprom.pixelCalibrationFactors.ToArray(), eeprom.pixelCalibrationStart) : spectrum;
         
 
         /// <summary>
@@ -3589,6 +3595,20 @@ namespace WasatchNET
         }
 
         bool _ramanIntensityCorrectionEnabled = false;
+        
+        public bool etalonCorrectionEnabled
+        {
+            get
+            {
+                return _etalonCorrectionEnabled;
+            }
+            set
+            {
+                _etalonCorrectionEnabled = value;
+            }
+        }
+
+        bool _etalonCorrectionEnabled = false;
 
         public bool sendSWTrigger()
         {
