@@ -25,8 +25,8 @@ namespace WasatchNET
             DISABLE_BLE_POWER            = 0x0100, // 2^8
             DISABLE_LASER_ARMED_INDIC    = 0x0200, // 2^9
             INTERLOCK_EXCLUDED           = 0x0400, // 2^10
-            LASER_TIMEOUT_IN_COUNTS      = 0x0800, // 2^10
-            IS_OEM                       = 0x1000  // 2^10
+            LASER_TIMEOUT_IN_COUNTS      = 0x0800, // 2^11
+            IS_OEM                       = 0x1000  // 2^12
         }
 
         public FeatureMask(ushort value = 0)
@@ -175,12 +175,20 @@ namespace WasatchNET
 
         enum Flags 
         { 
-            BLE_DOOR_SENSOR         = 0x00000001, // 2^0 
+            BLE_DOOR_SENSOR              = 0x00000001, // 2^0 
+            EXTERNAL_LASER_CONTROL       = 0x00000002, // 2^1 
+            AUX_BUTTON_LASER_CONTROL     = 0x00000004, // 2^2 
+            DISABLE_LASER_SUB_SYSTEM     = 0x00000008, // 2^3 
+            KEEP_ACCESSORY_5V_ON_DISCON  = 0x00000010, // 2^4 
         }
 
         public FeatureMaskXS(uint value = 0)
         {
-            BLEDoorSensor = 0 != (value & (ushort)Flags.BLE_DOOR_SENSOR);
+            BLEDoorSensor               = 0 != (value & (ushort)Flags.BLE_DOOR_SENSOR);
+            ExternalLaserControl        = 0 != (value & (ushort)Flags.EXTERNAL_LASER_CONTROL);
+            AuxButtonLaserControl       = 0 != (value & (ushort)Flags.AUX_BUTTON_LASER_CONTROL);
+            DisableLaserSubSystem       = 0 != (value & (ushort)Flags.DISABLE_LASER_SUB_SYSTEM);
+            KeepAccessory5VOnDisconnet  = 0 != (value & (ushort)Flags.KEEP_ACCESSORY_5V_ON_DISCON);
         }
 
         public override string ToString()
@@ -191,12 +199,19 @@ namespace WasatchNET
         public uint toUInt32()
         {
             uint value = 0;
-            if (BLEDoorSensor)                 value |= (ushort)Flags.BLE_DOOR_SENSOR;
+            if (BLEDoorSensor)              value |= (ushort)Flags.BLE_DOOR_SENSOR;
+            if (ExternalLaserControl)       value |= (ushort)Flags.EXTERNAL_LASER_CONTROL;
+            if (AuxButtonLaserControl)      value |= (ushort)Flags.AUX_BUTTON_LASER_CONTROL;
+            if (DisableLaserSubSystem)      value |= (ushort)Flags.DISABLE_LASER_SUB_SYSTEM;
+            if (KeepAccessory5VOnDisconnet) value |= (ushort)Flags.KEEP_ACCESSORY_5V_ON_DISCON;
 
             return value;
         }
 
-        
         public bool BLEDoorSensor { get; set; }
+        public bool ExternalLaserControl { get; set; }
+        public bool AuxButtonLaserControl { get; set; }
+        public bool DisableLaserSubSystem { get; set; }
+        public bool KeepAccessory5VOnDisconnet  { get; set; }
     }
 }

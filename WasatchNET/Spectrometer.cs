@@ -3563,7 +3563,7 @@ namespace WasatchNET
         /// 
         public double[] correctRamanIntensity(double[] spectrum) => eeprom.intensityCorrectionCoeffs != null && eeprom.intensityCorrectionOrder != 0 ? Util.applyRamanCorrection(spectrum, eeprom.intensityCorrectionCoeffs, eeprom.ROIHorizStart, eeprom.ROIHorizEnd) : spectrum;
         
-        public double[] applyEtalonCorrection(double[] spectrum) => eeprom.pixelCalibrationFactors != null && eeprom.pixelCalibrationType == EEPROM.PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION ? Util.applyEtalonCorrection(spectrum, eeprom.pixelCalibrationFactors.ToArray(), eeprom.pixelCalibrationStart) : spectrum;
+        public double[] applyEtalonCorrection(double[] spectrum) => eeprom.pixelCalibrationFactors != null && eeprom.pixelCalibrationType == EEPROM.PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION ? Util.applyEtalonCorrection(spectrum, eeprom.pixelCalibrationFactors.ToArray(), (int)pixels) : spectrum;
         
 
         /// <summary>

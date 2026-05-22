@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace WasatchNET
 {
@@ -38,6 +39,14 @@ namespace WasatchNET
         public static float  toFloat (byte[] buf, int index) { return BitConverter.ToSingle(buf, index); } 
         public static short  toInt16 (byte[] buf, int index) { return BitConverter.ToInt16 (buf, index); } 
         public static ushort toUInt16(byte[] buf, int index) { return BitConverter.ToUInt16(buf, index); } 
+        public static ushort toUInt16Inverted(byte[] buf, int index)
+        {
+            byte[] temp = new byte[2];
+            temp[0] = buf[index + 1];
+            temp[1] = buf[index];
+
+            return BitConverter.ToUInt16(temp,0); 
+        } 
         public static int    toInt32 (byte[] buf, int index) { return BitConverter.ToInt32 (buf, index); } 
         public static uint   toUInt32(byte[] buf, int index) { return BitConverter.ToUInt32(buf, index); } 
 
@@ -89,7 +98,7 @@ namespace WasatchNET
             return true;
         }
 
-        public static bool writeUInt16(UInt16 value, byte[] buf, int index)
+        public static bool writeUInt16(UInt16 value, byte[] buf, int index, bool isBigEndian = false)
         {
             Logger logger = Logger.getInstance();
             byte[] tmp = BitConverter.GetBytes(value);
@@ -98,13 +107,15 @@ namespace WasatchNET
                 Logger.getInstance().error("ParseData.writeUInt16: can't serialize {0}", value);
                 return false;
             }
+            if (isBigEndian)
+                tmp = tmp.Reverse().ToArray();
             Array.Copy(tmp, 0, buf, index, tmp.Length);
             logger.debug("writeUInt16: wrote {0} as 0x{1:x2} 0x{2:x2} to index {3} of {4}-byte buf",
                 value, tmp[0], tmp[1], index, buf.Length);
             return true;
         }
 
-        public static bool writeInt16(Int16 value, byte[] buf, int index)
+        public static bool writeInt16(Int16 value, byte[] buf, int index, bool isBigEndian = false)
         {
             Logger logger = Logger.getInstance();
             byte[] tmp = BitConverter.GetBytes(value);
@@ -113,13 +124,15 @@ namespace WasatchNET
                 Logger.getInstance().error("ParseData.writeInt16: can't serialize {0}", value);
                 return false;
             }
+            if (isBigEndian)
+                tmp = tmp.Reverse().ToArray();
             Array.Copy(tmp, 0, buf, index, tmp.Length);
             logger.debug("writeInt16: wrote {0} as 0x{1:x2} 0x{2:x2} to index {3} of {4}-byte buf",
                 value, tmp[0], tmp[1], index, buf.Length);
             return true;
         }
 
-        public static bool writeUInt32(UInt32 value, byte[] buf, int index)
+        public static bool writeUInt32(UInt32 value, byte[] buf, int index, bool isBigEndian = false)
         {
             Logger logger = Logger.getInstance();
             byte[] tmp = BitConverter.GetBytes(value);
@@ -128,6 +141,8 @@ namespace WasatchNET
                 Logger.getInstance().error("ParseData.writeUInt32: can't serialize {0}", value);
                 return false;
             }
+            if (isBigEndian)
+                tmp = tmp.Reverse().ToArray();
             Array.Copy(tmp, 0, buf, index, tmp.Length);
             logger.debug("writeUInt32: wrote {0} as 0x{1:x2} 0x{2:x2} 0x{3:x2} 0x{4:x2} to index {5} of {6}-byte buf",
                 value, tmp[0], tmp[1], tmp[2], tmp[3], index, buf.Length);

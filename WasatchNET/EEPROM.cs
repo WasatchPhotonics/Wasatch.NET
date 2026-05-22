@@ -61,7 +61,7 @@ namespace WasatchNET
 
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
-        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS, PIXEL_CALIBRATION };
+        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS, MULTI_WAVELENGTH_RAMAN };
         public enum LIGHT_SOURCE_TYPE { UNDEFINED, THREE_B_SINGLE_MODE, THREE_B_MULTI_MODE, NONE = 254};
         public enum HORIZONTAL_BINNING_METHOD { BIN_2X2, CORRECT_SSC, CORRECT_SSC_BIN2X2, BIN_4X2, BIN_4X2_INTERP, BIN_4X2_AVG };
         public enum PIXEL_CALIBRATION_TYPE { NONE, USER_DATA, ETALON_CORRECTION, EVEN_ODD, IRRADIANCE };
@@ -934,6 +934,34 @@ namespace WasatchNET
 
         string _productConfiguration;
 
+        public string assemblyRevisionString
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+
+                uint assembly = ParseData.toUInt16Inverted(assemblyRevision, 0);
+                uint variant = ParseData.toUInt16Inverted(assemblyRevision, 0);
+                uint revision = ParseData.toUInt16Inverted(assemblyRevision, 0);
+
+                sb.Append("14");
+                sb.Append(assembly.ToString("0000"));
+                if (variant != 0)
+                {
+                    sb.Append("-");
+                    sb.Append(variant.ToString("00"));
+                }
+                if (revision != 0)
+                {
+                    sb.Append(" Rev");
+                    sb.Append(revision.ToString());
+                }
+
+                return sb.ToString();
+            }
+
+        }
+
         public byte[] assemblyRevision
         {
             get { return _assemblyRevision; }
@@ -1314,6 +1342,18 @@ namespace WasatchNET
 
         public FeatureMaskXS featureMaskXS = new FeatureMaskXS();
 
+        public byte maxBatteryTempDegC
+        {
+            get { return _maxBatteryTempDegC; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _maxBatteryTempDegC = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _maxBatteryTempDegC = 0;
+
         public PIXEL_CALIBRATION_TYPE pixelCalibrationType
         {
             get { return _pixelCalibrationType; }
@@ -1326,28 +1366,6 @@ namespace WasatchNET
         }
         PIXEL_CALIBRATION_TYPE _pixelCalibrationType  = PIXEL_CALIBRATION_TYPE.NONE;
 
-        public UInt16 pixelCalibrationStart
-        {
-            get { return _pixelCalibrationStart; }
-            set
-            {
-                _pixelCalibrationStart = value;
-                EEPROMChanged?.Invoke(this, new EventArgs());
-            }
-        }
-        UInt16 _pixelCalibrationStart = 0;
-
-        public UInt16 pixelCalibrationCount
-        {
-            get { return _pixelCalibrationCount; }
-            set
-            {
-                _pixelCalibrationCount = value;
-                EEPROMChanged?.Invoke(this, new EventArgs());
-            }
-        }
-        UInt16 _pixelCalibrationCount = 0;
-
         public string usbMfgName
         {
             get { return _usbMfgName; }
@@ -1359,6 +1377,13 @@ namespace WasatchNET
             }
         }
         string _usbMfgName;
+
+        //read only
+        public byte latchedHardwareFailures
+        {
+            get { return _latchedHardwareFailures; }
+        }
+        byte _latchedHardwareFailures;
 
         /////////////////////////////////////////////////////////////////////////
         // Pages 10-73 (subformat UNTETHERED_DEVICE)
@@ -1797,8 +1822,7 @@ namespace WasatchNET
 
 
                 if (format >= 6 && (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
-                                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE ||
-                                    subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION))
+                                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE ))
                 {
                     // load Raman Intensity Correction whether subformat is 1 or 3
                     logger.debug("loading Raman Intensity Correction");
@@ -1982,34 +2006,28 @@ namespace WasatchNET
                 if (format >= 19)
                 {
                     usbMfgName = ParseData.toString(pages[8], 40, 20);
-                    if (subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
+                    maxBatteryTempDegC = ParseData.toUInt8(pages[8], 38);
+                    _latchedHardwareFailures = ParseData.toUInt8(pages[8], 63);
+                    pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(pages[8], 39);
+                    if (pixelCalibrationType == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION)
                     {
-                        pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(pages[8], 39);
-                        pixelCalibrationStart = ParseData.toUInt16(pages[8], 40);
-                        pixelCalibrationCount = ParseData.toUInt16(pages[8], 42);
+                        int factorPage = 10;
+                        int offset = 0;
+                        pixelCalibrationFactors = new List<float>();
 
-                        if (pixelCalibrationCount > 0 && pixelCalibrationType == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION)
+                        for (int i = 0; i < activePixelsHoriz; i++)
                         {
-                            int factorPage = 10;
-                            int offset = 0;
-                            pixelCalibrationFactors = new List<float>();
+                            pixelCalibrationFactors.Add(ParseData.toFloat(pages[factorPage], offset));
 
-                            for (int i = 0; i < pixelCalibrationCount; i++)
+                            offset += 4;
+                            if (offset >= 63)
                             {
-                                pixelCalibrationFactors.Add(ParseData.toFloat(pages[factorPage], offset));
-
-                                offset += 4;
-                                if (offset >= 63)
-                                {
-                                    offset = 0;
-                                    ++factorPage;
-                                }
+                                offset = 0;
+                                ++factorPage;
                             }
                         }
                     }
-
                 }
-
             }
             catch (Exception ex)
             {
@@ -2174,6 +2192,10 @@ namespace WasatchNET
             featureMask.laserTimeoutInCounts = json.LaserTimeoutInCounts;
             featureMask.isOEM = json.IsOEM;
             featureMaskXS.BLEDoorSensor = json.BLEDoorSensor;
+            featureMaskXS.ExternalLaserControl = json.ExternalLaserControl;
+            featureMaskXS.AuxButtonLaserControl = json.AuxButtonLaserControl;
+            featureMaskXS.DisableLaserSubSystem = json.DisableLaserSubSystem;
+            featureMaskXS.KeepAccessory5VOnDisconnet = json.KeepAccessory5VOnDisconnet;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -2274,13 +2296,12 @@ namespace WasatchNET
             PAGE_SUBFORMAT jsonSubformat = (PAGE_SUBFORMAT)json.Subformat;
             subformat = jsonSubformat;
 
-            if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE || jsonSubformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
+            if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE )
             {
                 intensityCorrectionOrder = (byte)json.RelIntCorrOrder;
                 if (json.RelIntCorrOrder > 0)
                 {
                     intensityCorrectionCoeffs = new float[intensityCorrectionOrder + 1];
-                    subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
 
                     for (int i = 0; i < intensityCorrectionCoeffs.Length; ++i)
                         intensityCorrectionCoeffs[i] = (float)json.RelIntCorrCoeffs[i];
@@ -2322,12 +2343,11 @@ namespace WasatchNET
             laserPassword = json.LaserPassword;
             usbMfgName = json.USBMfgName;
 
-            if (jsonSubformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
+            pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)json.PixelCalibrationType;
+            maxLaserTempDegC = json.MaxLaserTempDegC;
+            if (json.PixelCalibrationFactors != null)
             {
                 pixelCalibrationFactors = new List<float>(json.PixelCalibrationFactors);
-                pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)json.PixelCalibrationType;
-                pixelCalibrationStart = json.PixelCalibrationStart;
-                pixelCalibrationCount = json.PixelCalibrationCount;
             }
         }
 
@@ -2457,7 +2477,7 @@ namespace WasatchNET
             json.DetectorSN = detectorSerialNumber;
             json.UserText = userText;
             json.ProductConfig = productConfiguration;
-            if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE || subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
+            if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
             {
                 json.RelIntCorrOrder = intensityCorrectionOrder;
                 if (json.RelIntCorrOrder > 0 && intensityCorrectionCoeffs != null)
@@ -2492,6 +2512,10 @@ namespace WasatchNET
             if (featureMaskXS != null)
             {
                 json.BLEDoorSensor = featureMaskXS.BLEDoorSensor;
+                json.ExternalLaserControl = featureMaskXS.ExternalLaserControl;
+                json.AuxButtonLaserControl = featureMaskXS.AuxButtonLaserControl;
+                json.DisableLaserSubSystem = featureMaskXS.DisableLaserSubSystem;
+                json.KeepAccessory5VOnDisconnet = featureMaskXS.KeepAccessory5VOnDisconnet;
             }
 
             json.LaserWarmupS = laserWarmupSec;
@@ -2539,8 +2563,8 @@ namespace WasatchNET
             json.USBMfgName = usbMfgName;
             json.PixelCalibrationFactors = pixelCalibrationFactors?.ToArray();
             json.PixelCalibrationType = (byte)pixelCalibrationType;
-            json.PixelCalibrationStart = pixelCalibrationStart;
-            json.PixelCalibrationCount = pixelCalibrationCount;
+            json.MaxLaserPowerMW = maxLaserPowerMW;
+            json.LatchedHardwareFailures = latchedHardwareFailures;
             json.FeatureMask = featureMask.ToString();
             json.FeatureMaskXS = featureMaskXS.ToString();
             json.HexDump = hexdump();
@@ -2777,25 +2801,24 @@ namespace WasatchNET
             if (format >= 19)
             {
                 if (!ParseData.writeString(usbMfgName, pages[8], 40, 20)) return false;
-            }
-            if (format >= 19 && subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION && pixelCalibrationFactors != null)
-            {
                 if (!ParseData.writeByte((byte)pixelCalibrationType, pages[8], 39)) return false;
-                if (!ParseData.writeUInt16(pixelCalibrationStart, pages[8], 40)) return false;
-                if (!ParseData.writeUInt16((ushort)pixelCalibrationFactors.Count, pages[8], 42)) return false;
+                if (!ParseData.writeByte(maxBatteryTempDegC, pages[8], 38)) return false;
 
-                int pixelIndex = 0;
-                int page = 10;
-
-                foreach (float correction in pixelCalibrationFactors)
+                if (pixelCalibrationType == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION && pixelCalibrationFactors != null)
                 {
-                    if (!ParseData.writeFloat(correction, pages[page], pixelIndex)) return false;
+                    int pixelIndex = 0;
+                    int page = 10;
 
-                    pixelIndex += 4;
-                    if (pixelIndex >= 63)
+                    foreach (float correction in pixelCalibrationFactors)
                     {
-                        pixelIndex = 0;
-                        ++page;
+                        if (!ParseData.writeFloat(correction, pages[page], pixelIndex)) return false;
+
+                        pixelIndex += 4;
+                        if (pixelIndex >= 63)
+                        {
+                            pixelIndex = 0;
+                            ++page;
+                        }
                     }
                 }
             }
@@ -2859,8 +2882,7 @@ namespace WasatchNET
                 }
                 
                 if (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
-                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE || 
-                    subformat == PAGE_SUBFORMAT.PIXEL_CALIBRATION)
+                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
                 {
                     if (!ParseData.writeByte(intensityCorrectionOrder, pages[6], 0)) return false;
                     if (intensityCorrectionCoeffs != null && intensityCorrectionOrder < 8)

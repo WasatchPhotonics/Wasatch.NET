@@ -92,13 +92,17 @@ namespace WasatchNET
         public bool LaserTimeoutInCounts;
         public bool IsOEM;
         public bool BLEDoorSensor;
+        public bool ExternalLaserControl;
+        public bool AuxButtonLaserControl;
+        public bool DisableLaserSubSystem;
+        public bool KeepAccessory5VOnDisconnet;
         public string FeatureMask;
         public string FeatureMaskXS;
         public string DetectorSN;
         public float[] PixelCalibrationFactors;
         public byte PixelCalibrationType;
-        public ushort PixelCalibrationStart;
-        public ushort PixelCalibrationCount;
+        public byte MaxBatteryTempDegC;
+        public byte LatchedHardwareFailures;
         public string USBMfgName;
 
         public override bool Equals(object obj)
@@ -249,6 +253,14 @@ namespace WasatchNET
                 return false;
             if (item.BLEDoorSensor != this.BLEDoorSensor)
                 return false;
+            if (item.ExternalLaserControl != this.ExternalLaserControl)
+                return false;
+            if (item.AuxButtonLaserControl != this.AuxButtonLaserControl)
+                return false;
+            if (item.DisableLaserSubSystem != this.DisableLaserSubSystem)
+                return false;
+            if (item.KeepAccessory5VOnDisconnet != this.KeepAccessory5VOnDisconnet)
+                return false;
             if (item.Subformat != this.Subformat)
                 return false;
 
@@ -299,9 +311,9 @@ namespace WasatchNET
             }
             if (item.PixelCalibrationType != this.PixelCalibrationType)
                 return false;
-            if (item.PixelCalibrationStart  != this.PixelCalibrationStart) 
+            if (item.MaxBatteryTempDegC != this.MaxBatteryTempDegC)
                 return false;
-            if (item.PixelCalibrationCount  != this.PixelCalibrationCount) 
+            if (item.LatchedHardwareFailures != this.LatchedHardwareFailures)
                 return false;
             if (item.USBMfgName != this.USBMfgName) 
                 return false;
@@ -445,14 +457,18 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + LaserTimeoutInCounts.GetHashCode();
             hashCode = hashCode * -1521134295 + IsOEM.GetHashCode();
             hashCode = hashCode * -1521134295 + BLEDoorSensor.GetHashCode();
+            hashCode = hashCode * -1521134295 + ExternalLaserControl.GetHashCode();
+            hashCode = hashCode * -1521134295 + AuxButtonLaserControl.GetHashCode();
+            hashCode = hashCode * -1521134295 + DisableLaserSubSystem.GetHashCode();
+            hashCode = hashCode * -1521134295 + KeepAccessory5VOnDisconnet.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMask.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMaskXS.GetHashCode();
             hashCode = hashCode * -1521134295 + DetectorSN.GetHashCode();
             if (PixelCalibrationFactors != null)
                 hashCode = hashCode * -1521134295 + EqualityComparer<float[]>.Default.GetHashCode(PixelCalibrationFactors);
             hashCode = hashCode * -1521134295 + PixelCalibrationType.GetHashCode();
-            hashCode = hashCode * -1521134295 + PixelCalibrationStart.GetHashCode();
-            hashCode = hashCode * -1521134295 + PixelCalibrationCount.GetHashCode();
+            hashCode = hashCode * -1521134295 + MaxBatteryTempDegC.GetHashCode();
+            hashCode = hashCode * -1521134295 + LatchedHardwareFailures.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(USBMfgName);
 
             return hashCode;
@@ -547,7 +563,7 @@ namespace WasatchNET
             addField(sb, indent, "Subformat", Subformat);
             addField(sb, indent, "LaserPassword", LaserPassword);
 
-            if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE || subformat == EEPROM.PAGE_SUBFORMAT.PIXEL_CALIBRATION)
+            if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE )
                 addField(sb, indent, "RelIntCorrOrder", RelIntCorrOrder);
             if (RelIntCorrCoeffs != null)
                 addField(sb, indent, "RelIntCorrCoeffs", RelIntCorrCoeffs);
@@ -566,6 +582,10 @@ namespace WasatchNET
             addField(sb, indent, "LaserTimeoutInCounts", LaserTimeoutInCounts);
             addField(sb, indent, "IsOEM", IsOEM);
             addField(sb, indent, "BLEDoorSensor", BLEDoorSensor);
+            addField(sb, indent, "ExternalLaserControl", ExternalLaserControl);
+            addField(sb, indent, "AuxButtonLaserControl", AuxButtonLaserControl);
+            addField(sb, indent, "DisableLaserSubSystem", DisableLaserSubSystem);
+            addField(sb, indent, "KeepAccessory5VOnDisconnet", KeepAccessory5VOnDisconnet);
             addField(sb, indent, "FeatureMask", FeatureMask);
             addField(sb, indent, "FeatureMaskXS", FeatureMaskXS);
             addField(sb, indent, "HexDump", HexDump);
@@ -587,11 +607,11 @@ namespace WasatchNET
                 addField(sb, indent, "RegionCount", RegionCount);
             }
 
-            if (subformat == EEPROM.PAGE_SUBFORMAT.PIXEL_CALIBRATION && PixelCalibrationFactors != null)
+            if ((EEPROM.PIXEL_CALIBRATION_TYPE)PixelCalibrationType != EEPROM.PIXEL_CALIBRATION_TYPE.NONE && PixelCalibrationFactors != null)
                 addField(sb, indent, "PixelCalibrationFactors", PixelCalibrationFactors);
             addField(sb, indent, "PixelCalibrationType", PixelCalibrationType);
-            addField(sb, indent, "PixelCalibrationStart", PixelCalibrationStart);
-            addField(sb, indent, "PixelCalibrationCount", PixelCalibrationCount);
+            addField(sb, indent, "MaxBatteryTempDegC", MaxBatteryTempDegC);
+            addField(sb, indent, "LatchedHardwareFailures", LatchedHardwareFailures);
             addField(sb, indent, "USBMfgName", USBMfgName);
 
 
