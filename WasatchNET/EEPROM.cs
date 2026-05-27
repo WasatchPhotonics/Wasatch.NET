@@ -940,24 +940,28 @@ namespace WasatchNET
             {
                 StringBuilder sb = new StringBuilder();
 
-                uint assembly = ParseData.toUInt16Inverted(assemblyRevision, 0);
-                uint variant = ParseData.toUInt16Inverted(assemblyRevision, 0);
-                uint revision = ParseData.toUInt16Inverted(assemblyRevision, 0);
-
-                sb.Append("14");
-                sb.Append(assembly.ToString("0000"));
-                if (variant != 0)
+                if (assemblyRevision != null)
                 {
-                    sb.Append("-");
-                    sb.Append(variant.ToString("00"));
-                }
-                if (revision != 0)
-                {
-                    sb.Append(" Rev");
-                    sb.Append(revision.ToString());
-                }
+                    uint assembly = ParseData.toUInt16Inverted(assemblyRevision, 0);
+                    uint variant = ParseData.toUInt16Inverted(assemblyRevision, 0);
+                    uint revision = ParseData.toUInt16Inverted(assemblyRevision, 0);
 
-                return sb.ToString();
+                    sb.Append("14");
+                    sb.Append(assembly.ToString("0000"));
+                    if (variant != 0)
+                    {
+                        sb.Append("-");
+                        sb.Append(variant.ToString("00"));
+                    }
+                    if (revision != 0)
+                    {
+                        sb.Append(" Rev");
+                        sb.Append(revision.ToString());
+                    }
+
+                    return sb.ToString();
+                }
+                return "";
             }
 
         }
