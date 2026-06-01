@@ -943,8 +943,8 @@ namespace WasatchNET
                 if (assemblyRevision != null)
                 {
                     uint assembly = ParseData.toUInt16Inverted(assemblyRevision, 0);
-                    uint variant = ParseData.toUInt16Inverted(assemblyRevision, 0);
-                    uint revision = ParseData.toUInt16Inverted(assemblyRevision, 0);
+                    uint variant = ParseData.toUInt16Inverted(assemblyRevision, 2);
+                    uint revision = ParseData.toUInt16Inverted(assemblyRevision, 4);
 
                     sb.Append("14");
                     sb.Append(assembly.ToString("0000"));
