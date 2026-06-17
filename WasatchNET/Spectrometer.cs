@@ -46,6 +46,7 @@ namespace WasatchNET
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
         public const int LEGACY_VERTICAL_PIXELS = 70;           //!< for Stroker Area Scan
         public const ushort SPECTRUM_START_MARKER = 0xffff;
+        public const string BATTERY_5BYTE_MIN_VER = "1_0_66_1";
 
         ////////////////////////////////////////////////////////////////////////
         // data types
@@ -667,7 +668,13 @@ namespace WasatchNET
 
                 // Unpack.toUint assumes little-endian order, but this is a custom 
                 // register, so let's re-order the received bytes to match the ICD
-                uint tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, 3));
+                uint tmp = 0;
+
+                int len = 3;
+                if (Util.compareVersions(BATTERY_5BYTE_MIN_VER, firmwareRevision) >= 0)
+                    len = 5;
+
+                tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, len));
                 uint lsb = (byte)(tmp & 0xff);
                 uint msb = (byte)((tmp >> 8) & 0xff);
                 uint chg = (byte)((tmp >> 16) & 0xff);

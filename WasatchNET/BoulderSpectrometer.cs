@@ -815,13 +815,13 @@ namespace WasatchNET
 
         public override ulong laserModulationPulseWidth { get => 0; set { } }
 
-        public override float detectorGain { get => 0; }
+        public override float detectorGain { get => 0; set { } }
 
-        public override float detectorGainOdd { get => 0; }
+        public override float detectorGainOdd { get => 0; set { } }
 
-        public override short detectorOffset { get => 0; }
+        public override short detectorOffset { get => 0; set { } }
 
-        public override short detectorOffsetOdd { get => 0; }
+        public override short detectorOffsetOdd { get => 0; set { } }
 
         public override ushort detectorStartLine
         {

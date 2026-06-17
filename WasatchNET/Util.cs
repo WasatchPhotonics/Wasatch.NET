@@ -372,6 +372,57 @@ namespace WasatchNET
             return true;
         }
 
+        public static int compareVersions(string baseline, string toCompare)
+        {
+            char baselineSeparator = '1';
+            char compSeparator = '1';
+
+            if (baseline.Contains("."))
+                baselineSeparator = '.';
+            else if (baseline.Contains("_"))
+                baselineSeparator = '_';
+
+            if (toCompare.Contains("."))
+                compSeparator = '.';
+            else if (toCompare.Contains("_"))
+                compSeparator = '_';
+
+            if (baselineSeparator == '1' || compSeparator == '1')
+                return int.MinValue;
+
+            string[] baselineParts = baseline.Split(baselineSeparator);
+            string[] compParts = toCompare.Split(compSeparator);
+
+            int[] baselineVersions = new int[baselineParts.Length];
+            int[] compVersions = new int[baselineVersions.Length];
+
+            for (int i = 0; i < baselineVersions.Length; i++)
+            {
+                int baselineTemp = 0;
+                int compTemp = 0;
+
+                int.TryParse(baselineParts[i], out baselineTemp);
+
+                if (compVersions.Length > i)
+                    int.TryParse(compParts[i], out compTemp);
+                else
+                    break;
+
+                baselineVersions[i] = baselineTemp;
+                compVersions[i] = compTemp;
+            }
+
+            for (int i = 0; i < baselineVersions.Length; ++i)
+            {
+                if (baselineVersions[i] > compVersions[i])
+                    return -1;
+                if (baselineVersions[i] < compVersions[i])
+                    return 1;
+            }
+
+            return 0;
+        }
+
         public static double[] reverseRamanCorrection(double[] spectrum, float[] correctionCoeffs, int roiStart, int roiEnd)
         {
             if (roiStart >= roiEnd)
