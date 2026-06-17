@@ -65,6 +65,7 @@ namespace WasatchNET
         public enum LIGHT_SOURCE_TYPE { UNDEFINED, THREE_B_SINGLE_MODE, THREE_B_MULTI_MODE, NONE = 254};
         public enum HORIZONTAL_BINNING_METHOD { BIN_2X2, CORRECT_SSC, CORRECT_SSC_BIN2X2, BIN_4X2, BIN_4X2_INTERP, BIN_4X2_AVG };
         public enum PIXEL_CALIBRATION_TYPE { NONE, USER_DATA, ETALON_CORRECTION, EVEN_ODD, IRRADIANCE };
+        public enum AUX_BUTTON_FUNCTION { NONE };
 
         protected virtual void OnEEPROMChanged(EventArgs e)
         {
@@ -1346,6 +1347,90 @@ namespace WasatchNET
 
         public FeatureMaskXS featureMaskXS = new FeatureMaskXS();
 
+        public ushort accessoryState
+        {
+            get { return _accessoryState; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryState = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _accessoryState;
+
+        public byte accessoryGPIO1State
+        {
+            get { return _accessoryGPIO1State; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryGPIO1State = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _accessoryGPIO1State;
+
+        public byte accessoryGPIO2State
+        {
+            get { return _accessoryGPIO2State; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryGPIO2State = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _accessoryGPIO2State;
+
+        public uint accessoryStrobePeriodMicroSec
+        {
+            get { return _accessoryStrobePeriodMicroSec; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryStrobePeriodMicroSec = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        uint _accessoryStrobePeriodMicroSec;
+
+        public uint accessoryStrobeWidthMicroSec
+        {
+            get { return _accessoryStrobeWidthMicroSec; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryStrobeWidthMicroSec = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        uint _accessoryStrobeWidthMicroSec;
+
+        public uint accessoryStrobeDelayMicroSec
+        {
+            get { return _accessoryStrobeDelayMicroSec; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryStrobeDelayMicroSec = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        uint _accessoryStrobeDelayMicroSec;
+
+        public ushort accessoryStrobeCount
+        {
+            get { return _accessoryStrobeCount; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryStrobeCount = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _accessoryStrobeCount;
+
         public byte maxBatteryTempDegC
         {
             get { return _maxBatteryTempDegC; }
@@ -1381,6 +1466,30 @@ namespace WasatchNET
             }
         }
         string _usbMfgName;
+
+        public AUX_BUTTON_FUNCTION auxButtonFunction
+        {
+            get { return _auxButtonFunction; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _auxButtonFunction = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        AUX_BUTTON_FUNCTION _auxButtonFunction;
+
+        public byte auxButtonParameter
+        {
+            get { return _auxButtonParameter; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _auxButtonParameter = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _auxButtonParameter;
 
         //read only
         public byte latchedHardwareFailures
@@ -2009,10 +2118,20 @@ namespace WasatchNET
 
                 if (format >= 19)
                 {
-                    usbMfgName = ParseData.toString(pages[8], 40, 20);
+                    accessoryState = ParseData.toUInt16(pages[8], 20);
+                    accessoryGPIO1State = ParseData.toUInt8(pages[8], 22);
+                    accessoryGPIO2State = ParseData.toUInt8(pages[8], 23);
+                    accessoryStrobePeriodMicroSec = ParseData.toUInt32(pages[8], 24);
+                    accessoryStrobeWidthMicroSec = ParseData.toUInt32(pages[8], 28);
+                    accessoryStrobeDelayMicroSec = ParseData.toUInt32(pages[8], 32);
+                    accessoryStrobeCount = ParseData.toUInt16(pages[8], 36);
                     maxBatteryTempDegC = ParseData.toUInt8(pages[8], 38);
-                    _latchedHardwareFailures = ParseData.toUInt8(pages[8], 63);
                     pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(pages[8], 39);
+                    usbMfgName = ParseData.toString(pages[8], 40, 20);
+                    auxButtonFunction = (AUX_BUTTON_FUNCTION)ParseData.toUInt8(pages[8], 60);
+                    auxButtonParameter = ParseData.toUInt8(pages[8], 61);
+                    _latchedHardwareFailures = ParseData.toUInt8(pages[8], 63);
+
                     if (pixelCalibrationType == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION)
                     {
                         int factorPage = 10;
@@ -2804,9 +2923,18 @@ namespace WasatchNET
             }
             if (format >= 19)
             {
-                if (!ParseData.writeString(usbMfgName, pages[8], 40, 20)) return false;
-                if (!ParseData.writeByte((byte)pixelCalibrationType, pages[8], 39)) return false;
+                if (!ParseData.writeUInt16(accessoryState, pages[8], 20)) return false;
+                if (!ParseData.writeByte(accessoryGPIO1State, pages[8], 22)) return false;
+                if (!ParseData.writeByte(accessoryGPIO2State, pages[8], 23)) return false;
+                if (!ParseData.writeUInt32(accessoryStrobePeriodMicroSec, pages[8], 24)) return false;
+                if (!ParseData.writeUInt32(accessoryStrobeDelayMicroSec, pages[8], 28)) return false;
+                if (!ParseData.writeUInt32(accessoryStrobeDelayMicroSec, pages[8], 32)) return false;
+                if (!ParseData.writeUInt16(accessoryStrobeCount, pages[8], 36)) return false;
                 if (!ParseData.writeByte(maxBatteryTempDegC, pages[8], 38)) return false;
+                if (!ParseData.writeByte((byte)pixelCalibrationType, pages[8], 39)) return false;
+                if (!ParseData.writeString(usbMfgName, pages[8], 40, 20)) return false;
+                if (!ParseData.writeByte((byte)auxButtonFunction, pages[8], 60)) return false;
+                if (!ParseData.writeByte(auxButtonParameter, pages[8], 61)) return false;
 
                 if (pixelCalibrationType == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION && pixelCalibrationFactors != null)
                 {

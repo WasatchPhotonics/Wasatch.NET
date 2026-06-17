@@ -83,6 +83,20 @@ namespace WasatchNET
         public int Region3VertEnd;
         public byte RegionCount;
         public string LaserPassword;
+        public ushort AccessoryState;
+        public byte AccessoryGPIO1State;
+        public byte AccessoryGPIO2State;
+        public uint AccessoryStrobePeriodUS;
+        public uint AccessoryStrobeWidthUS;
+        public uint AccessoryStrobeDelayUS;
+        public ushort AccessoryStrobeCount;
+        public byte MaxBatteryTempDegC;
+        public byte PixelCalibrationType;
+        public string USBMfgName;
+        public byte AuxButtonFunction;
+        public byte AuxButtonParameter;
+        public byte LatchedHardwareFailures;
+        public float[] PixelCalibrationFactors;
         public bool SigLaserTEC;
         public bool HasInterlockFeedback;
         public bool HasShutter;
@@ -96,14 +110,10 @@ namespace WasatchNET
         public bool AuxButtonLaserControl;
         public bool DisableLaserSubSystem;
         public bool KeepAccessory5VOnDisconnet;
+        public bool DisableDetector;
         public string FeatureMask;
         public string FeatureMaskXS;
         public string DetectorSN;
-        public float[] PixelCalibrationFactors;
-        public byte PixelCalibrationType;
-        public byte MaxBatteryTempDegC;
-        public byte LatchedHardwareFailures;
-        public string USBMfgName;
 
         public override bool Equals(object obj)
         {
@@ -235,6 +245,37 @@ namespace WasatchNET
                 return false;
             if (item.LaserWarmupS != this.LaserWarmupS)
                 return false;
+            if (item.AccessoryState != this.AccessoryState)
+                return false;
+            if (item.AccessoryGPIO1State != this.AccessoryGPIO1State)
+                return false;
+            if (item.AccessoryGPIO2State  != this.AccessoryGPIO2State)
+                return false;
+            if (item.AccessoryStrobePeriodUS != this.AccessoryStrobePeriodUS)
+                return false;
+            if (item.AccessoryStrobeWidthUS != this.AccessoryStrobeWidthUS)
+                return false;
+            if (item.AccessoryStrobeDelayUS != this.AccessoryStrobeDelayUS)
+                return false;
+            if (item.AccessoryStrobeCount !=  this.AccessoryStrobeCount)
+                return false;
+            if (item.MaxBatteryTempDegC != this.MaxBatteryTempDegC)
+                return false;
+            if (item.PixelCalibrationType != this.PixelCalibrationType)
+                return false;
+            if (item.USBMfgName != this.USBMfgName)
+                return false;
+            if (item.AuxButtonFunction != this.AuxButtonFunction) 
+                return false;
+            if (item.AuxButtonParameter != this.AuxButtonParameter) 
+                return false;
+            if (item.LatchedHardwareFailures != this.LatchedHardwareFailures)
+                return false;
+            if (item.PixelCalibrationFactors != null && this.PixelCalibrationFactors != null)
+            {
+                if (!floatEq(item.PixelCalibrationFactors, this.PixelCalibrationFactors))
+                    return false;
+            }
             if (item.SigLaserTEC != this.SigLaserTEC)
                 return false;
             if (item.HasInterlockFeedback != this.HasInterlockFeedback)
@@ -260,6 +301,8 @@ namespace WasatchNET
             if (item.DisableLaserSubSystem != this.DisableLaserSubSystem)
                 return false;
             if (item.KeepAccessory5VOnDisconnet != this.KeepAccessory5VOnDisconnet)
+                return false;
+            if (item.DisableDetector != this.DisableDetector)
                 return false;
             if (item.Subformat != this.Subformat)
                 return false;
@@ -303,19 +346,6 @@ namespace WasatchNET
             if (item.FeatureMaskXS != this.FeatureMaskXS)
                 return false;
             if (item.DetectorSN != this.DetectorSN)
-                return false;
-            if (item.PixelCalibrationFactors != null && this.PixelCalibrationFactors != null)
-            {
-                if (!floatEq(item.PixelCalibrationFactors, this.PixelCalibrationFactors)) 
-                    return false;
-            }
-            if (item.PixelCalibrationType != this.PixelCalibrationType)
-                return false;
-            if (item.MaxBatteryTempDegC != this.MaxBatteryTempDegC)
-                return false;
-            if (item.LatchedHardwareFailures != this.LatchedHardwareFailures)
-                return false;
-            if (item.USBMfgName != this.USBMfgName) 
                 return false;
 
             return true;
@@ -441,6 +471,21 @@ namespace WasatchNET
                 hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(AssemblyRevision);
             hashCode = hashCode * -1521134295 + RelIntCorrOrder.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<double[]>.Default.GetHashCode(RelIntCorrCoeffs);
+            hashCode = hashCode * -1521134295 + AccessoryState.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryGPIO1State.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryGPIO2State.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryStrobePeriodUS.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryStrobeWidthUS.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryStrobeDelayUS.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryStrobeCount.GetHashCode();
+            hashCode = hashCode * -1521134295 + MaxBatteryTempDegC.GetHashCode();
+            hashCode = hashCode * -1521134295 + PixelCalibrationType.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(USBMfgName);
+            hashCode = hashCode * -1521134295 + AuxButtonFunction.GetHashCode();
+            hashCode = hashCode * -1521134295 + AuxButtonParameter.GetHashCode();
+            hashCode = hashCode * -1521134295 + LatchedHardwareFailures.GetHashCode();
+            if (PixelCalibrationFactors != null)
+                hashCode = hashCode * -1521134295 + EqualityComparer<float[]>.Default.GetHashCode(PixelCalibrationFactors);
             hashCode = hashCode * -1521134295 + Bin2x2.GetHashCode();
             hashCode = hashCode * -1521134295 + FlipXAxis.GetHashCode();
             hashCode = hashCode * -1521134295 + Gen15.GetHashCode();
@@ -461,16 +506,11 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + AuxButtonLaserControl.GetHashCode();
             hashCode = hashCode * -1521134295 + DisableLaserSubSystem.GetHashCode();
             hashCode = hashCode * -1521134295 + KeepAccessory5VOnDisconnet.GetHashCode();
+            hashCode = hashCode * -1521134295 + DisableDetector.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMask.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMaskXS.GetHashCode();
             hashCode = hashCode * -1521134295 + DetectorSN.GetHashCode();
-            if (PixelCalibrationFactors != null)
-                hashCode = hashCode * -1521134295 + EqualityComparer<float[]>.Default.GetHashCode(PixelCalibrationFactors);
-            hashCode = hashCode * -1521134295 + PixelCalibrationType.GetHashCode();
-            hashCode = hashCode * -1521134295 + MaxBatteryTempDegC.GetHashCode();
-            hashCode = hashCode * -1521134295 + LatchedHardwareFailures.GetHashCode();
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(USBMfgName);
-
+            
             return hashCode;
         }
 
@@ -561,12 +601,29 @@ namespace WasatchNET
             addField(sb, indent, "ProductConfig", ProductConfig);
             addField(sb, indent, "DetectorSN", DetectorSN);
             addField(sb, indent, "Subformat", Subformat);
-            addField(sb, indent, "LaserPassword", LaserPassword);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE )
                 addField(sb, indent, "RelIntCorrOrder", RelIntCorrOrder);
             if (RelIntCorrCoeffs != null)
                 addField(sb, indent, "RelIntCorrCoeffs", RelIntCorrCoeffs);
+
+            addField(sb, indent, "LaserPassword", LaserPassword);
+            addField(sb, indent, "AccessoryState", AccessoryState);
+            addField(sb, indent, "AccessoryGPIO1State", AccessoryGPIO1State);
+            addField(sb, indent, "AccessoryGPIO2State", AccessoryGPIO2State);
+            addField(sb, indent, "AccessoryStrobePeriodUS", AccessoryStrobePeriodUS);
+            addField(sb, indent, "AccessoryStrobeWidthUS", AccessoryStrobeWidthUS);
+            addField(sb, indent, "AccessoryStrobeDelayUS", AccessoryStrobeDelayUS);
+            addField(sb, indent, "AccessoryStrobeCount", AccessoryStrobeCount);
+            addField(sb, indent, "MaxBatteryTempDegC", MaxBatteryTempDegC);
+            addField(sb, indent, "PixelCalibrationType", PixelCalibrationType);
+            addField(sb, indent, "USBMfgName", USBMfgName);
+            addField(sb, indent, "AuxButtonFunction", AuxButtonFunction);
+            addField(sb, indent, "AuxButtonParameter", AuxButtonParameter);
+            addField(sb, indent, "LatchedHardwareFailures", LatchedHardwareFailures);
+            if ((EEPROM.PIXEL_CALIBRATION_TYPE)PixelCalibrationType != EEPROM.PIXEL_CALIBRATION_TYPE.NONE && PixelCalibrationFactors != null)
+                addField(sb, indent, "PixelCalibrationFactors", PixelCalibrationFactors);
+            
 
             addField(sb, indent, "Bin2x2", Bin2x2);
             addField(sb, indent, "FlipXAxis", FlipXAxis);
@@ -586,6 +643,7 @@ namespace WasatchNET
             addField(sb, indent, "AuxButtonLaserControl", AuxButtonLaserControl);
             addField(sb, indent, "DisableLaserSubSystem", DisableLaserSubSystem);
             addField(sb, indent, "KeepAccessory5VOnDisconnet", KeepAccessory5VOnDisconnet);
+            addField(sb, indent, "DisableDetector", DisableDetector);
             addField(sb, indent, "FeatureMask", FeatureMask);
             addField(sb, indent, "FeatureMaskXS", FeatureMaskXS);
             addField(sb, indent, "HexDump", HexDump);
@@ -607,13 +665,7 @@ namespace WasatchNET
                 addField(sb, indent, "RegionCount", RegionCount);
             }
 
-            if ((EEPROM.PIXEL_CALIBRATION_TYPE)PixelCalibrationType != EEPROM.PIXEL_CALIBRATION_TYPE.NONE && PixelCalibrationFactors != null)
-                addField(sb, indent, "PixelCalibrationFactors", PixelCalibrationFactors);
-            addField(sb, indent, "PixelCalibrationType", PixelCalibrationType);
-            addField(sb, indent, "MaxBatteryTempDegC", MaxBatteryTempDegC);
-            addField(sb, indent, "LatchedHardwareFailures", LatchedHardwareFailures);
-            addField(sb, indent, "USBMfgName", USBMfgName);
-
+            
 
             return "{\n" + sb.ToString() + "\n" + finalIndent + "}";
         }

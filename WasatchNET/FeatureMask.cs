@@ -180,6 +180,7 @@ namespace WasatchNET
             AUX_BUTTON_LASER_CONTROL     = 0x00000004, // 2^2 
             DISABLE_LASER_SUB_SYSTEM     = 0x00000008, // 2^3 
             KEEP_ACCESSORY_5V_ON_DISCON  = 0x00000010, // 2^4 
+            DISABLE_DETECTOR             = 0x00000020  // 2^5 
         }
 
         public FeatureMaskXS(uint value = 0)
@@ -189,6 +190,7 @@ namespace WasatchNET
             AuxButtonLaserControl       = 0 != (value & (ushort)Flags.AUX_BUTTON_LASER_CONTROL);
             DisableLaserSubSystem       = 0 != (value & (ushort)Flags.DISABLE_LASER_SUB_SYSTEM);
             KeepAccessory5VOnDisconnet  = 0 != (value & (ushort)Flags.KEEP_ACCESSORY_5V_ON_DISCON);
+            DisableDetector             = 0 != (value & (ushort)Flags.DISABLE_DETECTOR);
         }
 
         public override string ToString()
@@ -204,6 +206,7 @@ namespace WasatchNET
             if (AuxButtonLaserControl)      value |= (ushort)Flags.AUX_BUTTON_LASER_CONTROL;
             if (DisableLaserSubSystem)      value |= (ushort)Flags.DISABLE_LASER_SUB_SYSTEM;
             if (KeepAccessory5VOnDisconnet) value |= (ushort)Flags.KEEP_ACCESSORY_5V_ON_DISCON;
+            if (DisableDetector)            value |= (ushort)Flags.DISABLE_DETECTOR;
 
             return value;
         }
@@ -213,5 +216,6 @@ namespace WasatchNET
         public bool AuxButtonLaserControl { get; set; }
         public bool DisableLaserSubSystem { get; set; }
         public bool KeepAccessory5VOnDisconnet  { get; set; }
+        public bool DisableDetector  { get; set; }
     }
 }
