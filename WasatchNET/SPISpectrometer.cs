@@ -626,7 +626,7 @@ namespace WasatchNET
             List<byte[]> pages = new List<byte[]>();
 
             //CHANGES
-            for (ushort page = 0; page < EEPROM.MAX_PAGES; page++)
+            for (ushort page = 0; page < EEPROM.MAX_PAGES_FX2; page++)
             {
                 
                 byte[] transmitData = new byte[0];

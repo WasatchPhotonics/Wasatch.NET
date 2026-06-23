@@ -37,7 +37,16 @@ namespace WasatchNET
         /// This has been verified to be physically 512, all of which are 
         /// accessible from existing firmware on our ARM models.  A future update
         /// to /FX2 firmware will make them available on all spectrometers.
+        /// 
+        /// As of format 19 we began using more pages on certain spectrometers
+        /// than we can support on all of them (namely using the FX2 board).
+        /// 
+        /// So, we needed to introduce a split in the max number of pages depending
+        /// on the scenario.
+        /// 
+        /// 
         /// </remarks>
+        internal const int MAX_PAGES_FX2 = 8;
         internal const int MAX_PAGES = 138;
         internal const int MAX_PAGES_REAL = 512;
         internal const int MAX_NAME_LEN = 16;
@@ -46,6 +55,8 @@ namespace WasatchNET
 
         internal const int LIBRARY_START_PAGE = 10;
         internal const int LIBRARY_STOP_PAGE = 506;
+
+        bool useFX2Limit = false;
 
         /// <summary>
         /// Current EEPROM format
@@ -65,7 +76,7 @@ namespace WasatchNET
         public enum LIGHT_SOURCE_TYPE { UNDEFINED, THREE_B_SINGLE_MODE, THREE_B_MULTI_MODE, NONE = 254};
         public enum HORIZONTAL_BINNING_METHOD { BIN_2X2, CORRECT_SSC, CORRECT_SSC_BIN2X2, BIN_4X2, BIN_4X2_INTERP, BIN_4X2_AVG };
         public enum PIXEL_CALIBRATION_TYPE { NONE, USER_DATA, ETALON_CORRECTION, EVEN_ODD, IRRADIANCE };
-        public enum AUX_BUTTON_FUNCTION { NONE };
+        public enum AUX_BUTTON_FUNCTION { DISABLED, ACQUIRE, LASER, ADVERTISE_BLE, AUTO_RAMAN };
 
         protected virtual void OnEEPROMChanged(EventArgs e)
         {
@@ -1638,7 +1649,7 @@ namespace WasatchNET
             //                                                            //
             ////////////////////////////////////////////////////////////////
 
-            if (pages is null || pages.Count < MAX_PAGES)
+            if (pages is null || (pages.Count != MAX_PAGES && pages.Count != MAX_PAGES_FX2))
             {
                 logger.error("EEPROM.write: need to perform a read first");
                 return false;
@@ -1646,8 +1657,11 @@ namespace WasatchNET
 
             if (!writeParse())
                 return false;
+            int pageCount = MAX_PAGES;
+            if (useFX2Limit)
+                pageCount = MAX_PAGES_FX2;
 
-            int pagesToWrite = allPages ? pages.Count : MAX_PAGES;
+            int pagesToWrite = allPages ? pages.Count : pageCount;
             for (short page = 0; page < pagesToWrite; page++)
             {
                 bool ok = false;
@@ -1706,9 +1720,14 @@ namespace WasatchNET
 
             badPixelList = new List<short>();
             badPixelSet = new SortedSet<short>();
+
+            if (spec.isFX2)
+                useFX2Limit = true;
+            else
+                useFX2Limit = false;
         }
 
-        public EEPROM(EEPROMJSON json)
+        public EEPROM(EEPROMJSON json, bool useFX2Pages)
         {
             wavecalCoeffs = new float[5];
             degCToDACCoeffs = new float[3];
@@ -1724,7 +1743,13 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
 
             pages = new List<byte[]>();
-            for (ushort page = 0; page < MAX_PAGES; page++)
+            int pageCount = MAX_PAGES;
+            if (useFX2Pages)
+                pageCount = MAX_PAGES_FX2;
+
+            useFX2Limit = useFX2Pages;
+
+            for (ushort page = 0; page < pageCount; page++)
             {
                 pages.Add(new byte[64]);
             }
@@ -1753,7 +1778,11 @@ namespace WasatchNET
             if (!skipRead)
             {
                 pages = new List<byte[]>();
-                for (ushort page = 0; page < MAX_PAGES; page++)
+                int pageCount = MAX_PAGES;
+                if (useFX2Limit)
+                    pageCount = MAX_PAGES_FX2;
+
+                for (ushort page = 0; page < pageCount; page++)
                 {
                     byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                     if (buf is null)
@@ -1802,10 +1831,10 @@ namespace WasatchNET
             // parse pages according to format and subformat
             ////////////////////////////////////////////////////////////////
 
-            if (subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
+            if (subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE && !useFX2Limit)
             {
                 // read pages 8-73 (no need to do all MAX_PAGES_REAL)
-                for (ushort page = MAX_PAGES; page <= LIBRARY_STOP_PAGE; page++)
+                for (ushort page = 8; page <= LIBRARY_STOP_PAGE; page++)
                 {
                     byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                     pages.Add(buf);
@@ -2110,13 +2139,13 @@ namespace WasatchNET
                     }
                 }
 
-                if (format >= 18 && spectrometer.isSiG && pages.Count >= 8)
+                if (format >= 18 && spectrometer.isSiG && pages.Count >= 9)
                 {
                     laserPassword = ParseData.toString(pages[8], 0, 16);
                     featureMaskXS = new FeatureMaskXS(ParseData.toUInt32(pages[8], 16));
                 }
 
-                if (format >= 19)
+                if (format >= 19 && pages.Count >= 9)
                 {
                     accessoryState = ParseData.toUInt16(pages[8], 20);
                     accessoryGPIO1State = ParseData.toUInt8(pages[8], 22);
@@ -2915,13 +2944,13 @@ namespace WasatchNET
                 if (!ParseData.writeByte(laserDacAttenuation, pages[3], 61)) return false;
 
                 Array.Copy(assemblyRevision, 0, pages[5], 46, assemblyRevision.Length);
-                if (spectrometer.isSiG && pages.Count >= 8)
+                if (spectrometer.isSiG && pages.Count >= 9)
                 {
                     if (!ParseData.writeString(laserPassword, pages[8], 0, 16)) return false;
                     if (!ParseData.writeUInt32(featureMaskXS.toUInt32(), pages[8], 16)) return false;
                 }
             }
-            if (format >= 19)
+            if (format >= 19 && !useFX2Limit)
             {
                 if (!ParseData.writeUInt16(accessoryState, pages[8], 20)) return false;
                 if (!ParseData.writeByte(accessoryGPIO1State, pages[8], 22)) return false;

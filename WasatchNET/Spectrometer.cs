@@ -2464,6 +2464,7 @@ namespace WasatchNET
         // Convenience Accessors
         ////////////////////////////////////////////////////////////////////////
 
+        public virtual bool isFX2 => featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2 || featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2;
         public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
         public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx");
         public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase)); 
