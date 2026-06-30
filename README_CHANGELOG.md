@@ -1,4 +1,19 @@
 # Wasatch.NET Changelog
+- 2026-06-30 2.5.23
+	- implemented additions for EEPROM format 19
+- 2026-06-23 2.5.22
+	- internal release
+- 2026-05-19 2.5.21
+	- internal release
+	- improved logging and error handling for TCP units
+- 2026-04-15 2.5.20
+	- internal release
+	- fixed COM port handling
+- 2026-04-06 2.5.19
+	- internal release
+	- FPGA reset logic for InGaAs unit special case
+	- surfaced Andor speed options
+	- EEPROM format 18(?)
 - 2025-12-16 2.5.18
 	- added laser warning delay and detector start/stop accessors
 	- added support for TCP/IP comms
