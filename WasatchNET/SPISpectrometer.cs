@@ -243,13 +243,39 @@ namespace WasatchNET
                 return false;
             }
 
-            string snPattern = "Serial Number: ";
+            bool stillLooking = true;
+            string devSerialNumber = "";
+            bool wrongDevice = false;
+            int lookIndex = 0;
 
-            int start = ftdi.IndexOf(snPattern, 0);
+            while (stillLooking)
+            {
+                string snPattern = "Serial Number: ";
+                string typePattern = "Type: ";
 
-            start = start + 15; // TS - I'm not positive on how static this will be, may be worth changing down the line
+                int typeStart = ftdi.IndexOf(typePattern, lookIndex);
+                string type = ftdi.Substring(typeStart, 30);
+                if (!type.Contains("232H"))
+                    wrongDevice = true;
+                else
+                    wrongDevice = false;
 
-            string devSerialNumber = ftdi.Substring(start, 8);
+                    int start = ftdi.IndexOf(snPattern, lookIndex);
+
+                if (start == -1)
+                    break;
+
+                start = start + 15; // TS - I'm not positive on how static this will be, may be worth changing down the line
+                lookIndex = start + 1;
+
+                devSerialNumber = ftdi.Substring(start, 8);
+
+                if (!wrongDevice)
+                    break;
+            }
+
+            if (wrongDevice)
+                return false;
 
             MpsseDevice.MpsseParams mpsseParams = new MpsseDevice.MpsseParams();
             mpsseParams.clockDevisor = 1;
@@ -600,7 +626,7 @@ namespace WasatchNET
             List<byte[]> pages = new List<byte[]>();
 
             //CHANGES
-            for (ushort page = 0; page < EEPROM.MAX_PAGES; page++)
+            for (ushort page = 0; page < EEPROM.MAX_PAGES_FX2; page++)
             {
                 
                 byte[] transmitData = new byte[0];

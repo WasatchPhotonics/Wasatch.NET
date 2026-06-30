@@ -43,7 +43,9 @@ namespace WasatchNET
                 port = new SerialPort(portName, 9600);
                 port.DataBits = 8;
                 port.Parity = Parity.None;
-                port.StopBits = StopBits.One;
+                port.StopBits = StopBits.One; 
+                port.WriteTimeout = 100;
+                port.ReadTimeout = 100;
                 port.NewLine = "\r\n";
                 port.Open();
 
@@ -384,13 +386,7 @@ namespace WasatchNET
 
                 try
                 {
-                    Thread t1 = new Thread(() => port.Write(command));
-                    t1.Start();
-                    if (!t1.Join(TimeSpan.FromMilliseconds(100)))
-                    {
-                        return false;
-                    }
-
+                    port.Write(command);
                 }
                 catch (Exception e)
                 {
@@ -398,16 +394,11 @@ namespace WasatchNET
                     return false;   
                 }
 
-
-                Thread.Sleep(33);
                 string resp = "";
-                Thread t = new Thread(() => resp = tryPort(port));
-                t.Start();
-                if (!t.Join(TimeSpan.FromMilliseconds(50)))
-                {
-                    return false;
-                }
-                else if (resp == null)
+                Thread.Sleep(33);
+                resp = tryPort(port);
+                
+                if (resp == null)
                 {
                     return false;
                 }
@@ -442,15 +433,10 @@ namespace WasatchNET
             commandLocal += "\r";
 
             port.Write(commandLocal);
-            Thread.Sleep(33);
+            Thread.Sleep(33); 
             string resp = "";
-            Thread t = new Thread(() => resp = tryPort(port));
-            t.Start();
-            if (!t.Join(TimeSpan.FromMilliseconds(50)))
-            {
-                return false;
-            }
-            else if (resp == null)
+            resp = tryPort(port);
+            if (resp == null)
             {
                 return false;
             }

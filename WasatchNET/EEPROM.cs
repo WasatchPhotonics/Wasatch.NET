@@ -37,8 +37,17 @@ namespace WasatchNET
         /// This has been verified to be physically 512, all of which are 
         /// accessible from existing firmware on our ARM models.  A future update
         /// to /FX2 firmware will make them available on all spectrometers.
+        /// 
+        /// As of format 19 we began using more pages on certain spectrometers
+        /// than we can support on all of them (namely using the FX2 board).
+        /// 
+        /// So, we needed to introduce a split in the max number of pages depending
+        /// on the scenario.
+        /// 
+        /// 
         /// </remarks>
-        internal const int MAX_PAGES = 9;
+        internal const int MAX_PAGES_FX2 = 8;
+        internal const int MAX_PAGES = 138;
         internal const int MAX_PAGES_REAL = 512;
         internal const int MAX_NAME_LEN = 16;
         internal const int MAX_LIB_ENTRIES = 8;
@@ -47,6 +56,8 @@ namespace WasatchNET
         internal const int LIBRARY_START_PAGE = 10;
         internal const int LIBRARY_STOP_PAGE = 506;
 
+        bool useFX2Limit = false;
+
         /// <summary>
         /// Current EEPROM format
         /// </summary>
@@ -54,16 +65,18 @@ namespace WasatchNET
         /// - rev 14
         ///     - adds SiG laser TEC and Has interlock feedback to feature mask
         /// </remarks>
-        protected const byte FORMAT = 18;
+        protected const byte FORMAT = 19;
 
         protected Spectrometer spectrometer;
         protected Logger logger = Logger.getInstance();
 
         public List<byte[]> pages { get; protected set; }
         public event EventHandler EEPROMChanged;
-        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS };
+        public enum PAGE_SUBFORMAT { USER_DATA, INTENSITY_CALIBRATION, WAVECAL_SPLINES, UNTETHERED_DEVICE, DETECTOR_REGIONS, MULTI_WAVELENGTH_RAMAN };
         public enum LIGHT_SOURCE_TYPE { UNDEFINED, THREE_B_SINGLE_MODE, THREE_B_MULTI_MODE, NONE = 254};
         public enum HORIZONTAL_BINNING_METHOD { BIN_2X2, CORRECT_SSC, CORRECT_SSC_BIN2X2, BIN_4X2, BIN_4X2_INTERP, BIN_4X2_AVG };
+        public enum PIXEL_CALIBRATION_TYPE { NONE, USER_DATA, ETALON_CORRECTION, EVEN_ODD, IRRADIANCE };
+        public enum AUX_BUTTON_FUNCTION { DISABLED, ACQUIRE, LASER, ADVERTISE_BLE, AUTO_RAMAN };
 
         protected virtual void OnEEPROMChanged(EventArgs e)
         {
@@ -933,6 +946,38 @@ namespace WasatchNET
 
         string _productConfiguration;
 
+        public string assemblyRevisionString
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+
+                if (assemblyRevision != null)
+                {
+                    uint assembly = ParseData.toUInt16Inverted(assemblyRevision, 0);
+                    uint variant = ParseData.toUInt16Inverted(assemblyRevision, 2);
+                    uint revision = ParseData.toUInt16Inverted(assemblyRevision, 4);
+
+                    sb.Append("14");
+                    sb.Append(assembly.ToString("0000"));
+                    if (variant != 0)
+                    {
+                        sb.Append("-");
+                        sb.Append(variant.ToString("00"));
+                    }
+                    if (revision != 0)
+                    {
+                        sb.Append(" Rev");
+                        sb.Append(revision.ToString());
+                    }
+
+                    return sb.ToString();
+                }
+                return "";
+            }
+
+        }
+
         public byte[] assemblyRevision
         {
             get { return _assemblyRevision; }
@@ -1313,6 +1358,157 @@ namespace WasatchNET
 
         public FeatureMaskXS featureMaskXS = new FeatureMaskXS();
 
+        public ushort accessoryState
+        {
+            get { return _accessoryState; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryState = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _accessoryState;
+
+        public byte accessoryGPIO1State
+        {
+            get { return _accessoryGPIO1State; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryGPIO1State = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _accessoryGPIO1State;
+
+        public byte accessoryGPIO2State
+        {
+            get { return _accessoryGPIO2State; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryGPIO2State = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _accessoryGPIO2State;
+
+        public uint accessoryStrobePeriodMicroSec
+        {
+            get { return _accessoryStrobePeriodMicroSec; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryStrobePeriodMicroSec = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        uint _accessoryStrobePeriodMicroSec;
+
+        public uint accessoryStrobeWidthMicroSec
+        {
+            get { return _accessoryStrobeWidthMicroSec; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryStrobeWidthMicroSec = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        uint _accessoryStrobeWidthMicroSec;
+
+        public uint accessoryStrobeDelayMicroSec
+        {
+            get { return _accessoryStrobeDelayMicroSec; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryStrobeDelayMicroSec = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        uint _accessoryStrobeDelayMicroSec;
+
+        public ushort accessoryStrobeCount
+        {
+            get { return _accessoryStrobeCount; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _accessoryStrobeCount = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        ushort _accessoryStrobeCount;
+
+        public byte maxBatteryTempDegC
+        {
+            get { return _maxBatteryTempDegC; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _maxBatteryTempDegC = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _maxBatteryTempDegC = 0;
+
+        public PIXEL_CALIBRATION_TYPE pixelCalibrationType
+        {
+            get { return _pixelCalibrationType; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _pixelCalibrationType = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        PIXEL_CALIBRATION_TYPE _pixelCalibrationType  = PIXEL_CALIBRATION_TYPE.NONE;
+
+        public string usbMfgName
+        {
+            get { return _usbMfgName; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _usbMfgName = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        string _usbMfgName;
+
+        public AUX_BUTTON_FUNCTION auxButtonFunction
+        {
+            get { return _auxButtonFunction; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _auxButtonFunction = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        AUX_BUTTON_FUNCTION _auxButtonFunction;
+
+        public byte auxButtonParameter
+        {
+            get { return _auxButtonParameter; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _auxButtonParameter = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _auxButtonParameter;
+
+        //read only
+        public byte latchedHardwareFailures
+        {
+            get { return _latchedHardwareFailures; }
+        }
+        byte _latchedHardwareFailures;
+
         /////////////////////////////////////////////////////////////////////////
         // Pages 10-73 (subformat UNTETHERED_DEVICE)
         /////////////////////////////////////////////////////////////////////////
@@ -1327,6 +1523,21 @@ namespace WasatchNET
             }
         }
         List<UInt16> _librarySpectrum;
+
+        /////////////////////////////////////////////////////////////////////////
+        // Pages 10-137 (subformat PIXEL_CALIBRATION)
+        /////////////////////////////////////////////////////////////////////////
+
+        public List<float> pixelCalibrationFactors
+        {
+            get { return _pixelCalibrationFactors; }
+            set
+            {
+                _pixelCalibrationFactors = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        List<float> _pixelCalibrationFactors;
 
         /////////////////////////////////////////////////////////////////////////
         // Virtual Pages
@@ -1438,7 +1649,7 @@ namespace WasatchNET
             //                                                            //
             ////////////////////////////////////////////////////////////////
 
-            if (pages is null || pages.Count < MAX_PAGES)
+            if (pages is null || (pages.Count != MAX_PAGES && pages.Count != MAX_PAGES_FX2))
             {
                 logger.error("EEPROM.write: need to perform a read first");
                 return false;
@@ -1446,8 +1657,11 @@ namespace WasatchNET
 
             if (!writeParse())
                 return false;
+            int pageCount = MAX_PAGES;
+            if (useFX2Limit)
+                pageCount = MAX_PAGES_FX2;
 
-            int pagesToWrite = allPages ? pages.Count : MAX_PAGES;
+            int pagesToWrite = allPages ? pages.Count : pageCount;
             for (short page = 0; page < pagesToWrite; page++)
             {
                 bool ok = false;
@@ -1506,9 +1720,14 @@ namespace WasatchNET
 
             badPixelList = new List<short>();
             badPixelSet = new SortedSet<short>();
+
+            if (spec.isFX2)
+                useFX2Limit = true;
+            else
+                useFX2Limit = false;
         }
 
-        public EEPROM(EEPROMJSON json)
+        public EEPROM(EEPROMJSON json, bool useFX2Pages)
         {
             wavecalCoeffs = new float[5];
             degCToDACCoeffs = new float[3];
@@ -1524,7 +1743,13 @@ namespace WasatchNET
             badPixelSet = new SortedSet<short>();
 
             pages = new List<byte[]>();
-            for (ushort page = 0; page < MAX_PAGES; page++)
+            int pageCount = MAX_PAGES;
+            if (useFX2Pages)
+                pageCount = MAX_PAGES_FX2;
+
+            useFX2Limit = useFX2Pages;
+
+            for (ushort page = 0; page < pageCount; page++)
             {
                 pages.Add(new byte[64]);
             }
@@ -1553,7 +1778,11 @@ namespace WasatchNET
             if (!skipRead)
             {
                 pages = new List<byte[]>();
-                for (ushort page = 0; page < MAX_PAGES; page++)
+                int pageCount = MAX_PAGES;
+                if (useFX2Limit)
+                    pageCount = MAX_PAGES_FX2;
+
+                for (ushort page = 0; page < pageCount; page++)
                 {
                     byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                     if (buf is null)
@@ -1602,10 +1831,10 @@ namespace WasatchNET
             // parse pages according to format and subformat
             ////////////////////////////////////////////////////////////////
 
-            if (subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
+            if (subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE && !useFX2Limit)
             {
                 // read pages 8-73 (no need to do all MAX_PAGES_REAL)
-                for (ushort page = MAX_PAGES; page <= LIBRARY_STOP_PAGE; page++)
+                for (ushort page = 8; page <= LIBRARY_STOP_PAGE; page++)
                 {
                     byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
                     pages.Add(buf);
@@ -1735,7 +1964,7 @@ namespace WasatchNET
 
 
                 if (format >= 6 && (subformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || 
-                                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE))
+                                    subformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE ))
                 {
                     // load Raman Intensity Correction whether subformat is 1 or 3
                     logger.debug("loading Raman Intensity Correction");
@@ -1910,10 +2139,46 @@ namespace WasatchNET
                     }
                 }
 
-                if (format >= 18 && spectrometer.isSiG && pages.Count >= 8)
+                if (format >= 18 && spectrometer.isSiG && pages.Count >= 9)
                 {
                     laserPassword = ParseData.toString(pages[8], 0, 16);
                     featureMaskXS = new FeatureMaskXS(ParseData.toUInt32(pages[8], 16));
+                }
+
+                if (format >= 19 && pages.Count >= 9)
+                {
+                    accessoryState = ParseData.toUInt16(pages[8], 20);
+                    accessoryGPIO1State = ParseData.toUInt8(pages[8], 22);
+                    accessoryGPIO2State = ParseData.toUInt8(pages[8], 23);
+                    accessoryStrobePeriodMicroSec = ParseData.toUInt32(pages[8], 24);
+                    accessoryStrobeWidthMicroSec = ParseData.toUInt32(pages[8], 28);
+                    accessoryStrobeDelayMicroSec = ParseData.toUInt32(pages[8], 32);
+                    accessoryStrobeCount = ParseData.toUInt16(pages[8], 36);
+                    maxBatteryTempDegC = ParseData.toUInt8(pages[8], 38);
+                    pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(pages[8], 39);
+                    usbMfgName = ParseData.toString(pages[8], 40, 20);
+                    auxButtonFunction = (AUX_BUTTON_FUNCTION)ParseData.toUInt8(pages[8], 60);
+                    auxButtonParameter = ParseData.toUInt8(pages[8], 61);
+                    _latchedHardwareFailures = ParseData.toUInt8(pages[8], 63);
+
+                    if (pixelCalibrationType == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION)
+                    {
+                        int factorPage = 10;
+                        int offset = 0;
+                        pixelCalibrationFactors = new List<float>();
+
+                        for (int i = 0; i < activePixelsHoriz; i++)
+                        {
+                            pixelCalibrationFactors.Add(ParseData.toFloat(pages[factorPage], offset));
+
+                            offset += 4;
+                            if (offset >= 63)
+                            {
+                                offset = 0;
+                                ++factorPage;
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -2079,6 +2344,10 @@ namespace WasatchNET
             featureMask.laserTimeoutInCounts = json.LaserTimeoutInCounts;
             featureMask.isOEM = json.IsOEM;
             featureMaskXS.BLEDoorSensor = json.BLEDoorSensor;
+            featureMaskXS.ExternalLaserControl = json.ExternalLaserControl;
+            featureMaskXS.AuxButtonLaserControl = json.AuxButtonLaserControl;
+            featureMaskXS.DisableLaserSubSystem = json.DisableLaserSubSystem;
+            featureMaskXS.KeepAccessory5VOnDisconnect = json.KeepAccessory5VOnDisconnect;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -2179,13 +2448,12 @@ namespace WasatchNET
             PAGE_SUBFORMAT jsonSubformat = (PAGE_SUBFORMAT)json.Subformat;
             subformat = jsonSubformat;
 
-            if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE)
+            if (jsonSubformat == PAGE_SUBFORMAT.INTENSITY_CALIBRATION || jsonSubformat == PAGE_SUBFORMAT.UNTETHERED_DEVICE )
             {
                 intensityCorrectionOrder = (byte)json.RelIntCorrOrder;
                 if (json.RelIntCorrOrder > 0)
                 {
                     intensityCorrectionCoeffs = new float[intensityCorrectionOrder + 1];
-                    subformat = PAGE_SUBFORMAT.INTENSITY_CALIBRATION;
 
                     for (int i = 0; i < intensityCorrectionCoeffs.Length; ++i)
                         intensityCorrectionCoeffs[i] = (float)json.RelIntCorrCoeffs[i];
@@ -2225,6 +2493,14 @@ namespace WasatchNET
             }
 
             laserPassword = json.LaserPassword;
+            usbMfgName = json.USBMfgName;
+
+            pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)json.PixelCalibrationType;
+            maxLaserTempDegC = json.MaxLaserTempDegC;
+            if (json.PixelCalibrationFactors != null)
+            {
+                pixelCalibrationFactors = new List<float>(json.PixelCalibrationFactors);
+            }
         }
 
         public EEPROMJSON toJSON()
@@ -2388,6 +2664,10 @@ namespace WasatchNET
             if (featureMaskXS != null)
             {
                 json.BLEDoorSensor = featureMaskXS.BLEDoorSensor;
+                json.ExternalLaserControl = featureMaskXS.ExternalLaserControl;
+                json.AuxButtonLaserControl = featureMaskXS.AuxButtonLaserControl;
+                json.DisableLaserSubSystem = featureMaskXS.DisableLaserSubSystem;
+                json.KeepAccessory5VOnDisconnect = featureMaskXS.KeepAccessory5VOnDisconnect;
             }
 
             json.LaserWarmupS = laserWarmupSec;
@@ -2432,6 +2712,11 @@ namespace WasatchNET
             }
 
             json.LaserPassword = laserPassword;
+            json.USBMfgName = usbMfgName;
+            json.PixelCalibrationFactors = pixelCalibrationFactors?.ToArray();
+            json.PixelCalibrationType = (byte)pixelCalibrationType;
+            json.MaxLaserPowerMW = maxLaserPowerMW;
+            json.LatchedHardwareFailures = latchedHardwareFailures;
             json.FeatureMask = featureMask.ToString();
             json.FeatureMaskXS = featureMaskXS.ToString();
             json.HexDump = hexdump();
@@ -2659,10 +2944,43 @@ namespace WasatchNET
                 if (!ParseData.writeByte(laserDacAttenuation, pages[3], 61)) return false;
 
                 Array.Copy(assemblyRevision, 0, pages[5], 46, assemblyRevision.Length);
-                if (spectrometer.isSiG && pages.Count >= 8)
+                if (spectrometer.isSiG && pages.Count >= 9)
                 {
                     if (!ParseData.writeString(laserPassword, pages[8], 0, 16)) return false;
                     if (!ParseData.writeUInt32(featureMaskXS.toUInt32(), pages[8], 16)) return false;
+                }
+            }
+            if (format >= 19 && !useFX2Limit)
+            {
+                if (!ParseData.writeUInt16(accessoryState, pages[8], 20)) return false;
+                if (!ParseData.writeByte(accessoryGPIO1State, pages[8], 22)) return false;
+                if (!ParseData.writeByte(accessoryGPIO2State, pages[8], 23)) return false;
+                if (!ParseData.writeUInt32(accessoryStrobePeriodMicroSec, pages[8], 24)) return false;
+                if (!ParseData.writeUInt32(accessoryStrobeWidthMicroSec, pages[8], 28)) return false;
+                if (!ParseData.writeUInt32(accessoryStrobeDelayMicroSec, pages[8], 32)) return false;
+                if (!ParseData.writeUInt16(accessoryStrobeCount, pages[8], 36)) return false;
+                if (!ParseData.writeByte(maxBatteryTempDegC, pages[8], 38)) return false;
+                if (!ParseData.writeByte((byte)pixelCalibrationType, pages[8], 39)) return false;
+                if (!ParseData.writeString(usbMfgName, pages[8], 40, 20)) return false;
+                if (!ParseData.writeByte((byte)auxButtonFunction, pages[8], 60)) return false;
+                if (!ParseData.writeByte(auxButtonParameter, pages[8], 61)) return false;
+
+                if (pixelCalibrationType == PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION && pixelCalibrationFactors != null)
+                {
+                    int pixelIndex = 0;
+                    int page = 10;
+
+                    foreach (float correction in pixelCalibrationFactors)
+                    {
+                        if (!ParseData.writeFloat(correction, pages[page], pixelIndex)) return false;
+
+                        pixelIndex += 4;
+                        if (pixelIndex >= 63)
+                        {
+                            pixelIndex = 0;
+                            ++page;
+                        }
+                    }
                 }
             }
 

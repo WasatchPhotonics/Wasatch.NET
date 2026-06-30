@@ -46,6 +46,7 @@ namespace WasatchNET
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
         public const int LEGACY_VERTICAL_PIXELS = 70;           //!< for Stroker Area Scan
         public const ushort SPECTRUM_START_MARKER = 0xffff;
+        public const string BATTERY_5BYTE_MIN_VER = "1_0_66_1";
 
         ////////////////////////////////////////////////////////////////////////
         // data types
@@ -667,7 +668,13 @@ namespace WasatchNET
 
                 // Unpack.toUint assumes little-endian order, but this is a custom 
                 // register, so let's re-order the received bytes to match the ICD
-                uint tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, 3));
+                uint tmp = 0;
+
+                int len = 3;
+                if (Util.compareVersions(BATTERY_5BYTE_MIN_VER, firmwareRevision) >= 0)
+                    len = 5;
+
+                tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, len));
                 uint lsb = (byte)(tmp & 0xff);
                 uint msb = (byte)((tmp >> 8) & 0xff);
                 uint chg = (byte)((tmp >> 16) & 0xff);
@@ -2457,7 +2464,8 @@ namespace WasatchNET
         // Convenience Accessors
         ////////////////////////////////////////////////////////////////////////
 
-        public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
+        public virtual bool isFX2 => featureIdentification == null ? false : featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2 || featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2;
+        public virtual bool isARM => featureIdentification == null ? false : featureIdentification.boardType == BOARD_TYPES.ARM;
         public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx");
         public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase)); 
 
@@ -3534,6 +3542,10 @@ namespace WasatchNET
             if (ramanIntensityCorrectionEnabled)
                 sum = correctRamanIntensity(sum);
 
+            if (etalonCorrectionEnabled)
+                sum = applyEtalonCorrection(sum);
+
+
             // this should be enough to update the cached value
             if (readTemperatureAfterSpectrum && eeprom.hasCooling)
                 _ = detectorTemperatureDegC;
@@ -3558,6 +3570,8 @@ namespace WasatchNET
         /// <returns>The given spectrum, with ROI srm-corrected, as an array of doubles</returns>
         /// 
         public double[] correctRamanIntensity(double[] spectrum) => eeprom.intensityCorrectionCoeffs != null && eeprom.intensityCorrectionOrder != 0 ? Util.applyRamanCorrection(spectrum, eeprom.intensityCorrectionCoeffs, eeprom.ROIHorizStart, eeprom.ROIHorizEnd) : spectrum;
+        
+        public double[] applyEtalonCorrection(double[] spectrum) => eeprom.pixelCalibrationFactors != null && eeprom.pixelCalibrationType == EEPROM.PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION ? Util.applyEtalonCorrection(spectrum, eeprom.pixelCalibrationFactors.ToArray(), (int)pixels) : spectrum;
         
 
         /// <summary>
@@ -3589,6 +3603,20 @@ namespace WasatchNET
         }
 
         bool _ramanIntensityCorrectionEnabled = false;
+        
+        public bool etalonCorrectionEnabled
+        {
+            get
+            {
+                return _etalonCorrectionEnabled;
+            }
+            set
+            {
+                _etalonCorrectionEnabled = value;
+            }
+        }
+
+        bool _etalonCorrectionEnabled = false;
 
         public bool sendSWTrigger()
         {
