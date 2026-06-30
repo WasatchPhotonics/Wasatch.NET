@@ -189,7 +189,7 @@ namespace WasatchNET
             ExternalLaserControl        = 0 != (value & (ushort)Flags.EXTERNAL_LASER_CONTROL);
             AuxButtonLaserControl       = 0 != (value & (ushort)Flags.AUX_BUTTON_LASER_CONTROL);
             DisableLaserSubSystem       = 0 != (value & (ushort)Flags.DISABLE_LASER_SUB_SYSTEM);
-            KeepAccessory5VOnDisconnet  = 0 != (value & (ushort)Flags.KEEP_ACCESSORY_5V_ON_DISCON);
+            KeepAccessory5VOnDisconnect  = 0 != (value & (ushort)Flags.KEEP_ACCESSORY_5V_ON_DISCON);
             DisableDetector             = 0 != (value & (ushort)Flags.DISABLE_DETECTOR);
         }
 
@@ -205,7 +205,7 @@ namespace WasatchNET
             if (ExternalLaserControl)       value |= (ushort)Flags.EXTERNAL_LASER_CONTROL;
             if (AuxButtonLaserControl)      value |= (ushort)Flags.AUX_BUTTON_LASER_CONTROL;
             if (DisableLaserSubSystem)      value |= (ushort)Flags.DISABLE_LASER_SUB_SYSTEM;
-            if (KeepAccessory5VOnDisconnet) value |= (ushort)Flags.KEEP_ACCESSORY_5V_ON_DISCON;
+            if (KeepAccessory5VOnDisconnect) value |= (ushort)Flags.KEEP_ACCESSORY_5V_ON_DISCON;
             if (DisableDetector)            value |= (ushort)Flags.DISABLE_DETECTOR;
 
             return value;
@@ -215,7 +215,7 @@ namespace WasatchNET
         public bool ExternalLaserControl { get; set; }
         public bool AuxButtonLaserControl { get; set; }
         public bool DisableLaserSubSystem { get; set; }
-        public bool KeepAccessory5VOnDisconnet  { get; set; }
+        public bool KeepAccessory5VOnDisconnect  { get; set; }
         public bool DisableDetector  { get; set; }
     }
 }

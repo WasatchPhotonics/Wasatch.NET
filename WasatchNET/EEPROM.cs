@@ -2347,7 +2347,7 @@ namespace WasatchNET
             featureMaskXS.ExternalLaserControl = json.ExternalLaserControl;
             featureMaskXS.AuxButtonLaserControl = json.AuxButtonLaserControl;
             featureMaskXS.DisableLaserSubSystem = json.DisableLaserSubSystem;
-            featureMaskXS.KeepAccessory5VOnDisconnet = json.KeepAccessory5VOnDisconnet;
+            featureMaskXS.KeepAccessory5VOnDisconnect = json.KeepAccessory5VOnDisconnect;
 
             wavecalCoeffs[0] = (float)json.WavecalCoeffs[0];
             wavecalCoeffs[1] = (float)json.WavecalCoeffs[1];
@@ -2667,7 +2667,7 @@ namespace WasatchNET
                 json.ExternalLaserControl = featureMaskXS.ExternalLaserControl;
                 json.AuxButtonLaserControl = featureMaskXS.AuxButtonLaserControl;
                 json.DisableLaserSubSystem = featureMaskXS.DisableLaserSubSystem;
-                json.KeepAccessory5VOnDisconnet = featureMaskXS.KeepAccessory5VOnDisconnet;
+                json.KeepAccessory5VOnDisconnect = featureMaskXS.KeepAccessory5VOnDisconnect;
             }
 
             json.LaserWarmupS = laserWarmupSec;
@@ -2956,7 +2956,7 @@ namespace WasatchNET
                 if (!ParseData.writeByte(accessoryGPIO1State, pages[8], 22)) return false;
                 if (!ParseData.writeByte(accessoryGPIO2State, pages[8], 23)) return false;
                 if (!ParseData.writeUInt32(accessoryStrobePeriodMicroSec, pages[8], 24)) return false;
-                if (!ParseData.writeUInt32(accessoryStrobeDelayMicroSec, pages[8], 28)) return false;
+                if (!ParseData.writeUInt32(accessoryStrobeWidthMicroSec, pages[8], 28)) return false;
                 if (!ParseData.writeUInt32(accessoryStrobeDelayMicroSec, pages[8], 32)) return false;
                 if (!ParseData.writeUInt16(accessoryStrobeCount, pages[8], 36)) return false;
                 if (!ParseData.writeByte(maxBatteryTempDegC, pages[8], 38)) return false;

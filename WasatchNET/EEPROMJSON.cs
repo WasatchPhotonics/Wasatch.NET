@@ -109,7 +109,7 @@ namespace WasatchNET
         public bool ExternalLaserControl;
         public bool AuxButtonLaserControl;
         public bool DisableLaserSubSystem;
-        public bool KeepAccessory5VOnDisconnet;
+        public bool KeepAccessory5VOnDisconnect;
         public bool DisableDetector;
         public string FeatureMask;
         public string FeatureMaskXS;
@@ -300,7 +300,7 @@ namespace WasatchNET
                 return false;
             if (item.DisableLaserSubSystem != this.DisableLaserSubSystem)
                 return false;
-            if (item.KeepAccessory5VOnDisconnet != this.KeepAccessory5VOnDisconnet)
+            if (item.KeepAccessory5VOnDisconnect != this.KeepAccessory5VOnDisconnect)
                 return false;
             if (item.DisableDetector != this.DisableDetector)
                 return false;
@@ -505,7 +505,7 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + ExternalLaserControl.GetHashCode();
             hashCode = hashCode * -1521134295 + AuxButtonLaserControl.GetHashCode();
             hashCode = hashCode * -1521134295 + DisableLaserSubSystem.GetHashCode();
-            hashCode = hashCode * -1521134295 + KeepAccessory5VOnDisconnet.GetHashCode();
+            hashCode = hashCode * -1521134295 + KeepAccessory5VOnDisconnect.GetHashCode();
             hashCode = hashCode * -1521134295 + DisableDetector.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMask.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMaskXS.GetHashCode();
@@ -642,7 +642,7 @@ namespace WasatchNET
             addField(sb, indent, "ExternalLaserControl", ExternalLaserControl);
             addField(sb, indent, "AuxButtonLaserControl", AuxButtonLaserControl);
             addField(sb, indent, "DisableLaserSubSystem", DisableLaserSubSystem);
-            addField(sb, indent, "KeepAccessory5VOnDisconnet", KeepAccessory5VOnDisconnet);
+            addField(sb, indent, "KeepAccessory5VOnDisconnet", KeepAccessory5VOnDisconnect);
             addField(sb, indent, "DisableDetector", DisableDetector);
             addField(sb, indent, "FeatureMask", FeatureMask);
             addField(sb, indent, "FeatureMaskXS", FeatureMaskXS);
