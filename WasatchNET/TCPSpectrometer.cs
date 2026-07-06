@@ -484,6 +484,18 @@ namespace WasatchNET
             byte[] ok = sendCommand(0xff, 0xaa11, 0, pay2);
         }
 
+        public override bool areaScanEnabled
+        {
+            get
+            {
+                return areaScanEnabled_;
+            }
+            set
+            {
+
+            }
+        }
+
         public override bool highGainModeEnabled
         {
             get { return false; }
