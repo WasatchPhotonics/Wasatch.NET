@@ -1,4 +1,6 @@
 # Wasatch.NET Changelog
+- 2026-07-XX 2.5.24
+	- fixes from more recent EEPROM formats for subtype spectrometers (motivated by SPI issues)
 - 2026-06-30 2.5.23
 	- implemented additions for EEPROM format 19
 - 2026-06-23 2.5.22

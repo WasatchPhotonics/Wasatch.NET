@@ -1721,7 +1721,7 @@ namespace WasatchNET
             badPixelList = new List<short>();
             badPixelSet = new SortedSet<short>();
 
-            if (spec.isFX2)
+            if (spec.isFX2 || spec is SPISpectrometer)
                 useFX2Limit = true;
             else
                 useFX2Limit = false;

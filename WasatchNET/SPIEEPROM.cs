@@ -24,6 +24,7 @@ namespace WasatchNET
             linearityCoeffs = new float[5];
             laserPowerCoeffs = new float[4];
             intensityCorrectionCoeffs = new float[12];
+            assemblyRevision = new byte[6];
 
             badPixelList = new List<short>();
             badPixelSet = new SortedSet<short>();
