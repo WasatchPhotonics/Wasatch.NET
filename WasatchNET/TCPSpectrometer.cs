@@ -67,6 +67,8 @@ namespace WasatchNET
                 logger.debug("TCPSpec: client connected, getting stream");
 
                 stream = client.GetStream();
+                stream.ReadTimeout = 100;
+                stream.WriteTimeout = 100;
                 logger.debug("TCPSpec: stream acquired");
             }
             catch (Exception ex)
@@ -121,15 +123,22 @@ namespace WasatchNET
             byte[] result = null;
             lock (commsLock)
             {
-                Thread.Sleep(50);
-                byte[] data = readData(3);
-                if (data == null || (char)data[0] != 'O' || (char)data[1] != 'K' || (char)data[2] != '\n')
+                try
                 {
-                    return false;
+                    Thread.Sleep(50);
+                    byte[] data = readData(3);
+                    if (data == null || (char)data[0] != 'O' || (char)data[1] != 'K' || (char)data[2] != '\n')
+                    {
+                        return false;
+                    }
+                    sendString("BIN\n");
+                    Thread.Sleep(50);
+                    result = readData(1);
                 }
-                sendString("BIN\n");
-                Thread.Sleep(50);
-                result = readData(1);
+                catch (Exception ex)
+                {
+                    logger.error("TCP spec operation failed with exception: {0}", ex.Message);
+                }
             }
 
             if (result != null && result[0] == 0)
@@ -150,9 +159,16 @@ namespace WasatchNET
 
             lock (commsLock)
             {
-                stream.Write(serialized, 0, serialized.Length);
-                Thread.Sleep(50);
-                data = readData(bytesToRead);
+                try
+                {
+                    stream.Write(serialized, 0, serialized.Length);
+                    Thread.Sleep(50);
+                    data = readData(bytesToRead);
+                }
+                catch (Exception ex)
+                {
+                    logger.error("TCP spec operation failed with exception: {0}", ex.Message);
+                }
             }
             logger.hexdump(data, "getCommand reposonse: ");
             return data;
@@ -166,19 +182,28 @@ namespace WasatchNET
 
             lock (commsLock)
             {
-                stream.Write(serialized, 0, serialized.Length);
-                Thread.Sleep(50);
+                try
+                {
+                    stream.Write(serialized, 0, serialized.Length);
+                    Thread.Sleep(50);
 
-                if (readBack != null)
-                {
-                    byte[] data = readData(readBack.Value);
-                    logger.hexdump(data, "sendCommand reposonse: ");
-                    return data;
+                    if (readBack != null)
+                    {
+                        byte[] data = readData(readBack.Value);
+                        logger.hexdump(data, "sendCommand reposonse: ");
+                        return data;
+                    }
+                    else
+                    {
+                        byte[] data = readData(1);
+                        return data;
+                    }
                 }
-                else
+
+                catch (Exception ex)
                 {
-                    byte[] data = readData(1);
-                    return data;
+                    logger.error("TCP spec operation failed with exception: {0}", ex.Message);
+                    return null;
                 }
             }
         }
@@ -306,21 +331,31 @@ namespace WasatchNET
         {
             double[] spec = new double[pixels];
 
-            sendCommand(0xad);
-            Thread.Sleep(50);
-            byte[] data = readData((int)pixels * 2);
-            for (int px = 0; px < pixels; px++)
+            lock (commsLock)
             {
-                int intensity = data[px * 2] | data[px * 2 + 1] << 8;
-                spec[px] = intensity;
+                try
+                {
+                    sendCommand(0xad);
+                    Thread.Sleep(50);
+                    byte[] data = readData((int)pixels * 2);
+                    for (int px = 0; px < pixels; px++)
+                    {
+                        int intensity = data[px * 2] | data[px * 2 + 1] << 8;
+                        spec[px] = intensity;
+                    }
+
+                    if (eeprom.featureMask.invertXAxis)
+                        Array.Reverse(spec);
+                }
+                catch (Exception ex)
+                {
+                    logger.error("TCP spec operation failed with exception: {0}", ex.Message);
+                }
             }
 
-            if (eeprom.featureMask.invertXAxis)
-                Array.Reverse(spec);
-
             return spec;
-
         }
+
         protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger = false)
         {
             logger.debug("requesting spectrum");
