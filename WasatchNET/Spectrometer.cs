@@ -106,7 +106,7 @@ namespace WasatchNET
 
         protected object adcLock = new object();
         protected object acquisitionLock = new object(); //!< synchronizes getSpectrum, integrationTimeMS, scanAveraging, dark and boxcarHalfWidth
-        object commsLock = new object(); //!< synchronizes getCmd, getCmd2, sendCmd
+        protected object commsLock = new object(); //!< synchronizes getCmd, getCmd2, sendCmd
         DateTime lastUsbTimestamp = DateTime.Now;
         internal bool shuttingDown = false;
 

@@ -118,13 +118,19 @@ namespace WasatchNET
 
         bool setBinaryMode()
         {
-            byte[] data = readData(3);
-            if (data == null || (char)data[0] != 'O' || (char)data[1] != 'K' || (char)data[2] != '\n')
+            byte[] result = null;
+            lock (commsLock)
             {
-                return false;
+                Thread.Sleep(50);
+                byte[] data = readData(3);
+                if (data == null || (char)data[0] != 'O' || (char)data[1] != 'K' || (char)data[2] != '\n')
+                {
+                    return false;
+                }
+                sendString("BIN\n");
+                Thread.Sleep(50);
+                result = readData(1);
             }
-            sendString("BIN\n");
-            byte[] result = readData(1);
 
             if (result != null && result[0] == 0)
                 return true;
@@ -140,8 +146,14 @@ namespace WasatchNET
             byte[] serialized = packet.serialize();
             logger.hexdump(serialized, "sending getCommand packet: ");
 
-            stream.Write(serialized, 0, serialized.Length);
-            byte[] data = readData(bytesToRead);
+            byte[] data = null;
+
+            lock (commsLock)
+            {
+                stream.Write(serialized, 0, serialized.Length);
+                Thread.Sleep(50);
+                data = readData(bytesToRead);
+            }
             logger.hexdump(data, "getCommand reposonse: ");
             return data;
         }
@@ -152,18 +164,22 @@ namespace WasatchNET
             byte[] serialized = packet.serialize();
             logger.hexdump(serialized, "sendCommand packet: ");
 
-            stream.Write(serialized, 0, serialized.Length);
+            lock (commsLock)
+            {
+                stream.Write(serialized, 0, serialized.Length);
+                Thread.Sleep(50);
 
-            if (readBack != null)
-            {
-                byte[] data = readData(readBack.Value);
-                logger.hexdump(data, "sendCommand reposonse: ");
-                return data;
-            }
-            else
-            {
-                byte[] data = readData(1);
-                return data;
+                if (readBack != null)
+                {
+                    byte[] data = readData(readBack.Value);
+                    logger.hexdump(data, "sendCommand reposonse: ");
+                    return data;
+                }
+                else
+                {
+                    byte[] data = readData(1);
+                    return data;
+                }
             }
         }
 
@@ -291,7 +307,7 @@ namespace WasatchNET
             double[] spec = new double[pixels];
 
             sendCommand(0xad);
-
+            Thread.Sleep(50);
             byte[] data = readData((int)pixels * 2);
             for (int px = 0; px < pixels; px++)
             {
@@ -311,7 +327,7 @@ namespace WasatchNET
             double[] spec = new double[pixels];
 
             sendCommand(0xad);
-
+            Thread.Sleep(50);
             byte[] data = readData((int)pixels * 2);
             for (int px = 0; px < pixels; px++)
             {
