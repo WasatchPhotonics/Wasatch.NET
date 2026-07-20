@@ -125,14 +125,14 @@ namespace WasatchNET
             {
                 try
                 {
-                    Thread.Sleep(50);
+                    //Thread.Sleep(50);
                     byte[] data = readData(3);
                     if (data == null || (char)data[0] != 'O' || (char)data[1] != 'K' || (char)data[2] != '\n')
                     {
                         return false;
                     }
                     sendString("BIN\n");
-                    Thread.Sleep(50);
+                    //Thread.Sleep(50);
                     result = readData(1);
                 }
                 catch (Exception ex)
@@ -162,7 +162,7 @@ namespace WasatchNET
                 try
                 {
                     stream.Write(serialized, 0, serialized.Length);
-                    Thread.Sleep(50);
+                    //Thread.Sleep(50);
                     data = readData(bytesToRead);
                 }
                 catch (Exception ex)
@@ -185,7 +185,7 @@ namespace WasatchNET
                 try
                 {
                     stream.Write(serialized, 0, serialized.Length);
-                    Thread.Sleep(50);
+                    //Thread.Sleep(50);
 
                     if (readBack != null)
                     {
@@ -336,7 +336,7 @@ namespace WasatchNET
                 try
                 {
                     sendCommand(0xad);
-                    Thread.Sleep(50);
+                    //Thread.Sleep(50);
                     byte[] data = readData((int)pixels * 2);
                     for (int px = 0; px < pixels; px++)
                     {
@@ -362,7 +362,7 @@ namespace WasatchNET
             double[] spec = new double[pixels];
 
             sendCommand(0xad);
-            Thread.Sleep(50);
+            //Thread.Sleep(50);
             byte[] data = readData((int)pixels * 2);
             for (int px = 0; px < pixels; px++)
             {
