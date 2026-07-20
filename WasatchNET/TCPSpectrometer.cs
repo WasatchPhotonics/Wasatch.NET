@@ -67,8 +67,8 @@ namespace WasatchNET
                 logger.debug("TCPSpec: client connected, getting stream");
 
                 stream = client.GetStream();
-                stream.ReadTimeout = 100;
-                stream.WriteTimeout = 100;
+                stream.ReadTimeout = 1000;
+                stream.WriteTimeout = 1000;
                 logger.debug("TCPSpec: stream acquired");
             }
             catch (Exception ex)
@@ -225,7 +225,7 @@ namespace WasatchNET
             else
             {
                 logger.debug("ERROR: read {0} bytes from socket ({1} expected)", read, length);
-                return null;
+                return response;
             }
         }
 
@@ -242,9 +242,22 @@ namespace WasatchNET
             stream.Write(data.ToArray(), 0, data.Count);
         }
 
+        const int REF_PIXEL_1 = 3;
+        const int REF_PIXEL_2 = 585;
+
         public override double[] getSpectrum(bool forceNew = false)
         {
             double[] sum = getSpectrumRaw();
+            if (forceNew && sum != null)
+            {
+                double max = sum.Max();
+                double ref1 = sum[REF_PIXEL_1];
+                double ref2 = sum[REF_PIXEL_2];
+
+                while (max == sum.Max() && ref1 == sum[REF_PIXEL_1] && ref2 == sum[REF_PIXEL_2])
+                    sum = getSpectrumRaw();
+            }
+
             if (sum == null)
             {
                 logger.error("getSpectrum: getSpectrumRaw returned null");
@@ -258,6 +271,15 @@ namespace WasatchNET
                 for (uint i = 1; i < scanAveraging_; i++)
                 {
                     double[] tmp = getSpectrumRaw();
+                    if (forceNew && tmp != null)
+                    {
+                        double max = tmp.Max();
+                        double ref1 = tmp[REF_PIXEL_1];
+                        double ref2 = tmp[REF_PIXEL_2];
+
+                        while (max == tmp.Max() && ref1 == tmp[REF_PIXEL_1] && ref2 == tmp[REF_PIXEL_2])
+                            tmp = getSpectrumRaw();
+                    }
                     if (tmp == null)
                         return null;
 
@@ -355,6 +377,40 @@ namespace WasatchNET
 
             return spec;
         }
+
+        public int readTimeoutMS
+        {
+            get => _readTimeoutMS;
+            set
+            {
+                if (_readTimeoutMS != value)
+                {
+                    _readTimeoutMS = value;
+                    if (stream != null)
+                    {
+                        stream.ReadTimeout = value;
+                    }
+                }
+            }
+        }
+        int _readTimeoutMS = 1000;
+
+        public int writeTimeoutMS
+        {
+            get => _writeTimeoutMS;
+            set
+            {
+                if (_writeTimeoutMS != value)
+                {
+                    _writeTimeoutMS = value;
+                    if (stream != null)
+                    {
+                        stream.WriteTimeout = value;
+                    }
+                }
+            }
+        }
+        int _writeTimeoutMS = 1000;
 
         protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger = false)
         {
