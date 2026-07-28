@@ -42,6 +42,7 @@ namespace WasatchNET
         public int LaserWatchdogTimer;
         public int PowerWatchdogTimer;
         public int DetectorTimeout;
+        public byte StartupScansToAvg;
         public byte LaserDACAttenuation;
         public byte LightSourceType;
         public byte HorizontalBinningMethod;
@@ -189,6 +190,8 @@ namespace WasatchNET
             if (item.PowerWatchdogTimer != this.PowerWatchdogTimer)
                 return false;
             if (item.DetectorTimeout != this.DetectorTimeout)
+                return false;
+            if (item.StartupScansToAvg != this.StartupScansToAvg)
                 return false;
             if (item.LaserDACAttenuation != this.LaserDACAttenuation)
                 return false;
@@ -448,6 +451,7 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + MinIntegrationTimeMS.GetHashCode();
             hashCode = hashCode * -1521134295 + MaxIntegrationTimeMS.GetHashCode();
             hashCode = hashCode * -1521134295 + MaxLaserTempDegC.GetHashCode();
+            hashCode = hashCode * -1521134295 + StartupScansToAvg.GetHashCode();
             hashCode = hashCode * -1521134295 + LaserDACAttenuation.GetHashCode();
             hashCode = hashCode * -1521134295 + LaserWatchdogTimer.GetHashCode();
             hashCode = hashCode * -1521134295 + PowerWatchdogTimer.GetHashCode();
@@ -576,6 +580,7 @@ namespace WasatchNET
             addField(sb, indent, "LaserWatchdogTimer", LaserWatchdogTimer);
             addField(sb, indent, "PowerWatchdogTimer", PowerWatchdogTimer);
             addField(sb, indent, "DetectorTimeout", DetectorTimeout);
+            addField(sb, indent, "StartupScansToAvg", StartupScansToAvg);
             addField(sb, indent, "LaserDACAttenuation", LaserDACAttenuation);
             addField(sb, indent, "LightSourceType", LightSourceType);
             addField(sb, indent, "HorizontalBinningMethod", HorizontalBinningMethod);
