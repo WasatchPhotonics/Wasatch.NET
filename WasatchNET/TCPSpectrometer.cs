@@ -67,8 +67,8 @@ namespace WasatchNET
                 logger.debug("TCPSpec: client connected, getting stream");
 
                 stream = client.GetStream();
-                stream.ReadTimeout = 1000;
-                stream.WriteTimeout = 1000;
+                stream.ReadTimeout = 20000;
+                stream.WriteTimeout = 20000;
                 logger.debug("TCPSpec: stream acquired");
             }
             catch (Exception ex)
@@ -121,8 +121,10 @@ namespace WasatchNET
         bool setBinaryMode()
         {
             byte[] result = null;
+            logger.debug("TCPSpec::setBinaryMode: grabbing lock");
             lock (commsLock)
             {
+                logger.debug("TCPSpec::setBinaryMode: grabbed lock");
                 try
                 {
                     //Thread.Sleep(50);
@@ -140,6 +142,7 @@ namespace WasatchNET
                     logger.error("TCP spec operation failed with exception: {0}", ex.Message);
                 }
             }
+            logger.debug("TCPSpec::setBinaryMode: released lock");
 
             if (result != null && result[0] == 0)
                 return true;
@@ -157,8 +160,10 @@ namespace WasatchNET
 
             byte[] data = null;
 
+            logger.debug("TCPSpec::getCommand: grabbing lock");
             lock (commsLock)
             {
+                logger.debug("TCPSpec::getCommand: grabbed lock");
                 try
                 {
                     stream.Write(serialized, 0, serialized.Length);
@@ -170,6 +175,7 @@ namespace WasatchNET
                     logger.error("TCP spec operation failed with exception: {0}", ex.Message);
                 }
             }
+            logger.debug("TCPSpec::getCommand: released lock");
             logger.hexdump(data, "getCommand reposonse: ");
             return data;
         }
@@ -179,9 +185,12 @@ namespace WasatchNET
             TCPMessagePacket packet = new TCPMessagePacket(bRequest, (ushort)wValue, (ushort)wIndex, payload);
             byte[] serialized = packet.serialize();
             logger.hexdump(serialized, "sendCommand packet: ");
+            byte[] data = null;
 
+            logger.debug("TCPSpec::sendCommand: grabbing lock");
             lock (commsLock)
             {
+                logger.debug("TCPSpec::sendCommand: grabbed lock");
                 try
                 {
                     stream.Write(serialized, 0, serialized.Length);
@@ -189,23 +198,24 @@ namespace WasatchNET
 
                     if (readBack != null)
                     {
-                        byte[] data = readData(readBack.Value);
+                        data = readData(readBack.Value);
                         logger.hexdump(data, "sendCommand reposonse: ");
-                        return data;
                     }
                     else
                     {
-                        byte[] data = readData(1);
-                        return data;
+                        data = readData(1);
+                        logger.hexdump(data, "sendCommand reposonse: ");
                     }
                 }
 
                 catch (Exception ex)
                 {
                     logger.error("TCP spec operation failed with exception: {0}", ex.Message);
-                    return null;
+                    data = null;
                 }
             }
+            logger.debug("TCPSpec::sendCommand: released lock");
+            return data;
         }
 
         byte[] readData(int length)
@@ -250,12 +260,19 @@ namespace WasatchNET
             double[] sum = getSpectrumRaw();
             if (forceNew && sum != null)
             {
+                Thread.Sleep((int)integrationTimeMS + initialSpecDelayMS);
+
                 double max = sum.Max();
                 double ref1 = sum[REF_PIXEL_1];
                 double ref2 = sum[REF_PIXEL_2];
 
                 while (max == sum.Max() && ref1 == sum[REF_PIXEL_1] && ref2 == sum[REF_PIXEL_2])
+                {
+                    Thread.Sleep(pollDelayMS);
                     sum = getSpectrumRaw();
+                    if (sum == null)
+                        break;
+                }
             }
 
             if (sum == null)
@@ -267,22 +284,32 @@ namespace WasatchNET
 
             if (scanAveraging_ > 1)
             {
-                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                logger.debug("getSpectrum: getting additional spectra for averaging");
                 for (uint i = 1; i < scanAveraging_; i++)
                 {
+                    logger.debug("getSpectrum: getting additional spectrum {0}", i);
                     double[] tmp = getSpectrumRaw();
                     if (forceNew && tmp != null)
                     {
+                        Thread.Sleep((int)integrationTimeMS + 50);
+
                         double max = tmp.Max();
                         double ref1 = tmp[REF_PIXEL_1];
                         double ref2 = tmp[REF_PIXEL_2];
 
                         while (max == tmp.Max() && ref1 == tmp[REF_PIXEL_1] && ref2 == tmp[REF_PIXEL_2])
+                        {
+                            Thread.Sleep(pollDelayMS);
                             tmp = getSpectrumRaw();
+                            if (tmp == null)
+                                break;
+                        }
                     }
                     if (tmp == null)
+                    {
+                        logger.error("getSpectrum: getSpectrumRaw returned null");
                         return null;
-
+                    }
                     for (int px = 0; px < pixels; px++)
                         sum[px] += tmp[px];
                 }
@@ -294,6 +321,8 @@ namespace WasatchNET
             if (dark != null && dark.Length == sum.Length)
                 for (int px = 0; px < pixels; px++)
                     sum[px] -= dark_[px];
+
+            logger.debug("getSpectrum: all spectra collected, returning");
 
             if (boxcarHalfWidth > 0)
             {
@@ -353,12 +382,14 @@ namespace WasatchNET
         {
             double[] spec = new double[pixels];
 
-            lock (commsLock)
+            try
             {
-                try
+                sendCommand(0xad);
+
+                logger.debug("TCPSpec::getSpectrumRaw: grabbing lock");
+                lock (commsLock)
                 {
-                    sendCommand(0xad);
-                    //Thread.Sleep(50);
+                    logger.debug("TCPSpec::getSpectrumRaw: grabbed lock");
                     byte[] data = readData((int)pixels * 2);
                     for (int px = 0; px < pixels; px++)
                     {
@@ -369,11 +400,14 @@ namespace WasatchNET
                     if (eeprom.featureMask.invertXAxis)
                         Array.Reverse(spec);
                 }
-                catch (Exception ex)
-                {
-                    logger.error("TCP spec operation failed with exception: {0}", ex.Message);
-                }
+                logger.debug("TCPSpec::getSpectrumRaw: released lock");
             }
+            catch (Exception ex)
+            {
+                logger.error("TCP spec operation failed with exception: {0}", ex.Message);
+                return null;
+            }
+            
 
             return spec;
         }
@@ -393,7 +427,7 @@ namespace WasatchNET
                 }
             }
         }
-        int _readTimeoutMS = 1000;
+        int _readTimeoutMS = 20000;
 
         public int writeTimeoutMS
         {
@@ -410,7 +444,43 @@ namespace WasatchNET
                 }
             }
         }
-        int _writeTimeoutMS = 1000;
+        int _writeTimeoutMS = 20000;
+
+        public int initialSpecDelayMS
+        {
+            get => _initialSpecDelayMS;
+            set
+            {
+                if (_initialSpecDelayMS != value)
+                {
+                    _initialSpecDelayMS = value;
+                    if (stream != null)
+                    {
+                        stream.WriteTimeout = value;
+                    }
+                }
+            }
+        }
+        int _initialSpecDelayMS = 300;
+
+        public int pollDelayMS
+        {
+            get => _pollDelayMS;
+            set
+            {
+                if (_pollDelayMS != value)
+                {
+                    _pollDelayMS = value;
+                    if (stream != null)
+                    {
+                        stream.WriteTimeout = value;
+                    }
+                }
+            }
+        }
+        int _pollDelayMS = 50;
+
+
 
         protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger = false)
         {
@@ -623,7 +693,10 @@ namespace WasatchNET
         public override uint boxcarHalfWidth
         {
             get { return boxcarHalfWidth_; }
-            set { lock (acquisitionLock) boxcarHalfWidth_ = value; }
+            set 
+            { 
+                boxcarHalfWidth_ = value; 
+            }
         }
 
         public override uint integrationTimeMS
