@@ -1,4 +1,7 @@
 # Wasatch.NET Changelog
+- 2026-07-XX 2.5.25
+	- more EEPROM fixes
+	- fix for sensor state logic to differentiate return code from no response state
 - 2026-07-XX 2.5.24
 	- fixes from more recent EEPROM formats for subtype spectrometers (motivated by SPI issues)
 - 2026-06-30 2.5.23

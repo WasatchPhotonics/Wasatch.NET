@@ -915,6 +915,15 @@ namespace WasatchNET
             }
         }
 
+        public override IMAGE_SENSOR_STATUS imageSensorStatus
+        {
+            //we do NOT want to cache this one
+            get
+            {
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_NO_RESPONSE;
+            }
+        }
+
         public override ushort laserTemperatureSetpointRaw { get => 0; }
 
         public override UInt16 laserWatchdogSec

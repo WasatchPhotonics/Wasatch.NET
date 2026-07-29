@@ -692,7 +692,7 @@ namespace WasatchNET
         // public short laserTemperatureMax { get; private set; }
         // public short laserTemperatureMin { get; private set; }
 
-        public byte maxLaserTempDegC
+        public sbyte maxLaserTempDegC
         {
             get { return _maxLaserTempDegC; }
             set
@@ -702,7 +702,7 @@ namespace WasatchNET
                 handler?.Invoke(this, new EventArgs());
             }
         }
-        byte _maxLaserTempDegC;
+        sbyte _maxLaserTempDegC;
 
 
         public float maxLaserPowerMW
@@ -1442,7 +1442,7 @@ namespace WasatchNET
         }
         ushort _accessoryStrobeCount;
 
-        public byte maxBatteryTempDegC
+        public sbyte maxBatteryTempDegC
         {
             get { return _maxBatteryTempDegC; }
             set
@@ -1452,7 +1452,7 @@ namespace WasatchNET
                 handler?.Invoke(this, new EventArgs());
             }
         }
-        byte _maxBatteryTempDegC = 0;
+        sbyte _maxBatteryTempDegC = 0;
 
         public PIXEL_CALIBRATION_TYPE pixelCalibrationType
         {
@@ -1942,7 +1942,7 @@ namespace WasatchNET
 
                 if (format >= 18)
                 {
-                    maxLaserTempDegC = ParseData.toUInt8(pages[3], 11);
+                    maxLaserTempDegC = ParseData.toInt8(pages[3], 11);
                 }
                 else
                 {
@@ -2166,7 +2166,7 @@ namespace WasatchNET
                     accessoryStrobeWidthMicroSec = ParseData.toUInt32(pages[8], 28);
                     accessoryStrobeDelayMicroSec = ParseData.toUInt32(pages[8], 32);
                     accessoryStrobeCount = ParseData.toUInt16(pages[8], 36);
-                    maxBatteryTempDegC = ParseData.toUInt8(pages[8], 38);
+                    maxBatteryTempDegC = ParseData.toInt8(pages[8], 38);
                     pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(pages[8], 39);
                     usbMfgName = ParseData.toString(pages[8], 40, 20);
                     auxButtonFunction = (AUX_BUTTON_FUNCTION)ParseData.toUInt8(pages[8], 60);
@@ -2983,7 +2983,7 @@ namespace WasatchNET
             }
             if (format >= 18)
             {
-                if (!ParseData.writeByte(maxLaserTempDegC, pages[3], 11)) return false;
+                if (!ParseData.writeInt8(maxLaserTempDegC, pages[3], 11)) return false;
                 if (!ParseData.writeByte(laserDacAttenuation, pages[3], 61)) return false;
 
                 Array.Copy(assemblyRevision, 0, pages[5], 46, assemblyRevision.Length);
@@ -3002,7 +3002,7 @@ namespace WasatchNET
                 if (!ParseData.writeUInt32(accessoryStrobeWidthMicroSec, pages[8], 28)) return false;
                 if (!ParseData.writeUInt32(accessoryStrobeDelayMicroSec, pages[8], 32)) return false;
                 if (!ParseData.writeUInt16(accessoryStrobeCount, pages[8], 36)) return false;
-                if (!ParseData.writeByte(maxBatteryTempDegC, pages[8], 38)) return false;
+                if (!ParseData.writeInt8(maxBatteryTempDegC, pages[8], 38)) return false;
                 if (!ParseData.writeByte((byte)pixelCalibrationType, pages[8], 39)) return false;
                 if (!ParseData.writeString(usbMfgName, pages[8], 40, 20)) return false;
                 if (!ParseData.writeByte((byte)auxButtonFunction, pages[8], 60)) return false;

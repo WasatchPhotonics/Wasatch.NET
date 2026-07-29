@@ -50,7 +50,7 @@ namespace WasatchNET
         public int ROIHorizEnd;
         public int[] ROIVertRegionStarts;
         public int[] ROIVertRegionEnds;
-        public byte MaxLaserTempDegC;
+        public sbyte MaxLaserTempDegC;
         public double[] LaserPowerCoeffs;
         public double MaxLaserPowerMW;
         public double MinLaserPowerMW;
@@ -91,7 +91,7 @@ namespace WasatchNET
         public uint AccessoryStrobeWidthUS;
         public uint AccessoryStrobeDelayUS;
         public ushort AccessoryStrobeCount;
-        public byte MaxBatteryTempDegC;
+        public sbyte MaxBatteryTempDegC;
         public byte PixelCalibrationType;
         public string USBMfgName;
         public byte AuxButtonFunction;

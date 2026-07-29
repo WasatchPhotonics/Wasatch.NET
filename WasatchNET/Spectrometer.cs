@@ -77,7 +77,8 @@ namespace WasatchNET
             IMG_SNSR_STATE_REG_HOLD = 3,
             IMG_SNSR_STATE_ACTIVE = 4,
             IMG_SNSR_STATE_ERROR = 5,
-            IMG_SNSR_STATE_READ_FAIL = 6
+            IMG_SNSR_STATE_READ_FAIL = 6,
+            IMG_SNSR_STATE_NO_RESPONSE = 255
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -1787,7 +1788,7 @@ namespace WasatchNET
                 if (pack != null && pack.Length > 0)
                     return (IMAGE_SENSOR_STATUS)pack[0];
 
-                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_READ_FAIL;
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_NO_RESPONSE;
             }
         }
 
