@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using static WasatchNET.Spectrometer;
 
 namespace WasatchNET
 {
@@ -313,6 +314,7 @@ namespace WasatchNET
         UInt16 laserWatchdogSec { get; set; }
         bool laserTECEnabled { get; set; }
         ushort laserTECMode { get; set; }
+        IMAGE_SENSOR_STATUS imageSensorStatus { get; }
 
         uint lineLength { get; }
 

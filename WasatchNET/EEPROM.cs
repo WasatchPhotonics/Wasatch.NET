@@ -692,7 +692,7 @@ namespace WasatchNET
         // public short laserTemperatureMax { get; private set; }
         // public short laserTemperatureMin { get; private set; }
 
-        public byte maxLaserTempDegC
+        public sbyte maxLaserTempDegC
         {
             get { return _maxLaserTempDegC; }
             set
@@ -702,7 +702,7 @@ namespace WasatchNET
                 handler?.Invoke(this, new EventArgs());
             }
         }
-        byte _maxLaserTempDegC;
+        sbyte _maxLaserTempDegC;
 
 
         public float maxLaserPowerMW
@@ -826,6 +826,17 @@ namespace WasatchNET
             }
         }
         HORIZONTAL_BINNING_METHOD _horizontalBinningMethod = HORIZONTAL_BINNING_METHOD.BIN_2X2;
+
+        public byte startupScansToAverage
+        {
+            get { return _startupScansToAverage; }
+            set
+            {
+                _startupScansToAverage = value;
+                EEPROMChanged?.Invoke(this, new EventArgs());
+            }
+        }
+        byte _startupScansToAverage;
 
         public byte laserDacAttenuation
         {
@@ -1262,17 +1273,6 @@ namespace WasatchNET
         }
         UInt16 _libraryID;
 
-        public byte startupScansToAverage
-        {
-            get { return _startupScansToAverage; }
-            set
-            {
-                _startupScansToAverage = value;
-                EEPROMChanged?.Invoke(this, new EventArgs());
-            }
-        }
-        byte _startupScansToAverage;
-
         public byte matchingMinRampPixels
         {
             get { return _matchingMinRampPixels; }            
@@ -1442,7 +1442,7 @@ namespace WasatchNET
         }
         ushort _accessoryStrobeCount;
 
-        public byte maxBatteryTempDegC
+        public sbyte maxBatteryTempDegC
         {
             get { return _maxBatteryTempDegC; }
             set
@@ -1452,7 +1452,7 @@ namespace WasatchNET
                 handler?.Invoke(this, new EventArgs());
             }
         }
-        byte _maxBatteryTempDegC = 0;
+        sbyte _maxBatteryTempDegC = 0;
 
         public PIXEL_CALIBRATION_TYPE pixelCalibrationType
         {
@@ -1931,13 +1931,26 @@ namespace WasatchNET
                     maxIntegrationTimeMS = ParseData.toUInt32(pages[3], 44);
                 }
 
+                if (format >= 17)
+                {
+                    startupScansToAverage = ParseData.toUInt8(pages[3], 60);
+                }
+                else
+                {
+                    startupScansToAverage = 1;
+                }
+
                 if (format >= 18)
                 {
-                    maxLaserTempDegC = ParseData.toUInt8(pages[3], 11);
+                    maxLaserTempDegC = ParseData.toInt8(pages[3], 11);
+                }
+                else
+                {
+                    maxLaserTempDegC = 60;
                 }
 
 
-                userData = format < 4 ? new byte[63] : new byte[64];
+                    userData = format < 4 ? new byte[63] : new byte[64];
                 Array.Copy(pages[4], userData, userData.Length);
 
                 badPixelSet = new SortedSet<short>();
@@ -2044,7 +2057,7 @@ namespace WasatchNET
                 }
                 else
                 {
-                    powerWatchdogTimer = 0;
+                    powerWatchdogTimer = 300;
                     detectorTimeout = 0;
                     horizontalBinningMethod = HORIZONTAL_BINNING_METHOD.BIN_2X2;
                 }
@@ -2085,7 +2098,6 @@ namespace WasatchNET
                         logger.debug("loading untethered device configuration");
                         libraryType = ParseData.toUInt8(pages[7], 0);
                         libraryID = ParseData.toUInt16(pages[7], 1);
-                        startupScansToAverage = ParseData.toUInt8(pages[7], 3);
                         matchingMinRampPixels = ParseData.toUInt8(pages[7], 4);
                         matchingMinPeakHeight = ParseData.toUInt16(pages[7], 5);
                         matchingThreshold = ParseData.toUInt8(pages[7], 7);
@@ -2154,7 +2166,7 @@ namespace WasatchNET
                     accessoryStrobeWidthMicroSec = ParseData.toUInt32(pages[8], 28);
                     accessoryStrobeDelayMicroSec = ParseData.toUInt32(pages[8], 32);
                     accessoryStrobeCount = ParseData.toUInt16(pages[8], 36);
-                    maxBatteryTempDegC = ParseData.toUInt8(pages[8], 38);
+                    maxBatteryTempDegC = ParseData.toInt8(pages[8], 38);
                     pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)ParseData.toUInt8(pages[8], 39);
                     usbMfgName = ParseData.toString(pages[8], 40, 20);
                     auxButtonFunction = (AUX_BUTTON_FUNCTION)ParseData.toUInt8(pages[8], 60);
@@ -2180,6 +2192,11 @@ namespace WasatchNET
                         }
                     }
                 }
+                else if (pages.Count >= 9)
+                {
+                    maxBatteryTempDegC = 60;
+                }
+
             }
             catch (Exception ex)
             {
@@ -2401,6 +2418,7 @@ namespace WasatchNET
             minLaserPowerMW = (float)json.MinLaserPowerMW;
             laserWarmupSec = json.LaserWarmupS;
             laserExcitationWavelengthNMFloat = (float)json.ExcitationWavelengthNM;
+            startupScansToAverage = json.StartupScansToAvg;
             laserDacAttenuation = json.LaserDACAttenuation;
             avgResolution = (float)json.AvgResolution;
 
@@ -2494,9 +2512,18 @@ namespace WasatchNET
 
             laserPassword = json.LaserPassword;
             usbMfgName = json.USBMfgName;
+            accessoryState = json.AccessoryState;
+            accessoryGPIO1State = json.AccessoryGPIO1State;
+            accessoryGPIO2State = json.AccessoryGPIO2State;
+            accessoryStrobePeriodMicroSec = json.AccessoryStrobePeriodUS;
+            accessoryStrobeWidthMicroSec = json.AccessoryStrobeWidthUS;
+            accessoryStrobeDelayMicroSec = json.AccessoryStrobeDelayUS;
+            accessoryStrobeCount = json.AccessoryStrobeCount;
+            maxBatteryTempDegC = json.MaxBatteryTempDegC;
+            auxButtonFunction = (AUX_BUTTON_FUNCTION)json.AuxButtonFunction;
+            auxButtonParameter = json.AuxButtonParameter;
 
             pixelCalibrationType = (PIXEL_CALIBRATION_TYPE)json.PixelCalibrationType;
-            maxLaserTempDegC = json.MaxLaserTempDegC;
             if (json.PixelCalibrationFactors != null)
             {
                 pixelCalibrationFactors = new List<float>(json.PixelCalibrationFactors);
@@ -2599,6 +2626,7 @@ namespace WasatchNET
             json.MaxLaserPowerMW = maxLaserPowerMW;
             json.MinLaserPowerMW = minLaserPowerMW;
             json.ExcitationWavelengthNM = laserExcitationWavelengthNMFloat;
+            json.StartupScansToAvg = startupScansToAverage;
             json.LaserDACAttenuation = laserDacAttenuation;
             json.AvgResolution = avgResolution;
             json.BadPixels = new int[15];
@@ -2713,6 +2741,16 @@ namespace WasatchNET
 
             json.LaserPassword = laserPassword;
             json.USBMfgName = usbMfgName;
+            json.AccessoryState = accessoryState;
+            json.AccessoryGPIO1State = accessoryGPIO1State;
+            json.AccessoryGPIO2State = accessoryGPIO2State;
+            json.AccessoryStrobePeriodUS = accessoryStrobePeriodMicroSec;
+            json.AccessoryStrobeWidthUS = accessoryStrobeWidthMicroSec;
+            json.AccessoryStrobeDelayUS = accessoryStrobeDelayMicroSec;
+            json.AccessoryStrobeCount = accessoryStrobeCount;
+            json.MaxBatteryTempDegC = maxBatteryTempDegC;
+            json.AuxButtonFunction = (byte)auxButtonFunction;
+            json.AuxButtonParameter = auxButtonParameter;
             json.PixelCalibrationFactors = pixelCalibrationFactors?.ToArray();
             json.PixelCalibrationType = (byte)pixelCalibrationType;
             json.MaxLaserPowerMW = maxLaserPowerMW;
@@ -2869,6 +2907,7 @@ namespace WasatchNET
             if (!ParseData.writeInt16(detectorOffsetOdd, pages[0], 58)) return false;
             if (format >= 16)
                 if (!ParseData.writeUInt16(laserTECSetpoint, pages[0], 60)) return false;
+            pages[0][63] = format;
 
             if (!ParseData.writeFloat(wavecalCoeffs[0], pages[1], 0)) return false;
             if (!ParseData.writeFloat(wavecalCoeffs[1], pages[1], 4)) return false;
@@ -2938,9 +2977,13 @@ namespace WasatchNET
                 if (!ParseData.writeUInt16(detectorTimeout, pages[3], 57)) return false;
                 if (!ParseData.writeByte((byte)horizontalBinningMethod, pages[3], 59)) return false;
             }
+            if (format >= 17)
+            {
+                if (!ParseData.writeByte(startupScansToAverage, pages[3], 60)) return false;
+            }
             if (format >= 18)
             {
-                if (!ParseData.writeByte(maxLaserTempDegC, pages[3], 11)) return false;
+                if (!ParseData.writeInt8(maxLaserTempDegC, pages[3], 11)) return false;
                 if (!ParseData.writeByte(laserDacAttenuation, pages[3], 61)) return false;
 
                 Array.Copy(assemblyRevision, 0, pages[5], 46, assemblyRevision.Length);
@@ -2959,7 +3002,7 @@ namespace WasatchNET
                 if (!ParseData.writeUInt32(accessoryStrobeWidthMicroSec, pages[8], 28)) return false;
                 if (!ParseData.writeUInt32(accessoryStrobeDelayMicroSec, pages[8], 32)) return false;
                 if (!ParseData.writeUInt16(accessoryStrobeCount, pages[8], 36)) return false;
-                if (!ParseData.writeByte(maxBatteryTempDegC, pages[8], 38)) return false;
+                if (!ParseData.writeInt8(maxBatteryTempDegC, pages[8], 38)) return false;
                 if (!ParseData.writeByte((byte)pixelCalibrationType, pages[8], 39)) return false;
                 if (!ParseData.writeString(usbMfgName, pages[8], 40, 20)) return false;
                 if (!ParseData.writeByte((byte)auxButtonFunction, pages[8], 60)) return false;
@@ -3059,7 +3102,6 @@ namespace WasatchNET
                 {
                     if (!ParseData.writeByte(libraryType,               pages[7], 0)) return false;
                     if (!ParseData.writeUInt16(libraryID,               pages[7], 1)) return false;
-                    if (!ParseData.writeByte(startupScansToAverage,     pages[7], 3)) return false;
                     if (!ParseData.writeByte(matchingMinRampPixels,     pages[7], 4)) return false;
                     if (!ParseData.writeUInt16(matchingMinPeakHeight,   pages[7], 5)) return false;
                     if (!ParseData.writeByte(matchingThreshold,         pages[7], 7)) return false;
@@ -3124,8 +3166,6 @@ namespace WasatchNET
                     }
                 }
             }
-
-            pages[0][63] = format;
 
             return true;
         }

@@ -34,6 +34,7 @@ namespace WasatchNET
         }
 
         // don't add a lot of value, do they?
+        public static sbyte  toInt8 (byte[] buf, int index) { return unchecked((sbyte)buf[index]); } 
         public static byte   toUInt8 (byte[] buf, int index) { return buf[index]; } 
         public static bool   toBool  (byte[] buf, int index) { return buf[index] != 0; } 
         public static float  toFloat (byte[] buf, int index) { return BitConverter.ToSingle(buf, index); } 
@@ -163,6 +164,17 @@ namespace WasatchNET
         public static bool writeByte(byte value, byte[] buf, int index)
         {
             buf[index] = value;
+
+            Logger logger = Logger.getInstance();
+            logger.debug("writeByte: wrote {0} as 0x{1:x2} to index {2} of {3}-byte buf",
+                value, buf[index], index, buf.Length);
+
+            return true;
+        }
+
+        public static bool writeInt8(sbyte value, byte[] buf, int index)
+        {
+            buf[index] = (byte)value;
 
             Logger logger = Logger.getInstance();
             logger.debug("writeByte: wrote {0} as 0x{1:x2} to index {2} of {3}-byte buf",
