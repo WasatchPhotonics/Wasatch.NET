@@ -1655,6 +1655,8 @@ namespace WasatchNET
                 return false;
             }
 
+            format = FORMAT;
+
             if (!writeParse())
                 return false;
             int pageCount = MAX_PAGES;
@@ -2208,8 +2210,6 @@ namespace WasatchNET
                 dump();
 
             enforceReasonableDefaults();
-
-            format = FORMAT;
 
             return true;
             
