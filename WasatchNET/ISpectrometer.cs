@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using static WasatchNET.Spectrometer;
 
 namespace WasatchNET
 {
@@ -184,6 +185,7 @@ namespace WasatchNET
         /// </summary>
         bool laserInterlockEnabled { get; }
         byte laserWarningDelaySec { get; set; }
+        byte laserPowerAttenuation { get; set; }
 
         bool laserModulationEnabled { get; set; }
         bool laserModulationLinkedToIntegrationTime { get; set; }
@@ -312,6 +314,7 @@ namespace WasatchNET
         UInt16 laserWatchdogSec { get; set; }
         bool laserTECEnabled { get; set; }
         ushort laserTECMode { get; set; }
+        IMAGE_SENSOR_STATUS imageSensorStatus { get; }
 
         uint lineLength { get; }
 
@@ -410,5 +413,6 @@ namespace WasatchNET
         /// <returns>The acquired spectrum as an array of doubles</returns>
         double[] getSpectrum(bool forceNew);
         ushort[] getFrame(bool direct);
+        bool resetFPGA();
     }
 }

@@ -44,6 +44,7 @@ namespace WasatchNET
             linearityCoeffs = new float[5];
             laserPowerCoeffs = new float[4];
             intensityCorrectionCoeffs = new float[12];
+            assemblyRevision = new byte[6];
 
             badPixelList = new List<short>();
             badPixelSet = new SortedSet<short>();
@@ -143,18 +144,6 @@ namespace WasatchNET
             defaultValues = false;
             return true;
         }
-
-        public string detectorSerialNumber
-        {
-            get { return _detectorSerialNumber; }
-            set
-            {
-                _detectorSerialNumber = value;
-                base.OnEEPROMChanged(new EventArgs());
-            }
-        }
-
-        string _detectorSerialNumber;
 
         /// <summary>
         /// Load an external JSON file containing key EEPROM attributes.

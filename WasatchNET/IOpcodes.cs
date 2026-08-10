@@ -56,6 +56,7 @@ namespace WasatchNET
         GET_LASER_MOD_PERIOD,
         GET_LASER_MOD_PULSE_DELAY,
         GET_LASER_MOD_PULSE_WIDTH,
+        GET_LASER_POWER_ATTENUATOR,
         GET_LASER_RAMPING_MODE, // not implemented
         GET_LASER_TEC_MODE,
         GET_LASER_TEC_SETPOINT,
@@ -74,6 +75,7 @@ namespace WasatchNET
         GET_OPT_LASER_TYPE,
         GET_SELECTED_ADC,
         GET_TEST_PATTERN,
+        GET_TEST_HEIGHT,
         GET_TRIGGER_DELAY,
         GET_TRIGGER_OUTPUT,
         GET_TRIGGER_SOURCE,
@@ -109,6 +111,7 @@ namespace WasatchNET
         SET_LASER_MOD_PERIOD,
         SET_LASER_MOD_PULSE_DELAY,
         SET_LASER_MOD_PULSE_WIDTH,
+        SET_LASER_POWER_ATTENUATOR,
         SET_LASER_RAMPING_MODE, // not implemented
         SET_LASER_TEC_MODE,
         SET_LASER_TEC_SETPOINT,
@@ -120,9 +123,11 @@ namespace WasatchNET
         SET_MODEL_CONFIG_FX2,
         SET_SELECTED_ADC,
         SET_TEST_PATTERN,
+        SET_TEST_HEIGHT,
         SET_TRIGGER_DELAY,
         SET_TRIGGER_OUTPUT,
         SET_TRIGGER_SOURCE,
+        SET_USER_SETTINGS,
         WRITE_LIBRARY,
         PROCESS_LIBRARY,
     }

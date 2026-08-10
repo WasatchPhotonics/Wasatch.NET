@@ -243,13 +243,39 @@ namespace WasatchNET
                 return false;
             }
 
-            string snPattern = "Serial Number: ";
+            bool stillLooking = true;
+            string devSerialNumber = "";
+            bool wrongDevice = false;
+            int lookIndex = 0;
 
-            int start = ftdi.IndexOf(snPattern, 0);
+            while (stillLooking)
+            {
+                string snPattern = "Serial Number: ";
+                string typePattern = "Type: ";
 
-            start = start + 15; // TS - I'm not positive on how static this will be, may be worth changing down the line
+                int typeStart = ftdi.IndexOf(typePattern, lookIndex);
+                string type = ftdi.Substring(typeStart, 30);
+                if (!type.Contains("232H"))
+                    wrongDevice = true;
+                else
+                    wrongDevice = false;
 
-            string devSerialNumber = ftdi.Substring(start, 8);
+                    int start = ftdi.IndexOf(snPattern, lookIndex);
+
+                if (start == -1)
+                    break;
+
+                start = start + 15; // TS - I'm not positive on how static this will be, may be worth changing down the line
+                lookIndex = start + 1;
+
+                devSerialNumber = ftdi.Substring(start, 8);
+
+                if (!wrongDevice)
+                    break;
+            }
+
+            if (wrongDevice)
+                return false;
 
             MpsseDevice.MpsseParams mpsseParams = new MpsseDevice.MpsseParams();
             mpsseParams.clockDevisor = 1;
@@ -600,7 +626,7 @@ namespace WasatchNET
             List<byte[]> pages = new List<byte[]>();
 
             //CHANGES
-            for (ushort page = 0; page < EEPROM.MAX_PAGES; page++)
+            for (ushort page = 0; page < EEPROM.MAX_PAGES_FX2; page++)
             {
                 
                 byte[] transmitData = new byte[0];
@@ -805,6 +831,20 @@ namespace WasatchNET
             
         }
 
+        public override bool resetFPGA() => true;
+
+        public override bool areaScanEnabled
+        {
+            get
+            {
+                return areaScanEnabled_;
+            }
+            set
+            {
+
+            }
+        }
+
         public override bool highGainModeEnabled
         {
             get { return false; }
@@ -875,6 +915,7 @@ namespace WasatchNET
 
         public override bool laserInterlockEnabled { get => false; }
         public override byte laserWarningDelaySec { get => 0; set { } }
+        public override byte laserPowerAttenuation { get => 0; set { } }
 
         public override UInt64 laserModulationPeriod { get => 100; }
         public override UInt64 laserModulationPulseWidth { get => 0; }
@@ -1041,6 +1082,15 @@ namespace WasatchNET
             set
             {
 
+            }
+        }
+
+        public override IMAGE_SENSOR_STATUS imageSensorStatus
+        {
+            //we do NOT want to cache this one
+            get
+            {
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_NO_RESPONSE;
             }
         }
 

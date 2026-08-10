@@ -43,7 +43,9 @@ namespace WasatchNET
                 port = new SerialPort(portName, 9600);
                 port.DataBits = 8;
                 port.Parity = Parity.None;
-                port.StopBits = StopBits.One;
+                port.StopBits = StopBits.One; 
+                port.WriteTimeout = 100;
+                port.ReadTimeout = 100;
                 port.NewLine = "\r\n";
                 port.Open();
 
@@ -68,7 +70,7 @@ namespace WasatchNET
             }
             catch (Exception)
             {
-                return false;
+                 return false;
             }
 
             bool openBase = await base.openAsync();
@@ -86,12 +88,19 @@ namespace WasatchNET
             }
 
             testPattern = 0;
+            testPatternHeight = eeprom.activePixelsVert;
 
             eeprom.featureMask.PropertyChanged += FeatureMask_PropertyChanged;
             eeprom.featureMask.invertXAxis = false;
             reverseSpectrum = false;
 
             return ok && openBase;
+        }
+
+        async Task tryClose(SerialPort port)
+        {
+            port.Close();
+            port.Dispose();
         }
 
         private void FeatureMask_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -105,6 +114,14 @@ namespace WasatchNET
             port.Close();
             port.Dispose();
             port = null;
+        }
+
+        public override void saveUserSettings()
+        {
+            string resp = "";
+            bool ok = sendCOMCommand(Opcodes.SET_USER_SETTINGS, ref resp, new float[] { 1 }, new int[] { 0 });
+            if (ok)
+                logger.debug("User settings save response: {0}", resp.Split('\r')[0].Trim());
         }
 
         public override string firmwareRevision
@@ -241,6 +258,30 @@ namespace WasatchNET
             }
         }
 
+        public override int testPatternHeight
+        {
+            get
+            {
+                return testPatternHeight_;
+            }
+            set
+            {
+                int prevValue = testPatternHeight_;
+                string resp = "";
+                bool ok = sendCOMCommand(Opcodes.SET_TEST_HEIGHT, ref resp, new float[] { value }, new int[] { 0 });
+                if (ok)
+                {
+                    ok = sendCOMCommand(Opcodes.GET_TEST_HEIGHT, ref resp, null);
+
+                    if (ok)
+                        testPatternHeight_ = System.Convert.ToInt32(resp.Split('\r')[0]);
+                    else
+                        testPatternHeight_ = prevValue;
+                }
+            }
+        }
+
+
         public override float linePeriod
         {
             get
@@ -343,16 +384,21 @@ namespace WasatchNET
                 }
                 command += "\r";
 
-                port.Write(command);
-                Thread.Sleep(33);
-                string resp = "";
-                Thread t = new Thread(() => resp = tryPort(port));
-                t.Start();
-                if (!t.Join(TimeSpan.FromMilliseconds(50)))
+                try
                 {
-                    return false;
+                    port.Write(command);
                 }
-                else if (resp == null)
+                catch (Exception e)
+                {
+                    logger.info("{0} failed with exception {1}", portName, e.Message);
+                    return false;   
+                }
+
+                string resp = "";
+                Thread.Sleep(33);
+                resp = tryPort(port);
+                
+                if (resp == null)
                 {
                     return false;
                 }
@@ -387,15 +433,10 @@ namespace WasatchNET
             commandLocal += "\r";
 
             port.Write(commandLocal);
-            Thread.Sleep(33);
+            Thread.Sleep(33); 
             string resp = "";
-            Thread t = new Thread(() => resp = tryPort(port));
-            t.Start();
-            if (!t.Join(TimeSpan.FromMilliseconds(50)))
-            {
-                return false;
-            }
-            else if (resp == null)
+            resp = tryPort(port);
+            if (resp == null)
             {
                 return false;
             }
@@ -405,5 +446,8 @@ namespace WasatchNET
                 return resp.Contains("Ok");
             }
         }
+
+        public override bool resetFPGA() => true;
+
     }
 }

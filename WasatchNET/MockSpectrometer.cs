@@ -178,6 +178,15 @@ namespace WasatchNET
             }
         }
 
+        public override IMAGE_SENSOR_STATUS imageSensorStatus
+        {
+            //we do NOT want to cache this one
+            get
+            {
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_NO_RESPONSE;
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
@@ -280,6 +289,7 @@ namespace WasatchNET
             }
         }
         public override byte laserWarningDelaySec { get => 0; set { } }
+        public override byte laserPowerAttenuation { get => 0; set { } }
 
         public override UInt64 laserModulationPeriod
         {
@@ -636,6 +646,8 @@ namespace WasatchNET
         {
             return interpolationSamples.Keys.ToArray();
         }
+
+        public override bool resetFPGA() => true;
 
         public bool initSpectrometer(string jsonFile)
         {

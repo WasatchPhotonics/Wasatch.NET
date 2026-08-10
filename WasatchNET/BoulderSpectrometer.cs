@@ -571,7 +571,7 @@ namespace WasatchNET
             else
             {
                 logger.error("Get Spectrum: comm error occurring, will not return spectra");
-                return new double[pixels];
+                return null;
             }
         }
 
@@ -641,7 +641,7 @@ namespace WasatchNET
                 
             }
             else
-                return new double[pixels];
+                return null;
 
         }
 
@@ -682,6 +682,7 @@ namespace WasatchNET
             {
                 // timeout logic
                 logger.error("Get Spectrum: SeaBreeze failing to return in expected time, communication error likely");
+                spec = null;
                 commError = true;
             }
 
@@ -818,18 +819,19 @@ namespace WasatchNET
 
         public override bool laserInterlockEnabled { get => false; }
         public override byte laserWarningDelaySec { get => 0; set { } }
+        public override byte laserPowerAttenuation { get => 0; set { } }
 
         public override UInt64 laserModulationPeriod { get => 100; }
 
         public override ulong laserModulationPulseWidth { get => 0; set { } }
 
-        public override float detectorGain { get => 0; }
+        public override float detectorGain { get => 0; set { } }
 
-        public override float detectorGainOdd { get => 0; }
+        public override float detectorGainOdd { get => 0; set { } }
 
-        public override short detectorOffset { get => 0; }
+        public override short detectorOffset { get => 0; set { } }
 
-        public override short detectorOffsetOdd { get => 0; }
+        public override short detectorOffsetOdd { get => 0; set { } }
 
         public override ushort detectorStartLine
         {
@@ -940,6 +942,15 @@ namespace WasatchNET
             set
             {
 
+            }
+        }
+
+        public override IMAGE_SENSOR_STATUS imageSensorStatus
+        {
+            //we do NOT want to cache this one
+            get
+            {
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_NO_RESPONSE;
             }
         }
 
@@ -1067,6 +1078,7 @@ namespace WasatchNET
             return retval;
         }
 
+        public override bool resetFPGA() => true;
 
         public override string fpgaRevision
         {

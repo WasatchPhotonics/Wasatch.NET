@@ -341,6 +341,13 @@ namespace WasatchNET
             return null;
         }
 
+        public override bool resetFPGA() => true;
+
+        public virtual void saveUserSettings()
+        {
+
+        }
+
         public override string serialNumber
         {
             get { return eeprom.serialNumber; }
@@ -460,6 +467,15 @@ namespace WasatchNET
             }
         }
 
+        public override IMAGE_SENSOR_STATUS imageSensorStatus
+        {
+            //we do NOT want to cache this one
+            get
+            {
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_NO_RESPONSE;
+            }
+        }
+
         public override ushort detectorTECSetpointRaw
         {
             get
@@ -523,6 +539,19 @@ namespace WasatchNET
             }
         }
         protected int testPattern_ = 0;
+
+        public virtual int testPatternHeight
+        {
+            get
+            {
+                return testPatternHeight_;
+            }
+            set
+            {
+                testPatternHeight_ = value;
+            }
+        }
+        protected int testPatternHeight_ = 0;
 
         public virtual float linePeriod
         {

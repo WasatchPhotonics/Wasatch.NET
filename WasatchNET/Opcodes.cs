@@ -71,6 +71,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_LASER_MOD_PERIOD                   ] = 0xcb;
             cmd[Opcodes.GET_LASER_MOD_PULSE_DELAY              ] = 0xca;
             cmd[Opcodes.GET_LASER_MOD_PULSE_WIDTH              ] = 0xdc;
+            cmd[Opcodes.GET_LASER_POWER_ATTENUATOR             ] = 0x83;
             cmd[Opcodes.GET_LASER_TEC_SETPOINT                 ] = 0xe8;
             cmd[Opcodes.GET_LASER_TEC_MODE                     ] = 0x85;
             cmd[Opcodes.GET_LINK_LASER_MOD_TO_INTEGRATION_TIME ] = 0xde;
@@ -105,6 +106,7 @@ namespace WasatchNET
             cmd[Opcodes.SET_LASER_MOD_PERIOD                   ] = 0xc7;
             cmd[Opcodes.SET_LASER_MOD_PULSE_DELAY              ] = 0xc6;
             cmd[Opcodes.SET_LASER_MOD_PULSE_WIDTH              ] = 0xdb;
+            cmd[Opcodes.SET_LASER_POWER_ATTENUATOR             ] = 0x82;
             cmd[Opcodes.SET_LASER_TEC_SETPOINT                 ] = 0xe7;
             cmd[Opcodes.SET_LASER_TEC_MODE                     ] = 0x84;
             cmd[Opcodes.SET_LASER_WARNING_DELAY                ] = 0x8a;
@@ -176,6 +178,7 @@ namespace WasatchNET
             armInvertedRetvals.Add(Opcodes.SET_LASER_MOD_PULSE_WIDTH);
             armInvertedRetvals.Add(Opcodes.SET_LASER_TEC_SETPOINT);
             armInvertedRetvals.Add(Opcodes.SET_LASER_MOD_PERIOD);
+            //armInvertedRetvals.Add(Opcodes.SET_LASER_POWER_ATTENUATOR);
             armInvertedRetvals.Add(Opcodes.SET_LASER_MOD_PULSE_DELAY);
             armInvertedRetvals.Add(Opcodes.SET_CONTINUOUS_ACQUISITION);
             armInvertedRetvals.Add(Opcodes.SET_CONTINUOUS_FRAMES);
@@ -209,6 +212,7 @@ namespace WasatchNET
             cmd[Opcodes.GET_INTEGRATION_TIME                   ] = "r tint";
             cmd[Opcodes.GET_LINE_PERIOD                        ] = "r tper";
             cmd[Opcodes.GET_TEST_PATTERN                       ] = "r srce";
+            cmd[Opcodes.SET_TEST_HEIGHT                        ] = "r tsth";
             cmd[Opcodes.GET_MODEL_CONFIG                       ] = "r deid";
             cmd[Opcodes.GET_FIRMWARE_REVISION                  ] = "r dfwv";
             cmd[Opcodes.GET_OCT_ANALOG_GAIN                    ] = "r pamp";
@@ -222,6 +226,8 @@ namespace WasatchNET
             cmd[Opcodes.SET_INTEGRATION_TIME                   ] = "w tint";
             cmd[Opcodes.SET_LINE_PERIOD                        ] = "w tper";
             cmd[Opcodes.SET_TEST_PATTERN                       ] = "w srce";
+            cmd[Opcodes.SET_TEST_HEIGHT                        ] = "w tsth";
+            cmd[Opcodes.SET_USER_SETTINGS                      ] = "w scfg";
             cmd[Opcodes.SET_OCT_ANALOG_GAIN                    ] = "w pamp";
             cmd[Opcodes.SET_DETECTOR_GAIN                      ] = "w gain";
             cmd[Opcodes.SET_DETECTOR_OFFSET                    ] = "w offs";

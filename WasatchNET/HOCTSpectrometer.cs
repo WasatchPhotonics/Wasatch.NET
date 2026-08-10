@@ -1165,6 +1165,8 @@ namespace WasatchNET
             }
         }
 
+        public override bool resetFPGA() => true;
+
         public override string serialNumber
         {
             get { return eeprom.serialNumber; }
@@ -1269,6 +1271,15 @@ namespace WasatchNET
             set
             {
 
+            }
+        }
+
+        public override IMAGE_SENSOR_STATUS imageSensorStatus
+        {
+            //we do NOT want to cache this one
+            get
+            {
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_NO_RESPONSE;
             }
         }
 

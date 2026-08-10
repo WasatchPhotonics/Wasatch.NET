@@ -24,6 +24,7 @@ namespace WasatchNET
             linearityCoeffs = new float[5];
             laserPowerCoeffs = new float[4];
             intensityCorrectionCoeffs = new float[12];
+            assemblyRevision = new byte[6];
 
             badPixelList = new List<short>();
             badPixelSet = new SortedSet<short>();
@@ -31,7 +32,7 @@ namespace WasatchNET
 
         public override bool write(bool allPages = false)
         {
-            if (pages is null || pages.Count != MAX_PAGES)
+            if (pages is null || pages.Count != MAX_PAGES_FX2)
             {
                 logger.error("EEPROM.write: need to perform a read first");
                 return false;
@@ -380,7 +381,7 @@ namespace WasatchNET
 
         public override async Task<bool> writeAsync(bool allPages=false)
         {
-            if (pages is null || pages.Count != MAX_PAGES)
+            if (pages is null || pages.Count != MAX_PAGES_FX2)
             {
                 logger.error("EEPROM.write: need to perform a read first");
                 return false;

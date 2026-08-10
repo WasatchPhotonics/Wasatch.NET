@@ -46,6 +46,7 @@ namespace WasatchNET
         public const float UNINITIALIZED_TEMPERATURE_DEG_C = -999;
         public const int LEGACY_VERTICAL_PIXELS = 70;           //!< for Stroker Area Scan
         public const ushort SPECTRUM_START_MARKER = 0xffff;
+        public const string BATTERY_5BYTE_MIN_VER = "1_0_66_1";
 
         ////////////////////////////////////////////////////////////////////////
         // data types
@@ -76,7 +77,8 @@ namespace WasatchNET
             IMG_SNSR_STATE_REG_HOLD = 3,
             IMG_SNSR_STATE_ACTIVE = 4,
             IMG_SNSR_STATE_ERROR = 5,
-            IMG_SNSR_STATE_READ_FAIL = 6
+            IMG_SNSR_STATE_READ_FAIL = 6,
+            IMG_SNSR_STATE_NO_RESPONSE = 255
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -91,6 +93,11 @@ namespace WasatchNET
         // consistent with Wasatch.PY
         UsbEndpointReader spectralReader82;
         UsbEndpointReader spectralReader86;
+
+
+        // endpoint 0 reader to flush when needed
+        UsbEndpointReader spectralReader0;
+
         bool usingDualEndpoints;
 
         internal Dictionary<Opcodes, byte> cmd = OpcodeHelper.getInstance().getDict();
@@ -100,7 +107,7 @@ namespace WasatchNET
 
         protected object adcLock = new object();
         protected object acquisitionLock = new object(); //!< synchronizes getSpectrum, integrationTimeMS, scanAveraging, dark and boxcarHalfWidth
-        object commsLock = new object(); //!< synchronizes getCmd, getCmd2, sendCmd
+        protected object commsLock = new object(); //!< synchronizes getCmd, getCmd2, sendCmd
         DateTime lastUsbTimestamp = DateTime.Now;
         internal bool shuttingDown = false;
 
@@ -662,7 +669,13 @@ namespace WasatchNET
 
                 // Unpack.toUint assumes little-endian order, but this is a custom 
                 // register, so let's re-order the received bytes to match the ICD
-                uint tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, 3));
+                uint tmp = 0;
+
+                int len = 3;
+                if (Util.compareVersions(BATTERY_5BYTE_MIN_VER, firmwareRevision) >= 0)
+                    len = 5;
+
+                tmp = Unpack.toUint(getCmd2(Opcodes.GET_BATTERY_STATE, len));
                 uint lsb = (byte)(tmp & 0xff);
                 uint msb = (byte)((tmp >> 8) & 0xff);
                 uint chg = (byte)((tmp >> 16) & 0xff);
@@ -1387,6 +1400,18 @@ namespace WasatchNET
         }
         byte _laserWarningDelaySec;
 
+        public virtual byte laserPowerAttenuation
+        {
+            get => _laserPowerAttenuation;
+            set
+            {
+                byte[] temp = new byte[1];
+                sendCmdReturn(Opcodes.SET_LASER_POWER_ATTENUATOR, (byte)value, buf: temp);
+                _laserPowerAttenuation = value;
+            }
+        }
+        byte _laserPowerAttenuation;
+
         public bool laserModulationLinkedToIntegrationTime
         {
             get
@@ -1763,7 +1788,7 @@ namespace WasatchNET
                 if (pack != null && pack.Length > 0)
                     return (IMAGE_SENSOR_STATUS)pack[0];
 
-                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_READ_FAIL;
+                return IMAGE_SENSOR_STATUS.IMG_SNSR_STATE_NO_RESPONSE;
             }
         }
 
@@ -2440,7 +2465,8 @@ namespace WasatchNET
         // Convenience Accessors
         ////////////////////////////////////////////////////////////////////////
 
-        public virtual bool isARM => featureIdentification.boardType == BOARD_TYPES.ARM;
+        public virtual bool isFX2 => featureIdentification == null ? false : featureIdentification.boardType == BOARD_TYPES.RAMAN_FX2 || featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2;
+        public virtual bool isARM => featureIdentification == null ? false : featureIdentification.boardType == BOARD_TYPES.ARM;
         public bool isSiG => eeprom.model.ToLower().Contains("sig") || eeprom.detectorName.ToLower().Contains("imx");
         public virtual bool isInGaAs => (featureIdentification.boardType == BOARD_TYPES.INGAAS_FX2 || eeprom.detectorName.StartsWith("g", StringComparison.CurrentCultureIgnoreCase)); 
 
@@ -2618,10 +2644,12 @@ namespace WasatchNET
             logger.debug("Spectrometer.reconnect: creating readers");
             spectralReader82 = usbDevice.OpenEndpointReader(ReadEndpointID.Ep02);
             spectralReader86 = usbDevice.OpenEndpointReader(ReadEndpointID.Ep06);
+            //spectralReader0 = usbDevice.OpenEndpointReader(ReadEndpointID.)
 
             logger.debug("Spectrometer.reconnect: done");
             return true;
         }
+
 
         // TODO: refactor this into Bus, UsbBus etc
 
@@ -2669,6 +2697,7 @@ namespace WasatchNET
                 {
                     logger.error("getCmd: failed to get {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
                         opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
+                    logger.hexdump(buf, String.Format("failed getCmd: {0} (0x{1:x2}) index 0x{2:x4} returned -> ", opcode.ToString(), cmd[opcode], wIndex));
                     return null;
                 }
             }
@@ -2765,13 +2794,13 @@ namespace WasatchNET
                 {
                     logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
                         opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
-                    logger.hexdump(buf, $"{opcode} result");
+                    logger.hexdump(buf, $"{opcode} failed read result -> ");
                     return null;
                 }
             }
 
             if (logger.debugEnabled())
-                logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->",
+                logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) -> ",
                     opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult));
 
             // extract just the bytes we really needed
@@ -2813,17 +2842,70 @@ namespace WasatchNET
             {
                 logger.error("getCmd2: failed to get SECOND_TIER_COMMAND {0} (0x{1:x4}) via DEVICE_TO_HOST ({2} of {3} bytes read, expected {4} got {5})",
                     opcode.ToString(), cmd[opcode], bytesRead, len, expectedSuccessResult, result);
-                logger.hexdump(buf, $"{opcode} result");
+                logger.hexdump(buf, $"{opcode} result ");
                 return null;
             }
             
 
             if (logger.debugEnabled())
-                logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) ->",
+                logger.hexdump(buf, String.Format("getCmd2: {0} (0x{1:x2}) index 0x{2:x4} (result {3}, expected {4}) -> ",
                     opcode.ToString(), cmd[opcode], wIndex, result, expectedSuccessResult));
 
             // extract just the bytes we really needed
             return Util.truncateArray(buf, len);
+        }
+
+        internal bool sendCmdReturn(Opcodes opcode, ushort wValue = 0, ushort wIndex = 0, byte[] buf = null)
+        { 
+            if (shuttingDown)
+                return false;
+
+            if ((isARM || isStroker) && (buf is null))
+                buf = new byte[8];
+
+            ushort wLength = (ushort)((buf is null) ? 0 : buf.Length);
+
+            UsbSetupPacket packet = new UsbSetupPacket(
+                DEVICE_TO_HOST, // bRequestType
+                cmd[opcode],    // bRequest
+                wValue,         // wValue
+                wIndex,         // wIndex
+                wLength);       // wLength
+
+            bool? expectedSuccessResult = true;
+            if (isARM)
+            {
+                if (opcode != Opcodes.SECOND_TIER_COMMAND)
+                    expectedSuccessResult = armInvertedRetvals.Contains(opcode);
+                else
+                    expectedSuccessResult = null; // no easy way to know, as we don't pass wValue as enum (MZ: whut?)
+            }
+
+            lock (commsLock)
+            {
+                // don't enforce USB delay on laser commands...that could be dangerous
+                // or on acquire commands, which would disrupt integration throwaways 
+                // and soft synchronization
+                if (opcode != Opcodes.SET_LASER_ENABLE && opcode != Opcodes.ACQUIRE_SPECTRUM)
+                    waitForUsbAvailable();
+
+                logger.debug("sendCmd: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
+
+                bool result = usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
+
+                if (expectedSuccessResult != null && expectedSuccessResult.Value != result)
+                {
+                    logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
+                        opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, result, expectedSuccessResult);
+                    logger.hexdump(buf, "sendCmd return bytes: ");
+                    return false;
+                }
+                else
+                {
+                    logger.hexdump(buf, String.Format("Send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) return bytes: ", opcode.ToString(), cmd[opcode], wValue, wIndex, wLength));
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -2878,7 +2960,12 @@ namespace WasatchNET
                 {
                     logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
                         opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, result, expectedSuccessResult);
+                    logger.hexdump(buf, "sendCmd return bytes: ");
                     return false;
+                }
+                else
+                {
+                    logger.hexdump(buf, String.Format("Send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) return bytes: ", opcode.ToString(), cmd[opcode], wValue, wIndex, wLength));
                 }
             }
             return true;
@@ -2923,9 +3010,14 @@ namespace WasatchNET
             {
                 logger.error("sendCmd: failed to send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) (received {5}, expected {6})",
                     opcode.ToString(), cmd[opcode], wValue, wIndex, wLength, result, expectedSuccessResult);
+                logger.hexdump(buf, "sendCmd return bytes: ");
                 return false;
             }
-            
+            else
+            {
+                logger.hexdump(buf, String.Format("Send {0} (0x{1:x2}) (wValue 0x{2:x4}, wIndex 0x{3:x4}, wLength 0x{4:x4}) return bytes: ", opcode.ToString(), cmd[opcode], wValue, wIndex, wLength));
+            }
+
             return true;
         }
 
@@ -2958,7 +3050,12 @@ namespace WasatchNET
             {
                 waitForUsbAvailable();
                 logger.debug("sendCmd2: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id);
-                return usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
+
+                bool ok = usbDevice.ControlTransfer(ref packet, buf, wLength, out int bytesWritten);
+
+                logger.hexdump(buf, String.Format("sendCmd2 {0} ({1}) return bytes: ", opcode, id));
+
+                return ok;
             }
         }
         internal async Task<bool> sendCmd2Async(Opcodes opcode, ushort wIndex = 0, byte[] buf = null)
@@ -2983,8 +3080,11 @@ namespace WasatchNET
 
             await Task.Run(() =>logger.debug("sendCmd2: about to send {0} ({1}) ({2})", opcode, stringifyPacket(packet), id));
             int bytesWritten;
-            return await Task.Run(() => usbDevice.ControlTransfer(ref packet, buf, wLength, out bytesWritten));
-            
+                
+            bool ok = await Task.Run(() => usbDevice.ControlTransfer(ref packet, buf, wLength, out bytesWritten));
+            logger.hexdump(buf, String.Format("sendCmd2 {0} ({1}) return bytes: ", opcode, id));
+
+            return ok;
         }
 
 
@@ -3122,7 +3222,7 @@ namespace WasatchNET
         }
 
         // this is not a Property because it has no value and cannot be undone
-        public bool resetFPGA()
+        public virtual bool resetFPGA()
         {
             Task<bool> task = Task.Run(async () => await resetFPGAAsync());
             return task.Result;
@@ -3143,6 +3243,8 @@ namespace WasatchNET
         {
             logger.info("Resetting FPGA");
             bool good = sendCmd(Opcodes.FPGA_RESET);
+
+            await Task.Delay(3000);
 
             bool cacheHighGain = highGainModeEnabled;
             readOnce.Remove(Opcodes.GET_CF_SELECT);
@@ -3356,7 +3458,11 @@ namespace WasatchNET
                 if (retries++ < acquisitionMaxRetries && !untetheredAcquisitionEnabled)
                 {
                     // retry the whole thing (including ACQUIRE)
-                    logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                    logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}"); 
+                    if (retries == 1 && isInGaAs)
+                    {
+                        await resetFPGAAsync();
+                    }
                     continue;
                 }
                 else if (errorOnTimeout)
@@ -3399,6 +3505,11 @@ namespace WasatchNET
                         {
                             // retry the whole thing (including ACQUIRE)
                             logger.error($"getSpectrum: received null from getSpectrumRaw, attempting retry {retries}");
+                            if (retries == 1 && isInGaAs)
+                            {
+                                await resetFPGAAsync();
+                            }
+
                             continue;
                         }
                         else if (errorOnTimeout)
@@ -3432,6 +3543,10 @@ namespace WasatchNET
             if (ramanIntensityCorrectionEnabled)
                 sum = correctRamanIntensity(sum);
 
+            if (etalonCorrectionEnabled)
+                sum = applyEtalonCorrection(sum);
+
+
             // this should be enough to update the cached value
             if (readTemperatureAfterSpectrum && eeprom.hasCooling)
                 _ = detectorTemperatureDegC;
@@ -3456,6 +3571,8 @@ namespace WasatchNET
         /// <returns>The given spectrum, with ROI srm-corrected, as an array of doubles</returns>
         /// 
         public double[] correctRamanIntensity(double[] spectrum) => eeprom.intensityCorrectionCoeffs != null && eeprom.intensityCorrectionOrder != 0 ? Util.applyRamanCorrection(spectrum, eeprom.intensityCorrectionCoeffs, eeprom.ROIHorizStart, eeprom.ROIHorizEnd) : spectrum;
+        
+        public double[] applyEtalonCorrection(double[] spectrum) => eeprom.pixelCalibrationFactors != null && eeprom.pixelCalibrationType == EEPROM.PIXEL_CALIBRATION_TYPE.ETALON_CORRECTION ? Util.applyEtalonCorrection(spectrum, eeprom.pixelCalibrationFactors.ToArray(), (int)pixels) : spectrum;
         
 
         /// <summary>
@@ -3487,6 +3604,20 @@ namespace WasatchNET
         }
 
         bool _ramanIntensityCorrectionEnabled = false;
+        
+        public bool etalonCorrectionEnabled
+        {
+            get
+            {
+                return _etalonCorrectionEnabled;
+            }
+            set
+            {
+                _etalonCorrectionEnabled = value;
+            }
+        }
+
+        bool _etalonCorrectionEnabled = false;
 
         public bool sendSWTrigger()
         {

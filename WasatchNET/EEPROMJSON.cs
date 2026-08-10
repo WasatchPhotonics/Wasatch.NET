@@ -42,18 +42,22 @@ namespace WasatchNET
         public int LaserWatchdogTimer;
         public int PowerWatchdogTimer;
         public int DetectorTimeout;
+        public byte StartupScansToAvg;
+        public byte LaserDACAttenuation;
         public byte LightSourceType;
         public byte HorizontalBinningMethod;
         public int ROIHorizStart;
         public int ROIHorizEnd;
         public int[] ROIVertRegionStarts;
         public int[] ROIVertRegionEnds;
+        public sbyte MaxLaserTempDegC;
         public double[] LaserPowerCoeffs;
         public double MaxLaserPowerMW;
         public double MinLaserPowerMW;
         public double ExcitationWavelengthNM;
         public double AvgResolution;
         public int[] BadPixels;
+        public byte[] AssemblyRevision;
         public string UserText;
         public string ProductConfig;
         public int RelIntCorrOrder;
@@ -79,13 +83,37 @@ namespace WasatchNET
         public int Region3VertStart;
         public int Region3VertEnd;
         public byte RegionCount;
+        public string LaserPassword;
+        public ushort AccessoryState;
+        public byte AccessoryGPIO1State;
+        public byte AccessoryGPIO2State;
+        public uint AccessoryStrobePeriodUS;
+        public uint AccessoryStrobeWidthUS;
+        public uint AccessoryStrobeDelayUS;
+        public ushort AccessoryStrobeCount;
+        public sbyte MaxBatteryTempDegC;
+        public byte PixelCalibrationType;
+        public string USBMfgName;
+        public byte AuxButtonFunction;
+        public byte AuxButtonParameter;
+        public byte LatchedHardwareFailures;
+        public float[] PixelCalibrationFactors;
         public bool SigLaserTEC;
         public bool HasInterlockFeedback;
         public bool HasShutter;
         public bool DisableBLEPower;
         public bool DisableLaserArmedIndication;
         public bool InterlockExcluded;
+        public bool LaserTimeoutInCounts;
+        public bool IsOEM;
+        public bool BLEDoorSensor;
+        public bool ExternalLaserControl;
+        public bool AuxButtonLaserControl;
+        public bool DisableLaserSubSystem;
+        public bool KeepAccessory5VOnDisconnect;
+        public bool DisableDetector;
         public string FeatureMask;
+        public string FeatureMaskXS;
         public string DetectorSN;
 
         public override bool Equals(object obj)
@@ -163,6 +191,10 @@ namespace WasatchNET
                 return false;
             if (item.DetectorTimeout != this.DetectorTimeout)
                 return false;
+            if (item.StartupScansToAvg != this.StartupScansToAvg)
+                return false;
+            if (item.LaserDACAttenuation != this.LaserDACAttenuation)
+                return false;
             if (item.LightSourceType != this.LightSourceType) 
                 return false;
             if (item.HorizontalBinningMethod != this.HorizontalBinningMethod) 
@@ -177,6 +209,8 @@ namespace WasatchNET
                 return false;
             if (!floatEq(item.LaserPowerCoeffs, this.LaserPowerCoeffs))
                 return false;
+            if (item.MaxLaserTempDegC != this.MaxLaserTempDegC)
+                return false;
             if (!floatEq(item.MaxLaserPowerMW, this.MaxLaserPowerMW))
                 return false;
             if (!floatEq(item.MinLaserPowerMW, this.MinLaserPowerMW))
@@ -186,6 +220,8 @@ namespace WasatchNET
             if (!floatEq(item.AvgResolution, this.AvgResolution))
                 return false;
             if (!intArrayEq(item.BadPixels, this.BadPixels))
+                return false;
+            if (!byteArrayEq(item.AssemblyRevision, this.AssemblyRevision))
                 return false;
             if (item.UserText != this.UserText)
                 return false;
@@ -198,7 +234,8 @@ namespace WasatchNET
                 if (!floatEq(item.RelIntCorrCoeffs, this.RelIntCorrCoeffs))
                     return false;
             }
-
+            if (item.LaserPassword != this.LaserPassword)
+                return false;
             if (item.Bin2x2 != this.Bin2x2)
                 return false;
             if (item.FlipXAxis != this.FlipXAxis)
@@ -211,6 +248,37 @@ namespace WasatchNET
                 return false;
             if (item.LaserWarmupS != this.LaserWarmupS)
                 return false;
+            if (item.AccessoryState != this.AccessoryState)
+                return false;
+            if (item.AccessoryGPIO1State != this.AccessoryGPIO1State)
+                return false;
+            if (item.AccessoryGPIO2State  != this.AccessoryGPIO2State)
+                return false;
+            if (item.AccessoryStrobePeriodUS != this.AccessoryStrobePeriodUS)
+                return false;
+            if (item.AccessoryStrobeWidthUS != this.AccessoryStrobeWidthUS)
+                return false;
+            if (item.AccessoryStrobeDelayUS != this.AccessoryStrobeDelayUS)
+                return false;
+            if (item.AccessoryStrobeCount !=  this.AccessoryStrobeCount)
+                return false;
+            if (item.MaxBatteryTempDegC != this.MaxBatteryTempDegC)
+                return false;
+            if (item.PixelCalibrationType != this.PixelCalibrationType)
+                return false;
+            if (item.USBMfgName != this.USBMfgName)
+                return false;
+            if (item.AuxButtonFunction != this.AuxButtonFunction) 
+                return false;
+            if (item.AuxButtonParameter != this.AuxButtonParameter) 
+                return false;
+            if (item.LatchedHardwareFailures != this.LatchedHardwareFailures)
+                return false;
+            if (item.PixelCalibrationFactors != null && this.PixelCalibrationFactors != null)
+            {
+                if (!floatEq(item.PixelCalibrationFactors, this.PixelCalibrationFactors))
+                    return false;
+            }
             if (item.SigLaserTEC != this.SigLaserTEC)
                 return false;
             if (item.HasInterlockFeedback != this.HasInterlockFeedback)
@@ -222,6 +290,22 @@ namespace WasatchNET
             if (item.DisableLaserArmedIndication != this.DisableLaserArmedIndication)
                 return false;
             if (item.InterlockExcluded != this.InterlockExcluded)
+                return false;
+            if (item.LaserTimeoutInCounts != this.LaserTimeoutInCounts)
+                return false;
+            if (item.IsOEM != this.IsOEM)
+                return false;
+            if (item.BLEDoorSensor != this.BLEDoorSensor)
+                return false;
+            if (item.ExternalLaserControl != this.ExternalLaserControl)
+                return false;
+            if (item.AuxButtonLaserControl != this.AuxButtonLaserControl)
+                return false;
+            if (item.DisableLaserSubSystem != this.DisableLaserSubSystem)
+                return false;
+            if (item.KeepAccessory5VOnDisconnect != this.KeepAccessory5VOnDisconnect)
+                return false;
+            if (item.DisableDetector != this.DisableDetector)
                 return false;
             if (item.Subformat != this.Subformat)
                 return false;
@@ -262,6 +346,8 @@ namespace WasatchNET
                 return false;
             if (item.FeatureMask != this.FeatureMask)
                 return false;
+            if (item.FeatureMaskXS != this.FeatureMaskXS)
+                return false;
             if (item.DetectorSN != this.DetectorSN)
                 return false;
 
@@ -274,6 +360,18 @@ namespace WasatchNET
             if (Math.Abs(a - b) > Math.Abs(thresh * a))
                 return false;
 
+            return true;
+        }
+
+        bool floatEq(float[] a, float[] b, float thresh = 0.0001f)
+        {
+            if (a.Length != b.Length)
+                return false;
+
+            for (int i = 0; i < a.Length; ++i)
+                if (!floatEq(a[i], b[i], thresh))
+                    return false;
+                
             return true;
         }
 
@@ -291,6 +389,23 @@ namespace WasatchNET
 
         bool intArrayEq(int[] a, int[] b)
         {
+            if (a.Length != b.Length)
+                return false;
+
+            for (int i = 0; i < a.Length; ++i)
+                if (a[i] != b[i])
+                    return false;
+
+            return true;
+        }
+        bool byteArrayEq(byte[] a, byte[] b)
+        {
+            if (a == null && b == null)
+                return true;
+
+            if (a == null || b == null) 
+                return false;
+
             if (a.Length != b.Length)
                 return false;
 
@@ -335,6 +450,9 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + ActivePixelsVert.GetHashCode();
             hashCode = hashCode * -1521134295 + MinIntegrationTimeMS.GetHashCode();
             hashCode = hashCode * -1521134295 + MaxIntegrationTimeMS.GetHashCode();
+            hashCode = hashCode * -1521134295 + MaxLaserTempDegC.GetHashCode();
+            hashCode = hashCode * -1521134295 + StartupScansToAvg.GetHashCode();
+            hashCode = hashCode * -1521134295 + LaserDACAttenuation.GetHashCode();
             hashCode = hashCode * -1521134295 + LaserWatchdogTimer.GetHashCode();
             hashCode = hashCode * -1521134295 + PowerWatchdogTimer.GetHashCode();
             hashCode = hashCode * -1521134295 + DetectorTimeout.GetHashCode();
@@ -352,8 +470,26 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + EqualityComparer<int[]>.Default.GetHashCode(BadPixels);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(UserText);
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(ProductConfig);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(LaserPassword);
+            if (AssemblyRevision != null)
+                hashCode = hashCode * -1521134295 + EqualityComparer<byte[]>.Default.GetHashCode(AssemblyRevision);
             hashCode = hashCode * -1521134295 + RelIntCorrOrder.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<double[]>.Default.GetHashCode(RelIntCorrCoeffs);
+            hashCode = hashCode * -1521134295 + AccessoryState.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryGPIO1State.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryGPIO2State.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryStrobePeriodUS.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryStrobeWidthUS.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryStrobeDelayUS.GetHashCode();
+            hashCode = hashCode * -1521134295 + AccessoryStrobeCount.GetHashCode();
+            hashCode = hashCode * -1521134295 + MaxBatteryTempDegC.GetHashCode();
+            hashCode = hashCode * -1521134295 + PixelCalibrationType.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(USBMfgName);
+            hashCode = hashCode * -1521134295 + AuxButtonFunction.GetHashCode();
+            hashCode = hashCode * -1521134295 + AuxButtonParameter.GetHashCode();
+            hashCode = hashCode * -1521134295 + LatchedHardwareFailures.GetHashCode();
+            if (PixelCalibrationFactors != null)
+                hashCode = hashCode * -1521134295 + EqualityComparer<float[]>.Default.GetHashCode(PixelCalibrationFactors);
             hashCode = hashCode * -1521134295 + Bin2x2.GetHashCode();
             hashCode = hashCode * -1521134295 + FlipXAxis.GetHashCode();
             hashCode = hashCode * -1521134295 + Gen15.GetHashCode();
@@ -367,9 +503,18 @@ namespace WasatchNET
             hashCode = hashCode * -1521134295 + DisableBLEPower.GetHashCode();
             hashCode = hashCode * -1521134295 + DisableLaserArmedIndication.GetHashCode();
             hashCode = hashCode * -1521134295 + InterlockExcluded.GetHashCode();
+            hashCode = hashCode * -1521134295 + LaserTimeoutInCounts.GetHashCode();
+            hashCode = hashCode * -1521134295 + IsOEM.GetHashCode();
+            hashCode = hashCode * -1521134295 + BLEDoorSensor.GetHashCode();
+            hashCode = hashCode * -1521134295 + ExternalLaserControl.GetHashCode();
+            hashCode = hashCode * -1521134295 + AuxButtonLaserControl.GetHashCode();
+            hashCode = hashCode * -1521134295 + DisableLaserSubSystem.GetHashCode();
+            hashCode = hashCode * -1521134295 + KeepAccessory5VOnDisconnect.GetHashCode();
+            hashCode = hashCode * -1521134295 + DisableDetector.GetHashCode();
             hashCode = hashCode * -1521134295 + FeatureMask.GetHashCode();
+            hashCode = hashCode * -1521134295 + FeatureMaskXS.GetHashCode();
             hashCode = hashCode * -1521134295 + DetectorSN.GetHashCode();
-
+            
             return hashCode;
         }
 
@@ -435,6 +580,8 @@ namespace WasatchNET
             addField(sb, indent, "LaserWatchdogTimer", LaserWatchdogTimer);
             addField(sb, indent, "PowerWatchdogTimer", PowerWatchdogTimer);
             addField(sb, indent, "DetectorTimeout", DetectorTimeout);
+            addField(sb, indent, "StartupScansToAvg", StartupScansToAvg);
+            addField(sb, indent, "LaserDACAttenuation", LaserDACAttenuation);
             addField(sb, indent, "LightSourceType", LightSourceType);
             addField(sb, indent, "HorizontalBinningMethod", HorizontalBinningMethod);
             addField(sb, indent, "ROIHorizStart", ROIHorizStart);
@@ -442,6 +589,7 @@ namespace WasatchNET
 
             addField(sb, indent, "ROIVertRegionStarts", ROIVertRegionStarts);
             addField(sb, indent, "ROIVertRegionEnds", ROIVertRegionEnds);
+            addField(sb, indent, "MaxLaserTempDegC", MaxLaserTempDegC);
 
             addField(sb, indent, "LaserPowerCoeffs", LaserPowerCoeffs);
 
@@ -451,16 +599,36 @@ namespace WasatchNET
             addField(sb, indent, "AvgResolution", AvgResolution);
 
             addField(sb, indent, "BadPixels", BadPixels);
+            if (AssemblyRevision != null)
+                addField(sb, indent, "AssemblyRevision", AssemblyRevision);
 
             addField(sb, indent, "UserText", UserText);
             addField(sb, indent, "ProductConfig", ProductConfig);
             addField(sb, indent, "DetectorSN", DetectorSN);
             addField(sb, indent, "Subformat", Subformat);
 
-            if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE)
+            if (subformat == EEPROM.PAGE_SUBFORMAT.INTENSITY_CALIBRATION || subformat == EEPROM.PAGE_SUBFORMAT.UNTETHERED_DEVICE )
                 addField(sb, indent, "RelIntCorrOrder", RelIntCorrOrder);
             if (RelIntCorrCoeffs != null)
                 addField(sb, indent, "RelIntCorrCoeffs", RelIntCorrCoeffs);
+
+            addField(sb, indent, "LaserPassword", LaserPassword);
+            addField(sb, indent, "AccessoryState", AccessoryState);
+            addField(sb, indent, "AccessoryGPIO1State", AccessoryGPIO1State);
+            addField(sb, indent, "AccessoryGPIO2State", AccessoryGPIO2State);
+            addField(sb, indent, "AccessoryStrobePeriodUS", AccessoryStrobePeriodUS);
+            addField(sb, indent, "AccessoryStrobeWidthUS", AccessoryStrobeWidthUS);
+            addField(sb, indent, "AccessoryStrobeDelayUS", AccessoryStrobeDelayUS);
+            addField(sb, indent, "AccessoryStrobeCount", AccessoryStrobeCount);
+            addField(sb, indent, "MaxBatteryTempDegC", MaxBatteryTempDegC);
+            addField(sb, indent, "PixelCalibrationType", PixelCalibrationType);
+            addField(sb, indent, "USBMfgName", USBMfgName);
+            addField(sb, indent, "AuxButtonFunction", AuxButtonFunction);
+            addField(sb, indent, "AuxButtonParameter", AuxButtonParameter);
+            addField(sb, indent, "LatchedHardwareFailures", LatchedHardwareFailures);
+            if ((EEPROM.PIXEL_CALIBRATION_TYPE)PixelCalibrationType != EEPROM.PIXEL_CALIBRATION_TYPE.NONE && PixelCalibrationFactors != null)
+                addField(sb, indent, "PixelCalibrationFactors", PixelCalibrationFactors);
+            
 
             addField(sb, indent, "Bin2x2", Bin2x2);
             addField(sb, indent, "FlipXAxis", FlipXAxis);
@@ -473,9 +641,18 @@ namespace WasatchNET
             addField(sb, indent, "DisableBLEPower", DisableBLEPower);
             addField(sb, indent, "DisableLaserArmedIndication", DisableLaserArmedIndication);
             addField(sb, indent, "InterlockExcluded", InterlockExcluded);
+            addField(sb, indent, "LaserTimeoutInCounts", LaserTimeoutInCounts);
+            addField(sb, indent, "IsOEM", IsOEM);
+            addField(sb, indent, "BLEDoorSensor", BLEDoorSensor);
+            addField(sb, indent, "ExternalLaserControl", ExternalLaserControl);
+            addField(sb, indent, "AuxButtonLaserControl", AuxButtonLaserControl);
+            addField(sb, indent, "DisableLaserSubSystem", DisableLaserSubSystem);
+            addField(sb, indent, "KeepAccessory5VOnDisconnet", KeepAccessory5VOnDisconnect);
+            addField(sb, indent, "DisableDetector", DisableDetector);
             addField(sb, indent, "FeatureMask", FeatureMask);
+            addField(sb, indent, "FeatureMaskXS", FeatureMaskXS);
             addField(sb, indent, "HexDump", HexDump);
-            sb.AppendFormat("{0}\"{1}\": {2}", indent, "LaserWarmupS", LaserWarmupS);
+            addField(sb, indent, "LaserWarmupS", LaserWarmupS);
 
             if (subformat == EEPROM.PAGE_SUBFORMAT.DETECTOR_REGIONS)
             {
@@ -493,6 +670,7 @@ namespace WasatchNET
                 addField(sb, indent, "RegionCount", RegionCount);
             }
 
+            
 
             return "{\n" + sb.ToString() + "\n" + finalIndent + "}";
         }
@@ -518,6 +696,22 @@ namespace WasatchNET
         }
 
         void addField(StringBuilder sb, string indent, string name, double[] value)
+        {
+            sb.AppendFormat("{0}\"{1}\": ", indent, name);
+            sb.Append("[");
+            sb.Append(" " + string.Join(", ", value));
+            sb.Append(" ],\n");
+        }
+
+        void addField(StringBuilder sb, string indent, string name, float[] value)
+        {
+            sb.AppendFormat("{0}\"{1}\": ", indent, name);
+            sb.Append("[");
+            sb.Append(" " + string.Join(", ", value));
+            sb.Append(" ],\n");
+        }
+
+        void addField(StringBuilder sb, string indent, string name, byte[] value)
         {
             sb.AppendFormat("{0}\"{1}\": ", indent, name);
             sb.Append("[");
