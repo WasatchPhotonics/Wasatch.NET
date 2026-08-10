@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace WasatchNET
 {
@@ -1655,6 +1656,8 @@ namespace WasatchNET
                 return false;
             }
 
+            format = FORMAT;
+
             if (!writeParse())
                 return false;
             int pageCount = MAX_PAGES;
@@ -2209,8 +2212,6 @@ namespace WasatchNET
 
             enforceReasonableDefaults();
 
-            format = FORMAT;
-
             return true;
             
         }
@@ -2458,7 +2459,9 @@ namespace WasatchNET
                 Array.Copy(json.AssemblyRevision, assemblyRevision, json.AssemblyRevision.Length);
             }
             
-            detectorSerialNumber = json.DetectorSN;
+            // I can't think of a case other than mocking that we wouldn't have access to this if needed
+            if (spectrometer is MockSpectrometer)
+                detectorSerialNumber = json.DetectorSN;
 
             if (json.ProductConfig != null)
                 productConfiguration = json.ProductConfig;
