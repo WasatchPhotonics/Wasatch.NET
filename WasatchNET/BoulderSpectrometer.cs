@@ -563,7 +563,7 @@ namespace WasatchNET
             else
             {
                 logger.error("Get Spectrum: comm error occurring, will not return spectra");
-                return new double[pixels];
+                return null;
             }
         }
 
@@ -633,7 +633,7 @@ namespace WasatchNET
                 
             }
             else
-                return new double[pixels];
+                return null;
 
         }
 
@@ -674,6 +674,7 @@ namespace WasatchNET
             {
                 // timeout logic
                 logger.error("Get Spectrum: SeaBreeze failing to return in expected time, communication error likely");
+                spec = null;
                 commError = true;
             }
 

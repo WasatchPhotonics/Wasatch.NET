@@ -145,18 +145,6 @@ namespace WasatchNET
             return true;
         }
 
-        public string detectorSerialNumber
-        {
-            get { return _detectorSerialNumber; }
-            set
-            {
-                _detectorSerialNumber = value;
-                base.OnEEPROMChanged(new EventArgs());
-            }
-        }
-
-        string _detectorSerialNumber;
-
         /// <summary>
         /// Load an external JSON file containing key EEPROM attributes.
         /// </summary>
