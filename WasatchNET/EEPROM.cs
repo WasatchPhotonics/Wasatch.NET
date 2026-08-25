@@ -1565,6 +1565,19 @@ namespace WasatchNET
 
         string _detectorSerialNumber;
 
+
+        public string detectorType
+        {
+            get { return _detectorType; }
+            set
+            {
+                EventHandler handler = EEPROMChanged;
+                _detectorType = value;
+                handler?.Invoke(this, new EventArgs());
+            }
+        }
+        string _detectorType;
+
         /////////////////////////////////////////////////////////////////////////
         // Compound Fields
         /////////////////////////////////////////////////////////////////////////

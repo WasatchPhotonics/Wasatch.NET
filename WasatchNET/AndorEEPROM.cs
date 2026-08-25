@@ -101,17 +101,17 @@ namespace WasatchNET
             // Need to explore expanding the below, making detector name field more verbose
             //
 
-            string detType = "";
+            detectorType = "";
             if (error != AndorSpectrometer.DRV_SUCCESS)
-                detType = "iDus ";
+                detectorType = "iDus";
             else
             {
                 if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_IDUS)
-                    detType = "iDus ";
+                    detectorType = "iDus";
                 else if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_NEWTON)
-                    detType = "Newton ";
-                else
-                    detType = "iDus ";
+                    detectorType = "Newton";
+                else if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_IVAC)
+                    detectorType = "iVac";
             }
 
             int cameraSerial = 0;
@@ -120,8 +120,7 @@ namespace WasatchNET
                 detectorSerialNumber = "";
             else
                 detectorSerialNumber = "CCD-" + cameraSerial.ToString();
-            //detectorName = detType + detModel;
-            detectorName = "iDus";
+            detectorName = detectorType + " " + detModel;
             activePixelsHoriz = (ushort)xPixels;
             activePixelsVert = (ushort)(yPixels / AndorSpectrometer.BINNING);
             minIntegrationTimeMS = a.integrationTimeMS;
