@@ -47,6 +47,7 @@ namespace WasatchNET
         /// 
         /// 
         /// </remarks>
+        internal const int PAGE_SIZE = 64;
         internal const int MAX_PAGES_FX2 = 8;
         internal const int MAX_PAGES = 138;
         internal const int MAX_PAGES_REAL = 512;
@@ -1694,7 +1695,7 @@ namespace WasatchNET
                 else
                 {
                     const uint DATA_START = 0x3c00; // from Wasatch Stroker Console's EnhancedStroker.SetModelInformation()
-                    ushort pageOffset = (ushort)(DATA_START + page * 64);
+                    ushort pageOffset = (ushort)(DATA_START + page * PAGE_SIZE);
                     logger.hexdump(pages[page], String.Format("writing page {0} to offset {1} [FX2]: ", page, pageOffset));
 
                     ok = await spectrometer.sendCmdAsync(
@@ -1712,6 +1713,87 @@ namespace WasatchNET
             }
             defaultValues = false;
             return true;
+        }
+
+        string wipePassword = new Random().Next().ToString();
+
+        // I hate this -TS
+        public virtual async Task<string> wipeEEPROM(string input = "Start")
+        {
+            if (input == "Start")
+            {
+                return "Resetting the EEPROM will render this unit completely useless. Do not reset it unless you know exactly what you're doing. Send \"Understood, Confirm\" (no quote marks) to receive EEPROM wipe password";
+            }
+            else if (input == "Understood, Confirm")
+            {
+                return wipePassword;
+            }
+            else if (input == wipePassword)
+            {
+                await wipeEEPROMClean();
+                return "Done";
+            }
+            else
+            {
+                return "";
+            }
+
+            return null;
+        }
+
+        async Task wipeEEPROMClean()
+        {
+            List<byte[]> nukePages = new List<byte[]>();
+            int pageCount = MAX_PAGES_FX2;
+            if (pages.Count >= MAX_PAGES)
+                pageCount = MAX_PAGES_REAL;
+
+            for (int i = 0; i < pageCount; i++)
+            {
+                nukePages.Add(new byte[PAGE_SIZE]);
+            }
+
+            foreach (var page in nukePages)
+            {
+                for (int i = 0; i < page.Length; i++)
+                {
+                    page[i] = 0xFF;
+                }
+            }
+
+            int pagesToWrite = pageCount;
+            for (short page = 0; page < pagesToWrite; page++)
+            {
+                bool ok = false;
+                if (spectrometer.isARM)
+                {
+                    logger.hexdump(nukePages[page], String.Format("writing page {0} [ARM]: ", page));
+
+                    ok = await spectrometer.sendCmdAsync(
+                        opcode: Opcodes.SECOND_TIER_COMMAND,
+                        wValue: spectrometer.cmd[Opcodes.SET_MODEL_CONFIG_ARM],
+                        wIndex: (ushort)page,
+                        buf: nukePages[page]);
+                }
+                else
+                {
+                    const uint DATA_START = 0x3c00; // from Wasatch Stroker Console's EnhancedStroker.SetModelInformation()
+                    ushort pageOffset = (ushort)(DATA_START + page * PAGE_SIZE);
+                    logger.hexdump(nukePages[page], String.Format("writing page {0} to offset {1} [FX2]: ", page, pageOffset));
+
+                    ok = await spectrometer.sendCmdAsync(
+                        opcode: Opcodes.SET_MODEL_CONFIG_FX2,
+                        wValue: pageOffset,
+                        wIndex: 0,
+                        buf: nukePages[page]);
+                }
+                if (!ok)
+                {
+                    logger.error("EEPROM.write: failed to save page {0}", page);
+                    return;
+                }
+                logger.debug("EEPROM: wrote EEPROM page {0}", page);
+            }
         }
 
         /////////////////////////////////////////////////////////////////////////       
@@ -1767,7 +1849,7 @@ namespace WasatchNET
 
             for (ushort page = 0; page < pageCount; page++)
             {
-                pages.Add(new byte[64]);
+                pages.Add(new byte[PAGE_SIZE]);
             }
 
             setFromJSON(json);
@@ -1800,7 +1882,7 @@ namespace WasatchNET
 
                 for (ushort page = 0; page < pageCount; page++)
                 {
-                    byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                    byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, PAGE_SIZE, wIndex: page, fakeBufferLengthARM: 8);
                     if (buf is null)
                     {
                         try
@@ -1852,7 +1934,7 @@ namespace WasatchNET
                 // read pages 8-73 (no need to do all MAX_PAGES_REAL)
                 for (ushort page = 8; page <= LIBRARY_STOP_PAGE; page++)
                 {
-                    byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, 64, wIndex: page, fakeBufferLengthARM: 8);
+                    byte[] buf = await spectrometer.getCmd2Async(Opcodes.GET_MODEL_CONFIG, PAGE_SIZE, wIndex: page, fakeBufferLengthARM: 8);
                     pages.Add(buf);
                     logger.hexdump(buf, String.Format("read extra page {0}: ", page));
                 }
@@ -1966,7 +2048,7 @@ namespace WasatchNET
                 }
 
 
-                    userData = format < 4 ? new byte[63] : new byte[64];
+                    userData = format < 4 ? new byte[63] : new byte[PAGE_SIZE];
                 Array.Copy(pages[4], userData, userData.Length);
 
                 badPixelSet = new SortedSet<short>();
@@ -3134,7 +3216,7 @@ namespace WasatchNET
                         while (pageIdx["namePage"] >= pages.Count)
                         {
                             logger.debug("appending new page {0}", pages.Count);
-                            pages.Add(new byte[64]);
+                            pages.Add(new byte[PAGE_SIZE]);
                         }
                         if (!ParseData.writeString(libName, pages[pageIdx["namePage"]], pageIdx["startIndex"], libName.Length - 1)) return false;
                         namesWritten++;

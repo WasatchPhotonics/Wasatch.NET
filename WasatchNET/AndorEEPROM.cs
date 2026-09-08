@@ -6,6 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Reflection;
+
+
 #if WIN32
 using ATMCD32CS;
 #elif x64
@@ -89,7 +93,15 @@ namespace WasatchNET
             //detectorTempMin = (short)minTemp;
 
             AndorSDK.AndorCapabilities caps = new AndorSDK.AndorCapabilities();
-            
+            caps.ulSize = 0;
+
+            foreach (var field in typeof(AndorSDK.AndorCapabilities).GetFields(BindingFlags.Instance |
+                                                 BindingFlags.Public))
+            {
+                //assumes that every field is 1 byte
+                caps.ulSize += 8;
+            }
+
             //andorDriver.getca
 
             string detModel = "";
@@ -111,6 +123,8 @@ namespace WasatchNET
                 else if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_NEWTON)
                     detectorType = "Newton";
                 else if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_IVAC)
+                    detectorType = "iVac";
+                else if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_IVAC_CCD)
                     detectorType = "iVac";
             }
 
