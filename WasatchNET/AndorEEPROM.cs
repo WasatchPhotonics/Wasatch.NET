@@ -6,6 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Reflection;
+
+
 #if WIN32
 using ATMCD32CS;
 #elif x64
@@ -89,7 +93,15 @@ namespace WasatchNET
             //detectorTempMin = (short)minTemp;
 
             AndorSDK.AndorCapabilities caps = new AndorSDK.AndorCapabilities();
-            
+            caps.ulSize = 0;
+
+            foreach (var field in typeof(AndorSDK.AndorCapabilities).GetFields(BindingFlags.Instance |
+                                                 BindingFlags.Public))
+            {
+                //assumes that every field is 1 byte
+                caps.ulSize += 8;
+            }
+
             //andorDriver.getca
 
             string detModel = "";
@@ -101,17 +113,19 @@ namespace WasatchNET
             // Need to explore expanding the below, making detector name field more verbose
             //
 
-            string detType = "";
+            detectorType = "";
             if (error != AndorSpectrometer.DRV_SUCCESS)
-                detType = "iDus ";
+                detectorType = "iDus";
             else
             {
                 if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_IDUS)
-                    detType = "iDus ";
+                    detectorType = "iDus";
                 else if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_NEWTON)
-                    detType = "Newton ";
-                else
-                    detType = "iDus ";
+                    detectorType = "Newton";
+                else if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_IVAC)
+                    detectorType = "iVac";
+                else if (caps.ulCameraType == AndorSDK.AC_CAMERATYPE_IVAC_CCD)
+                    detectorType = "iVac";
             }
 
             int cameraSerial = 0;
@@ -120,8 +134,7 @@ namespace WasatchNET
                 detectorSerialNumber = "";
             else
                 detectorSerialNumber = "CCD-" + cameraSerial.ToString();
-            //detectorName = detType + detModel;
-            detectorName = "iDus";
+            detectorName = detectorType + " " + detModel;
             activePixelsHoriz = (ushort)xPixels;
             activePixelsVert = (ushort)(yPixels / AndorSpectrometer.BINNING);
             minIntegrationTimeMS = a.integrationTimeMS;

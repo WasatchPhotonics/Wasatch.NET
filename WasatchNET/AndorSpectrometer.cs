@@ -70,7 +70,7 @@ namespace WasatchNET
             // set temperature to midpoint, plus get detector information and set acquisition mode to single scan
             andorDriver.GetCapabilities(ref capabilities);              // step 4 (ENLIGHTEN doesn't do this)
             andorDriver.GetTemperatureRange(ref minTemp, ref maxTemp);  // step 5
-            andorDriver.SetTemperature((minTemp + maxTemp) / 2);        // step 6 (note, ENLIGHTEN sets to EEPROM startup value)
+            //andorDriver.SetTemperature((minTemp + maxTemp) / 2);        // step 6 (note, ENLIGHTEN sets to EEPROM startup value)
             andorDriver.GetDetector(ref xPixels, ref yPixels);          // step 7
             andorDriver.CoolerON();                                     // step 8
             andorDriver.SetAcquisitionMode(1);                          // step 9
@@ -117,7 +117,7 @@ namespace WasatchNET
                             speed = speed
                         });
 
-                        if (speed > STemp)
+                        if (speed < STemp)
                         {
                             STemp = speed;
                             HSnumber = iSpeed;
@@ -175,6 +175,7 @@ namespace WasatchNET
             logger.debug("back from reading EEPROM");
 
             regenerateWavelengths();
+            detectorTECSetpointDegC = eeprom.detectorTempMin;
             //detectorTECSetpointDegC = 15.0f;
 
             logger.info("Opened Andor Spectrometer with index {0}", specIndex);

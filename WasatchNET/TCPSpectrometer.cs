@@ -53,13 +53,17 @@ namespace WasatchNET
 
         override internal async Task<bool> openAsync()
         {
+            return await openAsync(10000);
+        }
+        internal async Task<bool> openAsync(int connectionTimeoutMS)
+        {
             try
             {
                 //client = new TcpClient(ip, port);
                 logger.debug("TCPSpec: setting up client"); 
                 client = new TcpClient();
                 logger.debug("TCPSpec: connecting client");
-                if (!client.ConnectAsync(IPAddress.Parse(ip), port).Wait(100))
+                if (!client.ConnectAsync(IPAddress.Parse(ip), port).Wait(connectionTimeoutMS))
                 {
                     logger.debug("TCPSpec: client connection timed out");
                     return false;

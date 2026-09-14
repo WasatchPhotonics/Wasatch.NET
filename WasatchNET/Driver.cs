@@ -32,6 +32,7 @@ namespace WasatchNET
 
         [DllImport("kernel32", SetLastError = true)]
         static extern IntPtr LoadLibrary(string lpFileName);
+        public static int TCPConnectionTimeout = 10000;
 
         static bool CheckLibrary(string fileName)
         {
@@ -406,7 +407,7 @@ namespace WasatchNET
                 try
                 {
                     TCPSpectrometer spectrometer = new TCPSpectrometer(null, ipAddr, port);
-                    bool ok = await spectrometer.openAsync();
+                    bool ok = await spectrometer.openAsync(TCPConnectionTimeout);
                     if (ok)
                     {
                         logger.info("found TCP/IP Spectrometer");

@@ -1,4 +1,17 @@
 # Wasatch.NET Changelog
+- 2026-09-08 2.5.29
+	- internal release
+	- fixed Andor camera type surfacing
+	- added "factory reset" function for EEPROM
+- 2026-08-25 2.5.28
+	- internal release
+	- failed attempt to surface Andor camera type
+- 2026-08-12 2.5.27
+	- internal release
+	- added configurable timeouts for TCP read/write
+- 2026-08-04 2.5.26
+	- internal hotfix release
+	- changed format setting update from happening on read to happening on write (previously there would be no way to track the actual incoming format besides the hexdump)
 - 2026-07-XX 2.5.25
 	- more EEPROM fixes
 	- fix for sensor state logic to differentiate return code from no response state
