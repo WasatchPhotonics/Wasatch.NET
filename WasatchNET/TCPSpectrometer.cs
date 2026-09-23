@@ -258,6 +258,7 @@ namespace WasatchNET
 
         const int REF_PIXEL_1 = 3;
         const int REF_PIXEL_2 = 585;
+        const int RETRY_TIMEOUT_MS = 1000;
 
         public override double[] getSpectrum(bool forceNew = false)
         {
@@ -270,12 +271,20 @@ namespace WasatchNET
                 double ref1 = sum[REF_PIXEL_1];
                 double ref2 = sum[REF_PIXEL_2];
 
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                int timeout = (int)Math.Max(RETRY_TIMEOUT_MS, integrationTimeMS * 2 + 500);
+
                 while (max == sum.Max() && ref1 == sum[REF_PIXEL_1] && ref2 == sum[REF_PIXEL_2])
                 {
                     Thread.Sleep(pollDelayMS);
                     sum = getSpectrumRaw();
                     if (sum == null)
                         break;
+                    if (stopwatch.ElapsedMilliseconds > RETRY_TIMEOUT_MS)
+                    {
+                        stopwatch.Stop();
+                        break;
+                    }
                 }
             }
 
