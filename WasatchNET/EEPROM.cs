@@ -1658,6 +1658,10 @@ namespace WasatchNET
         }
         public virtual async Task<bool> writeAsync(bool allPages=false)
         {
+            // If using hybrid spectrometer, return false before attempting USB read
+            if (spectrometer == null || spectrometer is IDSHybridSpectrometer)
+                return false;
+
             ////////////////////////////////////////////////////////////////
             //                                                            //
             //            "Regular" USB Wasatch Spectrometers             //
@@ -1743,6 +1747,10 @@ namespace WasatchNET
 
         async Task wipeEEPROMClean()
         {
+            // If using hybrid spectrometer, return false before attempting USB read
+            if (spectrometer == null || spectrometer is IDSHybridSpectrometer)
+                return;
+
             List<byte[]> nukePages = new List<byte[]>();
             int pageCount = MAX_PAGES_FX2;
             if (pages.Count >= MAX_PAGES)
@@ -1863,6 +1871,10 @@ namespace WasatchNET
         }
         public virtual async Task<bool> readAsync(bool skipRead = false)
         {
+            // If using hybrid spectrometer, return false before attempting USB read
+            if (spectrometer == null || spectrometer is IDSHybridSpectrometer)
+                return false;
+
             ////////////////////////////////////////////////////////////////
             //                                                            //
             //            "Regular" USB Wasatch Spectrometers             //

@@ -2158,11 +2158,12 @@ namespace WasatchNET
         ////////////////////////////////////////////////////////////////////////
 
         // keywords: ctor, constructor
-        internal Spectrometer(UsbRegistry usbReg)
+        internal Spectrometer(UsbRegistry usbReg, bool skipKeyGen = false)
         {
             usbRegistry = usbReg;
             pixels = 0;
-            uniqueKey = generateUniqueKey(usbReg);
+            if (!skipKeyGen)
+                uniqueKey = generateUniqueKey(usbReg);
         }
 
         virtual internal bool open()

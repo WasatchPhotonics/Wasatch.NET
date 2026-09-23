@@ -13,6 +13,8 @@
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -98,6 +100,12 @@
     <Reference Include="FTD2XX_NET">
       <HintPath>..\lib\FTD2XX_NET.dll</HintPath>
     </Reference>
+    <Reference Include="IDSImaging.Peak.API.IPLExtension, Version=1.16.0.5, Culture=neutral, PublicKeyToken=ab9018759fd5ab58, processorArchitecture=MSIL">
+      <HintPath>..\packages\IDSImaging.Peak.API.1.16.0.5\lib\netstandard2.0\IDSImaging.Peak.API.IPLExtension.dll</HintPath>
+    </Reference>
+    <Reference Include="IDSImaging.Peak.Common, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0efa302616b899f1, processorArchitecture=MSIL">
+      <HintPath>..\packages\IDSImaging.Peak.Common.2.0.0\lib\netstandard2.0\IDSImaging.Peak.Common.dll</HintPath>
+    </Reference>
     <Reference Include="LibUsbDotNet">
       <HintPath>..\lib\LibUsbDotNet.dll</HintPath>
     </Reference>
@@ -133,6 +141,7 @@
     <Compile Include="HOCTSpectrometer.cs" />
     <Compile Include="IDriver.cs" />
     <Compile Include="IDriverVBAWrapper.cs" />
+    <Compile Include="IDSHybridSpectrometer.cs" />
     <Compile Include="IFPGAOptions.cs" />
     <Compile Include="ILogger.cs" />
     <Compile Include="IEEPROM.cs" />
@@ -180,4 +189,13 @@
   <PropertyGroup>
     <PostBuildEvent>copy /Y "$(TargetDir)$(ProjectName).dll" "$(SolutionDir)lib\$(Platform)\"</PostBuildEvent>
   </PropertyGroup>
+  <Import Project="..\packages\IDSImaging.Peak.Common.2.0.0\build\IDSImaging.Peak.Common.targets" Condition="Exists('..\packages\IDSImaging.Peak.Common.2.0.0\build\IDSImaging.Peak.Common.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\IDSImaging.Peak.Common.2.0.0\build\IDSImaging.Peak.Common.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IDSImaging.Peak.Common.2.0.0\build\IDSImaging.Peak.Common.targets'))" />
+    <Error Condition="!Exists('..\packages\IDSImaging.Peak.API.1.16.0.5\build\IDSImaging.Peak.API.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IDSImaging.Peak.API.1.16.0.5\build\IDSImaging.Peak.API.targets'))" />
+  </Target>
+  <Import Project="..\packages\IDSImaging.Peak.API.1.16.0.5\build\IDSImaging.Peak.API.targets" Condition="Exists('..\packages\IDSImaging.Peak.API.1.16.0.5\build\IDSImaging.Peak.API.targets')" />
 </Project>
