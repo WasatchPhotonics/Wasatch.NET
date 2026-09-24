@@ -133,6 +133,7 @@ namespace WasatchNET
         void initImageConverte()
         {
             imc = new ImageConverter();
+
         }
 
         void sendTrigger()
@@ -172,6 +173,7 @@ namespace WasatchNET
         uint[] binImage(Image image)
         {
 
+            return null;
         }
 
 
