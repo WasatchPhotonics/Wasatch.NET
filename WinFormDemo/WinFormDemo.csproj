@@ -171,6 +171,8 @@ copy /Y  "$(SolutionDir)lib\$(Platform)\ATMCD*.dll" "$(TargetDir)"</PostBuildEve
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\IDSImaging.Peak.Common.2.0.0\build\IDSImaging.Peak.Common.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IDSImaging.Peak.Common.2.0.0\build\IDSImaging.Peak.Common.targets'))" />
     <Error Condition="!Exists('..\packages\IDSImaging.Peak.API.1.16.0.5\build\IDSImaging.Peak.API.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IDSImaging.Peak.API.1.16.0.5\build\IDSImaging.Peak.API.targets'))" />
+    <Error Condition="!Exists('..\packages\IDSImaging.Peak.IPL.1.17.2.5\build\IDSImaging.Peak.IPL.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\IDSImaging.Peak.IPL.1.17.2.5\build\IDSImaging.Peak.IPL.targets'))" />
   </Target>
   <Import Project="..\packages\IDSImaging.Peak.API.1.16.0.5\build\IDSImaging.Peak.API.targets" Condition="Exists('..\packages\IDSImaging.Peak.API.1.16.0.5\build\IDSImaging.Peak.API.targets')" />
+  <Import Project="..\packages\IDSImaging.Peak.IPL.1.17.2.5\build\IDSImaging.Peak.IPL.targets" Condition="Exists('..\packages\IDSImaging.Peak.IPL.1.17.2.5\build\IDSImaging.Peak.IPL.targets')" />
 </Project>
