@@ -3,6 +3,7 @@ using IDSImaging.Peak.API.Core;
 using IDSImaging.Peak.API.Core.Nodes;
 using IDSImaging.Peak.API.Std;
 using IDSImaging.Peak.Common;
+using IDSImaging.Peak.Common.Serialization;
 using IDSImaging.Peak.IPL;
 
 using LibUsbDotNet.Main;
@@ -17,6 +18,7 @@ using System.Xml.Linq;
 
 namespace WasatchNET
 {
+
     public class IDSHybridSpectrometer : Spectrometer
     {
         protected static bool isInit = false; 
@@ -30,6 +32,21 @@ namespace WasatchNET
         private DataStream dataStream = null;
         private string userSet = "";
         private ImageConverter imc = null;
+        private ImageTransformer imt = null;
+        private string inputFormat = "Invalid";
+        private string outputFormat = "Mono16";
+        private int bufferAmount = 1;
+        private List<IDSImaging.Peak.API.Core.Buffer> buffers = new List<IDSImaging.Peak.API.Core.Buffer>();
+        private List<IntPtr> pointers = new List<IntPtr>();
+
+        readonly string[] SUPPORTED_CONVERSIONS = {
+            "Mono16", "Mono12", "Mono10", "Mono8",
+            "RGB12",  "RGB10",  "RGB8",
+            "BGR12",  "BGR10",  "BGR8",
+            "RGBa12", "RGBa10", "RGBa8",
+            "BGRa12", "BGRa10", "BGRa8"
+        };
+
 
         private string[] userSetOptions { get; } = new string[] { "Default", "LongExposure" };
 
@@ -78,6 +95,7 @@ namespace WasatchNET
             detectorStopLine = (ushort)(eeprom.activePixelsVert - 1);
             setUserSet("Default");
             nodeMap.FindNode<FloatNode>("ExposureTime").SetValue(15000);
+            startCollection();
             return true;
         }
 
@@ -125,14 +143,34 @@ namespace WasatchNET
         }
         public async override Task closeAsync()
         {
+            stopCollection();
+            if (dataStream != null)
+            {
+                foreach (var buf in dataStream.AnnouncedBuffers())
+                {
+                    dataStream.RevokeBuffer(buf);
+                }
+            }
+
             //wrapper.shutdown();
             //await Task.Run(() => andorDriver.SetCurrentCamera(cameraHandle));
             //await Task.Run(() => andorDriver.ShutDown());
         }
 
-        void initImageConverte()
+        void initImageConverter(string newOutputFormat = null)
         {
+            PixelFormatName inputName = PixelFormatName.Invalid;
+            PixelFormatName outputName = PixelFormatName.Invalid;
+
+            bool ok = Enum.TryParse<PixelFormatName>(inputFormat, out inputName);
+            ok = ok && Enum.TryParse<PixelFormatName>(outputFormat, out outputName);
+
+            if (!ok)
+                return;
+
+            // there has got to be a better way to do this...
             imc = new ImageConverter();
+            imc.PreAllocateConversion(new PixelFormat(inputName), new PixelFormat(outputName), eeprom.activePixelsHoriz, eeprom.activePixelsVert);
 
         }
 
@@ -144,6 +182,25 @@ namespace WasatchNET
 
         void resetDataStream()
         {
+            if (dataStream != null)
+            {
+                foreach (var buffer in dataStream.AnnouncedBuffers())
+                {
+                    dataStream.RevokeBuffer(buffer);
+                }
+
+                buffers.Clear();
+                pointers.Clear();
+            }
+
+            var payloadSize = nodeMap.FindNodeInteger("PayloadSize").Value();
+            bufferAmount = (int)dataStream.NumBuffersAnnouncedMinRequired();
+            for (int i = 0; i < payloadSize; i++)
+            {
+                IntPtr newPtr = new IntPtr();
+                pointers.Add(newPtr);
+                var bufferLocal = dataStream.AllocAndAnnounceBuffer((uint)payloadSize, newPtr);
+            }
         }
 
         bool started = false;
@@ -155,14 +212,19 @@ namespace WasatchNET
 
             dataStream = null;
             dataStream = device.DataStreams()[0].OpenDataStream();
+            resetDataStream();
 
+            // unsure on this one
             nodeMap.FindNodeBoolean("TLParamsLocked").SetValue(true);
 
-            /*
-             * 
-             * Skip input format stuff for now
-             * 
-             */
+            var ifNode = nodeMap.TryFindNodeEnumeration("PixelFormat");
+            inputFormat = ifNode.CurrentEntry().ToString();
+
+            if (imc == null)
+                initImageConverter();
+
+            if (imt == null)
+                imt = new ImageTransformer();
 
             dataStream.StartAcquisition();
             nodeMap.FindNode<CommandNode>("AcquisitionStart").Execute();
@@ -170,12 +232,42 @@ namespace WasatchNET
             started = true;
         }
 
-        uint[] binImage(Image image)
+        void stopCollection()
         {
+            if (!started)
+                return;
 
-            return null;
+            nodeMap.FindNode<CommandNode>("AcquisitionStop").Execute();
+            dataStream.StopAcquisition(AcquisitionStopMode.Default);
+            dataStream.Flush(DataStreamFlushMode.DiscardAll);
+            started = false;
+
+            nodeMap.FindNodeBoolean("TLParamsLocked").SetValue(false);
         }
 
+        Image processImage(Image image, IDSImaging.Peak.API.Core.Buffer buffer = null)
+        {
+            PixelFormatName outputName = PixelFormatName.Invalid;
+            bool ok = Enum.TryParse<PixelFormatName>(outputFormat, out outputName);
+            if (!ok)
+                return null;
+
+            var converted = imc.Convert(image, new PixelFormat(outputName));
+
+            if (buffer != null)
+                dataStream.QueueBuffer(buffer);
+
+            if (eeprom.featureMask.invertXAxis)
+                imt.MirrorUpDownLeftRightInPlace(converted);
+
+            return converted;
+        }
+
+        protected override double[] getAreaScanLightweight()
+        {
+            double[] data = lastFrame.Select(x => (double)x).ToArray();
+            return data;
+        }
 
         public override double[] getSpectrum(bool forceNew = false)
         {
@@ -186,10 +278,51 @@ namespace WasatchNET
             }
         }
 
-
         public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
         {
-            return null;
+            double[] sum = getSpectrumRaw();
+            if (scanAveraging_ > 1)
+            {
+                // logger.debug("getSpectrum: getting additional spectra for averaging");
+                for (uint i = 1; i < scanAveraging_; i++)
+                {
+                    // don't send a new SW trigger if using continuous acquisition
+                    double[] tmp;
+                    while (true)
+                    {
+                        if (currentAcquisitionCancelled || shuttingDown)
+                            return null;
+
+                        if (areaScanEnabled && fastAreaScan)
+                        {
+                            tmp = getAreaScanLightweight();
+                        }
+                        else
+                        {
+                            tmp = getSpectrumRaw();
+                        }
+
+                        if (currentAcquisitionCancelled || shuttingDown)
+                            return null;
+
+                        if (tmp != null)
+                            break;
+
+                        return null;
+                    }
+                    if (tmp is null)
+                        return null;
+
+                    for (int px = 0; px < sum.Length; px++)
+                        sum[px] += tmp[px];
+                }
+
+                for (int px = 0; px < sum.Length; px++)
+                    sum[px] /= scanAveraging_;
+            }
+
+            //camera.StopAcquiring(true);
+            return sum;
         }
 
         protected override double[] getSpectrumRaw(bool skipTrigger = false)
@@ -203,10 +336,22 @@ namespace WasatchNET
             Task<ushort[]> frameTask = Task.Run(() => getFrame());
 
             ushort[] RawPixelData = await frameTask;
+            double[] data = new double[pixels];
+            if (RawPixelData != null)
+            {
+                for (int i = 0; i < pixels; ++i)
+                {
+                    double sum = 0;
+                    for (int j = 0; j < linesPerFrame; ++j)
+                    {
+                        sum += RawPixelData[i + j * pixels];
+                    }
 
+                    data[i] = sum;
+                }
+            }
 
-
-            return null;
+            return data;
         }
 
         public override ushort[] getFrame(bool direct = true)
@@ -214,14 +359,77 @@ namespace WasatchNET
             if (direct && lastFrame != null)
                 return lastFrame;
 
+            sendTrigger();
+
             ulong timeoutMS = (ulong)(1000 + 2 * Math.Max(integrationTimeMS, lastIntegrationTimeMS));
-            var buffer = dataStream.WaitForFinishedBuffer(timeoutMS);
+
+            IDSImaging.Peak.API.Core.Buffer buffer = null;
+
+            try
+            {
+                buffer = dataStream.WaitForFinishedBuffer(timeoutMS);
+            }
+            catch (Exception ex)
+            {
+
+                logger.error($"failed on datastream.WaitForFinishedBuffer(timeout {timeoutMS}ms) with error {ex.Message}");
+                return null;
+            }
 
             Image image = IPLExtension.ToIPLImage(buffer);
-            
+            image = processImage(image, buffer);
+
+            IntPtr convertedPtr = image.Data();
+            ushort[] pixels = getPixels(convertedPtr);
+
+
+            //below is a "safe" pixel grab alternative worth exploring
+            /*
+            PixelRow pr = new PixelRow(image, 0);
+            foreach (var pix in pr.Channels())
+            {
+                pix.Values[]
+            }
+            */
 
             lastIntegrationTimeMS = integrationTimeMS;
-            return null;
+            return pixels;
+        }
+
+        //
+        // This assumes Mono16. Borrowed from OCT
+        // I *love* learning about pixel formats -TS
+        //
+        unsafe ushort[] getPixels(IntPtr buffer)
+        {
+            int width = eeprom.activePixelsHoriz;
+            int height = eeprom.activePixelsVert;
+            int bitWidth = 16;
+            //ubitsperpixel == bitwidth, numbitsused == numbitsperpixel 
+
+            //var boundsRect = new Rectangle(0, 0, width, height);
+            ushort[] pixels = new ushort[width * height];
+
+            unsafe
+            {
+                int intensity = 0;
+                ushort* sPixels = (ushort*)buffer;
+
+                // For each row...
+                for (int i = 0; i < height; i++)
+                {
+                    int rowStart = i * width;
+                    // For each col...
+                    for (int j = 0; j < width; j++)
+                    {
+                        intensity = sPixels[i * width + j];
+                        pixels[rowStart + j] = (ushort)intensity;
+                    }
+                }
+
+            }
+
+            return pixels;
         }
 
         public override bool resetFPGA() => true;
