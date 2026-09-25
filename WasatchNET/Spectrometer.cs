@@ -2173,6 +2173,9 @@ namespace WasatchNET
         }
         virtual internal async Task<bool> openAsync()
         {
+            if (usbRegistry == null)
+                return false;
+
             logger.header($"Spectrometer.open: VID = 0x{usbRegistry.Vid:x4}, PID = 0x{usbRegistry.Pid:x4}");
 
             // decide if we need to [re]initialize all settings to defaults

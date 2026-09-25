@@ -131,42 +131,66 @@ namespace WasatchNET
             ////////////////////////////////////////////////////////////////////
 
             // @todo move away from UsbRegistry to prep for LibUsbDotNet 3.x
-
             UsbRegDeviceList deviceRegistries = UsbDevice.AllDevices;
+            List<string> grabbedDevices = new List<string>();
 
-            foreach (UsbRegistry usbRegistry in deviceRegistries)
+            if (Environment.GetEnvironmentVariable("WASATCHNET_USE_IDS") != null)
             {
-                String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
-                    usbRegistry.Vid,
-                    usbRegistry.Pid,
-                    (ushort) usbRegistry.Rev,
-                    usbRegistry[SPDRP.DeviceDesc]);
-
-                // Generate a "unique key" for the spectrometer based on its 
-                // "physical" USB properties (no EEPROM fields involved).  This 
-                // is being explored as a way to better recognize individual
-                // spectrometers within a set, where one spectrometer has been
-                // power-cycled or re-enumerated, but the others have not (and
-                // the caller doesn't necessarily know which, so a repeat call
-                // to "openAllSpectrometers" is intended to "get the new one(s)
-                // running, without disrupting the old one(s)".
-                logger.debug("USB Registry for: {0}", desc);
-                logDevice(usbRegistry);
-
-                if (usbRegistry.Vid == 0x24aa && usbRegistry.Pid == 0x5000)
+                int idsCount = 0;
+                int maxIDS = 0;
+                foreach (UsbRegistry usbRegistry in deviceRegistries)
                 {
-                    HOCTSpectrometer spectrometer = new HOCTSpectrometer(usbRegistry);
-                    if (await spectrometer.openAsync())
+                    String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
+                        usbRegistry.Vid,
+                        usbRegistry.Pid,
+                        (ushort)usbRegistry.Rev,
+                        usbRegistry[SPDRP.DeviceDesc]);
+
+                    // Generate a "unique key" for the spectrometer based on its 
+                    // "physical" USB properties (no EEPROM fields involved).  This 
+                    // is being explored as a way to better recognize individual
+                    // spectrometers within a set, where one spectrometer has been
+                    // power-cycled or re-enumerated, but the others have not (and
+                    // the caller doesn't necessarily know which, so a repeat call
+                    // to "openAllSpectrometers" is intended to "get the new one(s)
+                    // running, without disrupting the old one(s)".
+                    logger.debug("USB Registry for: {0}", desc);
+                    logDevice(usbRegistry);
+                    IDSHybridSpectrometer spectrometer = new IDSHybridSpectrometer(usbRegistry) { uptime = uptime };
+                    if (maxIDS == 0)
+                        maxIDS = spectrometer.availableCameras;
+
+                    if (usbRegistry.Vid == 0x24aa)
                     {
-                        string key = String.Format("{0}-{1}", "HOCT", "0000");
-                        if (!sorted.ContainsKey(key))
-                            sorted.Add(key, new List<Spectrometer>());
-                        sorted[key].Add(spectrometer);
+                        if (idsCount >= maxIDS)
+                            break;
+
+                        if (await spectrometer.openAsync())
+                        {
+                            // sort them by model, serial (allow duplicates for unconfigured)
+                            string key = String.Format("{0}-{1}", spectrometer.eeprom.model, spectrometer.eeprom.serialNumber);
+                            if (!sorted.ContainsKey(key))
+                                sorted.Add(key, new List<Spectrometer>());
+                            sorted[key].Add(spectrometer);
+                            logger.debug("openAllSpectrometers: found key {0} ({1}) and added as IDS Spectrometer", key, desc);
+                            ++idsCount;
+                            grabbedDevices.Add(usbRegistry.SymbolicName);
+                        }
+                        else
+                        {
+                            logger.error("openAllSpectrometers: failed to open {0} as IDS Spectrometer", desc);
+                        }
+                    }
+                    else
+                    {
+                        logger.debug("openAllSpectrometers: ignored {0}", desc);
                     }
                 }
-                else if (usbRegistry.Vid == 0x24aa)
+
+                if (maxIDS > 0 && idsCount == 0)
                 {
-                    Spectrometer spectrometer = new Spectrometer(usbRegistry) { uptime = uptime };
+                    IDSHybridSpectrometer spectrometer = new IDSHybridSpectrometer(null) { uptime = uptime };
+
                     if (await spectrometer.openAsync())
                     {
                         // sort them by model, serial (allow duplicates for unconfigured)
@@ -174,16 +198,70 @@ namespace WasatchNET
                         if (!sorted.ContainsKey(key))
                             sorted.Add(key, new List<Spectrometer>());
                         sorted[key].Add(spectrometer);
-                        logger.debug("openAllSpectrometers: found key {0} ({1})", key, desc);
+                        logger.debug("openAllSpectrometers: found key {0} and added as IDS Spectrometer", key);
+                        ++idsCount;
                     }
                     else
                     {
-                        logger.error("openAllSpectrometers: failed to open {0}", desc);
+                        logger.error("openAllSpectrometers: failed to open IDS Spectrometer");
                     }
                 }
-                else
+
+            }
+
+            foreach (UsbRegistry usbRegistry in deviceRegistries)
+            {
+                if (!grabbedDevices.Contains(usbRegistry.SymbolicName))
                 {
-                    logger.debug("openAllSpectrometers: ignored {0}", desc);
+                    String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
+                        usbRegistry.Vid,
+                        usbRegistry.Pid,
+                        (ushort)usbRegistry.Rev,
+                        usbRegistry[SPDRP.DeviceDesc]);
+
+                    // Generate a "unique key" for the spectrometer based on its 
+                    // "physical" USB properties (no EEPROM fields involved).  This 
+                    // is being explored as a way to better recognize individual
+                    // spectrometers within a set, where one spectrometer has been
+                    // power-cycled or re-enumerated, but the others have not (and
+                    // the caller doesn't necessarily know which, so a repeat call
+                    // to "openAllSpectrometers" is intended to "get the new one(s)
+                    // running, without disrupting the old one(s)".
+                    logger.debug("USB Registry for: {0}", desc);
+                    logDevice(usbRegistry);
+
+                    if (usbRegistry.Vid == 0x24aa && usbRegistry.Pid == 0x5000)
+                    {
+                        HOCTSpectrometer spectrometer = new HOCTSpectrometer(usbRegistry);
+                        if (await spectrometer.openAsync())
+                        {
+                            string key = String.Format("{0}-{1}", "HOCT", "0000");
+                            if (!sorted.ContainsKey(key))
+                                sorted.Add(key, new List<Spectrometer>());
+                            sorted[key].Add(spectrometer);
+                        }
+                    }
+                    else if (usbRegistry.Vid == 0x24aa)
+                    {
+                        Spectrometer spectrometer = new Spectrometer(usbRegistry) { uptime = uptime };
+                        if (await spectrometer.openAsync())
+                        {
+                            // sort them by model, serial (allow duplicates for unconfigured)
+                            string key = String.Format("{0}-{1}", spectrometer.eeprom.model, spectrometer.eeprom.serialNumber);
+                            if (!sorted.ContainsKey(key))
+                                sorted.Add(key, new List<Spectrometer>());
+                            sorted[key].Add(spectrometer);
+                            logger.debug("openAllSpectrometers: found key {0} ({1})", key, desc);
+                        }
+                        else
+                        {
+                            logger.error("openAllSpectrometers: failed to open {0}", desc);
+                        }
+                    }
+                    else
+                    {
+                        logger.debug("openAllSpectrometers: ignored {0}", desc);
+                    }
                 }
             }
 

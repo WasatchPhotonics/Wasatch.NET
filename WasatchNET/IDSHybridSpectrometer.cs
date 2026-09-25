@@ -1,7 +1,11 @@
 ﻿using IDSImaging.Peak.API;
+
+#if x64
 using IDSImaging.Peak.API.Core;
 using IDSImaging.Peak.API.Core.Nodes;
 using IDSImaging.Peak.API.Std;
+#endif
+
 using IDSImaging.Peak.Common;
 using IDSImaging.Peak.Common.Serialization;
 using IDSImaging.Peak.IPL;
@@ -14,29 +18,35 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using System.Xml.Linq;
 
 namespace WasatchNET
 {
-
     public class IDSHybridSpectrometer : Spectrometer
     {
-        protected static bool isInit = false; 
+        public int availableCameras = 0;
+        protected static bool isInit = false;
         protected ushort[] lastFrame = null;
 
         private Spectrometer sidecar = null;
         private bool sidecarAvailable = false;
-        private DeviceManager deviceManager = DeviceManager.Instance();
+
+#if x64
+        private DeviceManager deviceManager = null; //DeviceManager.Instance();
         private Device device = null;
         private NodeMap nodeMap = null;
         private DataStream dataStream = null;
+#endif
         private string userSet = "";
         private ImageConverter imc = null;
         private ImageTransformer imt = null;
         private string inputFormat = "Invalid";
         private string outputFormat = "Mono16";
         private int bufferAmount = 1;
+#if x64
         private List<IDSImaging.Peak.API.Core.Buffer> buffers = new List<IDSImaging.Peak.API.Core.Buffer>();
+#endif
         private List<IntPtr> pointers = new List<IntPtr>();
 
         readonly string[] SUPPORTED_CONVERSIONS = {
@@ -52,11 +62,18 @@ namespace WasatchNET
 
         internal IDSHybridSpectrometer(UsbRegistry usbReg) : base(usbReg, true)
         {
+
+#if x64
             if (!isInit)
             {
                 IDSImaging.Peak.API.Library.Initialize();
                 isInit = true;
             }
+
+            deviceManager = DeviceManager.Instance();
+            deviceManager.Update();
+            availableCameras = deviceManager.Devices().Count;
+#endif
 
             sidecar = new Spectrometer(usbReg);
         }
@@ -69,33 +86,59 @@ namespace WasatchNET
 
         override internal async Task<bool> openAsync()
         {
-            deviceManager.Update();
-            if (!deviceManager.Devices().Any())
+#if WIN32
+            return false;
+        }
+    }
+#elif x64
+
+            try
             {
+                deviceManager.Update();
+                if (!deviceManager.Devices().Any())
+                {
+                    return false;
+                }
+
+                sidecarAvailable = await sidecar.openAsync();
+                if (sidecarAvailable)
+                    eeprom = sidecar.eeprom;
+                else
+                    eeprom = new EEPROM(this);
+
+                var devices = deviceManager.Devices();
+                device = devices[0].OpenDevice(DeviceAccessType.Control);
+                nodeMap = device.RemoteDevice().NodeMaps()[0];
+
+                eeprom.detectorSerialNumber = nodeMap.FindNode<StringNode>("DeviceSerialNumber").Value();
+                eeprom.detectorName = nodeMap.FindNode<StringNode>("SensorName").Value();
+                eeprom.activePixelsHoriz = eeprom.actualPixelsHoriz = (ushort)nodeMap.FindNode<IntegerNode>("WidthMax").Value();
+                eeprom.activePixelsVert = (ushort)nodeMap.FindNode<IntegerNode>("Height").Value();
+                if (!sidecarAvailable)
+                {
+                    eeprom.serialNumber = "WP-SV-XXXXX";
+                    eeprom.model = "UNKNOWN-SV";
+                    eeprom.userData = new byte[63];
+                    FloatNode fn = nodeMap.FindNode<FloatNode>("ExposureTime");
+                    eeprom.minIntegrationTimeMS = (uint)(fn.Minimum() / 1000);
+                    eeprom.maxIntegrationTimeMS = (uint)(fn.Maximum() / 1000);
+                }
+
+                integrationTimeMS = 15;//(uint)(nodeMap.FindNode<FloatNode>("ExposureTime").Value() / 1000f);
+                lastIntegrationTimeMS = 15;
+                detectorStartLine = 0;
+                detectorStopLine = (ushort)(eeprom.activePixelsVert - 1);
+                setUserSet("Default");
+                nodeMap.FindNode<FloatNode>("ExposureTime").SetValue(15000);
+                startCollection();
+            }
+            catch (Exception ex)
+            {
+                logger.error("IDS Spec open failed with error {0}", ex.Message);
+
                 return false;
             }
 
-            sidecarAvailable = await sidecar.openAsync();
-            if (sidecarAvailable)
-                eeprom = sidecar.eeprom;
-            else
-                eeprom = new EEPROM(this);
-
-            var devices = deviceManager.Devices();
-            device = devices[0].OpenDevice(DeviceAccessType.Control);
-            nodeMap = device.RemoteDevice().NodeMaps()[0];
-
-            eeprom.detectorSerialNumber = nodeMap.FindNode<StringNode>("DeviceSerialNumber").Value();
-            eeprom.detectorName = nodeMap.FindNode<StringNode>("SensorName").Value();
-            eeprom.activePixelsHoriz = eeprom.actualPixelsHoriz = (ushort)nodeMap.FindNode<IntegerNode>("WidthMax").Value();
-            eeprom.activePixelsVert = (ushort)nodeMap.FindNode<IntegerNode>("Height").Value();
-            integrationTimeMS = 15;//(uint)(nodeMap.FindNode<FloatNode>("ExposureTime").Value() / 1000f);
-            lastIntegrationTimeMS = 15;
-            detectorStartLine = 0;
-            detectorStopLine = (ushort)(eeprom.activePixelsVert - 1);
-            setUserSet("Default");
-            nodeMap.FindNode<FloatNode>("ExposureTime").SetValue(15000);
-            startCollection();
             return true;
         }
 
@@ -129,10 +172,20 @@ namespace WasatchNET
 
         }
 
+        public void shutDownLibrary()
+        {
+            if (isInit)
+            {
+                logger.debug("shutting down IDS API");
+                IDSImaging.Peak.API.Library.Close();
+                isInit = false;
+            }
+        }
+
         ~IDSHybridSpectrometer()
         {
             logger.debug("entered IDS Hybrid finalizer");
-            IDSImaging.Peak.API.Library.Close();
+            close();
         }
 
 
@@ -195,11 +248,12 @@ namespace WasatchNET
 
             var payloadSize = nodeMap.FindNodeInteger("PayloadSize").Value();
             bufferAmount = (int)dataStream.NumBuffersAnnouncedMinRequired();
-            for (int i = 0; i < payloadSize; i++)
+            for (int i = 0; i < bufferAmount; i++)
             {
                 IntPtr newPtr = new IntPtr();
                 pointers.Add(newPtr);
                 var bufferLocal = dataStream.AllocAndAnnounceBuffer((uint)payloadSize, newPtr);
+                buffers.Add(bufferLocal);
             }
         }
 
@@ -215,10 +269,10 @@ namespace WasatchNET
             resetDataStream();
 
             // unsure on this one
-            nodeMap.FindNodeBoolean("TLParamsLocked").SetValue(true);
+            nodeMap.FindNode<IntegerNode>("TLParamsLocked").SetValue(1);
 
             var ifNode = nodeMap.TryFindNodeEnumeration("PixelFormat");
-            inputFormat = ifNode.CurrentEntry().ToString();
+            inputFormat = ifNode.CurrentEntry().SymbolicValue();
 
             if (imc == null)
                 initImageConverter();
@@ -235,14 +289,16 @@ namespace WasatchNET
         void stopCollection()
         {
             if (!started)
+            {
+                logger.debug("trying to stop collection that never started");
                 return;
-
+            }
             nodeMap.FindNode<CommandNode>("AcquisitionStop").Execute();
+            nodeMap.FindNode<CommandNode>("AcquisitionStop").WaitUntilDone();
             dataStream.StopAcquisition(AcquisitionStopMode.Default);
+            nodeMap.FindNode<IntegerNode>("TLParamsLocked").SetValue(0);
             dataStream.Flush(DataStreamFlushMode.DiscardAll);
             started = false;
-
-            nodeMap.FindNodeBoolean("TLParamsLocked").SetValue(false);
         }
 
         Image processImage(Image image, IDSImaging.Peak.API.Core.Buffer buffer = null)
@@ -776,4 +832,5 @@ namespace WasatchNET
         public override byte continuousFrames { get => 0; set { } }
         public override ushort detectorTemperatureRaw { get => 0; }
     }
+#endif
 }
