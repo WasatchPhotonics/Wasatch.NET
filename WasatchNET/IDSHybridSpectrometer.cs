@@ -112,8 +112,8 @@ namespace WasatchNET
 
                 eeprom.detectorSerialNumber = nodeMap.FindNode<StringNode>("DeviceSerialNumber").Value();
                 eeprom.detectorName = nodeMap.FindNode<StringNode>("SensorName").Value();
-                eeprom.activePixelsHoriz = eeprom.actualPixelsHoriz = (ushort)nodeMap.FindNode<IntegerNode>("WidthMax").Value();
-                eeprom.activePixelsVert = (ushort)nodeMap.FindNode<IntegerNode>("Height").Value();
+                pixels = eeprom.activePixelsHoriz = eeprom.actualPixelsHoriz = (ushort)nodeMap.FindNode<IntegerNode>("Width").Value();
+                linesPerFrame = eeprom.activePixelsVert = (ushort)nodeMap.FindNode<IntegerNode>("Height").Value();
                 if (!sidecarAvailable)
                 {
                     eeprom.serialNumber = "WP-SV-XXXXX";
@@ -125,6 +125,7 @@ namespace WasatchNET
                 }
 
                 integrationTimeMS = 15;//(uint)(nodeMap.FindNode<FloatNode>("ExposureTime").Value() / 1000f);
+                featureIdentification = new FeatureIdentification(0, 0);
                 lastIntegrationTimeMS = 15;
                 detectorStartLine = 0;
                 detectorStopLine = (ushort)(eeprom.activePixelsVert - 1);
@@ -268,6 +269,11 @@ namespace WasatchNET
             dataStream = device.DataStreams()[0].OpenDataStream();
             resetDataStream();
 
+            foreach (IDSImaging.Peak.API.Core.Buffer buffer in buffers)
+            {
+                dataStream.QueueBuffer(buffer);
+            }
+
             // unsure on this one
             nodeMap.FindNode<IntegerNode>("TLParamsLocked").SetValue(1);
 
@@ -327,11 +333,8 @@ namespace WasatchNET
 
         public override double[] getSpectrum(bool forceNew = false)
         {
-            lock (acquisitionLock)
-            {
-                Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
-                return task.Result;
-            }
+            Task<double[]> task = Task.Run(async () => await getSpectrumAsync(forceNew));
+            return task.Result;
         }
 
         public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
@@ -389,7 +392,7 @@ namespace WasatchNET
 
         protected override async Task<double[]> getSpectrumRawAsync(bool skipTrigger = false)
         {
-            Task<ushort[]> frameTask = Task.Run(() => getFrame());
+            Task<ushort[]> frameTask = Task.Run(() => getFrame(false));
 
             ushort[] RawPixelData = await frameTask;
             double[] data = new double[pixels];
@@ -436,7 +439,7 @@ namespace WasatchNET
             image = processImage(image, buffer);
 
             IntPtr convertedPtr = image.Data();
-            ushort[] pixels = getPixels(convertedPtr);
+            ushort[] pixels = getPixels(convertedPtr, image.Width(), image.Height());
 
 
             //below is a "safe" pixel grab alternative worth exploring
@@ -465,7 +468,6 @@ namespace WasatchNET
 
             //var boundsRect = new Rectangle(0, 0, width, height);
             ushort[] pixels = new ushort[width * height];
-
             unsafe
             {
                 int intensity = 0;
@@ -475,6 +477,35 @@ namespace WasatchNET
                 for (int i = 0; i < height; i++)
                 {
                     int rowStart = i * width;
+                    // For each col...
+                    for (int j = 0; j < width; j++)
+                    {
+                        intensity = sPixels[i * width + j];
+                        pixels[rowStart + j] = (ushort)intensity;
+                    }
+                }
+
+            }
+
+            return pixels;
+        }
+
+        unsafe ushort[] getPixels(IntPtr buffer, uint width, uint height)
+        { 
+            int bitWidth = 16;
+            //ubitsperpixel == bitwidth, numbitsused == numbitsperpixel 
+
+            //var boundsRect = new Rectangle(0, 0, width, height);
+            ushort[] pixels = new ushort[width * height];
+            unsafe
+            {
+                int intensity = 0;
+                ushort* sPixels = (ushort*)buffer;
+
+                // For each row...
+                for (int i = 0; i < height; i++)
+                {
+                    int rowStart = (int)(i * width);
                     // For each col...
                     for (int j = 0; j < width; j++)
                     {
@@ -532,20 +563,17 @@ namespace WasatchNET
             }
             set
             {
-                lock (acquisitionLock)
-                {
-                    integrationTimeMS_ = Math.Min(fullMaxMS, Math.Max(value, fullMinMS));
-                    var intTimeUS = 1000 * integrationTimeMS_;
+                integrationTimeMS_ = Math.Min(fullMaxMS, Math.Max(value, fullMinMS));
+                var intTimeUS = 1000 * integrationTimeMS_;
 
-                    // if requested time is outside range of either mode, change to the other
-                    // otherwise keep as is
-                    if (intTimeUS <= longExposureMinUS)
-                        setUserSet("Default");
-                    else if (intTimeUS >= defaultMaxUS)
-                        setUserSet("LongExposure");
+                // if requested time is outside range of either mode, change to the other
+                // otherwise keep as is
+                if (intTimeUS <= longExposureMinUS)
+                    setUserSet("Default");
+                else if (intTimeUS >= defaultMaxUS)
+                    setUserSet("LongExposure");
 
-                    nodeMap.FindNode<FloatNode>("ExposureTime").SetValue(intTimeUS);
-                }
+                nodeMap.FindNode<FloatNode>("ExposureTime").SetValue(intTimeUS);
             }
         }
 
@@ -586,12 +614,12 @@ namespace WasatchNET
                 double local = value;
                 
                 //unclear as of 9/24//26 if this is actually a flot node -TS
-                var node = nodeMap.FindNode("Gain");
-                var typedNode = node as FloatNode;
+                var node = nodeMap.FindNode<FloatNode>("Gain");
 
-                local = Math.Max(local, typedNode.Minimum());
-                local = Math.Min(local, typedNode.Maximum());
+                local = Math.Max(local, node.Minimum());
+                local = Math.Min(local, node.Maximum());
 
+                detectorGain_ = (float)local;
             }
         }
 
