@@ -413,6 +413,7 @@ namespace WasatchNET
         /// <returns>The acquired spectrum as an array of doubles</returns>
         double[] getSpectrum(bool forceNew);
         ushort[] getFrame(bool direct);
+        double[] getProcessedFrame(bool direct);
         bool resetFPGA();
     }
 }

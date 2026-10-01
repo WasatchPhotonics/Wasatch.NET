@@ -26,8 +26,9 @@ namespace WasatchNET
     public class IDSHybridSpectrometer : Spectrometer
     {
         public int availableCameras = 0;
-        protected static bool isInit = false;
+        internal static bool isInit = false;
         protected ushort[] lastFrame = null;
+        protected double[] lastProcessedFrame = null;
 
         private Spectrometer sidecar = null;
         private bool sidecarAvailable = false;
@@ -69,7 +70,7 @@ namespace WasatchNET
                 IDSImaging.Peak.API.Library.Initialize();
                 isInit = true;
             }
-
+            
             deviceManager = DeviceManager.Instance();
             deviceManager.Update();
             availableCameras = deviceManager.Devices().Count;
@@ -119,11 +120,15 @@ namespace WasatchNET
                     eeprom.serialNumber = "WP-SV-XXXXX";
                     eeprom.model = "UNKNOWN-SV";
                     eeprom.userData = new byte[63];
+                    eeprom.laserExcitationWavelengthNMFloat = 785f;
+                    setUserSet("Default");
                     FloatNode fn = nodeMap.FindNode<FloatNode>("ExposureTime");
                     eeprom.minIntegrationTimeMS = (uint)(fn.Minimum() / 1000);
+                    setUserSet("LongExposure");
                     eeprom.maxIntegrationTimeMS = (uint)(fn.Maximum() / 1000);
                 }
-
+                
+                regenerateWavelengths();
                 integrationTimeMS = 15;//(uint)(nodeMap.FindNode<FloatNode>("ExposureTime").Value() / 1000f);
                 featureIdentification = new FeatureIdentification(0, 0);
                 lastIntegrationTimeMS = 15;
@@ -131,6 +136,7 @@ namespace WasatchNET
                 detectorStopLine = (ushort)(eeprom.activePixelsVert - 1);
                 setUserSet("Default");
                 nodeMap.FindNode<FloatNode>("ExposureTime").SetValue(15000);
+                detectorGain = 12;
                 startCollection();
             }
             catch (Exception ex)
@@ -151,6 +157,9 @@ namespace WasatchNET
             if (value != userSet || force)
             {
                 userSet = value;
+                bool wasStarted = started;
+                if (wasStarted)
+                    stopCollection();
 
                 lock (commsLock)
                 {
@@ -162,6 +171,9 @@ namespace WasatchNET
                     logger.debug($"set_user_set: applied UserSetSelector {value}, ExposureTime range now ({node.Minimum()}, {node.Maximum()})µs");
                     initSoftwareTriggering();
                 }
+
+                if (wasStarted)
+                    startCollection();
             }
         }
 
@@ -206,6 +218,7 @@ namespace WasatchNET
                 }
             }
 
+            //shutDownLibrary();
             //wrapper.shutdown();
             //await Task.Run(() => andorDriver.SetCurrentCamera(cameraHandle));
             //await Task.Run(() => andorDriver.ShutDown());
@@ -266,7 +279,17 @@ namespace WasatchNET
                 return;
 
             dataStream = null;
-            dataStream = device.DataStreams()[0].OpenDataStream();
+
+            try
+            {
+                dataStream = device.DataStreams()[0].OpenedDataStream();
+            }
+            catch (Exception ex)
+            {
+                logger.debug("datastream set failed with error {0}", ex.Message);
+            }
+            if (dataStream == null)
+                dataStream = device.DataStreams()[0].OpenDataStream();
             resetDataStream();
 
             foreach (IDSImaging.Peak.API.Core.Buffer buffer in buffers)
@@ -340,6 +363,7 @@ namespace WasatchNET
         public override async Task<double[]> getSpectrumAsync(bool forceNew = false)
         {
             double[] sum = getSpectrumRaw();
+            double[] frameSum = getAreaScanLightweight();
             if (scanAveraging_ > 1)
             {
                 // logger.debug("getSpectrum: getting additional spectra for averaging");
@@ -347,6 +371,7 @@ namespace WasatchNET
                 {
                     // don't send a new SW trigger if using continuous acquisition
                     double[] tmp;
+                    double[] frameTmp = null;
                     while (true)
                     {
                         if (currentAcquisitionCancelled || shuttingDown)
@@ -359,6 +384,7 @@ namespace WasatchNET
                         else
                         {
                             tmp = getSpectrumRaw();
+                            frameTmp = getAreaScanLightweight();
                         }
 
                         if (currentAcquisitionCancelled || shuttingDown)
@@ -372,15 +398,24 @@ namespace WasatchNET
                     if (tmp is null)
                         return null;
 
+                    if (frameTmp is null) return null;
+
                     for (int px = 0; px < sum.Length; px++)
                         sum[px] += tmp[px];
+
+                    for (int px = 0; px < frameSum.Length; px++)
+                        frameSum[px] += frameTmp[px];
                 }
 
                 for (int px = 0; px < sum.Length; px++)
                     sum[px] /= scanAveraging_;
+
+                for (int px = 0; px < frameSum.Length; px++)
+                    frameSum[px] /= scanAveraging_;
             }
 
             //camera.StopAcquiring(true);
+            lastProcessedFrame = frameSum;
             return sum;
         }
 
@@ -411,6 +446,11 @@ namespace WasatchNET
             }
 
             return data;
+        }
+
+        public override double[] getProcessedFrame(bool direct = true)
+        {
+            return lastProcessedFrame;
         }
 
         public override ushort[] getFrame(bool direct = true)
@@ -452,6 +492,8 @@ namespace WasatchNET
             */
 
             lastIntegrationTimeMS = integrationTimeMS;
+            lastFrame = pixels;
+
             return pixels;
         }
 
@@ -552,7 +594,7 @@ namespace WasatchNET
         const uint longExposureMinUS = 1001000;
 
         // 2000 ms
-        const uint defaultMaxUS = 2000000;
+        const uint defaultMaxUS = 1999000;
 
         uint lastIntegrationTimeMS { get; set; }
         public override uint integrationTimeMS

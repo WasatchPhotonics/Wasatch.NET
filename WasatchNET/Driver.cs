@@ -19,6 +19,15 @@ using ATMCD64CS;
 #warning Andor not supported
 #endif
 
+#if x64
+using IDSImaging.Peak.API.Core;
+using IDSImaging.Peak.API.Core.Nodes;
+using IDSImaging.Peak.API.Std;
+using IDSImaging.Peak.API;
+#else
+#warning IDS cameras not supported
+#endif
+
 namespace WasatchNET
 {
     [ComVisible(true)]
@@ -48,6 +57,7 @@ namespace WasatchNET
         int resetCount = 0;
         string ipAddr = "192.168.1.101";
         int port = 9999;
+        public static int availableIDSCameras = 0;
 
         public Logger logger { get; } = Logger.getInstance();
         public string version { get; }
@@ -138,6 +148,15 @@ namespace WasatchNET
             {
                 int idsCount = 0;
                 int maxIDS = 0;
+
+#if x64
+                IDSImaging.Peak.API.Library.Initialize();
+                DeviceManager deviceManager = DeviceManager.Instance();
+                deviceManager.Update();
+                maxIDS = availableIDSCameras = deviceManager.Devices().Count;
+                IDSHybridSpectrometer.isInit = true;
+#endif
+
                 foreach (UsbRegistry usbRegistry in deviceRegistries)
                 {
                     String desc = String.Format("Vid:0x{0:x4} Pid:0x{1:x4} (rev:{2}) - {3}",
@@ -157,8 +176,7 @@ namespace WasatchNET
                     logger.debug("USB Registry for: {0}", desc);
                     logDevice(usbRegistry);
                     IDSHybridSpectrometer spectrometer = new IDSHybridSpectrometer(usbRegistry) { uptime = uptime };
-                    if (maxIDS == 0)
-                        maxIDS = spectrometer.availableCameras;
+                    maxIDS = availableIDSCameras = spectrometer.availableCameras;
 
                     if (usbRegistry.Vid == 0x24aa)
                     {

@@ -3937,6 +3937,11 @@ namespace WasatchNET
             return null;
         }
 
+        public virtual double[] getProcessedFrame(bool direct = true)
+        {
+            return null;
+        }
+
         uint[] readImage(UsbEndpointReader spectralReader, int pixelsPerEndpoint)
         {
             ////////////////////////////////////////////////////////////////////
