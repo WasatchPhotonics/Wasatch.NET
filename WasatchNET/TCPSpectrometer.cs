@@ -685,8 +685,31 @@ namespace WasatchNET
 
         public override bool laserEnabled
         {
-            get { return false; }
-            set { laserEnabled_ = value; }
+            get
+            {
+
+                const Opcodes op = Opcodes.GET_LASER_ENABLE;
+                if (haveCache(op))
+                    return laserEnabled_;
+
+                byte[] buf = getCommand((byte)Opcodes.GET_LASER_ENABLE, 1);
+                if (buf is null)
+                {
+                    return false;
+                }
+                readOnce.Add(op);
+                return laserEnabled_ = Unpack.toBool(buf);
+            }
+            set
+            {
+                const Opcodes op = Opcodes.GET_LASER_ENABLE;
+                if (haveCache(op) && value == laserEnabled_)
+                    return;
+
+                sendCommand((byte)Opcodes.SET_LASER_ENABLE, (ushort)((laserEnabled_ = value) ? 1 : 0));
+                if (value)
+                    laserHasFired_ = true;
+            }
         }
 
         public override string serialNumber
@@ -711,7 +734,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return integrationTimeMS_;
 
-                byte[] buf = getCommand(0xbf, 3);
+                byte[] buf = getCommand((byte)Opcodes.GET_INTEGRATION_TIME, 3);
                 if (buf is null)
                 {
                     logger.error("Failed to read correct number of bytes in integrationTimeMS getter");

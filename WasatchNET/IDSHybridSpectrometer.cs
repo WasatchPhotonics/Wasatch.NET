@@ -76,7 +76,6 @@ namespace WasatchNET
             availableCameras = deviceManager.Devices().Count;
 #endif
 
-            sidecar = new Spectrometer(usbReg);
         }
 
         override internal bool open()
@@ -95,6 +94,7 @@ namespace WasatchNET
 
             try
             {
+                sidecar = new Spectrometer(usbRegistry) { uptime = uptime }; ;
                 deviceManager.Update();
                 if (!deviceManager.Devices().Any())
                 {
@@ -430,23 +430,48 @@ namespace WasatchNET
             Task<ushort[]> frameTask = Task.Run(() => getFrame(false));
 
             ushort[] RawPixelData = await frameTask;
+            return verticallyBinFrame(RawPixelData);
+        }
+
+        public double[] verticallyBinFrame(ushort[] RawPixelData)
+        {
             double[] data = new double[pixels];
             if (RawPixelData != null)
             {
-                for (int i = 0; i < pixels; ++i)
+                if (verticalROIActive)
                 {
-                    double sum = 0;
-                    for (int j = 0; j < linesPerFrame; ++j)
+                    linesPerFrame = detectorStopLine - detectorStartLine + 1;
+                    for (int i = 0; i < pixels; ++i)
                     {
-                        sum += RawPixelData[i + j * pixels];
-                    }
+                        double sum = 0;
+                        for (int j = detectorStartLine; j <= detectorStopLine; ++j)
+                        {
+                            sum += RawPixelData[i + j * pixels];
+                        }
 
-                    data[i] = sum;
+                        data[i] = sum;
+                    }
+                }
+
+                else
+                {
+                    linesPerFrame = eeprom.activePixelsVert;
+                    for (int i = 0; i < pixels; ++i)
+                    {
+                        double sum = 0;
+                        for (int j = 0; j < linesPerFrame; ++j)
+                        {
+                            sum += RawPixelData[i + j * pixels];
+                        }
+
+                        data[i] = sum;
+                    }
                 }
             }
 
             return data;
         }
+
 
         public override double[] getProcessedFrame(bool direct = true)
         {
@@ -706,13 +731,13 @@ namespace WasatchNET
         public override ushort detectorStartLine
         {
             get { return detectorStartLine_; }
-            set { lock (acquisitionLock) detectorStartLine_ = value; }
+            set { detectorStartLine_ = value; }
         }
 
         public override ushort detectorStopLine
         {
             get { return detectorStopLine_; }
-            set { lock (acquisitionLock) detectorStopLine_ = value; }
+            set { detectorStopLine_ = value; }
         }
 
 

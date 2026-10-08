@@ -85,7 +85,7 @@ namespace WasatchNET
         // Private attributes
         ////////////////////////////////////////////////////////////////////////
 
-        UsbRegistry usbRegistry;
+        protected UsbRegistry usbRegistry;
         UsbDevice usbDevice;
         IUsbDevice wholeUsbDevice;
 
@@ -952,6 +952,12 @@ namespace WasatchNET
 
         }
         protected ushort detectorStopLine_ = 0;
+
+        internal bool verticalROIActive => detectorStartLine < detectorStopLine && 
+                                           detectorStartLine >= 0 && 
+                                           detectorStartLine < eeprom.activePixelsVert && 
+                                           detectorStopLine >= 0 && 
+                                           detectorStopLine < eeprom.activePixelsVert;
 
         public virtual bool detectorTECEnabled
         {
