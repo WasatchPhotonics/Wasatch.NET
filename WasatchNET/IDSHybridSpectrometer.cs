@@ -86,11 +86,7 @@ namespace WasatchNET
 
         override internal async Task<bool> openAsync()
         {
-#if WIN32
-            return false;
-        }
-    }
-#elif x64
+#if x64
 
             try
             {
@@ -608,8 +604,8 @@ namespace WasatchNET
 
         public override bool laserEnabled
         {
-            get { return false; }
-            set { laserEnabled_ = value; }
+            get { return sidecar.laserEnabled; }
+            set { sidecar.laserEnabled = value; }
         }
 
         const uint fullMaxMS = 120000;
@@ -646,12 +642,12 @@ namespace WasatchNET
 
         public override bool hasLaser
         {
-            get => false;
+            get => sidecar.hasLaser;
         }
 
         public override bool setLaserPowerPercentage(float perc)
         {
-            return false;
+            return sidecar.setLaserPowerPercentage(perc);
         }
 
         public override LaserPowerResolution laserPowerResolution
@@ -662,19 +658,19 @@ namespace WasatchNET
             }
         }
 
-        public override bool laserInterlockEnabled { get => false; }
-        public override byte laserWarningDelaySec { get => 0; set { } }
-        public override byte laserPowerAttenuation { get => 0; set { } }
+        public override bool laserInterlockEnabled { get => sidecar.laserInterlockEnabled; }
+        public override byte laserWarningDelaySec { get => sidecar.laserWarningDelaySec; set { sidecar.laserWarningDelaySec = value; } }
+        public override byte laserPowerAttenuation { get => sidecar.laserPowerAttenuation; set { sidecar.laserPowerAttenuation = value; } }
 
-        public override UInt64 laserModulationPeriod { get => 100; }
+        public override UInt64 laserModulationPeriod { get => sidecar.laserModulationPeriod; }
 
-        public override ulong laserModulationPulseWidth { get => 0; set { } }
+        public override ulong laserModulationPulseWidth { get => sidecar.laserModulationPulseWidth; set { sidecar.laserModulationPulseWidth = value; } }
 
         public override float detectorGain
         {
             get
             {
-                return 0.0f;
+                return detectorGain_;
             }
             set
             {
@@ -748,18 +744,18 @@ namespace WasatchNET
 
         public override TRIGGER_SOURCE triggerSource
         {
-            get => TRIGGER_SOURCE.EXTERNAL;
+            get => TRIGGER_SOURCE.INTERNAL;
             set
             {
 
             }
         }
 
-        public override float laserTemperatureDegC { get => 0; }
+        public override float laserTemperatureDegC { get => sidecar.laserTemperatureDegC; }
 
-        public override ushort laserTemperatureRaw { get => 0; }
+        public override ushort laserTemperatureRaw { get => sidecar.laserTemperatureRaw; }
 
-        public override ushort laserTemperatureSetpointRaw { get => 0; }
+        public override ushort laserTemperatureSetpointRaw { get => sidecar.laserTemperatureSetpointRaw; }
 
         public override UInt16 laserWatchdogSec
         {
@@ -779,7 +775,7 @@ namespace WasatchNET
         {
             get
             {
-                return 0.0f;
+                return sidecar.batteryPercentage;
             }
         }
 
@@ -805,6 +801,7 @@ namespace WasatchNET
                 // return the cached value
                 if (Monitor.TryEnter(acquisitionLock))
                 {
+                    lastDetectorTemperatureDegC = sidecar.detectorTemperatureDegC;
                 }
 
                 return lastDetectorTemperatureDegC;
@@ -813,18 +810,18 @@ namespace WasatchNET
 
         public override short ambientTemperatureDegC
         {
-            get { return 0; }
+            get { return sidecar.ambientTemperatureDegC; }
         }
 
         public override bool laserTECEnabled
         {
             get
             {
-                return false;
+                return sidecar.laserTECEnabled;
             }
             set
             {
-
+                sidecar.laserTECEnabled = value;
             }
         }
 
@@ -832,11 +829,11 @@ namespace WasatchNET
         {
             get
             {
-                return 0;
+                return sidecar.laserTECMode;
             }
             set
             {
-
+                sidecar.laserTECMode = value;
             }
         }
 
@@ -926,6 +923,12 @@ namespace WasatchNET
         public override bool continuousAcquisitionEnable { get => false; set { } }
         public override byte continuousFrames { get => 0; set { } }
         public override ushort detectorTemperatureRaw { get => 0; }
+    }
+
+#else
+            return false;
+
+        }
     }
 #endif
 }
