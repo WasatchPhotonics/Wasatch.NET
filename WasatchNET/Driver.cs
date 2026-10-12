@@ -177,12 +177,16 @@ namespace WasatchNET
                     logDevice(usbRegistry);
                     IDSHybridSpectrometer spectrometer = new IDSHybridSpectrometer(usbRegistry) { uptime = uptime };
                     maxIDS = availableIDSCameras = spectrometer.availableCameras;
+                    logger.debug("IDS initialized, {0} cameras available", maxIDS);
 
                     if (usbRegistry.Vid == 0x24aa)
                     {
                         if (idsCount >= maxIDS)
+                        {
+                            logger.debug("all IDS cameras have been assigned, exiting USB try loop");
                             break;
-
+                        }
+                        logger.debug("opening IDS camera with {0} companion", usbRegistry.SymbolicName);
                         if (await spectrometer.openAsync())
                         {
                             // sort them by model, serial (allow duplicates for unconfigured)
@@ -192,6 +196,7 @@ namespace WasatchNET
                             sorted[key].Add(spectrometer);
                             logger.debug("openAllSpectrometers: found key {0} ({1}) and added as IDS Spectrometer", key, desc);
                             ++idsCount;
+                            logger.debug("adding IDS spectrometer with usb mate at {0}", usbRegistry.SymbolicName);
                             grabbedDevices.Add(usbRegistry.SymbolicName);
                         }
                         else
@@ -209,6 +214,7 @@ namespace WasatchNET
                 {
                     IDSHybridSpectrometer spectrometer = new IDSHybridSpectrometer(null) { uptime = uptime };
 
+                    logger.debug("opening IDS camera without companion board");
                     if (await spectrometer.openAsync())
                     {
                         // sort them by model, serial (allow duplicates for unconfigured)
@@ -283,8 +289,6 @@ namespace WasatchNET
                 }
             }
 
-            // add to final list in sorted order
-            spectrometers.Clear();
             logger.debug("openAllSpectrometers: sorting indices for deterministic behavior");
             foreach (KeyValuePair<string, List<Spectrometer>> pair in sorted)
             {
@@ -294,6 +298,31 @@ namespace WasatchNET
                     logger.debug("  index {0}: {1} {2}", spectrometers.Count - 1, s.model, s.serialNumber);
                 }
             }
+
+            logger.debug("openAllSpectrometers: checking for IDS pairing issue");
+            List<Spectrometer> toRemove = new List<Spectrometer>();
+            for (int i = 0; i < spectrometers.Count; ++i)
+            {
+                if (spectrometers[i] is IDSHybridSpectrometer && !(spectrometers[i] as IDSHybridSpectrometer).sidecarAvailable)
+                {
+                    for (int j = 0; j < spectrometers.Count; ++j)
+                    {
+                        if (j != i && !(spectrometers[j] is IDSHybridSpectrometer))
+                        {
+                            logger.debug("openAllSpectrometers: attempting to pair {0} as {1}'s sidecar", spectrometers[j].serialNumber, spectrometers[i].serialNumber);
+                            bool sidecarIsSet = (spectrometers[i] as IDSHybridSpectrometer).setSidecar(spectrometers[j]);
+                            if (sidecarIsSet)
+                            {
+                                logger.debug("openAllSpectrometers: sidecar pair successful, will remove {0} from spectrometer list", spectrometers[j].serialNumber);
+                                toRemove.Add(spectrometers[j]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            foreach (Spectrometer s in toRemove)
+                spectrometers.Remove(s);
 
             ////////////////////////////////////////////////////////////////////
             // Add Wasatch Photonics SPI spectrometers
@@ -645,9 +674,16 @@ namespace WasatchNET
             //   iterateDevice: Vid:0x2457 Pid:0x101E (rev:2) - Ocean Optics USB2000+ (WinUSB)
             //   iterateDevice: Vid:0x24AA Pid:0x1000 (rev:100) - Wasatch Photonics Spectrometer
             // Not all device info summaries will appear in device.Configs...not sure why
-            string[] deviceInfoSummaries = device.Info.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (string line in deviceInfoSummaries)
-                logger.debug("Summary: {0}", line);
+            if (device.Info == null)
+            {
+                logger.debug("Skipping USB device info logging because it is missing");
+            }
+            else
+            {
+                string[] deviceInfoSummaries = device.Info.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string line in deviceInfoSummaries)
+                    logger.debug("Summary: {0}", line);
+            }
 
             // SiG-VIS doesn't seem to like the advanced logging?
             // if (usbRegistry.Pid == 0x4000)
@@ -656,24 +692,31 @@ namespace WasatchNET
             //     return;
             // }
 
-            foreach (UsbConfigInfo cfgInfo in device.Configs)
+            if (device.Configs == null || device.Configs.Count == 0)
             {
-                logger.debug("Config {0}", cfgInfo.Descriptor.ConfigID);
-
-                // log UsbConfigInfo
-                logNameValuePairs(cfgInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
-
-                // log UsbInterfaceInfo 
-                foreach (UsbInterfaceInfo interfaceInfo in cfgInfo.InterfaceInfoList)
+                logger.debug("Skipping USB config logging because it is missing");
+            }
+            else
+            {
+                foreach (UsbConfigInfo cfgInfo in device.Configs)
                 {
-                    logger.debug("Interface [InterfaceID {0}, AlternateID {1}]", interfaceInfo.Descriptor.InterfaceID, interfaceInfo.Descriptor.AlternateID);
-                    logNameValuePairs(interfaceInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
+                    logger.debug("Config {0}", cfgInfo.Descriptor.ConfigID);
 
-                    // log UsbEndpointInfo
-                    foreach (UsbEndpointInfo endpointInfo in interfaceInfo.EndpointInfoList)
+                    // log UsbConfigInfo
+                    logNameValuePairs(cfgInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
+
+                    // log UsbInterfaceInfo 
+                    foreach (UsbInterfaceInfo interfaceInfo in cfgInfo.InterfaceInfoList)
                     {
-                        logger.debug("  Endpoint 0x" + (endpointInfo.Descriptor.EndpointID).ToString("x2"));
-                        logNameValuePairs(endpointInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), "    ");
+                        logger.debug("Interface [InterfaceID {0}, AlternateID {1}]", interfaceInfo.Descriptor.InterfaceID, interfaceInfo.Descriptor.AlternateID);
+                        logNameValuePairs(interfaceInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
+
+                        // log UsbEndpointInfo
+                        foreach (UsbEndpointInfo endpointInfo in interfaceInfo.EndpointInfoList)
+                        {
+                            logger.debug("  Endpoint 0x" + (endpointInfo.Descriptor.EndpointID).ToString("x2"));
+                            logNameValuePairs(endpointInfo.ToString().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries), "    ");
+                        }
                     }
                 }
             }
@@ -791,7 +834,17 @@ namespace WasatchNET
                     prefix, e.Win32ErrorNumber, e.Win32ErrorString, e.Description);
                 UsbEndpointBase ep = ((UsbTransfer)sender).EndpointBase;
                 logger.error("{0} [UsbTransfer]: Endpoint = 0x{1:x2}", prefix, ep.EpNum);
-            } 
+            }
+            else if (sender is UsbDevice)
+            {
+                UsbDevice usbDevice = sender as UsbDevice;
+                if (usbDevice != null)
+                {
+                    logger.error("{0} [UsbDevice]: Device error: {1}",
+                    prefix, e.Description);
+
+                }
+            }
             else if (sender is Type)
             {
                 Type t = sender as Type;
@@ -802,9 +855,10 @@ namespace WasatchNET
                     logger.debug("{0} [Type]: type = {1}", prefix, t.Name);
                 else
                     logger.error("{0} [Type]: type = {1}", prefix, t.Name);
+                logger.error("{0} [other]: {1}", prefix, e.ToString());
             }
             else
-            {   
+            {
                 logger.error("{0} [other]: {1}", prefix, e.ToString());
                 // is there anything we should DO here, other than logging it?
             }
