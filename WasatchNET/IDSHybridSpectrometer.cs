@@ -15,6 +15,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -809,16 +810,18 @@ namespace WasatchNET
 
         public override UInt16 laserWatchdogSec
         {
-
             get
             {
-                return 0;
+                if (sidecarAvailable)
+                    return sidecar.laserWatchdogSec;
+                else return 0;
+
             }
             set
             {
-
+                if (sidecarAvailable)
+                    sidecar.laserWatchdogSec = value;
             }
-
         }
 
         public override float batteryPercentage
@@ -942,6 +945,8 @@ namespace WasatchNET
             get
             {
                 string retval = "";
+                if (sidecarAvailable)
+                    retval = sidecar.firmwareRevision;
 
                 return retval;
             }
@@ -952,6 +957,8 @@ namespace WasatchNET
             get
             {
                 string retval = "";
+                if (sidecarAvailable)
+                    retval = sidecar.fpgaRevision;
 
                 return retval;
             }
@@ -962,8 +969,50 @@ namespace WasatchNET
             get
             {
                 string retval = "";
+                if (sidecarAvailable)
+                    retval = sidecar.bleRevision;
 
                 return retval;
+            }
+        }
+
+        public string IDSSWVersion
+        {
+            get
+            {
+                return IDSImaging.Peak.API.Library.Version().ToString();
+            }
+        }
+
+        public string IDSFPGARevision
+        {
+            get
+            {
+                return nodeMap.FindNode<StringNode>("FpgaFirmwareVersion").Value();
+            }
+        }
+
+        public string IDSBootloaderRevision
+        {
+            get
+            {
+                return nodeMap.FindNode<StringNode>("BootloaderFirmwareVersion").Value();
+            }
+        }
+
+        public string IDSRuntimeRevision
+        {
+            get
+            {
+                return nodeMap.FindNode<StringNode>("RuntimeFirmwareVersion").Value();
+            }
+        }
+
+        public string IDSServiceRevision
+        {
+            get
+            {
+                return nodeMap.FindNode<StringNode>("ServiceFirmwareVersion").Value();
             }
         }
 

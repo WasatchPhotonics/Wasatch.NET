@@ -289,6 +289,7 @@ namespace WasatchNET
                 }
             }
 
+            spectrometers.Clear();
             logger.debug("openAllSpectrometers: sorting indices for deterministic behavior");
             foreach (KeyValuePair<string, List<Spectrometer>> pair in sorted)
             {
