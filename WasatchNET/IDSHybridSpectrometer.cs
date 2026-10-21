@@ -154,7 +154,11 @@ namespace WasatchNET
                 logger.debug("grabbed IDS node map");
 
                 eeprom.detectorSerialNumber = nodeMap.FindNode<StringNode>("DeviceSerialNumber").Value();
-                eeprom.detectorName = nodeMap.FindNode<StringNode>("SensorName").Value();
+                string[] detParts = nodeMap.FindNode<StringNode>("SensorName").Value().Split(' ');
+                if (detParts.Length > 1)
+                    eeprom.detectorName = detParts[1];
+                else
+                    eeprom.detectorName = nodeMap.FindNode<StringNode>("SensorName").Value();
                 pixels = eeprom.activePixelsHoriz = eeprom.actualPixelsHoriz = (ushort)nodeMap.FindNode<IntegerNode>("Width").Value();
                 linesPerFrame = eeprom.activePixelsVert = (ushort)nodeMap.FindNode<IntegerNode>("Height").Value();
                 if (!sidecarAvailable)
@@ -1038,6 +1042,47 @@ namespace WasatchNET
             return false;
 
         }
+
+        public string IDSSWVersion
+        {
+            get
+            {
+                return "NA";
+            }
+        }
+
+        public string IDSFPGARevision
+        {
+            get
+            {
+                return "NA";
+            }
+        }
+
+        public string IDSBootloaderRevision
+        {
+            get
+            {
+                return "NA";
+            }
+        }
+
+        public string IDSRuntimeRevision
+        {
+            get
+            {
+                return "NA";
+            }
+        }
+
+        public string IDSServiceRevision
+        {
+            get
+            {
+                return "NA";
+            }
+        }
+
     }
 #endif
 }

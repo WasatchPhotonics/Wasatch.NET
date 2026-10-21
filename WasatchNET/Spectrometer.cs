@@ -1368,6 +1368,17 @@ namespace WasatchNET
         }
         bool laserModulationEnabled_;
 
+        public bool forceModulation
+        {
+            get => _forceModulation;
+            set
+            {
+                _forceModulation = value;
+
+            }
+        }
+        bool _forceModulation = false;
+
         public virtual bool laserFiring
         {
             get
@@ -2393,6 +2404,7 @@ namespace WasatchNET
         public virtual void close()
         {
             Task task = Task.Run(async () => await closeAsync());
+            
             task.Wait();
         }
         public async virtual Task closeAsync()
@@ -3134,11 +3146,15 @@ namespace WasatchNET
             UInt64 widthUS = (UInt64)Math.Round(perc * periodUS, 0);
 
             // Turn off modulation at full laser power, exit
-            if (widthUS >= periodUS)
+            if (widthUS >= periodUS && !forceModulation)
             {
                 logger.debug("Turning off laser modulation (full power)");
                 laserModulationEnabled = false;
                 return true;
+            }
+            else if (widthUS > periodUS)
+            {
+                widthUS = periodUS;
             }
 
             if (laserModulationPeriod != periodUS)

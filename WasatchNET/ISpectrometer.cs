@@ -188,6 +188,7 @@ namespace WasatchNET
         byte laserPowerAttenuation { get; set; }
 
         bool laserModulationEnabled { get; set; }
+        bool forceModulation { get; set; }
         bool laserModulationLinkedToIntegrationTime { get; set; }
         Spectrometer.LaserPowerResolution laserPowerResolution { get; set; }
 
