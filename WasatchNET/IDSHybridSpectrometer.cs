@@ -524,6 +524,7 @@ namespace WasatchNET
         }
 
 
+
         public override double[] getProcessedFrame(bool direct = true)
         {
             return lastProcessedFrame;
@@ -552,6 +553,7 @@ namespace WasatchNET
             }
 
             Image image = IPLExtension.ToIPLImage(buffer);
+
             image = processImage(image, buffer);
 
             IntPtr convertedPtr = image.Data();
@@ -733,6 +735,7 @@ namespace WasatchNET
                 
                 //unclear as of 9/24//26 if this is actually a flot node -TS
                 var node = nodeMap.FindNode<FloatNode>("Gain");
+                logger.info("Gain currently set to {0}, gain type is {1}", node.Value(), nodeMap.FindNode<EnumerationNode>("GainSelector").CurrentEntry().Value());
 
                 local = Math.Max(local, node.Minimum());
                 local = Math.Min(local, node.Maximum());
