@@ -1606,8 +1606,12 @@ namespace WasatchNET
             }
             set
             {
+                const Opcodes op = Opcodes.GET_AREA_SCAN_ENABLE;
+                if (haveCache(op) && value == areaScanEnabled_)
+                    return;
+
                 _ = sendCmd(Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0), 0, new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }); // MZ: 10?
-                readOnce.Remove(Opcodes.GET_DETECTOR_OFFSET);
+                readOnce.Add(op);
             }
         }
         protected bool areaScanEnabled_ = false;

@@ -946,6 +946,12 @@ namespace WasatchNET
             }
         }
 
+        public void regenBadPixels()
+        {
+
+        }
+
+
         public string productConfiguration
         {
             get { return _productConfiguration; }
