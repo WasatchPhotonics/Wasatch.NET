@@ -15,6 +15,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,7 +32,7 @@ namespace WasatchNET
         protected double[] lastProcessedFrame = null;
 
         private Spectrometer sidecar = null;
-        private bool sidecarAvailable = false;
+        internal bool sidecarAvailable = false;
 
 #if x64
         private DeviceManager deviceManager = null; //DeviceManager.Instance();
@@ -67,13 +68,16 @@ namespace WasatchNET
 #if x64
             if (!isInit)
             {
+                logger.debug("initializing IDS library");
                 IDSImaging.Peak.API.Library.Initialize();
                 isInit = true;
             }
-            
+
+            logger.debug("grabbing device list");
             deviceManager = DeviceManager.Instance();
             deviceManager.Update();
             availableCameras = deviceManager.Devices().Count;
+            logger.debug("{0} IDS cameras available", availableCameras);
 #endif
 
         }
@@ -84,35 +88,77 @@ namespace WasatchNET
             return task.Result;
         }
 
+
+        internal bool setSidecar(Spectrometer spec)
+        {
+#if x64
+            if (sidecarAvailable && sidecar != null)
+            {
+                logger.debug("IDS sidecar already set, returning early");
+                return false;
+            }
+            try
+            {
+                sidecarAvailable = true;
+                sidecar = spec;
+                eeprom = sidecar.eeprom;
+                regenerateWavelengths();
+                detectorStartLine = 0;
+                detectorStopLine = (ushort)(eeprom.activePixelsVert - 1);
+                logger.debug("IDS set sidecar completed successfully");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                sidecarAvailable = false;
+                logger.debug("IDS sidecar set failed with exception: {0}", ex.Message);
+                return false;
+            }
+#else
+            return false;
+#endif
+        }
+
+
+
         override internal async Task<bool> openAsync()
         {
-#if WIN32
-            return false;
-        }
-    }
-#elif x64
+#if x64
 
             try
             {
+                logger.debug("initializing sidecar spectrometer for USB commands");
                 sidecar = new Spectrometer(usbRegistry) { uptime = uptime }; ;
                 deviceManager.Update();
                 if (!deviceManager.Devices().Any())
                 {
+                    logger.debug("no IDS cameras found, giving up");
                     return false;
                 }
 
+                logger.debug("opening sidecar spectrometer for USB commands");
                 sidecarAvailable = await sidecar.openAsync();
                 if (sidecarAvailable)
+                {
+                    logger.debug("successfully opened sidecar spectrometer for USB commands");
                     eeprom = sidecar.eeprom;
+                }
                 else
+                {
+                    logger.debug("sidecar spectrometer open failed");
                     eeprom = new EEPROM(this);
-
+                }
                 var devices = deviceManager.Devices();
                 device = devices[0].OpenDevice(DeviceAccessType.Control);
                 nodeMap = device.RemoteDevice().NodeMaps()[0];
+                logger.debug("grabbed IDS node map");
 
                 eeprom.detectorSerialNumber = nodeMap.FindNode<StringNode>("DeviceSerialNumber").Value();
-                eeprom.detectorName = nodeMap.FindNode<StringNode>("SensorName").Value();
+                string[] detParts = nodeMap.FindNode<StringNode>("SensorName").Value().Split(' ');
+                if (detParts.Length > 1)
+                    eeprom.detectorName = detParts[1];
+                else
+                    eeprom.detectorName = nodeMap.FindNode<StringNode>("SensorName").Value();
                 pixels = eeprom.activePixelsHoriz = eeprom.actualPixelsHoriz = (ushort)nodeMap.FindNode<IntegerNode>("Width").Value();
                 linesPerFrame = eeprom.activePixelsVert = (ushort)nodeMap.FindNode<IntegerNode>("Height").Value();
                 if (!sidecarAvailable)
@@ -127,7 +173,8 @@ namespace WasatchNET
                     setUserSet("LongExposure");
                     eeprom.maxIntegrationTimeMS = (uint)(fn.Maximum() / 1000);
                 }
-                
+                logger.debug("IDS fields initialized");
+
                 regenerateWavelengths();
                 integrationTimeMS = 15;//(uint)(nodeMap.FindNode<FloatNode>("ExposureTime").Value() / 1000f);
                 featureIdentification = new FeatureIdentification(0, 0);
@@ -138,6 +185,7 @@ namespace WasatchNET
                 nodeMap.FindNode<FloatNode>("ExposureTime").SetValue(15000);
                 detectorGain = 12;
                 startCollection();
+                logger.debug("IDS open completed successfully");
             }
             catch (Exception ex)
             {
@@ -154,6 +202,8 @@ namespace WasatchNET
             if (!userSetOptions.Contains(value))
                 return;
 
+            logger.debug("setting IDS User Set to {0}", value);
+
             if (value != userSet || force)
             {
                 userSet = value;
@@ -161,8 +211,10 @@ namespace WasatchNET
                 if (wasStarted)
                     stopCollection();
 
+                logger.debug("waiting to enter lock in IDS user set");
                 lock (commsLock)
                 {
+                    logger.debug("entered lock in IDS user set");
                     nodeMap.FindNode<EnumerationNode>("UserSetSelector").SetCurrentEntry(value);
                     nodeMap.FindNode<CommandNode>("UserSetLoad").Execute();
                     nodeMap.FindNode<CommandNode>("UserSetLoad").WaitUntilDone();
@@ -218,10 +270,9 @@ namespace WasatchNET
                 }
             }
 
-            //shutDownLibrary();
-            //wrapper.shutdown();
-            //await Task.Run(() => andorDriver.SetCurrentCamera(cameraHandle));
-            //await Task.Run(() => andorDriver.ShutDown());
+            dataStream?.Dispose();
+            nodeMap?.Dispose();
+            device?.Dispose();
         }
 
         void initImageConverter(string newOutputFormat = null)
@@ -473,6 +524,7 @@ namespace WasatchNET
         }
 
 
+
         public override double[] getProcessedFrame(bool direct = true)
         {
             return lastProcessedFrame;
@@ -501,6 +553,7 @@ namespace WasatchNET
             }
 
             Image image = IPLExtension.ToIPLImage(buffer);
+
             image = processImage(image, buffer);
 
             IntPtr convertedPtr = image.Data();
@@ -608,8 +661,8 @@ namespace WasatchNET
 
         public override bool laserEnabled
         {
-            get { return false; }
-            set { laserEnabled_ = value; }
+            get { if (sidecarAvailable) return sidecar.laserEnabled; else return false; }
+            set { if (sidecarAvailable) sidecar.laserEnabled = value; }
         }
 
         const uint fullMaxMS = 120000;
@@ -646,12 +699,12 @@ namespace WasatchNET
 
         public override bool hasLaser
         {
-            get => false;
+            get { if (sidecarAvailable) return sidecar.hasLaser; else return false; }
         }
 
         public override bool setLaserPowerPercentage(float perc)
         {
-            return false;
+             if (sidecarAvailable) return sidecar.setLaserPowerPercentage(perc); else return false;
         }
 
         public override LaserPowerResolution laserPowerResolution
@@ -662,19 +715,19 @@ namespace WasatchNET
             }
         }
 
-        public override bool laserInterlockEnabled { get => false; }
-        public override byte laserWarningDelaySec { get => 0; set { } }
-        public override byte laserPowerAttenuation { get => 0; set { } }
+        public override bool laserInterlockEnabled { get { if (sidecarAvailable) return sidecar.laserInterlockEnabled; else return false; } }
+        public override byte laserWarningDelaySec { get { if (sidecarAvailable) return sidecar.laserWarningDelaySec; else return 0; } set { if (sidecarAvailable) sidecar.laserWarningDelaySec = value; } }
+        public override byte laserPowerAttenuation { get { if (sidecarAvailable) return sidecar.laserPowerAttenuation; else return 0; } set { if (sidecarAvailable) sidecar.laserPowerAttenuation = value; } }
 
-        public override UInt64 laserModulationPeriod { get => 100; }
+        public override UInt64 laserModulationPeriod { get { if (sidecarAvailable) return sidecar.laserModulationPeriod; else return 1; } }
 
-        public override ulong laserModulationPulseWidth { get => 0; set { } }
+        public override ulong laserModulationPulseWidth { get { if (sidecarAvailable) return sidecar.laserModulationPulseWidth; else return 0; } set { if (sidecarAvailable) sidecar.laserModulationPulseWidth = value; } }
 
         public override float detectorGain
         {
             get
             {
-                return 0.0f;
+                return detectorGain_;
             }
             set
             {
@@ -682,6 +735,7 @@ namespace WasatchNET
                 
                 //unclear as of 9/24//26 if this is actually a flot node -TS
                 var node = nodeMap.FindNode<FloatNode>("Gain");
+                logger.info("Gain currently set to {0}, gain type is {1}", node.Value(), nodeMap.FindNode<EnumerationNode>("GainSelector").CurrentEntry().Value());
 
                 local = Math.Max(local, node.Minimum());
                 local = Math.Min(local, node.Maximum());
@@ -748,38 +802,42 @@ namespace WasatchNET
 
         public override TRIGGER_SOURCE triggerSource
         {
-            get => TRIGGER_SOURCE.EXTERNAL;
+            get => TRIGGER_SOURCE.INTERNAL;
             set
             {
 
             }
         }
 
-        public override float laserTemperatureDegC { get => 0; }
+        public override float laserTemperatureDegC { get { if (sidecarAvailable) return sidecar.laserTemperatureDegC; else return 0f; } }
 
-        public override ushort laserTemperatureRaw { get => 0; }
+        public override ushort laserTemperatureRaw { get { if (sidecarAvailable) return sidecar.laserTemperatureRaw; else return 0; } }
 
-        public override ushort laserTemperatureSetpointRaw { get => 0; }
+        public override ushort laserTemperatureSetpointRaw { get { if (sidecarAvailable) return sidecar.laserTemperatureSetpointRaw; else return 0; } }
 
         public override UInt16 laserWatchdogSec
         {
-
             get
             {
-                return 0;
+                if (sidecarAvailable)
+                    return sidecar.laserWatchdogSec;
+                else return 0;
+
             }
             set
             {
-
+                if (sidecarAvailable)
+                    sidecar.laserWatchdogSec = value;
             }
-
         }
 
         public override float batteryPercentage
         {
             get
             {
-                return 0.0f;
+                if (sidecarAvailable)
+                    return sidecar.batteryPercentage;
+                else return 0f;
             }
         }
 
@@ -803,8 +861,9 @@ namespace WasatchNET
             {
                 // get a new value if possible, but if a spectrum is being collected just
                 // return the cached value
-                if (Monitor.TryEnter(acquisitionLock))
+                if (Monitor.TryEnter(acquisitionLock) && sidecarAvailable)
                 {
+                    lastDetectorTemperatureDegC = sidecar.detectorTemperatureDegC;
                 }
 
                 return lastDetectorTemperatureDegC;
@@ -813,18 +872,22 @@ namespace WasatchNET
 
         public override short ambientTemperatureDegC
         {
-            get { return 0; }
+            get { if (sidecarAvailable) return sidecar.ambientTemperatureDegC; else return 0; }
         }
 
         public override bool laserTECEnabled
         {
             get
             {
-                return false;
+                if (sidecarAvailable) 
+                    return sidecar.laserTECEnabled;
+                else
+                    return false;
             }
             set
             {
-
+                if (sidecarAvailable)
+                    sidecar.laserTECEnabled = value;
             }
         }
 
@@ -832,11 +895,15 @@ namespace WasatchNET
         {
             get
             {
-                return 0;
+                if (sidecarAvailable)
+                    return sidecar.laserTECMode;
+                else
+                    return 0;
             }
             set
             {
-
+                if (sidecarAvailable)
+                    sidecar.laserTECMode = value;
             }
         }
 
@@ -885,6 +952,8 @@ namespace WasatchNET
             get
             {
                 string retval = "";
+                if (sidecarAvailable)
+                    retval = sidecar.firmwareRevision;
 
                 return retval;
             }
@@ -895,6 +964,8 @@ namespace WasatchNET
             get
             {
                 string retval = "";
+                if (sidecarAvailable)
+                    retval = sidecar.fpgaRevision;
 
                 return retval;
             }
@@ -905,8 +976,50 @@ namespace WasatchNET
             get
             {
                 string retval = "";
+                if (sidecarAvailable)
+                    retval = sidecar.bleRevision;
 
                 return retval;
+            }
+        }
+
+        public string IDSSWVersion
+        {
+            get
+            {
+                return IDSImaging.Peak.API.Library.Version().ToString();
+            }
+        }
+
+        public string IDSFPGARevision
+        {
+            get
+            {
+                return nodeMap.FindNode<StringNode>("FpgaFirmwareVersion").Value();
+            }
+        }
+
+        public string IDSBootloaderRevision
+        {
+            get
+            {
+                return nodeMap.FindNode<StringNode>("BootloaderFirmwareVersion").Value();
+            }
+        }
+
+        public string IDSRuntimeRevision
+        {
+            get
+            {
+                return nodeMap.FindNode<StringNode>("RuntimeFirmwareVersion").Value();
+            }
+        }
+
+        public string IDSServiceRevision
+        {
+            get
+            {
+                return nodeMap.FindNode<StringNode>("ServiceFirmwareVersion").Value();
             }
         }
 
@@ -926,6 +1039,53 @@ namespace WasatchNET
         public override bool continuousAcquisitionEnable { get => false; set { } }
         public override byte continuousFrames { get => 0; set { } }
         public override ushort detectorTemperatureRaw { get => 0; }
+    }
+
+#else
+            return false;
+
+        }
+
+        public string IDSSWVersion
+        {
+            get
+            {
+                return "NA";
+            }
+        }
+
+        public string IDSFPGARevision
+        {
+            get
+            {
+                return "NA";
+            }
+        }
+
+        public string IDSBootloaderRevision
+        {
+            get
+            {
+                return "NA";
+            }
+        }
+
+        public string IDSRuntimeRevision
+        {
+            get
+            {
+                return "NA";
+            }
+        }
+
+        public string IDSServiceRevision
+        {
+            get
+            {
+                return "NA";
+            }
+        }
+
     }
 #endif
 }

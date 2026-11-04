@@ -2812,6 +2812,7 @@ namespace WasatchNET
                 json.AuxButtonLaserControl = featureMaskXS.AuxButtonLaserControl;
                 json.DisableLaserSubSystem = featureMaskXS.DisableLaserSubSystem;
                 json.KeepAccessory5VOnDisconnect = featureMaskXS.KeepAccessory5VOnDisconnect;
+                json.DisableDetector = featureMaskXS.DisableDetector;
             }
 
             json.LaserWarmupS = laserWarmupSec;
