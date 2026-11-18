@@ -948,7 +948,14 @@ namespace WasatchNET
 
         public void regenBadPixels()
         {
-
+            badPixelSet = new SortedSet<short>();
+            for (int i = 0; i < 15; i++)
+            {
+                short pixel = badPixels[i];
+                if (pixel >= 0)
+                    badPixelSet.Add(pixel); // does not throw
+            }
+            badPixelList = new List<short>(badPixelSet);
         }
 
 

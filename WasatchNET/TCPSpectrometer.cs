@@ -108,6 +108,23 @@ namespace WasatchNET
             return true;
         }
 
+        public override void close()
+        {
+            Task task = Task.Run(async () => await closeAsync());
+            task.Wait();
+        }
+
+        public async override Task closeAsync()
+        {
+            if (stream != null)
+            {
+                await stream.FlushAsync();
+                stream.Close();
+            }
+
+            client.Dispose();
+        }
+
         bool checkSocket()
         {
             /*
@@ -677,7 +694,7 @@ namespace WasatchNET
                 if (haveCache(op) && value == areaScanEnabled_)
                     return;
 
-                sendCommand((byte)Opcodes.SET_AREA_SCAN_ENABLE, (ushort)((areaScanEnabled_ = value) ? 1 : 0));
+                sendCommand(0xeb, (ushort)((areaScanEnabled_ = value) ? 1 : 0));
                 readOnce.Add(op);
             }
         }
@@ -692,12 +709,13 @@ namespace WasatchNET
         {
             get
             {
+                return false;
 
                 const Opcodes op = Opcodes.GET_LASER_ENABLE;
                 if (haveCache(op))
                     return laserEnabled_;
 
-                byte[] buf = getCommand((byte)Opcodes.GET_LASER_ENABLE, 1);
+                byte[] buf = getCommand(0xe2, 1);
                 if (buf is null)
                 {
                     return false;
@@ -707,11 +725,13 @@ namespace WasatchNET
             }
             set
             {
+                return;
+
                 const Opcodes op = Opcodes.GET_LASER_ENABLE;
                 if (haveCache(op) && value == laserEnabled_)
                     return;
 
-                sendCommand((byte)Opcodes.SET_LASER_ENABLE, (ushort)((laserEnabled_ = value) ? 1 : 0));
+                sendCommand(0xbe, (ushort)((laserEnabled_ = value) ? 1 : 0));
                 if (value)
                     laserHasFired_ = true;
             }
@@ -739,7 +759,7 @@ namespace WasatchNET
                 if (haveCache(op))
                     return integrationTimeMS_;
 
-                byte[] buf = getCommand((byte)Opcodes.GET_INTEGRATION_TIME, 3);
+                byte[] buf = getCommand(0xbf, 3);
                 if (buf is null)
                 {
                     logger.error("Failed to read correct number of bytes in integrationTimeMS getter");
