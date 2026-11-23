@@ -343,6 +343,7 @@ namespace WasatchNET
                 for (int px = 0; px < pixels; px++)
                     sum[px] -= dark_[px];
 
+            correctBadPixels(ref sum);
             logger.debug("getSpectrum: all spectra collected, returning");
 
             if (boxcarHalfWidth > 0)
@@ -662,6 +663,7 @@ namespace WasatchNET
 
         public float getExcitation()
         {
+            
             byte[] resp = getCommand(0xff, 4, 0xaa12);
             float excitation = 0;
             if (resp != null)
@@ -671,15 +673,21 @@ namespace WasatchNET
 
 
             logger.info("TCP spec excitation {0:f4}", excitation);
-            return excitation;
+
+            if (excitation > 500)
+                return excitation;
+            
+            return 785f;
         }
 
         public void setExcitation(float value)
         {
+            /*
             byte[] payload = BitConverter.GetBytes(value);
             byte[] pay2 = payload.Reverse().ToArray();
 
             byte[] ok = sendCommand(0xff, 0xaa11, 0, pay2);
+            */
         }
 
         public override bool areaScanEnabled
@@ -705,11 +713,14 @@ namespace WasatchNET
             set { return; }
         }
 
+        public bool ignoreLaserCommands = true;
+
         public override bool laserEnabled
         {
             get
             {
-                return false;
+                if (ignoreLaserCommands)
+                    return laserEnabled_;
 
                 const Opcodes op = Opcodes.GET_LASER_ENABLE;
                 if (haveCache(op))
@@ -725,7 +736,8 @@ namespace WasatchNET
             }
             set
             {
-                return;
+                if (ignoreLaserCommands)
+                    return;
 
                 const Opcodes op = Opcodes.GET_LASER_ENABLE;
                 if (haveCache(op) && value == laserEnabled_)
@@ -804,6 +816,35 @@ namespace WasatchNET
                 return LaserPowerResolution.LASER_POWER_RESOLUTION_MANUAL;
             }
         }
+
+        public override float laserPowerSetpointMW
+        {
+            get
+            {
+                if (ignoreLaserCommands)
+                    return 0;
+
+                const Opcodes op = Opcodes.GET_LASER_POWER_MW;
+                if (haveCache(op))
+                    return laserPowerSetpointMW_;
+                readOnce.Add(op);
+                return laserPowerSetpointMW_ = Unpack.toUshort(getCommand(0xff, 2, 0xaa16));
+                
+            }
+            set
+            {
+                if (ignoreLaserCommands)
+                    return;
+
+                const Opcodes op = Opcodes.GET_LASER_POWER_MW;
+                if (haveCache(op) && value == laserPowerSetpointMW_)
+                    return;
+
+                sendCommand(0xff, 0xaa15, (int)(laserPowerSetpointMW_ = value));
+                readOnce.Add(op);
+            }
+        }
+
 
         public override bool laserInterlockEnabled { get => false; }
         public override byte laserWarningDelaySec { get => 0; set { } }

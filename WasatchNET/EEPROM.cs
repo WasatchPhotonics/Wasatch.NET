@@ -958,6 +958,30 @@ namespace WasatchNET
             badPixelList = new List<short>(badPixelSet);
         }
 
+        short[] badPixelCache;
+
+        public void cacheBadPixels()
+        {
+            badPixelCache = new short[15];
+            Array.Copy(badPixels, 0, badPixelCache, 0, 15);
+            badPixels = new short[15];
+            for (int i = 0; i < badPixels.Length; i++)
+                badPixels[i] = -1;
+            regenBadPixels();
+        }
+
+        public void restoreBadPixelCache()
+        {
+            foreach (short pixel in badPixelCache)
+            {
+                if (pixel != -1)
+                    addBadPixel(pixel);
+            }
+
+            regenBadPixels();
+        }
+
+
 
         public string productConfiguration
         {
@@ -2573,6 +2597,8 @@ namespace WasatchNET
             badPixels[12] = (Int16)json.BadPixels[12];
             badPixels[13] = (Int16)json.BadPixels[13];
             badPixels[14] = (Int16)json.BadPixels[14];
+            regenBadPixels();
+
             if (json.AssemblyRevision != null)
             {
                 assemblyRevision = new byte[json.AssemblyRevision.Length];
